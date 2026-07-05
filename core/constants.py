@@ -75,3 +75,35 @@ NAKSHATRA_LORDS = [VIMSOTTARI_ORDER[i % 9] for i in range(27)]
 
 NAKSHATRA_ARC = 360.0 / 27.0      # 13°20'
 PADA_ARC = NAKSHATRA_ARC / 4.0    # 3°20'
+
+# --- Panchang tables ---
+WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+YOGAS = [
+    "Vishkambha", "Priti", "Ayushman", "Saubhagya", "Shobhana", "Atiganda",
+    "Sukarma", "Dhriti", "Shula", "Ganda", "Vriddhi", "Dhruva",
+    "Vyaghata", "Harshana", "Vajra", "Siddhi", "Vyatipata", "Variyana",
+    "Parigha", "Shiva", "Siddha", "Sadhya", "Shubha", "Shukla",
+    "Brahma", "Indra", "Vaidhriti",
+]
+
+# The 60 karana half-tithis map onto 11 karana names: 7 movable repeat, 4 fixed.
+# Sequence: karana index 0 = first half of tithi 1 (Kimstughna, fixed), then the
+# 7 movable cycle for indices 1..57, and the last 3 (58,59,60) are the fixed
+# Shakuni, Chatushpada, Naga. Index here is 0-based half-tithi (0..59).
+_MOVABLE_KARANAS = ["Bava", "Balava", "Kaulava", "Taitila", "Gara", "Vanija", "Vishti"]
+
+
+def karana_name(karana_index_0based: int) -> str:
+    i = karana_index_0based
+    if i == 0:
+        return "Kimstughna"
+    if i >= 57:
+        return {57: "Shakuni", 58: "Chatushpada", 59: "Naga"}[i]
+    return _MOVABLE_KARANAS[(i - 1) % 7]
+
+
+# Segment (1..8 of daytime) for each window, indexed by Vedic weekday (Sunday=0).
+RAHU_KALAM_SEGMENT = {0: 8, 1: 2, 2: 7, 3: 5, 4: 6, 5: 4, 6: 3}
+YAMAGANDA_SEGMENT = {0: 5, 1: 4, 2: 3, 3: 2, 4: 1, 5: 7, 6: 6}
+GULIKA_SEGMENT = {0: 7, 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1}
