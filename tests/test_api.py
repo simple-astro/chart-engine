@@ -61,10 +61,10 @@ def test_transits_endpoint():
 
 
 def test_transit_scan_endpoint_returns_sorted_events():
-    r = client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 45})
+    r = client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 30})
     assert r.status_code == 200
     body = r.json()
-    assert body["days"] == 45 and isinstance(body["events"], list)
+    assert body["days"] == 30 and isinstance(body["events"], list)
     times = [e["exact_at"] for e in body["events"]]
     assert times == sorted(times)
     for e in body["events"]:
@@ -75,3 +75,5 @@ def test_transit_scan_endpoint_returns_sorted_events():
 def test_transit_scan_days_out_of_range_422():
     assert client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 0}).status_code == 422
     assert client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 99}).status_code == 422
+    assert client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 32}).status_code == 422
+    assert client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 31}).status_code == 200

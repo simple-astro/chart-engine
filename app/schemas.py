@@ -37,6 +37,6 @@ class PanchangRequest(BaseModel):
 
 class TransitScanRequest(BaseModel):
     start: datetime = Field(description="Timezone-aware UTC datetime; naive is treated as UTC")
-    days: int = Field(default=7, ge=1, le=90)
+    days: int = Field(default=7, ge=1, le=31)
     ayanamsha: Ayanamsha = "krishnamurti"
     node_type: NodeType = "mean"
