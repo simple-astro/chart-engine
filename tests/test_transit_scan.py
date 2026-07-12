@@ -72,3 +72,19 @@ def test_determinism():
     b = scan_events(START, days=120)
     assert [(e.type, e.planet, e.exact_at_utc, e.detail) for e in a] == \
            [(e.type, e.planet, e.exact_at_utc, e.detail) for e in b]
+
+def test_eclipses_detected_over_a_year():
+    evs = scan_events(START, days=365)
+    ecl = [e for e in evs if e.type == "eclipse"]
+    solar = [e for e in ecl if e.planet == "Sun"]
+    lunar = [e for e in ecl if e.planet == "Moon"]
+    assert len(solar) >= 1 and len(lunar) >= 1     # every year has >=2 solar and >=2 lunar
+    for e in ecl:
+        assert e.detail["kind"] in ("solar", "lunar")
+        assert e.detail["eclipse_type"] in ("total", "annular", "partial", "penumbral", "hybrid")
+        assert START <= e.exact_at_utc <= START + timedelta(days=365)
+
+def test_no_eclipses_when_none_in_short_window_does_not_crash():
+    # a short window may legitimately contain no eclipse; must return [] for that type, not error
+    evs = scan_events(START, days=3)
+    assert isinstance(evs, list)

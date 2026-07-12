@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+import swisseph as swe
+
 from core.ephemeris import julian_day
 from core.grahas import compute_grahas
 
@@ -11,6 +13,14 @@ STATION_GRAHAS = ("Mars", "Mercury", "Jupiter", "Venus", "Saturn")
 NAKSHATRA_GRAHAS = ("Jupiter", "Saturn", "Rahu", "Ketu")
 
 _REFINE_SECONDS = 60
+
+# The engine's default calculation flag is FLG_MOSEPH (see core/ephemeris.py: no
+# ephe path configured by default). Eclipse finders return identical results under
+# FLG_SWIEPH and FLG_MOSEPH in this environment (no Swiss Ephemeris data files are
+# loaded either way), so FLG_MOSEPH is used here to stay consistent with the rest
+# of the engine's default behavior.
+_ECL_FLAG = swe.FLG_MOSEPH
+_ECL_MAX_ITERATIONS = 60  # safety bound (>>eclipses per window)
 
 
 @dataclass(frozen=True)
@@ -40,6 +50,56 @@ def _refine(t_lo: datetime, t_hi: datetime, name: str, keyfn, ayanamsha: str, no
         else:
             t_hi = mid
     return t_hi
+
+
+def _jd_to_utc(jd_ut: float) -> datetime:
+    y, m, d, h = swe.revjul(jd_ut)
+    return datetime(int(y), int(m), int(d), tzinfo=timezone.utc) + timedelta(hours=h)
+
+
+def _solar_type(rflags: int) -> str:
+    if rflags & swe.ECL_TOTAL:
+        return "total"
+    if rflags & swe.ECL_ANNULAR_TOTAL:
+        return "hybrid"
+    if rflags & swe.ECL_ANNULAR:
+        return "annular"
+    return "partial"
+
+
+def _lunar_type(rflags: int) -> str:
+    if rflags & swe.ECL_TOTAL:
+        return "total"
+    if rflags & swe.ECL_PARTIAL:
+        return "partial"
+    return "penumbral"
+
+
+def _scan_eclipses(start: datetime, end: datetime) -> list[TransitEvent]:
+    jd_end = julian_day(end)
+    events: list[TransitEvent] = []
+
+    jd = julian_day(start)
+    for _ in range(_ECL_MAX_ITERATIONS):
+        rflags, tret = swe.sol_eclipse_when_glob(jd, _ECL_FLAG, 0, False)
+        peak = tret[0]
+        if peak > jd_end:
+            break
+        events.append(TransitEvent("eclipse", "Sun", _jd_to_utc(peak),
+                                   {"kind": "solar", "eclipse_type": _solar_type(rflags), "magnitude": 0.0}))
+        jd = peak + 1.0
+
+    jd = julian_day(start)
+    for _ in range(_ECL_MAX_ITERATIONS):
+        rflags, tret = swe.lun_eclipse_when(jd, _ECL_FLAG, 0, False)
+        peak = tret[0]
+        if peak > jd_end:
+            break
+        events.append(TransitEvent("eclipse", "Moon", _jd_to_utc(peak),
+                                   {"kind": "lunar", "eclipse_type": _lunar_type(rflags), "magnitude": 0.0}))
+        jd = peak + 1.0
+
+    return [e for e in events if start <= e.exact_at_utc <= end]
 
 
 def scan_events(start_utc: datetime, days: int = 7, ayanamsha: str = "krishnamurti",
@@ -74,6 +134,8 @@ def scan_events(start_utc: datetime, days: int = 7, ayanamsha: str = "krishnamur
                 events.append(TransitEvent("nakshatra_change", name, exact, {
                     "from_nakshatra": g0[name].nakshatra, "to_nakshatra": g1[name].nakshatra,
                     "from_index": g0[name].nakshatra_index, "to_index": g1[name].nakshatra_index}))
+
+    events.extend(_scan_eclipses(start, end))
 
     events.sort(key=lambda e: e.exact_at_utc)
     return events
