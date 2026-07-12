@@ -76,6 +76,10 @@ def _lunar_type(rflags: int) -> str:
 
 
 def _scan_eclipses(start: datetime, end: datetime) -> list[TransitEvent]:
+    # NOTE: eclipse `magnitude` is always 0.0 in v1 — the global finders
+    # (sol_eclipse_when_glob / lun_eclipse_when) do not return a magnitude, and a
+    # meaningful solar magnitude is observer-location dependent (out of scope, see
+    # design §8). The field is kept for contract stability; C2 must not rely on it.
     jd_end = julian_day(end)
     events: list[TransitEvent] = []
 

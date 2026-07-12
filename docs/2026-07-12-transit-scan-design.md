@@ -71,6 +71,10 @@ backward=False)` (total/partial/penumbral). Each eclipse's `exact_at_utc` is the
 are emitted. (The exact pyswisseph function names/return tuples are verified against the installed
 `pyswisseph==2.10.3.2` at implementation time; the design fixes the behavior, not the binding details.)
 
+**`magnitude` — v1 is always `0.0`.** The global finders return no magnitude, and a meaningful solar
+magnitude is observer-location dependent (per-location eclipse visibility/magnitude is out of scope, §8).
+The `magnitude` field is retained for contract stability but C2 must not build significance on it.
+
 ## 5. API
 
 - **Core:** `core/transit_scan.py`:
