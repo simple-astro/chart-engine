@@ -33,3 +33,10 @@ class PanchangRequest(BaseModel):
     lat: float = Field(ge=-90, le=90)
     lon: float = Field(ge=-180, le=180)
     tz_name: str = Field(description="IANA timezone, e.g. Asia/Kolkata")
+
+
+class TransitScanRequest(BaseModel):
+    start: datetime = Field(description="Timezone-aware UTC datetime; naive is treated as UTC")
+    days: int = Field(default=7, ge=1, le=90)
+    ayanamsha: Ayanamsha = "krishnamurti"
+    node_type: NodeType = "mean"

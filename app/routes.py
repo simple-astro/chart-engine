@@ -5,11 +5,12 @@ from datetime import timezone
 
 from fastapi import APIRouter, HTTPException
 
-from app.schemas import ChartRequest, PanchangRequest, TransitRequest
+from app.schemas import ChartRequest, PanchangRequest, TransitRequest, TransitScanRequest
 from core import ephemeris
 from core.chart import ENGINE_VERSION, BirthData, compute_natal_chart
 from core.grahas import Graha
 from core.panchang import compute_panchang
+from core.transit_scan import scan_events
 from core.transits import transit_positions
 
 router = APIRouter()
@@ -101,4 +102,16 @@ def panchang(req: PanchangRequest) -> dict:
             "yamaganda": [p.yamaganda[0].isoformat(), p.yamaganda[1].isoformat()],
             "gulika": [p.gulika[0].isoformat(), p.gulika[1].isoformat()],
         },
+    }
+
+
+@router.post("/transit-scan")
+def transit_scan(req: TransitScanRequest) -> dict:
+    start = req.start if req.start.tzinfo else req.start.replace(tzinfo=timezone.utc)
+    events = scan_events(start, req.days, req.ayanamsha, req.node_type)
+    return {
+        "start": start.astimezone(timezone.utc).isoformat(),
+        "days": req.days,
+        "events": [{"type": e.type, "planet": e.planet,
+                    "exact_at": e.exact_at_utc.isoformat(), "detail": e.detail} for e in events],
     }

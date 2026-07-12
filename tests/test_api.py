@@ -58,3 +58,20 @@ def test_transits_endpoint():
     r = client.post("/transits", json={"when": "2020-03-20T12:00:00+00:00"})
     assert r.status_code == 200
     assert len(r.json()["grahas"]) == 9
+
+
+def test_transit_scan_endpoint_returns_sorted_events():
+    r = client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 45})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["days"] == 45 and isinstance(body["events"], list)
+    times = [e["exact_at"] for e in body["events"]]
+    assert times == sorted(times)
+    for e in body["events"]:
+        assert set(e.keys()) == {"type", "planet", "exact_at", "detail"}
+        assert e["type"] in ("ingress", "station", "nakshatra_change", "eclipse")
+
+
+def test_transit_scan_days_out_of_range_422():
+    assert client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 0}).status_code == 422
+    assert client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 99}).status_code == 422
