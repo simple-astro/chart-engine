@@ -1,5 +1,10 @@
 # syntax=docker/dockerfile:1
 FROM python:3.11-slim AS builder
+# pyswisseph ships no wheel for all platforms (e.g. linux/arm64); it compiles a C
+# extension from sdist, which needs a toolchain. Kept to the builder stage only so
+# the runtime image stays slim (no compiler in the final image).
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY pyproject.toml ./
 COPY app ./app
