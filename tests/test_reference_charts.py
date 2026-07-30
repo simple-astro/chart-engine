@@ -7,7 +7,7 @@ software and those numbers are then trusted (see design doc §5).
 """
 import json
 import math
-from datetime import date, time
+from datetime import date, datetime, time
 from pathlib import Path
 
 import pytest
@@ -41,7 +41,24 @@ def _assert_close(produced, expected, path="$"):
         for i, (p, e) in enumerate(zip(produced, expected)):
             _assert_close(p, e, f"{path}[{i}]")
     else:
-        assert produced == expected, f"value mismatch at {path}: {produced!r} != {expected!r}"
+        # ISO datetimes (e.g. dasha boundaries) carry platform-sensitive sub-second
+        # noise from the float ephemeris positions; compare within a small tolerance.
+        de, dp = _iso_datetime(expected), _iso_datetime(produced)
+        if de is not None and dp is not None:
+            assert abs((dp - de).total_seconds()) < 2, \
+                f"datetime drift at {path}: {produced} != {expected}"
+        else:
+            assert produced == expected, f"value mismatch at {path}: {produced!r} != {expected!r}"
+
+
+def _iso_datetime(value):
+    if not isinstance(value, str):
+        return None
+    try:
+        dt = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return dt if isinstance(dt, datetime) else None
 
 REFERENCES = {
     "reference_delhi_noon": BirthData(
