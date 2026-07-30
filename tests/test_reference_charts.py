@@ -6,6 +6,7 @@ review. The product owner independently verifies one chart against Horosoft/KP
 software and those numbers are then trusted (see design doc §5).
 """
 import json
+import math
 from datetime import date, time
 from pathlib import Path
 
@@ -14,6 +15,33 @@ import pytest
 from core.chart import BirthData, chart_to_json, compute_natal_chart
 
 GOLDEN_DIR = Path(__file__).parent / "golden"
+
+
+def _assert_close(produced, expected, path="$"):
+    """Deep-compare parsed JSON with a float tolerance, so the snapshot is stable
+    across platforms: the Moshier ephemeris' last-digit float output differs
+    between arch/OS (e.g. arm64 macOS vs x64 Linux), which byte-equality would
+    flag as spurious drift. Numbers must match within tolerance; everything else
+    (strings, bools, structure) must match exactly — so a real logic change still
+    fails here."""
+    # bool is a subclass of int — check it before the numeric branch
+    if isinstance(expected, bool) or isinstance(produced, bool):
+        assert produced == expected, f"bool mismatch at {path}: {produced!r} != {expected!r}"
+    elif isinstance(expected, (int, float)) and isinstance(produced, (int, float)):
+        assert math.isclose(produced, expected, rel_tol=1e-7, abs_tol=1e-5), \
+            f"number drift at {path}: {produced} != {expected}"
+    elif isinstance(expected, dict):
+        assert isinstance(produced, dict) and produced.keys() == expected.keys(), \
+            f"dict keys differ at {path}: {set(produced) ^ set(expected)}"
+        for k in expected:
+            _assert_close(produced[k], expected[k], f"{path}.{k}")
+    elif isinstance(expected, list):
+        assert isinstance(produced, list) and len(produced) == len(expected), \
+            f"list length differs at {path}: {len(produced)} != {len(expected)}"
+        for i, (p, e) in enumerate(zip(produced, expected)):
+            _assert_close(p, e, f"{path}[{i}]")
+    else:
+        assert produced == expected, f"value mismatch at {path}: {produced!r} != {expected!r}"
 
 REFERENCES = {
     "reference_delhi_noon": BirthData(
@@ -40,11 +68,7 @@ def test_reference_chart_matches_golden(key):
         golden_path.write_text(produced, encoding="utf-8")
         pytest.skip(f"bootstrapped golden snapshot {golden_path.name}; re-run to assert")
 
-    expected = golden_path.read_text(encoding="utf-8")
-    assert produced == expected, (
-        f"chart output drifted from {golden_path.name}. If intentional, delete the "
-        f"golden file and re-run to regenerate."
-    )
+    expected = json.loads(golden_path.read_text(encoding="utf-8"))
+    _assert_close(json.loads(produced), expected)
     # sanity: the snapshot is real, complete JSON
-    parsed = json.loads(expected)
-    assert len(parsed["grahas"]) == 9 and len(parsed["vargas"]) == 16
+    assert len(expected["grahas"]) == 9 and len(expected["vargas"]) == 16
