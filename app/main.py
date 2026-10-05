@@ -19,6 +19,20 @@ from app.routes import router
 from core import ephemeris
 
 
+def _load_dotenv(path: Path = Path(".env")) -> None:
+    """Load KEY=VALUE lines from a local .env (git-ignored) without overriding real env vars."""
+    if not path.is_file():
+        return
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip().strip("\"'"))
+
+
+_load_dotenv()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # If Swiss Ephemeris data files are provided, use them; else Moshier fallback.
