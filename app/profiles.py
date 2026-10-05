@@ -1,7 +1,10 @@
 """Routes for saved birth profiles and chatting about them."""
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app import chat, storage
@@ -9,6 +12,13 @@ from app.routes import chart as compute_chart
 from app.schemas import ChartRequest
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
+usage_router = APIRouter(tags=["usage"])
+
+
+@usage_router.get("/usage")
+def usage(recent: int = 20) -> dict:
+    """Token usage by request type (llm / cache / lookup) plus the latest requests."""
+    return storage.usage_summary(max(1, min(recent, 200)))
 
 
 class ChatRequest(BaseModel):
@@ -60,6 +70,22 @@ def chat_send(profile_id: int, req: ChatRequest) -> dict:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # upstream API failure
         raise HTTPException(status_code=502, detail=f"LLM request failed: {exc}") from exc
+
+
+@router.post("/{profile_id}/chat/stream")
+def chat_stream(profile_id: int, req: ChatRequest) -> StreamingResponse:
+    """Newline-delimited JSON events: status / delta / done / error."""
+    profile = _require(profile_id)
+
+    def gen():
+        try:
+            for ev in chat.chat_events(profile, req.message):
+                yield json.dumps(ev) + "\n"
+        except Exception as exc:
+            yield json.dumps({"type": "error", "detail": str(exc)}) + "\n"
+
+    return StreamingResponse(gen(), media_type="application/x-ndjson",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @router.delete("/{profile_id}/chat")

@@ -48,12 +48,26 @@ def test_chat_tool_loop_and_history(client, monkeypatch):
 
     calls = []
 
+    class FakeStream:
+        def __init__(self, resp, texts):
+            self.resp, self.text_stream = resp, texts
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def get_final_message(self):
+            return self.resp
+
     class FakeMessages:
-        def create(self, **kw):
+        def stream(self, **kw):
             calls.append(kw)
             if len(calls) == 1:
-                return NS(stop_reason="tool_use", content=[NS(type="tool_use", id="t1", name="get_transits", input={})])
-            return NS(stop_reason="end_turn", content=[NS(type="text", text="Saturn is in your 5th.")])
+                return FakeStream(NS(stop_reason="tool_use",
+                                     content=[NS(type="tool_use", id="t1", name="get_transits", input={})]), [])
+            return FakeStream(NS(stop_reason="end_turn", content=[]), ["Saturn is ", "in your 5th."])
 
     monkeypatch.setattr(chat, "_client", lambda: NS(messages=FakeMessages()))
     pid = _pid(client)
@@ -61,7 +75,10 @@ def test_chat_tool_loop_and_history(client, monkeypatch):
     assert r == {"mode": "llm", "reply": "Saturn is in your 5th."}
     tool_result = calls[1]["messages"][-1]["content"][0]
     assert tool_result["type"] == "tool_result" and "house_from_lagna" in tool_result["content"]
-    client.post(f"/profiles/{pid}/chat", json={"message": "And marriage?"})
+    resp = client.post(f"/profiles/{pid}/chat/stream", json={"message": "And marriage?"})
+    import json as _j
+    evs = [_j.loads(l) for l in resp.text.splitlines()]
+    assert evs[-1] == {"type": "done", "mode": "llm"} and "".join(e.get("text", "") for e in evs) == "Saturn is in your 5th."
     assert len(calls[2]["messages"]) == 3  # prior user+assistant turn is sent as history
     assert client.delete(f"/profiles/{pid}/chat").status_code == 200
     assert client.get(f"/profiles/{pid}/chat").json() == []
@@ -82,3 +99,47 @@ def test_llm_context_is_valid_json(client):
     import json
     p = client.get(f"/profiles/{_pid(client)}").json()
     assert json.loads(ask.llm_context(p))["lagna"]["sign"] == "Virgo"
+
+
+def test_limit_words_cuts_on_line_boundary():
+    from app.chat import limit_words
+    text = "\n".join(f"- point {i} " + "word " * 9 for i in range(60))  # 600 words
+    out = limit_words(text, 300)
+    assert 0 < len(out.split()) <= 300 and out.splitlines()[-1].startswith("- point")
+    assert limit_words("short answer", 300) == "short answer"
+
+
+def test_cache_key_rules():
+    from app.chat import cache_key
+    assert cache_key("How is my career outlook?") == "how is my career outlook"
+    assert cache_key("Why?") is None and cache_key("tell me more about that please") is None
+
+
+def test_answer_reuse_and_usage_log(client, monkeypatch):
+    from types import SimpleNamespace as NS
+    from app import chat
+    n = []
+
+    class S:
+        def __init__(self): self.text_stream = ["Career looks steady."]
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def get_final_message(self):
+            return NS(stop_reason="end_turn", content=[],
+                      usage=NS(input_tokens=100, output_tokens=20, cache_read_input_tokens=0,
+                               cache_creation_input_tokens=0))
+
+    class M:
+        def stream(self, **kw):
+            n.append(kw)
+            return S()
+
+    monkeypatch.setattr(chat, "_client", lambda: NS(messages=M()))
+    pid = _pid(client)
+    r1 = client.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"}).json()
+    r2 = client.post(f"/profiles/{pid}/chat", json={"message": "how is my CAREER outlook"}).json()
+    assert (r1["mode"], r2["mode"]) == ("llm", "cache") and r1["reply"] == r2["reply"]
+    assert len(n) == 1  # the second ask never reached the model
+    assert n[0]["model"] == chat.DEFAULT_MODEL and n[0]["max_tokens"] == 1500
+    u = client.get("/usage").json()
+    assert u["by_kind"]["llm"]["input_tokens"] == 100 and u["by_kind"]["cache"]["requests"] == 1

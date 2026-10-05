@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.profiles import router as profiles_router
+from app.profiles import usage_router
 from app.routes import router
 from core import ephemeris
 
@@ -50,6 +51,7 @@ app = FastAPI(
 
 app.include_router(router)
 app.include_router(profiles_router)
+app.include_router(usage_router)
 
 _STATIC = Path(__file__).parent / "static"
 _INDEX = _STATIC / "index.html"

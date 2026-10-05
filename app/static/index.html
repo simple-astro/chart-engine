@@ -8,6 +8,7 @@
   :root{--bg:#f6f4ef;--card:#fff;--ink:#222;--mut:#6b6b6b;--acc:#7a3e9d;--line:#e4e0d8;--ok:#2e7d32}
   @media (prefers-color-scheme:dark){:root{--bg:#17151c;--card:#221f2b;--ink:#eee;--mut:#a29fae;--acc:#b98be0;--line:#37333f}}
   *{box-sizing:border-box}
+  [hidden]{display:none!important}
   body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,sans-serif}
   .wrap{max-width:960px;margin:0 auto;padding:24px 16px 64px}
   h1{margin:0 0 4px;font-size:1.6rem} .sub{color:var(--mut);margin:0 0 20px}
@@ -39,16 +40,34 @@
   .tree{margin:0;padding-left:18px} .tree li{margin:2px 0}
   .tree summary{cursor:pointer}
   .sec{margin-bottom:10px} .sec ul{margin:6px 0 0;padding-left:20px} .sec li{margin:4px 0}
-  .ask{display:flex;gap:8px} .ask input{flex:1} .ask button{width:auto}
-  .log{max-height:480px;min-height:120px;overflow:auto;margin-bottom:10px;padding-right:4px}
+  .chat{display:flex;flex-direction:column}
+  .log{max-height:560px;min-height:140px;overflow:auto;padding:4px 2px 8px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
+  .row-u,.row-a{display:flex;gap:10px;align-items:flex-start}
+  .row-u{justify-content:flex-end}
+  .av{flex:none;width:30px;height:30px;border-radius:50%;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .msg-u{background:var(--acc);color:#fff;padding:9px 14px;border-radius:16px 16px 4px 16px;max-width:80%;white-space:pre-wrap;word-break:break-word}
+  .msg-a{background:var(--bg);border:1px solid var(--line);padding:10px 14px;border-radius:16px 16px 16px 4px;max-width:calc(100% - 42px);line-height:1.55;word-break:break-word}
+  .msg-a p{margin:0 0 .6em} .msg-a>:last-child{margin-bottom:0}
+  .msg-a ul{margin:.2em 0 .6em;padding-left:20px} .msg-a li{margin:.2em 0}
+  .msg-a h4{margin:.9em 0 .3em;font-size:1rem;color:var(--acc)} .msg-a h4:first-child{margin-top:0}
+  .msg-a code{background:var(--card);padding:1px 5px;border-radius:4px;font-size:.88em}
+  .msg-a small.src{display:block;color:var(--mut);margin-top:6px}
+  .status{color:var(--mut);font-size:.88rem;display:flex;align-items:center;gap:8px}
+  .dots{display:inline-flex;gap:3px} .dots i{width:6px;height:6px;border-radius:50%;background:var(--mut);animation:b 1.2s infinite ease-in-out}
+  .dots i:nth-child(2){animation-delay:.15s} .dots i:nth-child(3){animation-delay:.3s}
+  @keyframes b{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+  .cursor::after{content:"▍";color:var(--acc);margin-left:1px;animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .empty{text-align:center;color:var(--mut);padding:18px 8px 6px}
+  .empty b{display:block;color:var(--ink);font-size:1.05rem;margin-bottom:2px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .chips button{width:auto;background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:6px 12px;font-weight:400;font-size:.88rem;border-radius:999px}
+  .chips button:hover{border-color:var(--acc)}
+  .ask{display:flex;gap:8px;align-items:flex-end;border:1px solid var(--line);border-radius:14px;padding:6px;background:var(--bg)}
+  .ask:focus-within{border-color:var(--acc)}
+  .ask textarea{flex:1;border:0;background:transparent;resize:none;max-height:140px;padding:8px 10px;font:inherit;color:var(--ink);outline:none}
+  .ask button{width:auto;padding:8px 16px;border-radius:10px}
   .ghost{background:transparent!important;color:var(--mut)!important;border:1px solid var(--line)!important;padding:4px 10px!important;font-weight:400!important;font-size:.8rem}
-  .msg-a p{margin:0 0 .5em} .msg-a ul{margin:.2em 0 .5em;padding-left:20px} .typing{color:var(--mut);font-style:italic}
-  .msg-u,.msg-a{padding:8px 12px;border-radius:10px;margin:6px 0;max-width:90%}
-  .msg-u{white-space:pre-wrap}
-  .msg-u{background:var(--acc);color:#fff;margin-left:auto;width:fit-content}
-  .msg-a{background:var(--bg);border:1px solid var(--line)} .msg-a small{display:block;color:var(--mut);margin-top:4px}
-  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-  .chips button{width:auto;background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:4px 10px;font-weight:400;font-size:.85rem}
   .cur{color:var(--acc);font-weight:600}
   .chart svg{display:block;width:100%;max-width:460px;margin:0 auto}
   .chart .ln{stroke:var(--acc);stroke-width:1.5;fill:none}
@@ -99,10 +118,10 @@
       <div class="hint">Each sign is split into 150 nadi amshas of 0°12′. “Nadi #” is the amsha within the sign (1–150); the range is its start–end degree inside the sign.</div></div>
     <div class="card"><h2>House-wise placement</h2><div class="scroll"><table id="houses"></table></div>
       <div class="hint">Houses are KP (Placidus) cusps. “H#” is the house the lord currently sits in. Star lord = nakshatra lord of the cusp; sub lord = KP sub of the cusp.</div></div>
-    <div class="card" id="askcard"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="margin:0">Chat with your chart</h2><button type="button" id="clearchat" class="ghost">Clear chat</button></div>
+    <div class="card chat" id="askcard"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="margin:0">Chat with your chart</h2><button type="button" id="clearchat" class="ghost">New chat</button></div>
       <div id="log" class="log"></div>
       <div class="chips" id="chips"></div>
-      <form id="askf" class="ask"><input id="q" placeholder="Ask anything about your chart…" autocomplete="off"><button type="submit" id="askbtn">Send</button></form>
+      <form id="askf" class="ask"><textarea id="q" rows="1" placeholder="Ask anything about your chart…  (Enter to send, Shift+Enter for a new line)"></textarea><button type="submit" id="askbtn">Send</button></form>
       <div id="asknote" class="hint"></div></div>
     <div class="card" id="interp"><h2>Interpretation</h2><div id="interpbody"></div>
       <div class="hint">Automatically generated from traditional rules. It is general guidance, not a prediction or a substitute for a consultation.</div></div>
@@ -166,22 +185,30 @@ $('pdel').onclick=async()=>{
   await fetch('/profiles/'+id,{method:'DELETE'}); if(String(currentId)===id){currentId=null;setAsk()} loadList();
 };
 const EX=['Give me an overview of my chart','How is my career outlook?','What does my 7th house say about marriage?','What is my current dasha and what does it mean?','How do current transits affect me?','Which remedies suit my chart?'];
-function md(t){ // tiny, safe markdown: **bold**, bullets, paragraphs
+function md(t){ // tiny, safe markdown: headings, **bold**, `code`, bullets, paragraphs
   const inl=x=>esc(x).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`(.+?)`/g,'<code>$1</code>');
   let html='',inList=false;
   t.split('\n').forEach(line=>{
     const m=line.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)/),h=line.match(/^#{1,4}\s+(.*)/);
     if(m){if(!inList){html+='<ul>';inList=true}html+='<li>'+inl(m[1])+'</li>';return}
     if(inList){html+='</ul>';inList=false}
-    if(h)html+='<p><b>'+inl(h[1])+'</b></p>'; else if(line.trim())html+='<p>'+inl(line)+'</p>';
+    if(h)html+='<h4>'+inl(h[1])+'</h4>'; else if(line.trim())html+='<p>'+inl(line)+'</p>';
   });
   return html+(inList?'</ul>':'');
 }
-function bubble(role,text,note){
-  const d=document.createElement('div');d.className=role==='user'?'msg-u':'msg-a';
-  if(role==='user')d.textContent=text;else{d.innerHTML=md(text);if(note){const s=document.createElement('small');s.textContent=note;d.appendChild(s)}}
-  $('log').appendChild(d);$('log').scrollTop=1e9;return d;
+const nearBottom=()=>$('log').scrollHeight-$('log').scrollTop-$('log').clientHeight<80;
+const toBottom=()=>{$('log').scrollTop=$('log').scrollHeight};
+function addUser(text){
+  const r=document.createElement('div');r.className='row-u';const d=document.createElement('div');d.className='msg-u';d.textContent=text;
+  r.appendChild(d);$('log').appendChild(r);toBottom();
 }
+function addBot(text,note){
+  const r=document.createElement('div');r.className='row-a';
+  r.innerHTML='<div class="av">✦</div><div class="msg-a"></div>';
+  const d=r.lastChild;if(text!==undefined){d.innerHTML=md(text);if(note)d.insertAdjacentHTML('beforeend','<small class="src">'+esc(note)+'</small>')}
+  $('log').appendChild(r);toBottom();return d;
+}
+const THINK='<span class="status"><span class="dots"><i></i><i></i><i></i></span><span class="st">Thinking…</span></span>';
 async function setAsk(){
   $('log').innerHTML='';
   $('chips').innerHTML=EX.map(x=>'<button type="button">'+esc(x)+'</button>').join('');
@@ -191,20 +218,44 @@ async function setAsk(){
   if(!on)return;
   const id=currentId;
   try{const h=await (await fetch('/profiles/'+id+'/chat')).json();
-    if(id===currentId){h.forEach(m=>bubble(m.role,m.content));$('chips').hidden=h.length>0}}catch(e){}
+    if(id!==currentId)return;
+    h.forEach(m=>m.role==='user'?addUser(m.content):addBot(m.content));
+    $('chips').hidden=h.length>0;
+    if(!h.length)$('log').innerHTML='<div class="empty"><b>Ask me anything about this chart</b>Career, relationships, timing, transits, remedies — or pick a question below.</div>';
+  }catch(e){}
 }
-$('clearchat').onclick=async()=>{if(currentId===null||!confirm('Clear this conversation?'))return;await fetch('/profiles/'+currentId+'/chat',{method:'DELETE'});setAsk()};
+$('clearchat').onclick=async()=>{if(currentId===null||!confirm('Start a new conversation? The current one will be deleted.'))return;await fetch('/profiles/'+currentId+'/chat',{method:'DELETE'});setAsk()};
+$('q').addEventListener('input',()=>{$('q').style.height='auto';$('q').style.height=Math.min($('q').scrollHeight,140)+'px'});
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('askf').requestSubmit()}});
 $('askf').addEventListener('submit',async e=>{
-  e.preventDefault();const q=$('q').value.trim();if(!q||currentId===null)return;
-  const id=currentId;bubble('user',q);$('q').value='';$('chips').hidden=true;$('askbtn').disabled=true;$('q').disabled=true;
-  const wait=bubble('assistant','');wait.innerHTML='<span class="typing">Thinking…</span>';
+  e.preventDefault();const q=$('q').value.trim();if(!q||currentId===null||$('askbtn').disabled)return;
+  const id=currentId,empty=$('log').querySelector('.empty');if(empty)empty.remove();
+  addUser(q);$('q').value='';$('q').style.height='auto';$('chips').hidden=true;$('askbtn').disabled=true;
+  const bot=addBot();bot.innerHTML=THINK;
+  let text='',mode='llm',failed=false,started=false;
+  const paint=()=>{const stick=nearBottom();bot.innerHTML=md(text)+(started?'':'');bot.classList.add('cursor');if(stick)toBottom()};
   try{
-    const r=await fetch('/profiles/'+id+'/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q})});
-    const j=await r.json();wait.remove();
-    if(!r.ok)bubble('assistant','⚠ '+(j.detail||r.statusText));
-    else bubble('assistant',j.reply,j.mode==='lookup'?'from your chart data':'');
-  }catch(err){wait.remove();bubble('assistant','⚠ '+err.message)}
-  $('askbtn').disabled=false;$('q').disabled=false;$('q').focus();
+    const r=await fetch('/profiles/'+id+'/chat/stream',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q})});
+    if(!r.ok||!r.body)throw new Error((await r.json().catch(()=>({}))).detail||r.statusText);
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
+    for(;;){
+      const {value,done}=await rd.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});let i;
+      while((i=buf.indexOf('\n'))>=0){
+        const line=buf.slice(0,i).trim();buf=buf.slice(i+1);if(!line)continue;
+        const ev=JSON.parse(line);
+        if(ev.type==='status'){if(!text){const st=bot.querySelector('.st');if(st)st.textContent=ev.text}}
+        else if(ev.type==='delta'){text+=ev.text;if(text.trim()){started=true;paint()}}
+        else if(ev.type==='replace')text=ev.text;
+        else if(ev.type==='done')mode=ev.mode;
+        else if(ev.type==='error'){failed=true;text=ev.detail}
+      }
+    }
+  }catch(err){failed=true;text=err.message}
+  bot.classList.remove('cursor');
+  if(failed){bot.innerHTML='<p>⚠ '+esc(text||'Something went wrong.')+'</p>'}
+  else{bot.innerHTML=md(text)+(mode==='lookup'?'<small class="src">from your chart data</small>':mode==='cache'?'<small class="src">reused from an earlier answer today</small>':'')}
+  $('askbtn').disabled=false;$('q').focus();
 });
 loadList();
 
