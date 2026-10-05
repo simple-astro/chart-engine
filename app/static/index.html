@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jyotish Chart</title>
+<style>
+  :root{--bg:#f6f4ef;--card:#fff;--ink:#222;--mut:#6b6b6b;--acc:#7a3e9d;--line:#e4e0d8;--ok:#2e7d32}
+  @media (prefers-color-scheme:dark){:root{--bg:#17151c;--card:#221f2b;--ink:#eee;--mut:#a29fae;--acc:#b98be0;--line:#37333f}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding:24px 16px 64px}
+  h1{margin:0 0 4px;font-size:1.6rem} .sub{color:var(--mut);margin:0 0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px}
+  form{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .full{grid-column:1/-1}
+  label{display:block;font-size:.85rem;color:var(--mut);margin-bottom:4px}
+  input,select,button{font:inherit;width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+  button{background:var(--acc);color:#fff;border:0;font-weight:600;cursor:pointer}
+  button:disabled{opacity:.6;cursor:wait}
+  .row{display:flex;gap:8px} .row button{width:auto;white-space:nowrap}
+  .chk{display:flex;align-items:center;gap:8px} .chk input{width:auto}
+  .hint{font-size:.8rem;color:var(--mut);margin-top:4px}
+  .ok{color:var(--ok)} .err{color:#c62828}
+  .sugg{border:1px solid var(--line);border-radius:8px;margin-top:6px;overflow:hidden}
+  .sugg div{padding:8px 12px;cursor:pointer;background:var(--card)} .sugg div:hover{background:var(--bg)}
+  details.adv summary{cursor:pointer;color:var(--mut);font-size:.9rem}
+  table{width:100%;border-collapse:collapse;font-size:.92rem}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  th{color:var(--mut);font-weight:600;font-size:.8rem;text-transform:uppercase}
+  .scroll{overflow-x:auto}
+  h2{font-size:1.1rem;margin:0 0 12px}
+  .summary{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px}
+  .pill{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.9rem}
+  .pill b{color:var(--acc)}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .tabs button{width:auto;background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:6px 12px;font-weight:500}
+  .tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+  .tree{margin:0;padding-left:18px} .tree li{margin:2px 0}
+  .tree summary{cursor:pointer}
+  .cur{color:var(--acc);font-weight:600}
+  .chart{display:grid;grid-template-columns:repeat(4,1fr);gap:0;max-width:420px;border:2px solid var(--acc);margin:0 auto}
+  .chart div{min-height:88px;padding:4px 6px;border:1px solid var(--line);font-size:.78rem}
+  .chart .sg{color:var(--mut);font-size:.7rem;display:block}
+  .chart .asc{background:rgba(122,62,157,.12)}
+  .chart .mid{grid-column:2/4;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--mut);font-size:.9rem;background:var(--card)}
+  @media(max-width:600px){form{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Jyotish Chart</h1>
+  <p class="sub">Enter birth details to generate a Vedic (KP) birth chart.</p>
+
+  <div class="card">
+    <form id="f">
+      <div class="full"><label for="name">Name (optional)</label><input id="name" placeholder="e.g. Asha"></div>
+      <div><label for="dob">Date of birth</label><input id="dob" type="date" required></div>
+      <div><label for="tob">Time of birth</label><input id="tob" type="time" step="60" required>
+        <div class="chk hint"><input id="unk" type="checkbox"><label for="unk" style="margin:0">Birth time unknown (uses noon)</label></div></div>
+      <div class="full"><label for="place">Place of birth</label>
+        <div class="row"><input id="place" placeholder="Type a city, e.g. Delhi" autocomplete="off"><button type="button" id="find">Search</button></div>
+        <div id="sugg" class="sugg" hidden></div>
+        <div id="placeinfo" class="hint">Search and pick a city, or enter coordinates below.</div></div>
+      <div><label for="lat">Latitude</label><input id="lat" type="number" step="any" min="-90" max="90" required></div>
+      <div><label for="lon">Longitude</label><input id="lon" type="number" step="any" min="-180" max="180" required></div>
+      <div class="full"><label for="tz">Timezone (IANA)</label><input id="tz" placeholder="Asia/Kolkata" required></div>
+      <details class="adv full"><summary>Advanced options</summary>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
+          <div><label for="ayan">Ayanamsha</label><select id="ayan"><option value="krishnamurti">Krishnamurti (KP)</option><option value="lahiri">Lahiri</option></select></div>
+          <div><label for="node">Rahu/Ketu</label><select id="node"><option value="mean">Mean node</option><option value="true">True node</option></select></div>
+        </div></details>
+      <div class="full"><button id="go" type="submit">Generate chart</button><div id="msg" class="hint"></div></div>
+    </form>
+  </div>
+
+  <div id="out" hidden>
+    <div class="card"><div id="summary" class="summary"></div></div>
+    <div class="card"><h2>Rasi chart (D1)</h2><div id="chart" class="chart"></div></div>
+    <div class="card"><h2>Planets</h2><div class="scroll"><table id="grahas"></table></div></div>
+    <div class="card"><h2>Houses</h2><div class="scroll"><table id="houses"></table></div></div>
+    <div class="card"><h2>Vimshottari dasha</h2><div id="dasha"></div></div>
+    <div class="card"><h2>Divisional charts</h2><div id="vtabs" class="tabs"></div><div class="scroll"><table id="vtable"></table></div></div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dms=d=>{const x=Math.floor(d),m=Math.floor((d-x)*60);return x+'° '+String(m).padStart(2,'0')+'′'};
+const SIGNS=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+const ABBR={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'};
+try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){}
+
+// ----- place search (Open-Meteo geocoding: free, no key) -----
+async function search(){
+  const q=$('place').value.trim(); if(q.length<2)return;
+  $('placeinfo').textContent='Searching…';
+  try{
+    const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=en&name='+encodeURIComponent(q));
+    const j=await r.json(), list=j.results||[];
+    const box=$('sugg'); box.innerHTML='';
+    if(!list.length){box.hidden=true;$('placeinfo').textContent='No match. Enter coordinates and timezone manually.';return}
+    list.forEach(p=>{
+      const d=document.createElement('div');
+      d.textContent=[p.name,p.admin1,p.country].filter(Boolean).join(', ')+'  ('+p.latitude.toFixed(2)+', '+p.longitude.toFixed(2)+')';
+      d.onclick=()=>{ $('lat').value=p.latitude; $('lon').value=p.longitude; if(p.timezone)$('tz').value=p.timezone;
+        $('place').value=[p.name,p.admin1,p.country].filter(Boolean).join(', ');
+        box.hidden=true; $('placeinfo').innerHTML='<span class="ok">✓ Location set</span> — '+esc(p.timezone||'check timezone below'); };
+      box.appendChild(d);
+    });
+    box.hidden=false; $('placeinfo').textContent='Pick a result:';
+  }catch(e){$('placeinfo').textContent='Search unavailable (offline?). Enter coordinates manually.'}
+}
+$('find').onclick=search;
+$('place').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();search()}});
+
+// ----- submit -----
+$('f').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const body={name:$('name').value,dob:$('dob').value,tob:($('unk').checked?'12:00':$('tob').value)+':00',
+    lat:parseFloat($('lat').value),lon:parseFloat($('lon').value),tz_name:$('tz').value.trim(),
+    tob_unknown:$('unk').checked,ayanamsha:$('ayan').value,node_type:$('node').value};
+  if(body.tob.length>8)body.tob=body.tob.slice(0,8);
+  $('go').disabled=true;$('msg').className='hint';$('msg').textContent='Calculating…';
+  try{
+    const r=await fetch('/chart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    const j=await r.json();
+    if(!r.ok){const d=j.detail;throw new Error(Array.isArray(d)?d.map(x=>x.loc.slice(1).join('.')+': '+x.msg).join('; '):(d||r.statusText))}
+    render(j);$('msg').textContent='';
+    $('out').hidden=false;$('out').scrollIntoView({behavior:'smooth'});
+  }catch(err){$('msg').className='hint err';$('msg').textContent='Error: '+err.message}
+  finally{$('go').disabled=false}
+});
+
+function table(el,head,rows){
+  el.innerHTML='<thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody>';
+}
+const kp=k=>k?[k.star_lord,k.sub_lord].join(' / '):'';
+
+function render(c){
+  const m=c.meta,l=c.lagna;
+  $('summary').innerHTML=[
+    ['Lagna',l.sign+' '+dms(l.ascendant%30)],
+    ['Moon',c.grahas.Moon.sign+' · '+c.grahas.Moon.nakshatra+' pada '+c.grahas.Moon.pada],
+    ['Sun',c.grahas.Sun.sign],
+    ['Ayanamsha',m.ayanamsha+' '+m.ayanamsha_value.toFixed(2)+'°'],
+    ['Houses',m.house_system]
+  ].map(([a,b])=>'<span class="pill">'+a+': <b>'+esc(b)+'</b></span>').join('');
+
+  // South-Indian style chart: fixed sign boxes
+  const grid=[[11,0,1,2],[10,null,null,3],[9,null,null,4],[8,7,6,5]]; const byS={};
+  Object.entries(c.grahas).forEach(([n,g])=>{(byS[g.sign_index]=byS[g.sign_index]||[]).push(ABBR[n]+(g.retrograde?'ᴿ':''))});
+  let h='';
+  for(let r=0;r<4;r++)for(let k=0;k<4;k++){
+    const s=grid[r][k];
+    if(s===null){ if(r===1&&k===1)h+='<div class="mid">'+esc(m.name||'Rasi')+'<br>D1</div>'; continue }
+    h+='<div'+(s===l.sign_index?' class="asc"':'')+'><span class="sg">'+SIGNS[s].slice(0,3)+(s===l.sign_index?' · Asc':'')+'</span>'+(byS[s]||[]).join(' ')+'</div>';
+  }
+  $('chart').innerHTML=h;
+
+  table($('grahas'),['Planet','Sign','Degree','Nakshatra','Pada','House','KP star / sub','Notes'],
+    Object.entries(c.grahas).map(([n,g])=>[n,g.sign,dms(g.degrees_in_sign),g.nakshatra,g.pada,g.house,kp(g.kp),
+      [g.retrograde?'Retrograde':'',g.combust?'Combust':''].filter(Boolean).join(', ')]));
+  table($('houses'),['House','Sign','Degree','Lord','KP star / sub'],
+    c.houses.map(x=>[x.house,x.sign,dms(x.degrees_in_sign),x.sign_lord,kp(x.kp)]));
+
+  const now=Date.now(),fd=s=>new Date(s).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+  const node=(d,open)=>{const cur=now>=new Date(d.start)&&now<new Date(d.end);
+    const label='<span class="'+(cur?'cur':'')+'">'+d.lord+'</span> <small>'+fd(d.start)+' – '+fd(d.end)+(cur?' ◀ now':'')+'</small>';
+    if(!d.children||!d.children.length||d.level>=2)return '<li>'+label+'</li>';
+    return '<li><details'+(cur?' open':'')+'><summary>'+label+'</summary><ul class="tree">'+d.children.map(x=>node(x)).join('')+'</ul></details></li>'};
+  $('dasha').innerHTML='<ul class="tree">'+c.dasha.map(d=>node(d)).join('')+'</ul>';
+
+  const vt=$('vtabs');vt.innerHTML='';
+  Object.keys(c.vargas).forEach((k,i)=>{const b=document.createElement('button');b.type='button';b.textContent=k;
+    b.onclick=()=>{[...vt.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');
+      table($('vtable'),['Planet','Sign'],Object.entries(c.vargas[k]).map(([p,v])=>[p,v.sign||SIGNS[v.sign_index]]))};
+    vt.appendChild(b); if(i===0)b.click()});
+}
+</script>
+</body>
+</html>
