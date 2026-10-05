@@ -9,12 +9,14 @@ WORKDIR /app
 COPY pyproject.toml ./
 COPY app ./app
 COPY core ./core
-RUN pip install --no-cache-dir --prefix=/install .
+RUN pip install --no-cache-dir --prefix=/install ".[llm]"
 
 FROM python:3.11-slim AS runtime
 RUN useradd --create-home --uid 10001 appuser
 WORKDIR /app
 COPY --from=builder /install /usr/local
+RUN mkdir /data && chown appuser /data
+ENV CHART_DB_PATH=/data/profiles.db
 USER appuser
 EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \

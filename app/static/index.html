@@ -39,6 +39,13 @@
   .tree{margin:0;padding-left:18px} .tree li{margin:2px 0}
   .tree summary{cursor:pointer}
   .sec{margin-bottom:10px} .sec ul{margin:6px 0 0;padding-left:20px} .sec li{margin:4px 0}
+  .ask{display:flex;gap:8px} .ask input{flex:1} .ask button{width:auto}
+  .log{max-height:420px;overflow:auto;margin-bottom:10px}
+  .msg-u,.msg-a{padding:8px 12px;border-radius:10px;margin:6px 0;white-space:pre-wrap;max-width:90%}
+  .msg-u{background:var(--acc);color:#fff;margin-left:auto;width:fit-content}
+  .msg-a{background:var(--bg);border:1px solid var(--line)} .msg-a small{display:block;color:var(--mut);margin-top:4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .chips button{width:auto;background:var(--bg);color:var(--ink);border:1px solid var(--line);padding:4px 10px;font-weight:400;font-size:.85rem}
   .cur{color:var(--acc);font-weight:600}
   .chart svg{display:block;width:100%;max-width:460px;margin:0 auto}
   .chart .ln{stroke:var(--acc);stroke-width:1.5;fill:none}
@@ -52,6 +59,11 @@
 <div class="wrap">
   <h1>Jyotish Chart</h1>
   <p class="sub">Enter birth details to generate a Vedic (KP) birth chart.</p>
+
+  <div class="card" id="saved" hidden>
+    <label for="plist">Saved profiles</label>
+    <div class="row"><select id="plist"></select><button type="button" id="pload">Load</button><button type="button" id="pdel" style="background:#c62828">Delete</button></div>
+  </div>
 
   <div class="card">
     <form id="f">
@@ -71,6 +83,7 @@
           <div><label for="ayan">Ayanamsha</label><select id="ayan"><option value="krishnamurti">Krishnamurti (KP)</option><option value="lahiri">Lahiri</option></select></div>
           <div><label for="node">Rahu/Ketu</label><select id="node"><option value="mean">Mean node</option><option value="true">True node</option></select></div>
         </div></details>
+      <div class="full chk"><input id="save" type="checkbox" checked><label for="save" style="margin:0">Save this profile so I can ask questions about it later</label></div>
       <div class="full"><button id="go" type="submit">Generate chart</button><div id="msg" class="hint"></div></div>
     </form>
   </div>
@@ -83,6 +96,11 @@
       <div class="hint">Each sign is split into 150 nadi amshas of 0°12′. “Nadi #” is the amsha within the sign (1–150); the range is its start–end degree inside the sign.</div></div>
     <div class="card"><h2>House-wise placement</h2><div class="scroll"><table id="houses"></table></div>
       <div class="hint">Houses are KP (Placidus) cusps. “H#” is the house the lord currently sits in. Star lord = nakshatra lord of the cusp; sub lord = KP sub of the cusp.</div></div>
+    <div class="card" id="askcard"><h2>Ask about this chart</h2>
+      <div class="chips" id="chips"></div>
+      <div id="log" class="log"></div>
+      <form id="askf" class="ask"><input id="q" placeholder="e.g. Where is my Moon? · What is my current dasha? · How is my career outlook?" autocomplete="off"><button type="submit" id="askbtn">Ask</button></form>
+      <div id="asknote" class="hint"></div></div>
     <div class="card" id="interp"><h2>Interpretation</h2><div id="interpbody"></div>
       <div class="hint">Automatically generated from traditional rules. It is general guidance, not a prediction or a substitute for a consultation.</div></div>
     <div class="card"><h2>Vimshottari dasha</h2><div id="dasha"></div></div>
@@ -122,6 +140,51 @@ async function search(){
 $('find').onclick=search;
 $('place').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();search()}});
 
+// ----- saved profiles & questions -----
+let currentId=null;
+async function loadList(select){
+  try{
+    const list=await (await fetch('/profiles')).json();
+    $('saved').hidden=!list.length;
+    $('plist').innerHTML=list.map(p=>'<option value="'+p.id+'">'+esc(p.name)+' — '+p.request.dob+' '+p.request.tob.slice(0,5)+'</option>').join('');
+    if(select)$('plist').value=select;
+  }catch(e){}
+}
+$('pload').onclick=async()=>{
+  const id=$('plist').value; if(!id)return;
+  const r=await fetch('/profiles/'+id); if(!r.ok)return;
+  const p=await r.json(),q=p.request;
+  $('name').value=q.name;$('dob').value=q.dob;$('tob').value=q.tob.slice(0,5);$('lat').value=q.lat;$('lon').value=q.lon;
+  $('tz').value=q.tz_name;$('unk').checked=q.tob_unknown;$('ayan').value=q.ayanamsha;$('node').value=q.node_type;
+  currentId=p.id;render(p.chart);setAsk();$('out').hidden=false;$('out').scrollIntoView({behavior:'smooth'});
+};
+$('pdel').onclick=async()=>{
+  const id=$('plist').value; if(!id||!confirm('Delete this saved profile?'))return;
+  await fetch('/profiles/'+id,{method:'DELETE'}); if(String(currentId)===id){currentId=null;setAsk()} loadList();
+};
+const EX=['Where is my Moon?','What is my current dasha?','Show house 7','List all planets','How is my career outlook?','What does my 7th house say about marriage?'];
+let hist=[];
+function setAsk(){
+  hist=[];$('log').innerHTML='';
+  $('chips').innerHTML=EX.map(x=>'<button type="button">'+x+'</button>').join('');
+  [...$('chips').children].forEach(b=>b.onclick=()=>{$('q').value=b.textContent;$('askf').requestSubmit()});
+  const on=currentId!==null;$('q').disabled=!on;$('askbtn').disabled=!on;
+  $('asknote').textContent=on?'':'Tick “Save this profile” and generate the chart to enable questions.';
+}
+$('askf').addEventListener('submit',async e=>{
+  e.preventDefault();const q=$('q').value.trim();if(!q||currentId===null)return;
+  const add=(c,t,m)=>{const d=document.createElement('div');d.className=c;d.textContent=t;if(m){const s=document.createElement('small');s.textContent=m;d.appendChild(s)}$('log').appendChild(d);$('log').scrollTop=1e9;return d};
+  add('msg-u',q);$('q').value='';$('askbtn').disabled=true;const wait=add('msg-a','Thinking…');
+  try{
+    const r=await fetch('/profiles/'+currentId+'/ask',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,history:hist})});
+    const j=await r.json();wait.remove();
+    if(!r.ok)add('msg-a','⚠ '+(j.detail||r.statusText));
+    else{add('msg-a',j.answer,j.mode==='lookup'?'from your chart data':'AI interpretation');hist.push({role:'user',content:q},{role:'assistant',content:j.answer})}
+  }catch(err){wait.remove();add('msg-a','⚠ '+err.message)}
+  $('askbtn').disabled=false;$('q').focus();
+});
+loadList();
+
 // ----- submit -----
 $('f').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -131,10 +194,11 @@ $('f').addEventListener('submit',async e=>{
   if(body.tob.length>8)body.tob=body.tob.slice(0,8);
   $('go').disabled=true;$('msg').className='hint';$('msg').textContent='Calculating…';
   try{
-    const r=await fetch('/chart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    const r=await fetch($('save').checked?'/profiles':'/chart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json();
     if(!r.ok){const d=j.detail;throw new Error(Array.isArray(d)?d.map(x=>x.loc.slice(1).join('.')+': '+x.msg).join('; '):(d||r.statusText))}
-    render(j);$('msg').textContent='';
+    if($('save').checked){currentId=j.id;render(j.chart);loadList(j.id)}else{currentId=null;render(j)}
+    setAsk();$('msg').textContent='';
     $('out').hidden=false;$('out').scrollIntoView({behavior:'smooth'});
   }catch(err){$('msg').className='hint err';$('msg').textContent='Error: '+err.message}
   finally{$('go').disabled=false}
