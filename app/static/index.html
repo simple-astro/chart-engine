@@ -38,12 +38,13 @@
   .tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
   .tree{margin:0;padding-left:18px} .tree li{margin:2px 0}
   .tree summary{cursor:pointer}
+  .sec{margin-bottom:10px} .sec ul{margin:6px 0 0;padding-left:20px} .sec li{margin:4px 0}
   .cur{color:var(--acc);font-weight:600}
-  .chart{display:grid;grid-template-columns:repeat(4,1fr);gap:0;max-width:420px;border:2px solid var(--acc);margin:0 auto}
-  .chart div{min-height:88px;padding:4px 6px;border:1px solid var(--line);font-size:.78rem}
-  .chart .sg{color:var(--mut);font-size:.7rem;display:block}
-  .chart .asc{background:rgba(122,62,157,.12)}
-  .chart .mid{grid-column:2/4;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--mut);font-size:.9rem;background:var(--card)}
+  .chart svg{display:block;width:100%;max-width:460px;margin:0 auto}
+  .chart .ln{stroke:var(--acc);stroke-width:1.5;fill:none}
+  .chart .sn{fill:var(--mut);font-size:11px}
+  .chart .pl{fill:var(--ink);font-size:14px;font-weight:600}
+  .chart .asc{fill:rgba(122,62,157,.14)}
   @media(max-width:600px){form{grid-template-columns:1fr}}
 </style>
 </head>
@@ -76,14 +77,20 @@
 
   <div id="out" hidden>
     <div class="card"><div id="summary" class="summary"></div></div>
-    <div class="card"><h2>Rasi chart (D1)</h2><div id="chart" class="chart"></div></div>
+    <div class="card"><h2>Rasi chart (D1) · North Indian</h2><div id="chart" class="chart"></div></div>
     <div class="card"><h2>Planets</h2><div class="scroll"><table id="grahas"></table></div></div>
-    <div class="card"><h2>Houses</h2><div class="scroll"><table id="houses"></table></div></div>
+    <div class="card"><h2>Nadi coordinates (Nadi amsha, 150 per sign)</h2><div class="scroll"><table id="nadi"></table></div>
+      <div class="hint">Each sign is split into 150 nadi amshas of 0°12′. “Nadi #” is the amsha within the sign (1–150); the range is its start–end degree inside the sign.</div></div>
+    <div class="card"><h2>House-wise placement</h2><div class="scroll"><table id="houses"></table></div>
+      <div class="hint">Houses are KP (Placidus) cusps. “H#” is the house the lord currently sits in. Star lord = nakshatra lord of the cusp; sub lord = KP sub of the cusp.</div></div>
+    <div class="card" id="interp"><h2>Interpretation</h2><div id="interpbody"></div>
+      <div class="hint">Automatically generated from traditional rules. It is general guidance, not a prediction or a substitute for a consultation.</div></div>
     <div class="card"><h2>Vimshottari dasha</h2><div id="dasha"></div></div>
     <div class="card"><h2>Divisional charts</h2><div id="vtabs" class="tabs"></div><div class="scroll"><table id="vtable"></table></div></div>
   </div>
 </div>
 
+<script src="/static/interp.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -149,22 +156,37 @@ function render(c){
     ['Houses',m.house_system]
   ].map(([a,b])=>'<span class="pill">'+a+': <b>'+esc(b)+'</b></span>').join('');
 
-  // South-Indian style chart: fixed sign boxes
-  const grid=[[11,0,1,2],[10,null,null,3],[9,null,null,4],[8,7,6,5]]; const byS={};
-  Object.entries(c.grahas).forEach(([n,g])=>{(byS[g.sign_index]=byS[g.sign_index]||[]).push(ABBR[n]+(g.retrograde?'ᴿ':''))});
-  let h='';
-  for(let r=0;r<4;r++)for(let k=0;k<4;k++){
-    const s=grid[r][k];
-    if(s===null){ if(r===1&&k===1)h+='<div class="mid">'+esc(m.name||'Rasi')+'<br>D1</div>'; continue }
-    h+='<div'+(s===l.sign_index?' class="asc"':'')+'><span class="sg">'+SIGNS[s].slice(0,3)+(s===l.sign_index?' · Asc':'')+'</span>'+(byS[s]||[]).join(' ')+'</div>';
-  }
-  $('chart').innerHTML=h;
+  // North Indian chart: houses are fixed in the diamond, signs rotate with the lagna
+  const byH={};
+  Object.entries(c.grahas).forEach(([n,g])=>{const h=(g.sign_index-l.sign_index+12)%12;(byH[h]=byH[h]||[]).push(ABBR[n]+(g.retrograde?'ᴿ':''))});
+  const P=[[200,95],[100,45],[45,100],[95,200],[45,300],[100,355],[200,305],[300,355],[355,300],[305,200],[355,100],[300,45]]; // house 1..12 label centres
+  let v='<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">'+
+    '<polygon class="asc" points="200,0 300,100 200,200 100,100"/>'+
+    '<rect class="ln" x="1" y="1" width="398" height="398"/>'+
+    '<path class="ln" d="M0 0L400 400M400 0L0 400M200 0L400 200L200 400L0 200Z"/>';
+  P.forEach(([x,y],h)=>{
+    const sg=(l.sign_index+h)%12, pls=byH[h]||[];
+    v+='<text class="sn" x="'+x+'" y="'+(y-(pls.length?12:-4))+'" text-anchor="middle">'+(sg+1)+'</text>';
+    for(let i=0;i<pls.length;i+=2) v+='<text class="pl" x="'+x+'" y="'+(y+6+i*8)+'" text-anchor="middle">'+pls.slice(i,i+2).join(' ')+'</text>';
+  });
+  $('chart').innerHTML=v+'</svg>';
 
-  table($('grahas'),['Planet','Sign','Degree','Nakshatra','Pada','House','KP star / sub','Notes'],
-    Object.entries(c.grahas).map(([n,g])=>[n,g.sign,dms(g.degrees_in_sign),g.nakshatra,g.pada,g.house,kp(g.kp),
+  const nadiRow=(n,sign,deg)=>{const k=Math.min(150,Math.floor(deg*5+1e-9)+1),a=(k-1)*12,e=k*12,f=x=>Math.floor(x/60)+'° '+String(x%60).padStart(2,'0')+'′';
+    return [n,sign,dms(deg),'<b>'+k+'</b> / 150',f(a)+' – '+f(e)]};
+  table($('nadi'),['Point','Sign','Degree','Nadi #','Nadi range in sign'],
+    [nadiRow('Lagna',l.sign,l.ascendant%30)].concat(Object.entries(c.grahas).map(([n,g])=>nadiRow(n,g.sign,g.degrees_in_sign))));
+
+  const H=n=>c.grahas[n]?c.grahas[n].house:'?', at=n=>n?n+' <small>→ H'+H(n)+'</small>':'';
+  table($('grahas'),['Planet','Sign','Degree','Nakshatra','Pada','House','Sign lord','Star lord','Sub lord','Notes'],
+    Object.entries(c.grahas).map(([n,g])=>[n,g.sign,dms(g.degrees_in_sign),g.nakshatra,g.pada,'H'+g.house,
+      at(g.kp.sign_lord),at(g.kp.star_lord),at(g.kp.sub_lord),
       [g.retrograde?'Retrograde':'',g.combust?'Combust':''].filter(Boolean).join(', ')]));
-  table($('houses'),['House','Sign','Degree','Lord','KP star / sub'],
-    c.houses.map(x=>[x.house,x.sign,dms(x.degrees_in_sign),x.sign_lord,kp(x.kp)]));
+  table($('houses'),['House','Sign','Planets in house','House lord','Star lord','Sub lord'],
+    c.houses.map(x=>{const inH=Object.entries(c.grahas).filter(([,g])=>g.house===x.house).map(([n])=>n);
+      return ['<b>H'+x.house+'</b>',x.sign+' <small>'+dms(x.degrees_in_sign)+'</small>',inH.join(', ')||'—',
+        at(x.sign_lord),at(x.kp.star_lord),at(x.kp.sub_lord)]}));
+
+  $('interpbody').innerHTML=window.interpret(c).map(sec=>'<details class="sec" open><summary><b>'+sec.title+'</b></summary><ul>'+sec.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></details>').join('');
 
   const now=Date.now(),fd=s=>new Date(s).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
   const node=(d,open)=>{const cur=now>=new Date(d.start)&&now<new Date(d.end);

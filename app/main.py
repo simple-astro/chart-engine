@@ -12,6 +12,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.routes import router
 from core import ephemeris
@@ -34,9 +35,12 @@ app = FastAPI(
 
 app.include_router(router)
 
-_INDEX = Path(__file__).parent / "static" / "index.html"
+_STATIC = Path(__file__).parent / "static"
+_INDEX = _STATIC / "index.html"
 
 
 @app.get("/", include_in_schema=False)
 async def index() -> FileResponse:
     return FileResponse(_INDEX)
+
+app.mount("/static", StaticFiles(directory=_STATIC), name="static")
