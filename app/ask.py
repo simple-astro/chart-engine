@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from datetime import datetime, timezone
 
@@ -11,7 +10,6 @@ SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpi
          "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
 ORD = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5, "sixth": 6, "seventh": 7,
        "eighth": 8, "ninth": 9, "tenth": 10, "eleventh": 11, "twelfth": 12}
-DEFAULT_MODEL = "claude-sonnet-5-5"
 
 
 def _dms(d: float) -> str:
@@ -82,7 +80,7 @@ def lookup(chart: dict, q: str) -> str | None:
     return None
 
 
-def _llm_context(profile: dict) -> str:
+def llm_context(profile: dict) -> str:
     chart = profile["chart"]
     md, ad = current_dasha(chart)
     slim_dasha = [{"lord": d["lord"], "start": d["start"][:10], "end": d["end"][:10],
@@ -96,32 +94,3 @@ def _llm_context(profile: dict) -> str:
         "today": datetime.now(timezone.utc).date().isoformat(),
     }
     return json.dumps(data, separators=(",", ":"))
-
-
-SYSTEM = (
-    "You are a Vedic astrology (Jyotish, KP-aware) assistant. Answer the user's question using ONLY "
-    "the birth chart data below; cite the specific placements, lords, KP significators and dasha "
-    "periods you rely on. Be concrete but honest: astrology is interpretive, so frame timing and "
-    "outcomes as tendencies, never certainties, and do not give medical, legal or financial advice. "
-    "If the data cannot answer the question, say so. Keep answers concise.\n\nCHART DATA (JSON):\n"
-)
-
-
-def ask_llm(profile: dict, question: str, history: list[dict]) -> str:
-    key = os.environ.get("ANTHROPIC_API_KEY")
-    if not key:
-        raise RuntimeError("ANTHROPIC_API_KEY is not set on the server, so open-ended questions are unavailable. "
-                           "Data lookups (e.g. 'where is my Moon?', 'current dasha') still work.")
-    try:
-        import anthropic
-    except ImportError as exc:
-        raise RuntimeError("The 'anthropic' package is not installed (pip install -e '.[llm]').") from exc
-    client = anthropic.Anthropic(api_key=key)
-    msgs = [{"role": h["role"], "content": h["content"]} for h in history[-6:]
-            if h.get("role") in ("user", "assistant") and h.get("content")]
-    msgs.append({"role": "user", "content": question})
-    resp = client.messages.create(
-        model=os.environ.get("CHART_LLM_MODEL", DEFAULT_MODEL), max_tokens=1024,
-        system=SYSTEM + _llm_context(profile), messages=msgs,
-    )
-    return "".join(b.text for b in resp.content if b.type == "text").strip()

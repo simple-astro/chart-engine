@@ -28,6 +28,14 @@ def _connect() -> sqlite3.Connection:
         " chart TEXT NOT NULL,"
         " created_at TEXT NOT NULL)"
     )
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS chat_messages ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        " profile_id INTEGER NOT NULL,"
+        " role TEXT NOT NULL,"
+        " content TEXT NOT NULL,"
+        " created_at TEXT NOT NULL)"
+    )
     return conn
 
 
@@ -64,4 +72,29 @@ def get(profile_id: int) -> dict | None:
 
 def delete(profile_id: int) -> bool:
     with _lock, _connect() as conn:
+        conn.execute("DELETE FROM chat_messages WHERE profile_id = ?", (profile_id,))
         return conn.execute("DELETE FROM profiles WHERE id = ?", (profile_id,)).rowcount > 0
+
+
+def add_message(profile_id: int, role: str, content: str) -> None:
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with _lock, _connect() as conn:
+        conn.execute(
+            "INSERT INTO chat_messages (profile_id, role, content, created_at) VALUES (?, ?, ?, ?)",
+            (profile_id, role, content, now),
+        )
+
+
+def get_messages(profile_id: int, limit: int | None = None) -> list[dict]:
+    with _lock, _connect() as conn:
+        rows = conn.execute(
+            "SELECT role, content, created_at FROM chat_messages WHERE profile_id = ? ORDER BY id",
+            (profile_id,),
+        ).fetchall()
+    out = [dict(r) for r in rows]
+    return out[-limit:] if limit else out
+
+
+def clear_messages(profile_id: int) -> None:
+    with _lock, _connect() as conn:
+        conn.execute("DELETE FROM chat_messages WHERE profile_id = ?", (profile_id,))

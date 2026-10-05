@@ -40,8 +40,11 @@
   .tree summary{cursor:pointer}
   .sec{margin-bottom:10px} .sec ul{margin:6px 0 0;padding-left:20px} .sec li{margin:4px 0}
   .ask{display:flex;gap:8px} .ask input{flex:1} .ask button{width:auto}
-  .log{max-height:420px;overflow:auto;margin-bottom:10px}
-  .msg-u,.msg-a{padding:8px 12px;border-radius:10px;margin:6px 0;white-space:pre-wrap;max-width:90%}
+  .log{max-height:480px;min-height:120px;overflow:auto;margin-bottom:10px;padding-right:4px}
+  .ghost{background:transparent!important;color:var(--mut)!important;border:1px solid var(--line)!important;padding:4px 10px!important;font-weight:400!important;font-size:.8rem}
+  .msg-a p{margin:0 0 .5em} .msg-a ul{margin:.2em 0 .5em;padding-left:20px} .typing{color:var(--mut);font-style:italic}
+  .msg-u,.msg-a{padding:8px 12px;border-radius:10px;margin:6px 0;max-width:90%}
+  .msg-u{white-space:pre-wrap}
   .msg-u{background:var(--acc);color:#fff;margin-left:auto;width:fit-content}
   .msg-a{background:var(--bg);border:1px solid var(--line)} .msg-a small{display:block;color:var(--mut);margin-top:4px}
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
@@ -96,10 +99,10 @@
       <div class="hint">Each sign is split into 150 nadi amshas of 0°12′. “Nadi #” is the amsha within the sign (1–150); the range is its start–end degree inside the sign.</div></div>
     <div class="card"><h2>House-wise placement</h2><div class="scroll"><table id="houses"></table></div>
       <div class="hint">Houses are KP (Placidus) cusps. “H#” is the house the lord currently sits in. Star lord = nakshatra lord of the cusp; sub lord = KP sub of the cusp.</div></div>
-    <div class="card" id="askcard"><h2>Ask about this chart</h2>
-      <div class="chips" id="chips"></div>
+    <div class="card" id="askcard"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><h2 style="margin:0">Chat with your chart</h2><button type="button" id="clearchat" class="ghost">Clear chat</button></div>
       <div id="log" class="log"></div>
-      <form id="askf" class="ask"><input id="q" placeholder="e.g. Where is my Moon? · What is my current dasha? · How is my career outlook?" autocomplete="off"><button type="submit" id="askbtn">Ask</button></form>
+      <div class="chips" id="chips"></div>
+      <form id="askf" class="ask"><input id="q" placeholder="Ask anything about your chart…" autocomplete="off"><button type="submit" id="askbtn">Send</button></form>
       <div id="asknote" class="hint"></div></div>
     <div class="card" id="interp"><h2>Interpretation</h2><div id="interpbody"></div>
       <div class="hint">Automatically generated from traditional rules. It is general guidance, not a prediction or a substitute for a consultation.</div></div>
@@ -162,26 +165,46 @@ $('pdel').onclick=async()=>{
   const id=$('plist').value; if(!id||!confirm('Delete this saved profile?'))return;
   await fetch('/profiles/'+id,{method:'DELETE'}); if(String(currentId)===id){currentId=null;setAsk()} loadList();
 };
-const EX=['Where is my Moon?','What is my current dasha?','Show house 7','List all planets','How is my career outlook?','What does my 7th house say about marriage?'];
-let hist=[];
-function setAsk(){
-  hist=[];$('log').innerHTML='';
-  $('chips').innerHTML=EX.map(x=>'<button type="button">'+x+'</button>').join('');
-  [...$('chips').children].forEach(b=>b.onclick=()=>{$('q').value=b.textContent;$('askf').requestSubmit()});
-  const on=currentId!==null;$('q').disabled=!on;$('askbtn').disabled=!on;
-  $('asknote').textContent=on?'':'Tick “Save this profile” and generate the chart to enable questions.';
+const EX=['Give me an overview of my chart','How is my career outlook?','What does my 7th house say about marriage?','What is my current dasha and what does it mean?','How do current transits affect me?','Which remedies suit my chart?'];
+function md(t){ // tiny, safe markdown: **bold**, bullets, paragraphs
+  const inl=x=>esc(x).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`(.+?)`/g,'<code>$1</code>');
+  let html='',inList=false;
+  t.split('\n').forEach(line=>{
+    const m=line.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)/),h=line.match(/^#{1,4}\s+(.*)/);
+    if(m){if(!inList){html+='<ul>';inList=true}html+='<li>'+inl(m[1])+'</li>';return}
+    if(inList){html+='</ul>';inList=false}
+    if(h)html+='<p><b>'+inl(h[1])+'</b></p>'; else if(line.trim())html+='<p>'+inl(line)+'</p>';
+  });
+  return html+(inList?'</ul>':'');
 }
+function bubble(role,text,note){
+  const d=document.createElement('div');d.className=role==='user'?'msg-u':'msg-a';
+  if(role==='user')d.textContent=text;else{d.innerHTML=md(text);if(note){const s=document.createElement('small');s.textContent=note;d.appendChild(s)}}
+  $('log').appendChild(d);$('log').scrollTop=1e9;return d;
+}
+async function setAsk(){
+  $('log').innerHTML='';
+  $('chips').innerHTML=EX.map(x=>'<button type="button">'+esc(x)+'</button>').join('');
+  [...$('chips').children].forEach(b=>b.onclick=()=>{$('q').value=b.textContent;$('askf').requestSubmit()});
+  const on=currentId!==null;$('q').disabled=!on;$('askbtn').disabled=!on;$('clearchat').hidden=!on;
+  $('asknote').textContent=on?'':'Tick “Save this profile” and generate the chart to chat about it.';
+  if(!on)return;
+  const id=currentId;
+  try{const h=await (await fetch('/profiles/'+id+'/chat')).json();
+    if(id===currentId){h.forEach(m=>bubble(m.role,m.content));$('chips').hidden=h.length>0}}catch(e){}
+}
+$('clearchat').onclick=async()=>{if(currentId===null||!confirm('Clear this conversation?'))return;await fetch('/profiles/'+currentId+'/chat',{method:'DELETE'});setAsk()};
 $('askf').addEventListener('submit',async e=>{
   e.preventDefault();const q=$('q').value.trim();if(!q||currentId===null)return;
-  const add=(c,t,m)=>{const d=document.createElement('div');d.className=c;d.textContent=t;if(m){const s=document.createElement('small');s.textContent=m;d.appendChild(s)}$('log').appendChild(d);$('log').scrollTop=1e9;return d};
-  add('msg-u',q);$('q').value='';$('askbtn').disabled=true;const wait=add('msg-a','Thinking…');
+  const id=currentId;bubble('user',q);$('q').value='';$('chips').hidden=true;$('askbtn').disabled=true;$('q').disabled=true;
+  const wait=bubble('assistant','');wait.innerHTML='<span class="typing">Thinking…</span>';
   try{
-    const r=await fetch('/profiles/'+currentId+'/ask',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,history:hist})});
+    const r=await fetch('/profiles/'+id+'/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q})});
     const j=await r.json();wait.remove();
-    if(!r.ok)add('msg-a','⚠ '+(j.detail||r.statusText));
-    else{add('msg-a',j.answer,j.mode==='lookup'?'from your chart data':'AI interpretation');hist.push({role:'user',content:q},{role:'assistant',content:j.answer})}
-  }catch(err){wait.remove();add('msg-a','⚠ '+err.message)}
-  $('askbtn').disabled=false;$('q').focus();
+    if(!r.ok)bubble('assistant','⚠ '+(j.detail||r.statusText));
+    else bubble('assistant',j.reply,j.mode==='lookup'?'from your chart data':'');
+  }catch(err){wait.remove();bubble('assistant','⚠ '+err.message)}
+  $('askbtn').disabled=false;$('q').disabled=false;$('q').focus();
 });
 loadList();
 
