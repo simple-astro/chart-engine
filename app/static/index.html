@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SimpleJyotish — Your personal Jyotishi</title>
+<script>(function(){try{var t=localStorage.getItem("sj-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,11 +17,14 @@
     --soft:rgba(138,94,20,.09); --line:rgba(36,30,49,.12);
     --ok:#2e7d32; --bad:#c0392b;
     --shadow:0 1px 2px rgba(36,30,49,.05),0 10px 30px rgba(36,30,49,.08);
+    color-scheme:light;
     --glow:none; --r:18px;
     --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif;
     --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
   }
-  @media (prefers-color-scheme:dark){:root{
+  /* dark palette: follows the system unless the theme toggle has set data-theme */
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    color-scheme:dark;
     --bg:#0a0812; --bg2:#120e1f; --card:rgba(27,22,43,.72); --solid:#1b162b;
     --ink:#f1ecf7; --mut:#9f98b8;
     --acc:#e5bb72; --acc2:#b89bf5; --g1:#e8c178; --g2:#c79440;
@@ -29,6 +33,16 @@
     --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 40px rgba(0,0,0,.45);
     --glow:0 0 22px rgba(229,187,114,.22);
   }}
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#0a0812; --bg2:#120e1f; --card:rgba(27,22,43,.72); --solid:#1b162b;
+    --ink:#f1ecf7; --mut:#9f98b8;
+    --acc:#e5bb72; --acc2:#b89bf5; --g1:#e8c178; --g2:#c79440;
+    --soft:rgba(229,187,114,.11); --line:rgba(255,255,255,.1);
+    --ok:#6ee7a0; --bad:#ff8a80;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 40px rgba(0,0,0,.45);
+    --glow:0 0 22px rgba(229,187,114,.22);
+  }
   *{box-sizing:border-box}
   [hidden]{display:none!important}
   html{scroll-behavior:smooth}
@@ -37,7 +51,7 @@
                      radial-gradient(900px 500px at -12% 4%,var(--soft),transparent 60%)}
   /* starfield (dark only) */
   body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .4s}
-  @media (prefers-color-scheme:dark){body::before{opacity:1;
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body::before{opacity:1;
     background-image:
       radial-gradient(1.4px 1.4px at 12% 18%,rgba(255,255,255,.75),transparent),
       radial-gradient(1.2px 1.2px at 32% 62%,rgba(255,255,255,.5),transparent),
@@ -48,6 +62,17 @@
       radial-gradient(1.3px 1.3px at 46% 34%,rgba(255,255,255,.4),transparent),
       radial-gradient(1.1px 1.1px at 66% 90%,rgba(255,255,255,.45),transparent);
     animation:twinkle 7s ease-in-out infinite}}
+  :root[data-theme="dark"] body::before{opacity:1;
+    background-image:
+      radial-gradient(1.4px 1.4px at 12% 18%,rgba(255,255,255,.75),transparent),
+      radial-gradient(1.2px 1.2px at 32% 62%,rgba(255,255,255,.5),transparent),
+      radial-gradient(1.6px 1.6px at 58% 12%,rgba(232,193,120,.75),transparent),
+      radial-gradient(1.1px 1.1px at 74% 44%,rgba(255,255,255,.55),transparent),
+      radial-gradient(1.5px 1.5px at 88% 72%,rgba(255,255,255,.6),transparent),
+      radial-gradient(1.2px 1.2px at 22% 86%,rgba(184,155,245,.6),transparent),
+      radial-gradient(1.3px 1.3px at 46% 34%,rgba(255,255,255,.4),transparent),
+      radial-gradient(1.1px 1.1px at 66% 90%,rgba(255,255,255,.45),transparent);
+    animation:twinkle 7s ease-in-out infinite}
   @keyframes twinkle{0%,100%{opacity:.85}50%{opacity:.45}}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
   button,input,select,textarea{font:inherit;color:inherit}
@@ -77,7 +102,9 @@
   .btn.ghost:hover{border-color:var(--acc);color:var(--acc)}
   .icon{width:38px;height:38px;padding:0;display:grid;place-items:center;border-radius:11px;border:1px solid var(--line);
     background:var(--card);cursor:pointer;transition:.18s}
-  .icon:hover{border-color:var(--bad);color:var(--bad)}
+  .icon:hover{border-color:var(--acc);color:var(--acc)}
+  #pdel:hover{border-color:var(--bad);color:var(--bad)}
+  #themebtn{font-size:15px}
 
   main{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:30px 22px 130px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);backdrop-filter:blur(12px)}
@@ -89,7 +116,8 @@
   /* ---------- hero ---------- */
   .hero{position:relative;display:grid;grid-template-columns:1fr 1.02fr;gap:46px;align-items:center;padding:32px 0 10px}
   .wheel{position:absolute;left:-190px;top:50%;width:620px;height:620px;transform:translateY(-50%);z-index:-1;opacity:.28;pointer-events:none}
-  @media (prefers-color-scheme:dark){.wheel{opacity:.3}}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .wheel{opacity:.3}}
+  :root[data-theme="dark"] .wheel{opacity:.3}
   .wheel svg{width:100%;height:100%;animation:spin 180s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .wheel .ring1{fill:none;stroke:var(--acc);stroke-width:.7;opacity:.5}
@@ -272,6 +300,7 @@
     <select id="plist" aria-label="Saved profiles"></select>
     <button type="button" class="icon" id="pdel" title="Delete this saved profile" aria-label="Delete profile">🗑</button>
   </div>
+  <button type="button" class="icon" id="themebtn" title="Theme" aria-label="Theme"></button>
   <button type="button" class="btn ghost" id="matchbtn">♥ Match making</button>
   <button type="button" class="btn" id="newbtn">+ New chart</button>
 </div></header>
@@ -381,6 +410,24 @@ const SIGNS=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio',
 const ABBR={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'};
 try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){}
 
+// ----- theme: auto (system) -> light -> dark -----
+const MQ=matchMedia('(prefers-color-scheme:dark)');
+const themeMode=()=>document.documentElement.getAttribute('data-theme')||'auto';
+function paintTheme(){
+  const m=themeMode(), dark=m==='dark'||(m==='auto'&&MQ.matches);
+  $('themebtn').textContent=m==='auto'?'◐':dark?'☾':'☀';
+  const label=m==='auto'?'Theme: follows your system — click for light':m==='light'?'Theme: light — click for dark':'Theme: dark — click to follow your system';
+  $('themebtn').title=label;$('themebtn').setAttribute('aria-label',label);
+}
+$('themebtn').onclick=()=>{
+  const next={auto:'light',light:'dark',dark:'auto'}[themeMode()];
+  if(next==='auto'){document.documentElement.removeAttribute('data-theme');try{localStorage.removeItem('sj-theme')}catch(e){}}
+  else{document.documentElement.setAttribute('data-theme',next);try{localStorage.setItem('sj-theme',next)}catch(e){}}
+  paintTheme();
+};
+MQ.addEventListener('change',()=>{if(themeMode()==='auto')paintTheme()});
+paintTheme();
+
 // ----- views & tabs -----
 let hasChart=false;
 function hideAll(){$('viewForm').hidden=true;$('out').hidden=true;$('viewMatch').hidden=true}
@@ -429,8 +476,9 @@ async function loadList(select){
   }catch(e){return []}
 }
 async function loadProfile(id){
-  const r=await fetch('/profiles/'+id); if(!r.ok)return;
-  const p=await r.json(),q=p.request;
+  if(!id)return;  // guard: '/profiles/' is the list endpoint and would return an array
+  const r=await fetch('/profiles/'+encodeURIComponent(id)); if(!r.ok)return;
+  const p=await r.json(),q=p&&p.request; if(!q)return;
   $('name').value=q.name;$('dob').value=q.dob;$('tob').value=q.tob.slice(0,5);$('lat').value=q.lat;$('lon').value=q.lon;
   $('tz').value=q.tz_name;$('unk').checked=q.tob_unknown;$('ayan').value=q.ayanamsha;$('node').value=q.node_type;
   currentId=p.id;$('plist').value=p.id;render(p.chart,q);setAsk();showResults();
