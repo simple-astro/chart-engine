@@ -16,19 +16,24 @@ HISTORY_LIMIT = 6
 MAX_TOKENS = 1500
 
 SYSTEM = (
-    "You are a friendly, knowledgeable Vedic astrology (Jyotish, KP-aware) assistant chatting with the "
-    "owner of the birth chart below. Answer ANY question they ask about their chart: personality, "
-    "career, marriage, health tendencies, finances, education, dasha timing, transits, divisional "
-    "charts, panchang, remedies, or how astrological concepts work. Ground every answer in the chart "
-    "data and name the placements, lords, KP significators and dasha periods you rely on. For "
-    "questions about the present or future, call the tools (transits, transit events, panchang, "
-    "dasha detail, divisional charts) instead of guessing positions.\n"
-    "Length: HARD LIMIT of 300 words per reply, counting headings and bullets (aim for 120-180; never exceed 220). Lead with the direct answer, then the 3-5 most "
-    "relevant placements; skip exhaustive lists, and offer to go deeper on one point instead of covering everything.\n"
-    "Style: conversational, clear short bullets when helpful. Frame outcomes as "
-    "tendencies, never certainties; do not give medical, legal or financial advice, and gently "
-    "suggest a professional where appropriate. If the question is unrelated to astrology or the "
-    "chart, politely steer back. Today's date is given in the data.\n\nCHART DATA (JSON):\n"
+    "You are SimpleJyotish — a warm, knowledgeable Vedic astrology (Jyotish, KP-aware) assistant, chatting with "
+    "the owner of the birth chart below. SimpleJyotish was founded by Sukhdeep Singh, a Nadi astrology "
+    "practitioner since 2014, and exists so people have a trusted Jyotishi available at any hour, with no "
+    "appointment and no judgment.\n"
+    "Answer ANY question they ask about their kundli: personality, career, marriage, health tendencies, finances, "
+    "education, dasha timing, transits, muhurta, divisional charts, Lal Kitab upay, guna milan, or how a concept "
+    "works. Ground every answer in the chart data and name the placements, lords, KP significators and dasha "
+    "periods you rely on — never state a planetary position you have not been given. For questions about the "
+    "present or future, call the tools (transits, transit events, panchang, dasha detail, divisional charts, "
+    "Lal Kitab kundli) instead of guessing positions. For Lal Kitab questions call get_lal_kitab; for "
+    "compatibility or match-making call list_profiles then match_with_profile.\n"
+    "Length: HARD LIMIT of 300 words per reply, counting headings and bullets (aim for 120-180; never exceed 220). "
+    "Lead with the direct answer, then the 3-5 most relevant placements; skip exhaustive lists, and offer to go "
+    "deeper on one point instead of covering everything.\n"
+    "Style: warm and conversational, never stiff; clear short bullets when helpful. Frame outcomes as tendencies, "
+    "never certainties; do not give medical, legal or financial advice, and for a high-stakes or sensitive "
+    "decision say a review with the founding astrologer is worth it. If the question is unrelated to astrology or "
+    "the chart, politely steer back. Today's date is given in the data.\n\nCHART DATA (JSON):\n"
 )
 
 TOOLS = [
@@ -51,6 +56,20 @@ TOOLS = [
      "description": "Planet signs in a divisional chart such as D9 (navamsa), D10 (dasamsa), D7, D60.",
      "input_schema": {"type": "object", "properties": {"name": {"type": "string", "description": "e.g. D10"}},
                       "required": ["name"]}},
+    {"name": "get_lal_kitab",
+     "description": "The native's Lal Kitab kundli: house placements, pakka ghar/exalted/debilitated/sleeping "
+                    "planet status, debts (rin) and traditional remedies per planet. Use for any Lal Kitab question.",
+     "input_schema": {"type": "object", "properties": {}}},
+    {"name": "list_profiles",
+     "description": "Saved profiles (id, name, birth date) that can be used as a match-making partner.",
+     "input_schema": {"type": "object", "properties": {}}},
+    {"name": "match_with_profile",
+     "description": "Ashtakoota (36-point) Guna Milan and Manglik check between the native and another saved profile.",
+     "input_schema": {"type": "object", "properties": {
+         "partner_id": {"type": "integer", "description": "Profile id from list_profiles"},
+         "native_role": {"type": "string", "enum": ["groom", "bride"],
+                         "description": "Whether the native is the groom or the bride"}},
+         "required": ["partner_id", "native_role"]}},
     {"name": "get_dasha_detail",
      "description": "Antardasha/pratyantar periods inside one mahadasha.",
      "input_schema": {"type": "object", "properties": {
@@ -88,6 +107,17 @@ def run_tool(profile: dict, name: str, args: dict) -> dict:
         if key not in chart["vargas"]:
             return {"error": f"Unknown chart. Available: {', '.join(chart['vargas'])}"}
         return {key: chart["vargas"][key]}
+    if name == "get_lal_kitab":
+        from app import astro
+        return astro.lal_kitab_for(req)
+    if name == "list_profiles":
+        return {"profiles": [{"id": p["id"], "name": p["name"], "dob": p["request"]["dob"]}
+                             for p in storage.list_all() if p["id"] != profile["id"]]}
+    if name == "match_with_profile":
+        from app import astro
+        me, other = profile["id"], int(args["partner_id"])
+        groom, bride = (me, other) if args.get("native_role") == "groom" else (other, me)
+        return astro.match_for(groom, bride)
     if name == "get_dasha_detail":
         md = next((d for d in chart["dasha"] if d["lord"].lower() == str(args.get("mahadasha", "")).lower()), None)
         return md or {"error": "No such mahadasha in this chart"}
@@ -111,6 +141,9 @@ STATUS = {
     "get_panchang": "Looking up the panchang…",
     "get_divisional_chart": "Reading the divisional chart…",
     "get_dasha_detail": "Reading the dasha periods…",
+    "get_lal_kitab": "Reading your Lal Kitab kundli…",
+    "list_profiles": "Checking saved profiles…",
+    "match_with_profile": "Matching the two charts…",
 }
 
 

@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.astro import router as astro_router
 from app.profiles import router as profiles_router
 from app.profiles import usage_router
 from app.routes import router
@@ -42,7 +43,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Jyotish Chart Engine",
+    title="SimpleJyotish Chart Engine",
     version="0.1.0",
     description="Vedic chart computation (grahas, KP, vargas, dasha, panchang, transits). "
                 "Source offered under AGPL-3.0 per §13.",
@@ -51,6 +52,7 @@ app = FastAPI(
 
 app.include_router(router)
 app.include_router(profiles_router)
+app.include_router(astro_router)
 app.include_router(usage_router)
 
 _STATIC = Path(__file__).parent / "static"
