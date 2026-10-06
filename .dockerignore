@@ -6,3 +6,7 @@ __pycache__
 tests
 docs
 .superpowers
+.env
+.env.*
+data
+*.db

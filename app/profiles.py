@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import json
+import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app import chat, storage
+from app import access, chat, storage
 from app.routes import chart as compute_chart
 from app.schemas import ChartRequest
 
@@ -16,8 +17,10 @@ usage_router = APIRouter(tags=["usage"])
 
 
 @usage_router.get("/usage")
-def usage(recent: int = 20) -> dict:
-    """Token usage by request type (llm / cache / lookup) plus the latest requests."""
+def usage(request: Request, recent: int = 20) -> dict:
+    """Token usage by request type (llm / cache / lookup) plus the latest requests. Admin only."""
+    if not request.state.admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
     return storage.usage_summary(max(1, min(recent, 200)))
 
 
@@ -25,45 +28,61 @@ class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
 
 
-def _require(profile_id: int) -> dict:
-    p = storage.get(profile_id)
+def _owner(request: Request) -> str | None:
+    return request.state.owner
+
+
+def _require(profile_id: int, request: Request) -> dict:
+    p = storage.get(profile_id, _owner(request))
     if not p:
         raise HTTPException(status_code=404, detail="Profile not found")
     return p
 
 
+def _check_quota(request: Request) -> None:
+    """Daily caps on paid chat turns; active only when the tester gate is on."""
+    if not access.enabled():
+        return
+    per_tester = int(os.environ.get("CHAT_DAILY_LIMIT_PER_TESTER", "30"))
+    total = int(os.environ.get("CHAT_DAILY_LIMIT_TOTAL", "300"))
+    if storage.llm_requests_today(_owner(request)) >= per_tester or storage.llm_requests_today() >= total:
+        raise HTTPException(status_code=429, detail="You've reached today's question limit for the test version. "
+                                                    "Please come back tomorrow.")
+
+
 @router.post("")
-def create_profile(req: ChartRequest) -> dict:
+def create_profile(req: ChartRequest, request: Request) -> dict:
     chart = compute_chart(req)  # raises 422 on bad input
-    return storage.save(req.name or "Unnamed", req.model_dump(mode="json"), chart)
+    return storage.save(req.name or "Unnamed", req.model_dump(mode="json"), chart, owner=_owner(request))
 
 
 @router.get("")
-def list_profiles() -> list[dict]:
-    return storage.list_all()
+def list_profiles(request: Request) -> list[dict]:
+    return storage.list_all(_owner(request))
 
 
 @router.get("/{profile_id}")
-def get_profile(profile_id: int) -> dict:
-    return _require(profile_id)
+def get_profile(profile_id: int, request: Request) -> dict:
+    return _require(profile_id, request)
 
 
 @router.delete("/{profile_id}")
-def delete_profile(profile_id: int) -> dict:
-    if not storage.delete(profile_id):
+def delete_profile(profile_id: int, request: Request) -> dict:
+    if not storage.delete(profile_id, _owner(request)):
         raise HTTPException(status_code=404, detail="Profile not found")
     return {"deleted": profile_id}
 
 
 @router.get("/{profile_id}/chat")
-def chat_history(profile_id: int) -> list[dict]:
-    _require(profile_id)
+def chat_history(profile_id: int, request: Request) -> list[dict]:
+    _require(profile_id, request)
     return storage.get_messages(profile_id)
 
 
 @router.post("/{profile_id}/chat")
-def chat_send(profile_id: int, req: ChatRequest) -> dict:
-    profile = _require(profile_id)
+def chat_send(profile_id: int, req: ChatRequest, request: Request) -> dict:
+    profile = _require(profile_id, request)
+    _check_quota(request)
     try:
         return chat.chat(profile, req.message)
     except RuntimeError as exc:
@@ -73,9 +92,10 @@ def chat_send(profile_id: int, req: ChatRequest) -> dict:
 
 
 @router.post("/{profile_id}/chat/stream")
-def chat_stream(profile_id: int, req: ChatRequest) -> StreamingResponse:
+def chat_stream(profile_id: int, req: ChatRequest, request: Request) -> StreamingResponse:
     """Newline-delimited JSON events: status / delta / done / error."""
-    profile = _require(profile_id)
+    profile = _require(profile_id, request)
+    _check_quota(request)
 
     def gen():
         try:
@@ -89,7 +109,7 @@ def chat_stream(profile_id: int, req: ChatRequest) -> StreamingResponse:
 
 
 @router.delete("/{profile_id}/chat")
-def chat_clear(profile_id: int) -> dict:
-    _require(profile_id)
+def chat_clear(profile_id: int, request: Request) -> dict:
+    _require(profile_id, request)
     storage.clear_messages(profile_id)
     return {"cleared": profile_id}

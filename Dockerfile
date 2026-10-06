@@ -20,5 +20,6 @@ ENV CHART_DB_PATH=/data/profiles.db
 USER appuser
 EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/health').status==200 else 1)"
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+  CMD python -c "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:'+os.environ.get('PORT','8001')+'/health').status==200 else 1)"
+# Railway (and similar hosts) assign the port via $PORT.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}"]

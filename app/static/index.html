@@ -403,6 +403,7 @@
 
 <script src="/static/interp.js"></script>
 <script>
+{const f=window.fetch.bind(window);window.fetch=async(u,o)=>{const r=await f(u,o);if(r.status===401&&String(u).startsWith('/'))location.reload();return r}}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const dms=d=>{const x=Math.floor(d),m=Math.floor((d-x)*60);return x+'° '+String(m).padStart(2,'0')+'′'};

@@ -112,12 +112,12 @@ def run_tool(profile: dict, name: str, args: dict) -> dict:
         return astro.lal_kitab_for(req)
     if name == "list_profiles":
         return {"profiles": [{"id": p["id"], "name": p["name"], "dob": p["request"]["dob"]}
-                             for p in storage.list_all() if p["id"] != profile["id"]]}
+                             for p in storage.list_all(profile.get("owner")) if p["id"] != profile["id"]]}
     if name == "match_with_profile":
         from app import astro
         me, other = profile["id"], int(args["partner_id"])
         groom, bride = (me, other) if args.get("native_role") == "groom" else (other, me)
-        return astro.match_for(groom, bride)
+        return astro.match_for(groom, bride, profile.get("owner"))
     if name == "get_dasha_detail":
         md = next((d for d in chart["dasha"] if d["lord"].lower() == str(args.get("mahadasha", "")).lower()), None)
         return md or {"error": "No such mahadasha in this chart"}
@@ -235,7 +235,7 @@ def chat_events(profile: dict, message: str):
     if cached:
         storage.add_message(pid, "user", message)
         storage.add_message(pid, "assistant", cached)
-        storage.log_usage(pid, "cache", message, words=len(cached.split()))
+        storage.log_usage(pid, "cache", message, words=len(cached.split()), owner=profile.get("owner"))
         yield {"type": "delta", "text": cached}
         yield {"type": "done", "mode": "cache"}
         return
@@ -272,7 +272,7 @@ def chat_events(profile: dict, message: str):
     storage.add_message(pid, "assistant", text)
     storage.log_usage(pid, mode, message, model=use["model"], input_tokens=use["input"],
                       output_tokens=use["output"], cache_read=use["cache_read"], cache_write=use["cache_write"],
-                      tool_rounds=use["rounds"], words=len(text.split()))
+                      tool_rounds=use["rounds"], words=len(text.split()), owner=profile.get("owner"))
     if mode == "llm" and key:
         storage.cache_put(pid, key, today, text)
     yield {"type": "done", "mode": mode}

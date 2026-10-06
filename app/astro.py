@@ -1,7 +1,7 @@
 """Additional astrology branches: Lal Kitab and Ashtakoota match-making."""
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from app import storage
@@ -23,8 +23,8 @@ def lal_kitab_for(request: dict) -> dict:
     return lalkitab.compute_lal_kitab(compute_chart(req))
 
 
-def match_for(groom_id: int, bride_id: int) -> dict:
-    groom, bride = storage.get(groom_id), storage.get(bride_id)
+def match_for(groom_id: int, bride_id: int, owner: str | None = None) -> dict:
+    groom, bride = storage.get(groom_id, owner), storage.get(bride_id, owner)
     if not groom or not bride:
         raise HTTPException(status_code=404, detail="Profile not found")
     if groom_id == bride_id:
@@ -38,5 +38,5 @@ def lal_kitab(req: ChartRequest) -> dict:
 
 
 @router.post("/matchmaking")
-def match(req: MatchRequest) -> dict:
-    return match_for(req.groom_id, req.bride_id)
+def match(req: MatchRequest, request: Request) -> dict:
+    return match_for(req.groom_id, req.bride_id, request.state.owner)
