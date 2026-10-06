@@ -78,15 +78,37 @@
     });
     out.push({ title: 'House lords: where they sit', items: hl });
 
-    // 4. KP significations (house results by sub-lord promise)
+    // 4. KP promise by life area: the area's cusp sub-lord, judged by whether it
+    // signifies the standard KP supporting houses or the houses that oppose them.
     const sg = c.significators, kp = [];
-    for (const h of houses) {
+    const AREAS = [
+      { name: 'Career & job', cusp: 10, fav: [2, 6, 10, 11], neg: [5, 8, 12] },
+      { name: 'Marriage & partnership', cusp: 7, fav: [2, 7, 11], neg: [1, 6, 10] },
+      { name: 'Money & savings', cusp: 2, fav: [2, 6, 11], neg: [5, 8, 12] },
+      { name: 'Health & recovery', cusp: 1, fav: [1, 5, 11], neg: [6, 8, 12] },
+      { name: 'Children', cusp: 5, fav: [2, 5, 11], neg: [1, 4, 10] },
+      { name: 'Education', cusp: 4, fav: [4, 9, 11], neg: [3, 8] },
+      { name: 'Home & property', cusp: 4, fav: [4, 11, 12], neg: [3] },
+      { name: 'Living or working abroad', cusp: 12, fav: [3, 9, 12], neg: [2, 4, 11] },
+    ];
+    const VERDICT = {
+      strong: ['good', 'Strong', 'your chart clearly supports this.'],
+      good: ['good', 'Good', 'likely to happen; the timing depends on your daśā periods.'],
+      mixed: ['', 'Mixed', 'possible, but expect delays, conditions or some ups and downs.'],
+      effort: ['', 'Needs effort', 'not strongly indicated, so this area needs more effort and the right timing.'],
+    };
+    for (const a of AREAS) {
+      const h = houses.find(x => x.house === a.cusp);
       const sub = h.kp.sub_lord, sigs = (sg.by_planet[sub] || {}).houses || [];
-      const good = sigs.filter(x => x !== h.house).length;
-      kp.push(`<b>H${h.house} (${KEY[h.house]}):</b> cusp sub-lord ${sub} signifies houses ${sigs.join(', ') || '—'}` +
-        (sigs.includes(h.house) ? ` — it supports its own house, a positive promise.` : ` — it does not signify H${h.house} directly, so results come indirectly or later.`));
+      const fav = sigs.filter(x => a.fav.includes(x)).length, neg = sigs.filter(x => a.neg.includes(x)).length;
+      const v = fav >= 2 && neg === 0 ? 'strong' : fav > neg ? 'good' : fav > 0 ? 'mixed' : 'effort';
+      const [cls, label, text] = VERDICT[v];
+      kp.push(`<span class="badge ${cls}">${label}</span> <b>${a.name}:</b> ${text}` +
+        `<br><small>Why: the ${a.cusp}${{ 1: 'st', 2: 'nd', 3: 'rd' }[a.cusp] || 'th'} cusp sub-lord ${sub} signifies houses ${sigs.join(', ') || 'none'}; ` +
+        `${a.fav.join(', ')} support this, ${a.neg.join(', ')} work against it.</small>`);
     }
-    out.push({ title: 'KP view: promise of each house (cusp sub-lord)', items: kp });
+    kp.push('<small>Based on KP cusp sub-lord rules. A promise shows <i>whether</i> something is supported; <i>when</i> it happens depends on your daśā and transits.</small>');
+    out.push({ title: 'What your chart promises (KP)', items: kp });
 
     // 5. Strengths & flags
     const flags = [];
