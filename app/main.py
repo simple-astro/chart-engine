@@ -56,11 +56,13 @@ app.include_router(astro_router)
 app.include_router(usage_router)
 
 _STATIC = Path(__file__).parent / "static"
-_INDEX = _STATIC / "index.html"
+
+app.mount("/static", StaticFiles(directory=_STATIC), name="static")
 
 
 @app.get("/", include_in_schema=False)
 async def index() -> FileResponse:
-    return FileResponse(_INDEX)
-
-app.mount("/static", StaticFiles(directory=_STATIC), name="static")
+    index_path = _STATIC / "index.html"
+    if not index_path.exists():
+        return {"error": f"index.html not found at {index_path}"}
+    return FileResponse(index_path, media_type="text/html")
