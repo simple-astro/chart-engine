@@ -2,37 +2,21 @@
 
 Only this service links Swiss Ephemeris; the rest of the platform calls it over
 this internal HTTP API (FR-3.9).
+
+Stateless by design: it stores no user data and holds no third-party API keys, so
+there is nothing here to leak if it is ever reached from outside. Keep it on the
+internal network — the platform, not this service, owns users and their data.
 """
 from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
 
-from pathlib import Path
-
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 
 from app.astro import router as astro_router
-from app.profiles import router as profiles_router
-from app.profiles import usage_router
 from app.routes import router
 from core import ephemeris
-
-
-def _load_dotenv(path: Path = Path(".env")) -> None:
-    """Load KEY=VALUE lines from a local .env (git-ignored) without overriding real env vars."""
-    if not path.is_file():
-        return
-    for line in path.read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            k, v = line.split("=", 1)
-            os.environ.setdefault(k.strip(), v.strip().strip("\"'"))
-
-
-_load_dotenv()
 
 
 @asynccontextmanager
@@ -42,27 +26,20 @@ async def lifespan(app: FastAPI):
     yield
 
 
+# Interactive docs are useful locally but needlessly advertise the API surface in
+# production; ENV=production turns them off.
+_PROD = os.environ.get("ENV", "").lower() in ("production", "prod")
+
 app = FastAPI(
     title="SimpleJyotish Chart Engine",
     version="0.1.0",
     description="Vedic chart computation (grahas, KP, vargas, dasha, panchang, transits). "
                 "Source offered under AGPL-3.0 per §13.",
     lifespan=lifespan,
+    docs_url=None if _PROD else "/docs",
+    redoc_url=None if _PROD else "/redoc",
+    openapi_url=None if _PROD else "/openapi.json",
 )
 
 app.include_router(router)
-app.include_router(profiles_router)
 app.include_router(astro_router)
-app.include_router(usage_router)
-
-_STATIC = Path(__file__).parent / "static"
-
-app.mount("/static", StaticFiles(directory=_STATIC), name="static")
-
-
-@app.get("/", include_in_schema=False)
-async def index() -> FileResponse:
-    index_path = _STATIC / "index.html"
-    if not index_path.exists():
-        return {"error": f"index.html not found at {index_path}"}
-    return FileResponse(index_path, media_type="text/html")

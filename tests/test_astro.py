@@ -10,8 +10,7 @@ B = {"name": "B", "dob": "1992-11-02", "tob": "06:10:00", "lat": 19.076, "lon": 
 
 
 @pytest.fixture
-def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("CHART_DB_PATH", str(tmp_path / "p.db"))
+def client():
     return TestClient(app)
 
 
@@ -66,19 +65,27 @@ def test_lal_kitab_rules():
 def test_endpoints(client):
     lk = client.post("/lal-kitab", json=A).json()
     assert len(lk["planets"]) == 9 and lk["remedies"] and "Lahiri" in lk["convention"]
-    a = client.post("/profiles", json=A).json()["id"]
-    b = client.post("/profiles", json=B).json()["id"]
-    m = client.post("/matchmaking", json={"groom_id": a, "bride_id": b}).json()
+
+    m = client.post("/matchmaking", json={"groom": A, "bride": B}).json()
     assert 0 <= m["total"] <= 36 and len(m["kootas"]) == 8 and m["verdict"]
-    assert client.post("/matchmaking", json={"groom_id": a, "bride_id": a}).status_code == 422
-    assert client.post("/matchmaking", json={"groom_id": a, "bride_id": 999}).status_code == 404
+    assert m["groom"]["name"] == "A" and m["bride"]["name"] == "B"
+
+    # stateless: the same request twice gives the same answer and stores nothing
+    assert client.post("/matchmaking", json={"groom": A, "bride": B}).json()["total"] == m["total"]
+
+    bad = client.post("/matchmaking", json={"groom": A})
+    assert bad.status_code == 422
 
 
-def test_chat_tools(client):
-    from app import chat, storage
-    a = client.post("/profiles", json=A).json()["id"]
-    b = client.post("/profiles", json=B).json()["id"]
-    p = storage.get(a)
-    assert chat.run_tool(p, "get_lal_kitab", {})["planets"]
-    assert [x["id"] for x in chat.run_tool(p, "list_profiles", {})["profiles"]] == [b]
-    assert chat.run_tool(p, "match_with_profile", {"partner_id": b, "native_role": "groom"})["max"] == 36
+def test_lal_kitab_ignores_the_callers_ayanamsha(client):
+    """Lal Kitab is always judged on Lahiri, whatever the caller asks for."""
+    kp = client.post("/lal-kitab", json={**A, "ayanamsha": "krishnamurti"}).json()
+    lahiri = client.post("/lal-kitab", json={**A, "ayanamsha": "lahiri"}).json()
+    assert kp["planets"] == lahiri["planets"]
+
+
+def test_no_user_data_endpoints_remain(client):
+    """The prototype storage/chat surface must stay gone: it had no authentication."""
+    for method, path in [("get", "/profiles"), ("post", "/profiles"), ("get", "/profiles/1"),
+                         ("post", "/profiles/1/chat"), ("get", "/usage"), ("get", "/")]:
+        assert getattr(client, method)(path).status_code == 404, f"{method} {path} still served"

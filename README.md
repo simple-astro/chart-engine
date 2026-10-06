@@ -42,7 +42,14 @@ pytest -q
 | POST   | `/transits`  | Graha positions at an arbitrary datetime+location  |
 | POST   | `/panchang`  | Panchang for a date+location                        |
 | GET    | `/health`    | Liveness                                            |
+| POST   | `/transit-scan` | Ingresses, retrogrades and eclipses in a window  |
+| POST   | `/lal-kitab` | Lal Kitab kundli, debts and remedies (always Lahiri) |
+| POST   | `/matchmaking` | Ashtakoota guna milan + Manglik, from two birth records |
 | GET    | `/version`   | Engine version, swe version, active ayanamsha mode |
+
+Every endpoint is **stateless**: the request carries its own birth data, nothing is stored,
+and the service holds no third-party API keys. User data belongs to the calling platform.
+Set `ENV=production` to switch off `/docs`, `/redoc` and `/openapi.json`.
 
 ## Configuration
 
