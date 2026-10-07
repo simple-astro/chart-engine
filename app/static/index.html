@@ -364,6 +364,20 @@
   .kundli[open]>summary{margin-bottom:22px} .kundli[open] .chev{transform:rotate(225deg);margin-bottom:-4px}
   .phav{flex:none}
   @media (max-width:760px){.g2,.dd{grid-template-columns:1fr} .sukh{padding:22px 18px} .sukh h2{font-size:1.7rem} .gcard,.garea{padding:18px}}
+  /* KP timing */
+  .kpt{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;margin-bottom:12px}
+  .kpt button{flex:none;border:1px solid var(--line);background:var(--bg2);border-radius:99px;padding:7px 13px;font-size:.84rem;font-weight:600;color:var(--mut);cursor:pointer}
+  .kpt button.on{background:linear-gradient(140deg,var(--g1),var(--g2));color:#1a1322;border-color:transparent}
+  .kpp{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:14px;background:var(--bg2);border:1px solid var(--line)}
+  .kpp small{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut)} .kpp b{font:600 1.15rem var(--serif)}
+  .kpw{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .kpw>li{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;background:var(--bg2)}
+  .kpw>li.strong{border-left-color:var(--ok)} .kpw>li.favourable{border-left-color:color-mix(in srgb,var(--ok) 55%,var(--acc))}
+  .kpw>li.mixed{border-left-color:var(--acc)} .kpw>li.challenging{border-left-color:var(--bad)}
+  .kpw summary{list-style:none;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:10px 12px;cursor:pointer}
+  .kpw summary::-webkit-details-marker{display:none}
+  .kpd{font-weight:600;font-size:.88rem} .kpl{color:var(--mut);font-size:.84rem;flex:1} .kpw .badge{margin:0}
+  .kpw ul{margin:0;padding:0 14px 12px 30px;font-size:.84rem;line-height:1.5;color:var(--mut)} .kpw .kptr{color:var(--acc)}
   /* lord exchange */
   .xcard{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:8px 0;background:var(--bg2)}
   .xcard p{margin:8px 0} .xnone{border-style:dashed}
@@ -681,7 +695,7 @@
         <div class="hint">Numbers are signs (1 = Aries). Tap any planet to ask Sukh what it means for you.</div></aside>
       <div class="card panel">
         <nav class="tabs" id="tabs">
-          <button data-tab="interp" class="on">Reading</button><button data-tab="bhava">Interpretation</button><button data-tab="dpred">Dasha Prediction</button><button data-tab="muhurat">Muhurat</button><button data-tab="lucky">Lucky &amp; Remedies</button><button data-tab="xchg">Lord Exchange</button><button data-tab="akv">Ashtakavarga</button><button data-tab="planets">Planets</button><button data-tab="houses">Houses</button>
+          <button data-tab="interp" class="on">Reading</button><button data-tab="bhava">Interpretation</button><button data-tab="dpred">Dasha Prediction</button><button data-tab="muhurat">Muhurat</button><button data-tab="lucky">Lucky &amp; Remedies</button><button data-tab="kptime">KP Timing</button><button data-tab="xchg">Lord Exchange</button><button data-tab="akv">Ashtakavarga</button><button data-tab="planets">Planets</button><button data-tab="houses">Houses</button>
           <button data-tab="nadi">Nadi</button><button data-tab="lal">Lal Kitab</button><button data-tab="dasha">Dasha</button><button data-tab="vargas">Divisional</button>
         </nav>
         <div class="pane" id="t-interp"><div id="interpbody"></div>
@@ -692,6 +706,7 @@
           <div class="hint">Vimśottarī daśā. Open any sub-period to read it. Timing is broad; transits fine-tune when events happen.</div></div>
         <div class="pane" id="t-muhurat" hidden><div id="mbody"><div class="hint">Loading…</div></div>
           <div class="hint">Traditional panchang rules (tithi, weekday, nakshatra, yoga, karana) plus your own Tara and Chandra bala. For weddings and other major events, confirm the final muhurat with an astrologer.</div></div>
+        <div class="pane" id="t-kptime" hidden><div id="kptbody"></div></div>
         <div class="pane" id="t-xchg" hidden><div id="xbody"></div></div>
         <div class="pane" id="t-akv" hidden><div id="akvbody"></div></div>
         <div class="pane" id="t-lucky" hidden><div class="stats lucky" id="luckytiles"></div><div id="luckybody"></div>
@@ -731,6 +746,7 @@
 <script src="/static/strength.js?v=1"></script>
 <script src="/static/guide.js?v=5"></script>
 <script src="/static/tools.js?v=2"></script>
+<script src="/static/kptiming.js?v=1"></script>
 <script>
 {const f=window.fetch.bind(window);window.fetch=async(u,o)=>{const r=await f(u,o);if(r.status===401&&String(u).startsWith('/'))location.reload();return r}}
 const $=id=>document.getElementById(id);
@@ -773,6 +789,7 @@ $('cancel').onclick=()=>{editId=null;$('go').textContent='Generate chart';showRe
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.tab==='lal')loadLal();
   if(b.dataset.tab==='muhurat')loadMuhurat();
+  if(b.dataset.tab==='kptime'&&$('kptbody').dataset.pid!==String(currentId)){$('kptbody').dataset.pid=String(currentId);window.renderKpTiming($('kptbody'),currentId)}
   [...$('tabs').children].forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('.pane').forEach(p=>p.hidden=p.id!=='t-'+b.dataset.tab)});
 
@@ -1198,6 +1215,7 @@ function render(c,req){
       '<small>'+g.sign+' '+Math.floor(g.degrees_in_sign)+'°</small></span><em class="gka" aria-hidden="true">Ask</em></button>'}).join('');
   lastReq=req||null;lkLoaded=false;lastChart=c;MU.loaded=false;MU.data=null;MU.sel=0;
   if(!$('t-muhurat').hidden)loadMuhurat();
+  $('kptbody').dataset.pid='';if(!$('t-kptime').hidden){$('kptbody').dataset.pid=String(currentId);window.renderKpTiming($('kptbody'),currentId)}
   if(!$('t-lal').hidden)loadLal();
 
   const nadiRow=(n,sign,deg)=>{const k=Math.min(150,Math.floor(deg*5+1e-9)+1),a=(k-1)*12,e=k*12,f=x=>Math.floor(x/60)+'° '+String(x%60).padStart(2,'0')+'′';

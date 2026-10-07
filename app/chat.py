@@ -42,7 +42,10 @@ SYSTEM = (
     "those houses — then explain the balance (e.g. 'Saturn in the 7th delays marriage, but it is exalted and "
     "Jupiter aspects it, so marriage may come late and be very stable'). For questions about now or the coming "
     "months, anchor in the maha/antar daśā and transits_now. Use the dignity, drishti, yogas and Neecha Bhanga "
-    "exactly as given; never infer or contradict them. For upay follow remedy_guide: mantras and daan on the "
+    "exactly as given; never infer or contradict them. When a KP prediction is supplied (or fetched with "
+    "get_kp_prediction), it is the verdict: say whether the matter is promised and which windows are strong or "
+    "challenging exactly as computed, explain why through the star lord (what the period gives) and the sub lord "
+    "(whether it delivers) in plain words, and never upgrade or downgrade a window. For upay follow remedy_guide: mantras and daan on the "
     "planet's own day, and gemstones only from suitable_stones. "
     "For questions about the "
     "present or future, call the tools (transits, transit events, panchang, dasha detail, divisional charts, "
@@ -58,7 +61,7 @@ SYSTEM = (
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "synth-4"
+CONTEXT_VERSION = "kp-1"
 
 TOOLS = [
     {"name": "get_transits",
@@ -94,6 +97,13 @@ TOOLS = [
          "native_role": {"type": "string", "enum": ["groom", "bride"],
                          "description": "Whether the native is the groom or the bride"}},
          "required": ["partner_id", "native_role"]}},
+    {"name": "get_kp_prediction",
+     "description": "Computed KP verdicts for a life matter: whether it is promised and which dasha windows "
+                    "(maha/antar/pratyantar) are strong, favourable, mixed or challenging, with reasons.",
+     "input_schema": {"type": "object", "properties": {
+         "topic": {"type": "string", "enum": ["career", "marriage", "love", "money", "property", "foreign",
+                                              "children", "education", "health", "litigation"]},
+         "months": {"type": "integer", "description": "How far ahead, 1-60. Default 24."}}, "required": ["topic"]}},
     {"name": "get_dasha_detail",
      "description": "Antardasha/pratyantar periods inside one mahadasha.",
      "input_schema": {"type": "object", "properties": {
@@ -142,6 +152,10 @@ def run_tool(profile: dict, name: str, args: dict) -> dict:
         me, other = profile["id"], int(args["partner_id"])
         groom, bride = (me, other) if args.get("native_role") == "groom" else (other, me)
         return astro.match_for(groom, bride, profile.get("owner"))
+    if name == "get_kp_prediction":
+        from core import kp_predict
+        months = max(1, min(60, int(args.get("months") or 24)))
+        return {"brief": kp_predict.brief(kp_predict.predict(chart, str(args.get("topic")), months=months))}
     if name == "get_dasha_detail":
         md = next((d for d in chart["dasha"] if d["lord"].lower() == str(args.get("mahadasha", "")).lower()), None)
         if not md:
@@ -169,6 +183,7 @@ STATUS = {
     "get_panchang": "Looking up the panchang…",
     "get_divisional_chart": "Reading the divisional chart…",
     "get_dasha_detail": "Reading the dasha periods…",
+    "get_kp_prediction": "Working out the KP timing…",
     "get_lal_kitab": "Reading your Lal Kitab kundli…",
     "list_profiles": "Checking saved profiles…",
     "match_with_profile": "Matching the two charts…",
@@ -189,7 +204,7 @@ def events(profile: dict, history: list[dict], message: str):
     """Run one chat turn, yielding {"type": "status"|"delta", "text": ...} as it progresses."""
     client = _client()
     msgs = [{"role": m["role"], "content": m["content"]} for m in history[-HISTORY_LIMIT:]]
-    msgs.append({"role": "user", "content": message})
+    msgs.append({"role": "user", "content": message + kp_context(profile, message)})
     system = _system(profile)
     model = config.model()
     wrote = False
@@ -221,10 +236,20 @@ def events(profile: dict, history: list[dict], message: str):
                     out = run_tool(profile, b.name, b.input or {})
                 except Exception as exc:  # report tool failures to the model, not the user
                     out = {"error": str(exc)}
-                yield {"type": "tool_out", "data": out}
+                yield {"type": "tool_out", "data": out, "name": b.name, "args": b.input or {}}
                 results.append({"type": "tool_result", "tool_use_id": b.id, "content": _json(out)})
         msgs.append({"role": "user", "content": results})
     yield {"type": "delta", "text": "\n\nI couldn't finish looking that up. Please try a narrower question."}
+
+
+def kp_context(profile: dict, message: str) -> str:
+    """Computed KP verdicts for the matters the question is about, appended to the user turn (not stored)."""
+    from core import kp_predict
+    briefs = [kp_predict.brief(kp_predict.predict(profile["chart"], t)) for t in kp_predict.topics_for(message)]
+    if not briefs:
+        return ""
+    return ("\n\n[Computed KP prediction for this question — take every verdict and window date from here and "
+            "explain the reasons in plain words]\n" + "\n\n".join(briefs))
 
 
 def _system(profile: dict) -> list[dict]:
@@ -254,7 +279,11 @@ def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs
     """Check the answer against the chart; revise once, then drop any sentence that is still wrong.
     Yields status events and finally {"type": "checked", "text", "report", "usage"}."""
     from app import factcheck, synthesis
-    facts = factcheck.facts_from(synthesis.build(profile), profile["chart"], tool_outs)
+    from core import kp_predict
+    topics = set(kp_predict.topics_for(message)) | {str(t["args"].get("topic")) for t in tool_outs
+                                                     if t.get("name") == "get_kp_prediction"}
+    kp = {t: kp_predict.predict(profile["chart"], t) for t in topics if t in kp_predict.TOPICS}
+    facts = factcheck.facts_from(synthesis.build(profile), profile["chart"], [t["data"] for t in tool_outs], kp)
     issues = factcheck.check(text, facts)
     report = {"found": [f"{i['claim']} → {i['truth']}" for i in issues], "revised": False, "removed": []}
     use = None
@@ -350,7 +379,7 @@ def chat_events(profile: dict, message: str):
                     use[k] += ev[k]
                 continue
             if ev["type"] == "tool_out":
-                tool_outs.append(ev["data"])
+                tool_outs.append(ev)
                 continue
             if ev["type"] == "delta":
                 if not parts:

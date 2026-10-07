@@ -42,7 +42,7 @@ def sentences(text: str) -> list[str]:
     return [p.strip() for p in parts if p and p.strip()]
 
 
-def facts_from(synth: dict, chart: dict, extra: list | None = None) -> dict:
+def facts_from(synth: dict, chart: dict, extra: list | None = None, kp: dict | None = None) -> dict:
     """Everything a claim may legitimately match: natal, KP, from-Moon and transit readings."""
     L = SIGNS.index(synth["lagna"]["sign"])
     moon = SIGNS.index(synth["moon"]["sign"])
@@ -75,7 +75,9 @@ def facts_from(synth: dict, chart: dict, extra: list | None = None) -> dict:
             spans["antar"].append(span(ad, maha=md["lord"]))
             for pd in ad.get("children", []):
                 spans["praty"].append(span(pd, maha=md["lord"], antar=ad["lord"]))
-    return {"spans": spans, "today": date.fromisoformat(synth["today"]), "planets": P, "lagna": synth["lagna"]["sign"], "months": months, "yogas": yogas,
+    kp_windows = {t: [{"s": date.fromisoformat(w["starts"]), "e": date.fromisoformat(w["ends"]), "verdict": w["verdict"],
+                       "label": f"{w['antar']}/{w['praty']}"} for w in r["windows"]] for t, r in (kp or {}).items()}
+    return {"kp": kp_windows, "spans": spans, "today": date.fromisoformat(synth["today"]), "planets": P, "lagna": synth["lagna"]["sign"], "months": months, "yogas": yogas,
             "sade_sati": "sade_sati" in synth["transits_now"],
             "maha": (d.get("maha") or {}).get("lord"), "antar": (d.get("antar") or {}).get("lord")}
 
@@ -169,6 +171,8 @@ def check(text: str, facts: dict) -> list[dict]:
             if not _in_life(ym, facts["months"]):
                 flag(sent, raw, "this date falls outside the native's daśā span")
         period_checks(sent, facts, flag)
+        if facts.get("kp"):
+            verdict_checks(sent, facts, flag)
     return issues
 
 
@@ -256,6 +260,53 @@ def period_checks(sent: str, facts: dict, flag) -> None:
                    if _overlap(s, e, x["s"], x["e"]) > 0][:4]
         flag(sent, f"{claim} period {s:%b %Y}–{e:%b %Y}",
              f"{claim} does not run for most of that window; the periods are " + ", ".join(running))
+
+
+POSITIVE = re.compile(r"\b(strong|strongest|favourable|favorable|best|excellent|ideal|great time|good time|good window|"
+                      r"peak|promising|supportive|golden)\b", re.I)
+NEGATIVE = re.compile(r"\b(challenging|difficult|hard|tough|avoid|struggle|weak|worst|unfavourable|unfavorable|"
+                      r"blocked|setback)\b", re.I)
+TOPIC_WORDS = {"career": r"career|job|work|promotion|profession|business", "marriage": r"marri|wedding|spouse",
+               "love": r"love|relationship", "money": r"money|income|wealth|financ|gains", "property": r"property|vehicle|house",
+               "foreign": r"abroad|foreign|visa|settle", "children": r"child|baby", "education": r"exam|study|education",
+               "health": r"health|recover", "litigation": r"court|case|dispute|legal"}
+
+
+def verdict_checks(sent: str, facts: dict, flag) -> None:
+    """A window called strong/good must not be one the KP engine rates challenging, and vice versa."""
+    pos, neg = bool(POSITIVE.search(sent)), bool(NEGATIVE.search(sent))
+    if pos == neg or NEG.search(sent):  # no judgement, both, or negated: leave it
+        return
+    topics = [t for t in facts["kp"] if re.search(TOPIC_WORDS.get(t, t), sent, re.I)] or \
+             (list(facts["kp"]) if len(facts["kp"]) == 1 else [])
+    dates = _dates(sent)
+    if not topics or not dates:
+        return
+    if len(dates) >= 2:
+        s, e = dates[0][0], dates[1][0]
+    elif re.search(r"\b(now|until|till|through)\b", sent, re.I):
+        s, e = facts["today"], dates[0][0]
+    else:
+        s = e = dates[0][0]
+    if e < s:
+        return
+    for t in topics:
+        span = max((e - s).days, 1)
+        cover = {}
+        for w in facts["kp"][t]:
+            o = _overlap(s, e, w["s"], w["e"]) if e > s else (1 if w["s"] <= s < w["e"] else 0)
+            if o:
+                cover[w["verdict"]] = cover.get(w["verdict"], 0) + o
+        if not cover:
+            continue
+        main = max(cover, key=cover.get)
+        if cover[main] < span / 2 and e > s:
+            continue
+        if (pos and main == "challenging") or (neg and main == "strong"):
+            rated = ", ".join(f"{w['label']} {w['s']:%b %Y}–{w['e']:%b %Y}: {w['verdict']}" for w in facts["kp"][t]
+                              if (_overlap(s, e, w["s"], w["e"]) if e > s else w["s"] <= s < w["e"]))
+            flag(sent, f"{t} window {s:%b %Y}–{e:%b %Y} called {'good' if pos else 'difficult'}",
+                 f"the KP engine rates it {main} ({rated})")
 
 
 def correction_note(issues: list[dict]) -> str:

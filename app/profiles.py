@@ -67,6 +67,15 @@ def get_profile(profile_id: int, request: Request) -> dict:
     return p
 
 
+@router.get("/{profile_id}/kp/{topic}")
+def kp_prediction(profile_id: int, topic: str, request: Request, months: int = 24) -> dict:
+    from core import kp_predict
+    if topic not in kp_predict.TOPICS:
+        raise HTTPException(status_code=422, detail=f"Unknown topic. Use one of: {', '.join(kp_predict.TOPICS)}")
+    p = _require(profile_id, request)
+    return kp_predict.predict(p["chart"], topic, months=max(1, min(60, months)))
+
+
 @router.put("/{profile_id}")
 def update_profile(profile_id: int, req: ChartRequest, request: Request) -> dict:
     _require(profile_id, request)
