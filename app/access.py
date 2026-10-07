@@ -2,8 +2,9 @@
 
 Off unless TESTER_ACCESS_CODES or ADMIN_ACCESS_CODE is set, so local use is unchanged.
 When on, an access code unlocks a signed cookie carrying a random owner id: each
-browser gets its own private set of profiles and chats. The admin code also
-unlocks /usage.
+browser gets its own private set of profiles and chats. Tester codes come from the
+environment or from codes the admin creates on /admin; a session made with an admin
+-created code ends when that code is paused or deleted.
 """
 from __future__ import annotations
 
@@ -46,32 +47,38 @@ def _eq(a: str, b: str) -> bool:
     return hmac.compare_digest(a.encode(), b.encode())
 
 
-def check_code(code: str) -> str | None:
+def check_code(code: str) -> tuple[str, int] | None:
+    """(role, code_id) for a valid code; code_id is 0 for the admin and environment codes."""
     code = code.strip()
     if not code:
         return None
     if _admin_code() and _eq(code, _admin_code()):
-        return "admin"
-    return "tester" if any(_eq(code, c) for c in _codes()) else None
+        return "admin", 0
+    if any(_eq(code, c) for c in _codes()):
+        return "tester", 0
+    return next((("tester", cid) for cid, c in storage.active_codes() if _eq(code, c)), None)
 
 
 def _sign(value: str) -> str:
     return hmac.new(storage.secret().encode(), value.encode(), hashlib.sha256).hexdigest()
 
 
-def make_session(owner: str, admin: bool) -> str:
-    value = f"{owner}.{int(admin)}"
+def make_session(owner: str, admin: bool, code_id: int = 0) -> str:
+    value = f"{owner}.{int(admin)}.{code_id}"
     return f"{value}.{_sign(value)}"
 
 
-def read_session(raw: str) -> tuple[str, bool] | None:
+def read_session(raw: str) -> tuple[str, bool, int] | None:
+    """(owner, admin, code_id). Sessions issued before code ids existed have 3 parts."""
     parts = raw.split(".")
-    if len(parts) != 3 or parts[1] not in ("0", "1"):
+    if len(parts) == 3:
+        parts.insert(2, "")
+    if len(parts) != 4 or parts[1] not in ("0", "1") or not (parts[2] == "" or parts[2].isdigit()):
         return None
-    owner, admin, sig = parts
-    if not _eq(sig, _sign(f"{owner}.{admin}")):
+    owner, admin, cid, sig = parts
+    if not _eq(sig, _sign(".".join(p for p in (owner, admin, cid) if p != ""))):
         return None
-    return owner, admin == "1"
+    return owner, admin == "1", int(cid or 0)
 
 
 def _client_ip(request: Request) -> str:
@@ -93,11 +100,18 @@ async def gate(request: Request, call_next):
     if not enabled():
         return await call_next(request)
     session = read_session(request.cookies.get(COOKIE, ""))
-    if session:
-        request.state.owner, request.state.admin = session
+    revoked = bool(session and not session[1] and session[2] and not storage.code_is_active(session[2]))
+    if session and not revoked:
+        request.state.owner, request.state.admin = session[0], session[1]
         return await call_next(request)
     request.state.admin = False
     path = request.url.path
+    if revoked and path not in OPEN_PATHS and not path.startswith("/static/"):
+        msg = "Your access code has been turned off. Please ask for a new one."
+        resp = HTMLResponse(login_page(msg), status_code=401) if path == "/" else \
+            JSONResponse({"detail": msg}, status_code=401)
+        resp.delete_cookie(COOKIE)
+        return resp
     if path in OPEN_PATHS or path.startswith("/static/"):
         return await call_next(request)
     if path == "/":
@@ -129,7 +143,8 @@ async def login(request: Request):
     nxt = (form.get("next") or ["/"])[0]
     nxt = nxt if nxt in NEXT_PAGES else "/"
     want_admin = nxt == "/admin"
-    role = check_code(code)
+    found = check_code(code)
+    role, code_id = found or (None, 0)
     if role is None:
         _fails[ip].append(time.monotonic())
         return HTMLResponse(login_page("That code isn't right. Please check it and try again.", admin=want_admin),
@@ -140,8 +155,10 @@ async def login(request: Request):
     existing = read_session(request.cookies.get(COOKIE, ""))
     owner = existing[0] if existing else secrets.token_hex(16)  # keep the same private space
     admin = role == "admin" or bool(existing and existing[1])  # a tester code never removes admin
+    if code_id:
+        storage.note_code_login(code_id, owner)
     resp = RedirectResponse(nxt, status_code=303)
-    resp.set_cookie(COOKIE, make_session(owner, admin), max_age=MAX_AGE, httponly=True,
+    resp.set_cookie(COOKIE, make_session(owner, admin, 0 if admin else code_id), max_age=MAX_AGE, httponly=True,
                     samesite="lax", secure=request.headers.get("x-forwarded-proto", request.url.scheme) == "https")
     return resp
 

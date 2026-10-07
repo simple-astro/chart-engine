@@ -87,6 +87,33 @@
   .empty{color:var(--mut);padding:18px 4px;text-align:center}
   .more{display:flex;justify-content:center;margin-top:12px}
 
+  /* access codes */
+  form.newcode{display:grid;grid-template-columns:1.2fr 1.2fr auto;gap:12px;align-items:end;margin-bottom:16px}
+  form.newcode .status{grid-column:1/-1;min-height:1em}
+  .opt{font-weight:400;color:var(--mut)}
+  .notice{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.86rem;margin-bottom:14px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86rem;letter-spacing:.3px}
+  .tag.on{border-color:transparent;background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .tag.off{color:var(--mut)}
+  tr.paused td:not(:last-child){opacity:.55}
+  tr.fresh td{background:var(--soft)}
+  .acts{display:grid;grid-template-columns:auto auto;gap:6px;justify-content:end}
+  .sbtn{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:8px;padding:5px 10px;font:500 .8rem var(--sans);cursor:pointer;white-space:nowrap}
+  .sbtn:hover{border-color:var(--g2);color:var(--acc)}
+  .sbtn.danger:hover,.sbtn.danger.arm{border-color:var(--bad);color:var(--bad)}
+  .sbtn.arm{font-weight:600}
+
+  @media(max-width:980px){form.newcode{grid-template-columns:1fr 1fr} form.newcode .go{grid-column:1/-1}}
+  @media(max-width:560px){form.newcode{grid-template-columns:1fr}}
+  @media(max-width:900px){
+    table.codes thead{display:none} table.codes,table.codes tbody{display:block}
+    table.codes tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:12px 6px;border-bottom:1px solid var(--line)}
+    table.codes td{border:0;padding:0;text-align:left} table.codes td.empty{flex:1;text-align:center}
+    table.codes td:first-child{flex-basis:100%;font-weight:600}
+    table.codes td[data-k]::before{content:attr(data-k) ": ";color:var(--mut)}
+    table.codes td:last-child{flex-basis:100%;margin-top:4px}
+    .acts{grid-template-columns:repeat(4,auto);justify-content:start}
+  }
   @media(max-width:980px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))} .kpis .tile:last-child{grid-column:1/-1} form.settings{grid-template-columns:1fr 1fr}}
   @media(max-width:560px){.kpis{grid-template-columns:1fr 1fr} form.settings{grid-template-columns:1fr} .brand span{display:none} .tile .value{font-size:1.4rem}}
 </style>
@@ -119,6 +146,23 @@
       <div><label for="s-total">Questions per day, all testers</label><input id="s-total" type="number" min="0" max="10000" required><div class="help">Your daily spending ceiling.</div></div>
       <div class="actions"><button class="btn" type="submit" id="save">Save settings</button><span class="status" id="save-status" role="status"></span></div>
     </form>
+  </section>
+
+  <section class="card">
+    <h2>Access codes</h2>
+    <p class="sub">Give each person or group their own code. You'll see who is using the app, and pausing a code signs those testers out straight away.</p>
+    <div class="notice" id="c-gate" hidden>The access gate is off here (no ADMIN_ACCESS_CODE set), so codes have no effect until it is turned on.</div>
+    <form class="newcode" id="c-form">
+      <div><label for="c-label">Who is it for?</label><input id="c-label" maxlength="60" placeholder="e.g. Asha's family"></div>
+      <div><label for="c-code">Code <span class="opt">optional</span></label><input id="c-code" maxlength="40" placeholder="Leave blank to generate one" autocomplete="off" spellcheck="false"></div>
+      <div class="go"><button class="btn" type="submit" id="c-save">Create code</button></div>
+      <span class="status" id="c-status" role="status"></span>
+    </form>
+    <div class="scroll"><table class="codes">
+      <thead><tr><th>For</th><th>Code</th><th>Status</th><th class="num">Testers</th><th class="num">Sign-ins</th><th>Last used</th><th></th></tr></thead>
+      <tbody id="codes"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+    </table></div>
+    <p class="help" id="c-env" hidden></p>
   </section>
 
   <section class="card">
@@ -259,8 +303,72 @@ async function loadQueries(reset) {
 }
 $('more').addEventListener('click', () => loadQueries(false));
 
+// ----- access codes -----
+let codes = [], freshId = null;
+const invite = c => `You're invited to try SimpleJyotish, a Vedic astrology app.\nOpen ${location.origin} and enter this access code: ${c.code}`;
+async function copy(text, btn, done) {
+  try { await navigator.clipboard.writeText(text); } catch (e) {
+    const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
+  }
+  const was = btn.textContent; btn.textContent = done; setTimeout(() => { btn.textContent = was; }, 1600);
+}
+function renderCodes() {
+  $('codes').innerHTML = codes.length ? codes.map(c => `<tr class="${c.active ? '' : 'paused'}${c.id === freshId ? ' fresh' : ''}" data-id="${c.id}">
+      <td>${c.label ? esc(c.label) : '<span style="color:var(--mut)">No label</span>'}</td>
+      <td class="nowrap"><span class="mono">${esc(c.code)}</span></td>
+      <td><span class="tag ${c.active ? 'on' : 'off'}">${c.active ? 'Active' : 'Paused'}</span></td>
+      <td class="num" data-k="Testers">${c.testers}</td><td class="num" data-k="Sign-ins">${c.uses}</td>
+      <td class="nowrap lu" data-k="Last used">${c.last_used ? esc(when(c.last_used)) : '<span style="color:var(--mut)">Not yet</span>'}</td>
+      <td><div class="acts">
+        <button class="sbtn" type="button" data-act="copy">Copy</button>
+        <button class="sbtn" type="button" data-act="invite">Copy invite</button>
+        <button class="sbtn" type="button" data-act="toggle">${c.active ? 'Pause' : 'Resume'}</button>
+        <button class="sbtn danger" type="button" data-act="delete">Delete</button></div></td></tr>`).join('')
+    : '<tr><td colspan="7" class="empty">No codes yet. Create one above for each person or group you invite.</td></tr>';
+}
+async function loadCodes() {
+  const d = await api('/admin/api/codes');
+  codes = d.codes; $('c-gate').hidden = d.gated; renderCodes();
+  $('c-env').hidden = !d.env_codes;
+  $('c-env').textContent = `Plus ${d.env_codes} code${d.env_codes > 1 ? 's' : ''} set in Railway (TESTER_ACCESS_CODES). Those are always active and can only be changed in Railway.`;
+}
+$('c-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const st = $('c-status'); st.className = 'status'; st.textContent = 'Creating…'; $('c-save').disabled = true;
+  try {
+    const c = await api('/admin/api/codes', {method: 'POST', headers: {'content-type': 'application/json'},
+      body: JSON.stringify({label: $('c-label').value, code: $('c-code').value})});
+    freshId = c.id; $('c-form').reset(); await loadCodes();
+    st.className = 'status ok'; st.textContent = `Created ${c.code}. Use “Copy invite” to send it.`;
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+  $('c-save').disabled = false;
+});
+$('codes').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const c = codes.find(x => String(x.id) === b.closest('tr').dataset.id); if (!c) return;
+  const st = $('c-status'); st.className = 'status';
+  try {
+    if (b.dataset.act === 'copy') return copy(c.code, b, 'Copied ✓');
+    if (b.dataset.act === 'invite') return copy(invite(c), b, 'Copied ✓');
+    if (b.dataset.act === 'toggle') {
+      await api(`/admin/api/codes/${c.id}`, {method: 'PATCH', headers: {'content-type': 'application/json'}, body: JSON.stringify({active: !c.active})});
+      st.textContent = c.active ? `Paused ${c.code}. Its testers are signed out until you resume it.` : `Resumed ${c.code}.`;
+    }
+    if (b.dataset.act === 'delete') {
+      if (!b.classList.contains('arm')) {  // first click arms, second click deletes
+        b.classList.add('arm'); b.textContent = 'Confirm delete';
+        setTimeout(() => { if (b.isConnected) { b.classList.remove('arm'); b.textContent = 'Delete'; } }, 4000);
+        return;
+      }
+      await api(`/admin/api/codes/${c.id}`, {method: 'DELETE'});
+      st.textContent = `Deleted ${c.code}. Its testers are signed out; their questions stay in the log.`;
+    }
+    await loadCodes();
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+});
+
 async function loadAll() {
-  try { renderOverview(await api('/admin/api/overview')); await loadQueries(true); }
+  try { renderOverview(await api('/admin/api/overview')); await loadCodes(); await loadQueries(true); }
   catch (e) { $('queries').innerHTML = `<tr><td colspan="7" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
 }
 $('refresh').addEventListener('click', loadAll);

@@ -213,3 +213,58 @@ def test_remarks_only_visible_to_admin(gated, fake_llm):
     t.put(f"/admin/api/queries/{q['id']}/remarks", json={"remarks": "Secret note"})
     t2 = _tester()  # new tester browser
     assert t2.get("/admin/api/queries").status_code == 403
+
+
+def _login(code: str) -> tuple[TestClient, int]:
+    c = TestClient(app)
+    return c, c.post("/login", data={"code": code}, follow_redirects=False).status_code
+
+
+def test_admin_creates_codes_and_testers_can_use_them(gated):
+    a = _admin()
+    made = a.post("/admin/api/codes", json={"label": "Asha's family"}).json()
+    assert made["code"].startswith("sj-") and len(made["code"]) == 11 and made["active"]
+    custom = a.post("/admin/api/codes", json={"label": "Workshop", "code": "workshop-2026"}).json()
+    assert custom["code"] == "workshop-2026"
+    t, status = _login(made["code"])
+    assert status == 303 and t.get("/profiles").status_code == 200
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    [row] = [c for c in a.get("/admin/api/codes").json()["codes"] if c["id"] == made["id"]]
+    assert row["uses"] == 1 and row["testers"] == 1 and row["last_used"]
+    assert a.get("/admin/api/overview").json()["testers"][0]["label"].startswith("Asha's family · ")
+    assert _tester().get("/profiles").status_code == 200  # the environment code still works
+    assert pid
+
+
+def test_paused_or_deleted_code_ends_access(gated):
+    a = _admin()
+    code = a.post("/admin/api/codes", json={"label": "Temp"}).json()
+    t, _ = _login(code["code"])
+    assert t.get("/profiles").status_code == 200
+    assert a.patch(f"/admin/api/codes/{code['id']}", json={"active": False}).status_code == 200
+    assert "turned off" in t.get("/").text  # the page explains why, then the cookie is cleared
+    t, _ = _login("tester-code")
+    t.cookies.set(access.COOKIE, access.make_session("b" * 32, False, code["id"]))
+    r = t.get("/profiles")
+    assert r.status_code == 401 and "turned off" in r.json()["detail"]
+    assert _login(code["code"])[1] == 401  # can't sign in again while paused
+    a.patch(f"/admin/api/codes/{code['id']}", json={"active": True, "label": "Back again"})
+    t, status = _login(code["code"])
+    assert status == 303 and t.get("/profiles").status_code == 200
+    assert a.delete(f"/admin/api/codes/{code['id']}").status_code == 200
+    assert t.get("/profiles").status_code == 401
+    assert a.delete(f"/admin/api/codes/{code['id']}").status_code == 404
+
+
+def test_code_validation_and_admin_only(gated):
+    a = _admin()
+    for bad in ({"code": "abc"}, {"code": "has space!"}, {"label": "x" * 61}, {"label": 5}):
+        assert a.post("/admin/api/codes", json=bad).status_code == 422, bad
+    assert a.post("/admin/api/codes", json={"code": "tester-code"}).status_code == 409  # env code
+    assert a.post("/admin/api/codes", json={"code": "admin-code"}).status_code == 409
+    a.post("/admin/api/codes", json={"code": "dupe-code-1"})
+    assert a.post("/admin/api/codes", json={"code": "dupe-code-1"}).status_code == 409
+    t = _tester()
+    assert t.get("/admin/api/codes").status_code == 403
+    assert t.post("/admin/api/codes", json={}).status_code == 403
+    assert t.delete("/admin/api/codes/1").status_code == 403

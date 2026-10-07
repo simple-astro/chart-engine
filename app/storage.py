@@ -50,6 +50,13 @@ def _connect() -> sqlite3.Connection:
         " tool_rounds INTEGER DEFAULT 0, words INTEGER DEFAULT 0, question TEXT)"
     )
     conn.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS access_codes ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE, label TEXT NOT NULL DEFAULT '',"
+        " active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, uses INTEGER NOT NULL DEFAULT 0,"
+        " last_used TEXT)"
+    )
+    conn.execute("CREATE TABLE IF NOT EXISTS owner_codes (owner TEXT PRIMARY KEY, code_id INTEGER NOT NULL)")
     for table, col in (("profiles", "owner"), ("usage_log", "owner"), ("usage_log", "answer"), ("usage_log", "admin_remarks")):
         cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
         if col not in cols:
@@ -260,6 +267,68 @@ def tester_summary() -> list[dict]:
         row.update(questions=r["total"], questions_today=r["today"] or 0, paid_questions=r["paid"] or 0,
                    last_seen=r["last_seen"])
     return sorted(rows.values(), key=lambda r: r.get("last_seen") or r.get("first_seen") or "", reverse=True)
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def list_codes() -> list[dict]:
+    with _lock, _connect() as conn:
+        rows = conn.execute(
+            "SELECT c.*, (SELECT COUNT(*) FROM owner_codes o WHERE o.code_id = c.id) testers"
+            " FROM access_codes c ORDER BY c.id DESC").fetchall()
+    return [dict(r) | {"active": bool(r["active"])} for r in rows]
+
+
+def add_code(code: str, label: str) -> dict:
+    """Raises sqlite3.IntegrityError when the code already exists."""
+    with _lock, _connect() as conn:
+        cur = conn.execute("INSERT INTO access_codes (code, label, created_at) VALUES (?, ?, ?)",
+                           (code, label, _now()))
+        r = conn.execute("SELECT * FROM access_codes WHERE id = ?", (cur.lastrowid,)).fetchone()
+    return dict(r) | {"active": bool(r["active"]), "testers": 0}
+
+
+def update_code(code_id: int, *, active: bool | None = None, label: str | None = None) -> bool:
+    sets, args = [], []
+    if active is not None:
+        sets.append("active = ?"); args.append(int(active))
+    if label is not None:
+        sets.append("label = ?"); args.append(label)
+    if not sets:
+        return False
+    with _lock, _connect() as conn:
+        return conn.execute(f"UPDATE access_codes SET {', '.join(sets)} WHERE id = ?", (*args, code_id)).rowcount > 0
+
+
+def delete_code(code_id: int) -> bool:
+    with _lock, _connect() as conn:
+        return conn.execute("DELETE FROM access_codes WHERE id = ?", (code_id,)).rowcount > 0
+
+
+def active_codes() -> list[tuple[int, str]]:
+    with _lock, _connect() as conn:
+        return [(r["id"], r["code"]) for r in conn.execute("SELECT id, code FROM access_codes WHERE active = 1")]
+
+
+def code_is_active(code_id: int) -> bool:
+    with _lock, _connect() as conn:
+        return conn.execute("SELECT 1 FROM access_codes WHERE id = ? AND active = 1", (code_id,)).fetchone() is not None
+
+
+def note_code_login(code_id: int, owner: str) -> None:
+    with _lock, _connect() as conn:
+        conn.execute("UPDATE access_codes SET uses = uses + 1, last_used = ? WHERE id = ?", (_now(), code_id))
+        conn.execute("INSERT OR REPLACE INTO owner_codes (owner, code_id) VALUES (?, ?)", (owner, code_id))
+
+
+def owner_code_labels() -> dict[str, str]:
+    """owner -> label of the database code they last signed in with."""
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT o.owner, c.label, c.code FROM owner_codes o"
+                            " JOIN access_codes c ON c.id = o.code_id").fetchall()
+    return {r["owner"]: r["label"] or r["code"] for r in rows}
 
 
 def update_remarks(query_id: int, remarks: str | None) -> bool:

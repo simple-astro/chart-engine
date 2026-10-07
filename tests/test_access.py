@@ -91,12 +91,22 @@ def test_logging_in_again_keeps_the_same_private_space(gated):
 
 def test_tampered_cookie_is_rejected(gated):
     a = _login()
-    owner, admin, sig = a.cookies[access.COOKIE].split(".")
+    owner, admin, cid, sig = a.cookies[access.COOKIE].split(".")
     forged = TestClient(app)
-    forged.cookies.set(access.COOKIE, f"{owner}.1.{sig}")  # try to promote to admin
+    forged.cookies.set(access.COOKIE, f"{owner}.1.{cid}.{sig}")  # try to promote to admin
     assert forged.get("/usage").status_code == 401
-    forged.cookies.set(access.COOKIE, f"someone-else.0.{sig}")
+    forged.cookies.set(access.COOKIE, f"someone-else.0.{cid}.{sig}")
     assert forged.get("/profiles").status_code == 401
+    forged.cookies.set(access.COOKIE, f"{owner}.0.7.{sig}")  # swap in another code id
+    assert forged.get("/profiles").status_code == 401
+
+
+def test_sessions_from_before_code_ids_still_work(gated):
+    owner = "a" * 32
+    legacy = f"{owner}.0.{access._sign(f'{owner}.0')}"
+    c = TestClient(app)
+    c.cookies.set(access.COOKIE, legacy)
+    assert c.get("/profiles").status_code == 200
 
 
 def test_daily_cap_per_tester(gated, monkeypatch):
