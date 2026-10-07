@@ -854,7 +854,7 @@ async function loadProfile(id){
 function openChat(){$('pop').hidden=false;$('fab').hidden=true;setTimeout(()=>{if(!$('q').disabled)$('q').focus();toBottom()},60)}
 function closeChat(){$('pop').hidden=true;if(hasChart&&!$('out').hidden)$('fab').hidden=false}
 $('fab').onclick=openChat;$('closechat').onclick=closeChat;
-$('tgbtn').onclick=async()=>{try{const r=await fetch('/api/telegram/link',{method:'POST'});const j=await r.json();if(!r.ok)throw new Error(j.detail||r.statusText);window.location.href=j.deep_link}catch(e){alert('Error: '+e.message)}};
+$('tgbtn').onclick=async()=>{try{const r=await fetch('/api/telegram/link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({profile_id:currentId})});const j=await r.json();if(!r.ok)throw new Error(j.detail||r.statusText);window.location.href=j.deep_link}catch(e){alert('Error: '+e.message)}};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pop').hidden)closeChat()});
 const EX=['What should I focus on this year?','When is a good time to change jobs?','Which remedies suit me right now?','How will my married life be?','Any health precautions for me?','What should I avoid this month?'];
 function md(t){ // tiny, safe markdown: headings, **bold**, `code`, bullets, paragraphs

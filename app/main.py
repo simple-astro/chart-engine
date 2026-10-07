@@ -19,6 +19,7 @@ from app.astro import router as astro_router
 from app.profiles import router as profiles_router
 from app.profiles import usage_router
 from app.routes import router
+from app.telegram_bot import register_webhook
 from app.telegram_bot import router as telegram_router
 from core import ephemeris
 
@@ -41,6 +42,7 @@ _load_dotenv()
 async def lifespan(app: FastAPI):
     # If Swiss Ephemeris data files are provided, use them; else Moshier fallback.
     ephemeris.configure_ephe_path(os.environ.get("SE_EPHE_PATH"))
+    register_webhook()
     yield
 
 

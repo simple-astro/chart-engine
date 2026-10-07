@@ -23,7 +23,7 @@ from app import storage
 
 COOKIE = "sj_session"
 MAX_AGE = 180 * 24 * 3600
-OPEN_PATHS = {"/health", "/version", "/login", "/favicon.ico"}
+OPEN_PATHS = {"/health", "/version", "/login", "/favicon.ico", "/telegram/webhook"}  # webhook checks its own secret
 NEXT_PAGES = {"/admin"}  # where a login form may send the browser afterwards
 FAIL_WINDOW, FAIL_PER_IP, FAIL_TOTAL = 15 * 60, 10, 100
 _fails: dict[str, deque] = defaultdict(deque)
