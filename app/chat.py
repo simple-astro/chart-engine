@@ -45,7 +45,9 @@ SYSTEM = (
     "exactly as given; never infer or contradict them. When a KP prediction is supplied (or fetched with "
     "get_kp_prediction), it is the verdict: say whether the matter is promised and which windows are strong or "
     "challenging exactly as computed, explain why through the star lord (what the period gives) and the sub lord "
-    "(whether it delivers) in plain words, and never upgrade or downgrade a window. For upay follow remedy_guide: mantras and daan on the "
+    "(whether it delivers) in plain words, and never upgrade or downgrade a window. A RISK reading (illness, "
+    "accident, dispute, separation, career loss) is a period to take care in, never a certainty: say so gently, "
+    "never alarm, and pair it with practical steps and an upay. For upay follow remedy_guide: mantras and daan on the "
     "planet's own day, and gemstones only from suitable_stones. "
     "For questions about the "
     "present or future, call the tools (transits, transit events, panchang, dasha detail, divisional charts, "
@@ -61,7 +63,7 @@ SYSTEM = (
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "kp-1"
+CONTEXT_VERSION = "nadi-2"
 
 TOOLS = [
     {"name": "get_transits",
@@ -101,8 +103,7 @@ TOOLS = [
      "description": "Computed KP verdicts for a life matter: whether it is promised and which dasha windows "
                     "(maha/antar/pratyantar) are strong, favourable, mixed or challenging, with reasons.",
      "input_schema": {"type": "object", "properties": {
-         "topic": {"type": "string", "enum": ["career", "marriage", "love", "money", "property", "foreign",
-                                              "children", "education", "health", "litigation"]},
+         "topic": {"type": "string", "enum": list(__import__("core.kp_predict", fromlist=["TOPICS"]).TOPICS)},
          "months": {"type": "integer", "description": "How far ahead, 1-60. Default 24."}}, "required": ["topic"]}},
     {"name": "get_dasha_detail",
      "description": "Antardasha/pratyantar periods inside one mahadasha.",

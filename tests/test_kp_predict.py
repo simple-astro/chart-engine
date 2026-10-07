@@ -24,12 +24,40 @@ def test_career_uses_confirmed_houses_and_promise(chart):
     assert p["cusp_sub_lord"] == "Mercury" and p["verdict"] == "promised" and 10 in p["signifies"]
 
 
-def test_lord_judgement_star_and_sub(chart):
+def test_lord_judgement_three_levels(chart):
     good, bad = {2, 6, 10, 11}, {5, 9}
     sun = K.judge_lord(chart, "Sun", good, bad)
-    assert sun["sub_lord"] == "Venus" and sun["verdict"] == "supports"  # Venus signifies 6, 11 vs 9
-    assert K.judge_lord(chart, "Mars", good, bad)["verdict"] == "blocks"  # gives 5, 8, 9, 12
-    assert K.judge_lord(chart, "Ketu", good, bad)["verdict"] == "mixed"  # 10 and 9 balance out
+    assert set(sun["levels"]) == {"planet", "nakshatra", "sub"} and sun["levels"]["sub"]["lord"] == "Venus"
+    assert sun["verdict"] == "leans good"  # sub lord Venus signifies 6, 11 against 9
+    assert K.judge_lord(chart, "Jupiter", good, bad)["verdict"] in ("against", "blocks")
+
+
+def test_book_worked_example_scoring():
+    """Taneja's marriage example (H1): sub lord strongest, then nakshatra, then planet."""
+    good, bad = {2, 7, 11}, {1, 6, 10}
+    v = lambda s: max(-2, min(2, len(s & good) - len(s & bad)))
+    score = lambda p, n, s: K.WEIGHT_LEVEL["planet"] * v(p) + K.WEIGHT_LEVEL["nakshatra"] * v(n) + K.WEIGHT_LEVEL["sub"] * v(s)
+    assert score({4, 6, 8, 9, 11}, {2, 7}, {4, 8, 11}) >= 3            # Ketu: strong for marriage
+    assert 1 <= score({1, 2, 7}, {3, 5, 10}, {1, 2, 3, 4, 8, 11, 12}) < 3  # Saturn: possible but weak
+    assert score({1, 3, 12}, {1, 2, 3, 4, 8, 11, 12}, {4, 6, 9}) <= -1    # Jupiter: not possible
+
+
+def test_nodes_act_as_agents(chart):
+    # Ketu alone in Virgo: its own house plus its sign lord Mercury's houses
+    assert K.own_houses(chart, "Ketu") >= set(chart["significators"]["by_planet"]["Mercury"]["owned"])
+
+
+def test_required_significator_and_dasa_gate(chart):
+    r = K.predict(chart, "foreign", START)  # needs a separative planet among the DBA lords
+    for w in r["windows"]:
+        if not any(l in K.SEPARATIVES for l in (w["maha"], w["antar"], w["praty"])) and \
+                not any(n.startswith("Significator") for n in w["transit"]):
+            assert w["verdict"] in ("mixed", "challenging")
+
+
+def test_risk_topics_are_labelled(chart):
+    r = K.predict(chart, "illness", START)
+    assert r["kind"] == "risk" and "RISK reading" in K.brief(r)
 
 
 def test_windows_cover_the_horizon(chart):
@@ -45,6 +73,8 @@ def test_windows_cover_the_horizon(chart):
 
 def test_topic_routing():
     assert K.topics_for("When will I get a promotion at my job?") == ["career"]
+    assert K.topics_for("Will I win the court case?") == ["litigation_win"]
+    assert K.topics_for("Should I sell my house this year?")[0] == "property_sale" or "property_sale" in K.topics_for("Should I sell my house this year?")
     assert K.topics_for("Will I settle abroad after marriage?") == ["marriage", "foreign"]
     assert K.topics_for("What does my Moon mean?") == []
 
@@ -75,7 +105,7 @@ def test_guard_flags_a_window_rated_opposite(chart):
 def test_chat_gets_brief_for_topic_questions_only(chart):
     from app import chat
     prof = {"chart": chart, "request": BIRTH, "id": 1}
-    assert "KP PREDICTION — Career" in chat.kp_context(prof, "How is my career next year?")
+    assert "NADI PREDICTION — Job, promotion and career" in chat.kp_context(prof, "How is my career next year?")
     assert chat.kp_context(prof, "What does my Moon mean?") == ""
 
 
@@ -86,3 +116,19 @@ def test_endpoint(tmp_path, monkeypatch):
     r = c.get(f"/profiles/{pid}/kp/marriage?months=12").json()
     assert r["topic"] == "marriage" and r["windows"]
     assert c.get(f"/profiles/{pid}/kp/lottery").status_code == 422
+
+
+def test_risk_needs_a_real_combination(chart):
+    # illness needs 1 and 6 together; a level with only 8 and 12 (e.g. the Moon here) does not count
+    rule = K.RISK_RULES["illness"]
+    assert not K._combo({8, 12}, {1, 6, 8, 12}, rule) and K._combo({1, 6}, {1, 6, 8, 12}, rule)
+    # litigation: any two of 6, 8, 12, but a single one alone is harmless (book's examples)
+    assert K._combo({8, 12}, {6, 8, 12}, {}) and not K._combo({6, 10, 11}, {6, 8, 12}, {})
+    r = K.predict(chart, "illness", START)
+    assert all(w["verdict"] in ("mixed", "challenging") for w in r["windows"])
+
+
+def test_accident_requires_rahu_or_ketu(chart):
+    for w in K.predict(chart, "accident", START)["windows"]:
+        if w["verdict"] in ("strong", "favourable"):
+            assert any(n.startswith("Significator") for n in w["transit"])

@@ -373,7 +373,8 @@
   .kpw{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
   .kpw>li{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;background:var(--bg2)}
   .kpw>li.strong{border-left-color:var(--ok)} .kpw>li.favourable{border-left-color:color-mix(in srgb,var(--ok) 55%,var(--acc))}
-  .kpw>li.mixed{border-left-color:var(--acc)} .kpw>li.challenging{border-left-color:var(--bad)}
+  .kpw>li.mixed,.kpw>li.r-mixed{border-left-color:var(--acc)} .kpw>li.challenging,.kpw>li.r-strong{border-left-color:var(--bad)}
+  .kpw>li.r-favourable{border-left-color:var(--cmb)} .kpw>li.r-challenging{border-left-color:var(--ok)}
   .kpw summary{list-style:none;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:10px 12px;cursor:pointer}
   .kpw summary::-webkit-details-marker{display:none}
   .kpd{font-weight:600;font-size:.88rem} .kpl{color:var(--mut);font-size:.84rem;flex:1} .kpw .badge{margin:0}
@@ -746,7 +747,7 @@
 <script src="/static/strength.js?v=1"></script>
 <script src="/static/guide.js?v=5"></script>
 <script src="/static/tools.js?v=2"></script>
-<script src="/static/kptiming.js?v=1"></script>
+<script src="/static/kptiming.js?v=4"></script>
 <script>
 {const f=window.fetch.bind(window);window.fetch=async(u,o)=>{const r=await f(u,o);if(r.status===401&&String(u).startsWith('/'))location.reload();return r}}
 const $=id=>document.getElementById(id);

@@ -1,93 +1,132 @@
-"""KP prediction: is a matter promised, and in which daśā windows does it fructify?
+"""Nadi/KP prediction: is a matter promised, and in which daśā windows does it happen?
 
-Method (standard KP):
-- Promise: the sub-lord of the matter's primary cusp must signify the houses that bring it about.
-- What a period lord gives: the houses signified by its star lord (occupied and owned by the star
-  lord), then by itself. Rahu/Ketu also act as agents of their sign lord.
-- Whether it gives: the houses signified by the lord's sub lord. Favourable houses → yes;
-  only the opposing houses → denial or obstacles.
-- The antardasha (bhukti) lord carries most weight, then the pratyantar, then the mahadasha.
-- Transit as trigger: Jupiter/Saturn moving through the favourable or opposing houses (KP cusps),
-  or through the star of a supporting period lord, in that window.
+Method (Umang Taneja, Nadi Astrology — Accurate Predictive Methodology):
+- Every planet is read at three levels — the planet itself, its nakshatra (star) lord and its sub
+  lord — and each level signifies the houses that planet occupies and owns. Sub lord is strongest,
+  then the nakshatra lord, then the planet.
+- Rahu/Ketu signify the houses of the planets they are conjunct with, the planets aspecting them,
+  their sign lord, and the house they sit in.
+- A level supports a matter by the houses of its combination and is weakened by the negating
+  houses (generally the 12th from each). Facilitating houses neither add nor subtract.
+- Promise: the sub lord of the matter's main cusp must signify the combination.
+- Timing: the Dasa lord is strongest and must allow the event; then the Bhukti, then the Antar.
+- Significator (karaka) planets: for some matters one of the DBA lords must be the karaka, or be
+  conjunct with / aspected by it (e.g. Mars or Saturn for property, Venus for vehicles).
+- Transit as trigger: Jupiter/Saturn through the combination's houses, or through the star of a
+  supporting period lord.
 """
 from __future__ import annotations
 
+import re
 from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace as NS
 
 from core.constants import NAKSHATRA_ARC, NAKSHATRA_LORDS, SIGN_LORDS
 from core.kp import planet_house
 from core.transits import transit_positions
+from core.yogas import aspects
 
-# topic: (title, primary cusp, houses for, houses against). Career is as confirmed by the astrologer;
-# the rest are standard KP groupings.
+SEPARATIVES = {"Sun", "Saturn", "Rahu", "Ketu"}
+
+# key: title, main cusp, houses of the combination, negating houses, karaka planets, karaka required,
+# kind ("event" = hoped for, "risk" = something to watch). From the astrologer's summary table; career's
+# negating houses (5, 9) were confirmed by the astrologer.
 TOPICS = {
-    "career": ("Career, job and promotion", 10, {2, 6, 10, 11}, {5, 9}),
-    "marriage": ("Marriage", 7, {2, 7, 11}, {1, 6, 10}),
-    "love": ("Love and relationships", 5, {5, 7, 11}, {1, 6, 10, 12}),
-    "money": ("Money and gains", 11, {2, 6, 11}, {5, 8, 12}),
-    "property": ("Property and vehicles", 4, {4, 11, 12}, {3, 5, 10}),
-    "foreign": ("Foreign travel or settling abroad", 12, {3, 9, 12}, {2, 4, 11}),
-    "children": ("Children", 5, {2, 5, 11}, {1, 4, 10}),
-    "education": ("Education and exams", 4, {4, 9, 11}, {3, 8, 10}),
-    "health": ("Health and recovery", 1, {1, 5, 11}, {6, 8, 12}),
-    "litigation": ("Disputes and court cases", 6, {1, 6, 11}, {5, 8, 12}),
+    "marriage": ("Marriage", 7, {2, 7, 11}, {1, 6, 10}, {"Venus"}, False, "event"),
+    "love": ("Love affair", 5, {5, 11}, {6}, {"Venus"}, False, "event"),
+    "career": ("Job, promotion and career", 10, {2, 6, 10, 11}, {5, 9}, {"Saturn"}, False, "event"),
+    "business": ("Business", 7, {2, 7, 10, 11}, {5, 8, 12}, {"Mercury"}, False, "event"),
+    "job_change": ("Changing job or business", 10, {5, 9}, {2, 6, 11}, SEPARATIVES, True, "event"),
+    "money": ("Money and gains", 11, {2, 6, 11}, {5, 8, 12}, {"Jupiter"}, False, "event"),
+    "property": ("Buying property", 4, {4, 11, 12}, {3, 5, 8}, {"Mars", "Saturn"}, True, "event"),
+    "property_sale": ("Selling property", 4, {3, 5, 10}, {4, 11}, {"Mars", "Saturn"}, True, "event"),
+    "vehicle": ("Buying a vehicle", 4, {4, 11, 12}, {5, 8, 10}, {"Venus"}, True, "event"),
+    "residence": ("Changing residence", 4, {3, 5}, {2, 4, 11}, SEPARATIVES, True, "event"),
+    "foreign": ("Foreign travel or settling abroad", 12, {3, 9, 12}, {2, 4, 11}, SEPARATIVES, True, "event"),
+    "return_home": ("Coming back home", 4, {2, 4, 11}, {3, 9, 12}, set(), False, "event"),
+    "education": ("Education and marks", 4, {4, 9, 11}, {6, 8, 12}, {"Mercury", "Jupiter"}, False, "event"),
+    "exams": ("Competitive exams and interviews", 11, {4, 6, 9, 11}, {8, 12}, {"Mercury", "Jupiter"}, False, "event"),
+    "awards": ("Awards and prizes", 11, {6, 10, 11}, {5, 8, 12}, {"Jupiter", "Venus"}, False, "event"),
+    "children": ("Children", 5, {2, 5, 11}, {1, 4, 10}, {"Jupiter"}, False, "event"),
+    "health": ("Good health and recovery", 1, {1, 5, 9, 11}, {6, 8, 12}, {"Jupiter"}, False, "event"),
+    "litigation_win": ("Winning a dispute or court case", 6, {1, 6, 10, 11}, {5, 8, 12}, set(), False, "event"),
+    "illness": ("Illness", 6, {1, 6, 8, 12}, {5, 11}, {"Saturn"}, False, "risk"),
+    "accident": ("Accidents and injury", 8, {1, 4, 8, 12}, {5, 11}, {"Rahu", "Ketu"}, True, "risk"),
+    "career_loss": ("Loss in job or business", 10, {5, 8, 12}, {10, 11}, set(), False, "risk"),
+    "divorce": ("Separation or divorce", 7, {1, 6, 10}, {2, 7, 11}, SEPARATIVES, True, "risk"),
+    "litigation": ("Getting into a dispute or court case", 6, {6, 8, 12}, {11}, {"Rahu", "Ketu", "Saturn"}, True, "risk"),
 }
-WEIGHT = {"maha": 1.0, "antar": 2.0, "praty": 1.5}
-VALUE = {"supports": 1.0, "leans good": 0.5, "mixed": 0.0, "leans against": -0.5, "neutral": 0.0, "blocks": -1.0}
+# Risks need a real combination (the book: "6, 8 or 12 alone does not result in litigation"): at least two
+# houses of it, plus any houses the combination cannot do without (illness always involves 1 and 6).
+RISK_RULES = {"illness": {"all": {1, 6}}, "accident": {"any": {8}}, "career_loss": {"any": {5}},
+              "divorce": {}, "litigation": {}}
+WEIGHT_LEVEL = {"planet": 1.0, "nakshatra": 1.5, "sub": 2.0}   # sub lord strongest
+WEIGHT_DBA = {"maha": 2.0, "antar": 1.5, "praty": 1.0}        # Dasa lord strongest
+VALUE = {"supports": 1.0, "leans good": 0.5, "mixed": 0.0, "against": -0.5, "blocks": -1.0}
+RISK_LABEL = {"strong": "take extra care", "favourable": "take care", "mixed": "mild", "challenging": "low"}
 
 
-def _sig(chart: dict, p: str) -> dict:
-    """KP houses a planet signifies: 'gives' (star-lord level first, then its own) and 'all'."""
-    s = chart["significators"]["by_planet"][p]
-    star = set(s["occupied_by_star_lord"]) | set(s["owned_by_star_lord"])
-    own = set(s["occupied"]) | set(s["owned"])
-    if p in ("Rahu", "Ketu"):  # nodes act as agents of their sign lord
-        lord = SIGN_LORDS[chart["grahas"][p]["sign_index"]]
-        ls = chart["significators"]["by_planet"][lord]
-        own |= set(ls["occupied"]) | set(ls["owned"])
-    return {"star": star, "own": own, "all": star | own}
+def own_houses(chart: dict, p: str) -> set[int]:
+    """Houses a planet signifies by itself: where it sits and the cusps it owns (Rahu/Ketu as agents)."""
+    sig = chart["significators"]["by_planet"][p]
+    houses = set(sig["occupied"]) | set(sig["owned"])
+    if p in ("Rahu", "Ketu"):
+        signs = {q: g["sign_index"] for q, g in chart["grahas"].items()}
+        asp = aspects(signs, chart["lagna"]["sign_index"])
+        agents = {q for q in signs if q not in ("Rahu", "Ketu") and
+                  (signs[q] == signs[p] or p in asp[q]["planets"])}
+        agents.add(SIGN_LORDS[signs[p]])
+        for q in agents:
+            s = chart["significators"]["by_planet"][q]
+            houses |= set(s["occupied"]) | set(s["owned"])
+    return houses
 
 
-def judge_lord(chart: dict, p: str, good: set, bad: set) -> dict:
-    """What the planet gives (via its star lord) and whether it delivers (via its sub lord)."""
+def _combo(s: set, good: set, rule: dict) -> bool:
+    return len(s & good) >= 2 and rule.get("all", set()) <= s and (not rule.get("any") or bool(rule["any"] & s))
+
+
+def judge_lord(chart: dict, p: str, good: set, bad: set, risk: dict | None = None) -> dict:
+    """Planet, nakshatra lord and sub lord each signify their own houses; the sub lord weighs most.
+    For a risk, the combination must be formed within a level or across nakshatra + sub (or planet + nakshatra)."""
     g = chart["grahas"][p]
-    sub = g["kp"]["sub_lord"]
-    gives, decides = _sig(chart, p), _sig(chart, sub)
-    g_for, g_against = sorted(gives["all"] & good), sorted(gives["all"] & bad)
-    s_for, s_against = sorted(decides["all"] & good), sorted(decides["all"] & bad)
-    net = len(s_for) - len(s_against)  # the sub lord decides: more houses for than against
-    if g_for and net > 0:
-        verdict = "supports"
-    elif net < 0 or (g_against and not g_for):
-        verdict = "blocks"
-    elif g_for or s_for:  # the sub lord is undecided: lean by what the lord itself gives
-        lean = len(g_for) - len(g_against)
-        verdict = "leans good" if lean > 0 else "leans against" if lean < 0 else "mixed"
-    else:
-        verdict = "neutral"
-    return {"lord": p, "star_lord": g["nakshatra_lord"], "sub_lord": sub, "gives": sorted(gives["all"]),
-            "sub_signifies": sorted(decides["all"]), "for": sorted(set(g_for) | set(s_for)),
-            "against": sorted(set(g_against) | set(s_against)), "verdict": verdict}
+    lords = {"planet": p, "nakshatra": g["nakshatra_lord"], "sub": g["kp"]["sub_lord"]}
+    levels, score = {}, 0.0
+    for lvl, q in lords.items():
+        h = own_houses(chart, q)
+        if risk is None:
+            score += WEIGHT_LEVEL[lvl] * max(-2, min(2, len(h & good) - len(h & bad)))
+        levels[lvl] = {"lord": q, "houses": sorted(h), "for": sorted(h & good), "against": sorted(h & bad)}
+    if risk is not None:
+        H = {l: set(v["houses"]) for l, v in levels.items()}
+        score = (4.0 if _combo(H["sub"], good, risk) or _combo(H["nakshatra"], good, risk) else
+                 3.0 if _combo(H["nakshatra"] | H["sub"], good, risk) else
+                 2.0 if _combo(H["planet"] | H["nakshatra"], good, risk) else 0.0)
+        score -= 1.5 if H["sub"] & bad else 0.0  # the sub lord signifying the remedy houses (e.g. 5, 11) eases it
+    verdict = ("supports" if score >= 3 else "leans good" if score >= 1 else "mixed" if score > -1
+               else "against" if score > -3 else "blocks")
+    return {"lord": p, "star_lord": lords["nakshatra"], "sub_lord": lords["sub"], "levels": levels,
+            "score": round(score, 2), "verdict": verdict}
 
 
 def promise(chart: dict, topic: str) -> dict:
-    title, h, good, bad = TOPICS[topic]
+    title, h, good, bad, *_ = TOPICS[topic]
     csl = chart["houses"][h - 1]["kp"]["sub_lord"]
-    sig = _sig(chart, csl)["all"]
-    f, a = sorted(sig & good), sorted(sig & bad)
-    verdict = ("promised" if f and (h in sig or len(f) > len(a)) else
-               "promised with obstacles" if f else "not clearly promised")
-    return {"cusp": h, "cusp_sub_lord": csl, "csl_star_lord": chart["grahas"][csl]["nakshatra_lord"],
-            "signifies": sorted(sig), "for": f, "against": a, "verdict": verdict}
+    j = judge_lord(chart, csl, good, bad, RISK_RULES.get(topic) if TOPICS[topic][6] == "risk" else None)
+    verdict = {"supports": "promised", "leans good": "promised", "mixed": "promised with obstacles"}.get(
+        j["verdict"], "not clearly promised")
+    if TOPICS[topic][6] == "risk":
+        verdict = {"promised": "indicated", "promised with obstacles": "possible"}.get(verdict, "not strongly indicated")
+    sub = j["levels"]["sub"]
+    return {"cusp": h, "cusp_sub_lord": csl, "csl_star_lord": j["star_lord"], "signifies": sub["houses"],
+            "for": sub["for"], "against": sub["against"], "verdict": verdict, "judgement": j}
 
 
 def _cusps(chart: dict):
     return NS(cusps=[NS(house=c["house"], longitude=c["longitude"]) for c in chart["houses"]])
 
 
-def transit_trigger(chart: dict, mid: date, lords: list[str], supporting: set, good: set, bad: set,
-                    ayanamsha: str) -> tuple[float, list[str]]:
+def transit_trigger(chart: dict, mid: date, supporting: set, good: set, bad: set, ayanamsha: str) -> tuple[float, list[str]]:
     tr = transit_positions(datetime(mid.year, mid.month, mid.day, 12, tzinfo=timezone.utc), ayanamsha)
     cusps, score, notes = _cusps(chart), 0.0, []
     for p in ("Jupiter", "Saturn"):
@@ -96,14 +135,29 @@ def transit_trigger(chart: dict, mid: date, lords: list[str], supporting: set, g
         star = NAKSHATRA_LORDS[int(lon // NAKSHATRA_ARC)]
         if h in good:
             score += 0.5 if p == "Jupiter" else 0.25
-            notes.append(f"{p} transits your {h}{_ord(h)} house (favourable)")
+            notes.append(f"{p} transits your {h}{_ord(h)} house (part of the combination)")
         elif h in bad:
             score -= 0.25 if p == "Jupiter" else 0.5
-            notes.append(f"{p} transits your {h}{_ord(h)} house (opposing)")
+            notes.append(f"{p} transits your {h}{_ord(h)} house (negating)")
         if star in supporting:
             score += 0.5
             notes.append(f"{p} moves through the star of {star}, a supporting period lord")
     return score, notes
+
+
+def karaka_present(chart: dict, lords: list[str], karakas: set) -> str | None:
+    """A DBA lord that is a karaka, or is conjunct with / aspected by one."""
+    if not karakas:
+        return None
+    signs = {q: g["sign_index"] for q, g in chart["grahas"].items()}
+    asp = aspects(signs, chart["lagna"]["sign_index"])
+    for l in lords:
+        if l in karakas:
+            return f"{l} is itself the significator"
+        for k in karakas:
+            if k != l and (signs[k] == signs[l] or l in asp[k]["planets"]):
+                return f"{l} is {'with' if signs[k] == signs[l] else 'aspected by'} the significator {k}"
+    return None
 
 
 def periods_in(chart: dict, start: date, end: date) -> list[dict]:
@@ -120,35 +174,57 @@ def periods_in(chart: dict, start: date, end: date) -> list[dict]:
 def predict(chart: dict, topic: str, start: date | None = None, months: int = 24) -> dict:
     if topic not in TOPICS:
         raise ValueError(f"unknown topic: {topic}")
-    title, h, good, bad = TOPICS[topic]
+    title, h, good, bad, karakas, required, kind = TOPICS[topic]
     start = start or datetime.now(timezone.utc).date()
     end = start + timedelta(days=round(months * 30.44))
     ayan = chart["meta"].get("ayanamsha", "krishnamurti")
     cache: dict[str, dict] = {}
-    lord = lambda p: cache.setdefault(p, judge_lord(chart, p, good, bad))
+    rule = RISK_RULES.get(topic, {}) if kind == "risk" else None
+    lord = lambda p: cache.setdefault(p, judge_lord(chart, p, good, bad, rule))
     windows = []
     for per in periods_in(chart, start, end):
         js = {lvl: lord(per[lvl]) for lvl in ("maha", "antar", "praty")}
-        score = sum(WEIGHT[l] * VALUE[j["verdict"]] for l, j in js.items())
+        score = sum(WEIGHT_DBA[l] * VALUE[j["verdict"]] for l, j in js.items())
         supporting = {j["lord"] for j in js.values() if j["verdict"] in ("supports", "leans good")}
         s, e = max(per["starts"], start), min(per["ends"], end)
-        t_score, t_notes = transit_trigger(chart, s + (e - s) / 2, [per[l] for l in js], supporting, good, bad, ayan)
+        t_score, notes = transit_trigger(chart, s + (e - s) / 2, supporting, good, bad, ayan)
         score += t_score
+        kar = karaka_present(chart, [per[l] for l in js], karakas)
+        if kar:
+            score += 0.5
+            notes.append(f"Significator: {kar}")
         verdict = ("strong" if score >= 3 else "favourable" if score >= 1.5 else
                    "mixed" if score > -1 else "challenging")
-        reasons = [f"{lvl_name} {j['lord']}: star lord {j['star_lord']} → gives houses {j['gives']}; "
-                   f"sub lord {j['sub_lord']} → signifies {j['sub_signifies']}; {j['verdict']}"
-                   for lvl_name, j in (("Mahadasha", js["maha"]), ("Antardasha", js["antar"]), ("Pratyantar", js["praty"]))]
+        # The Dasa lord must allow the event, then the Bhukti; a required karaka must be involved.
+        cap = None
+        if js["maha"]["verdict"] in ("against", "blocks"):
+            cap = "the Dasa lord does not allow it"
+        elif js["antar"]["verdict"] == "blocks":
+            cap = "the Bhukti lord does not allow it"
+        elif required and not kar:
+            cap = f"no significator ({', '.join(sorted(karakas))}) is involved"
+        if cap and verdict in ("strong", "favourable"):
+            verdict = "mixed"
+            notes.append(f"Held back: {cap}")
+        reasons = []
+        for name, j in (("Dasa", js["maha"]), ("Bhukti", js["antar"]), ("Antar", js["praty"])):
+            L = j["levels"]
+            reasons.append(f"{name} {j['lord']}: planet {_hs(L['planet']['houses'])}, nakshatra {L['nakshatra']['lord']} "
+                           f"{_hs(L['nakshatra']['houses'])}, sub {L['sub']['lord']} {_hs(L['sub']['houses'])} → {j['verdict']}")
         windows.append({"maha": per["maha"], "antar": per["antar"], "praty": per["praty"],
                         "starts": per["starts"].isoformat(), "ends": per["ends"].isoformat(),
-                        "score": round(score, 2), "verdict": verdict, "reasons": reasons, "transit": t_notes})
+                        "score": round(score, 2), "verdict": verdict, "reasons": reasons, "transit": notes})
     best = sorted([w for w in windows if w["verdict"] in ("strong", "favourable")], key=lambda w: -w["score"])[:3]
     hard = sorted([w for w in windows if w["verdict"] == "challenging"], key=lambda w: w["score"])[:2]
-    return {"topic": topic, "title": title, "houses_for": sorted(good), "houses_against": sorted(bad),
+    return {"topic": topic, "title": title, "kind": kind, "houses_for": sorted(good), "houses_against": sorted(bad),
+            "significators": sorted(karakas), "significator_required": required,
             "promise": promise(chart, topic), "from": start.isoformat(), "to": end.isoformat(),
             "windows": windows, "best": [(w["starts"], w["ends"]) for w in best],
-            "hardest": [(w["starts"], w["ends"]) for w in hard],
-            "lords": {p: j for p, j in cache.items()}}
+            "hardest": [(w["starts"], w["ends"]) for w in hard], "lords": dict(cache)}
+
+
+def _hs(h: list[int]) -> str:
+    return ",".join(map(str, h)) or "none"
 
 
 def _ord(n: int) -> str:
@@ -156,37 +232,52 @@ def _ord(n: int) -> str:
 
 
 KEYWORDS = {
-    "career": r"career|job|promotion|work|office|boss|profession|business|employ|salary|appraisal|interview|resign",
+    "career": r"career|job|promotion|work|office|boss|profession|employ|salary|appraisal|interview",
+    "business": r"business|startup|shop|trade|partnership firm",
+    "job_change": r"change (my |of )?job|switch|resign|new job|leave (my |the )?job|quit",
     "marriage": r"marriage|marry|married|wedding|spouse|husband|wife|shaadi|rishta|engagement",
+    "divorce": r"divorce|separation|separate",
     "love": r"\blove|relationship|girlfriend|boyfriend|romance|crush|dating",
-    "money": r"money|wealth|financ|income|gains?\b|invest|savings|profit|debt|loan|rich",
-    "property": r"property|land|flat|apartment|house purchase|buy a house|vehicle|car\b",
-    "foreign": r"abroad|foreign|visa|immigra|settle|relocat|overseas|\bpr\b|green card",
+    "money": r"money|wealth|financ|income|gains?\b|invest|savings|profit|rich",
+    "property": r"property|land|plot|flat|apartment|buy a house|house purchase",
+    "property_sale": r"sell (my |the )?(house|property|flat|plot|land)",
+    "vehicle": r"vehicle|\bcar\b|bike|scooter",
+    "residence": r"shift(ing)? house|move house|change (of )?residence|relocat",
+    "foreign": r"abroad|foreign|visa|immigra|settle|overseas|\bpr\b|green card",
+    "return_home": r"come back home|return (home|to india)|back to india",
+    "education": r"study|studies|education|marks|degree|college|university|course",
+    "exams": r"exam|competitive|entrance|interview|selection",
+    "awards": r"award|prize|recognition",
     "children": r"child|children|baby|pregnan|conceive|\bson\b|daughter|kids?\b",
-    "education": r"exam|study|studies|education|admission|degree|college|university|course",
-    "health": r"health|illness|disease|surgery|recover|hospital|sick",
+    "health": r"health|recover|well-being",
+    "illness": r"illness|disease|surgery|sick|hospital",
+    "accident": r"accident|injur",
     "litigation": r"court|lawsuit|\bcase\b|dispute|legal|litigation",
 }
 
 
 def topics_for(question: str) -> list[str]:
-    import re
     q = question.lower()
-    return [t for t, pat in KEYWORDS.items() if re.search(pat, q)][:2]
+    found = [t for t, pat in KEYWORDS.items() if re.search(pat, q)]
+    if "litigation" in found and re.search(r"\bwin\b|winning", q):
+        found[found.index("litigation")] = "litigation_win"
+    return found[:2]
 
 
 def brief(result: dict) -> str:
     """Compact text the chat model explains; every verdict and date in it is computed."""
-    p = result["promise"]
-    lines = [f"KP PREDICTION — {result['title']} (houses for {','.join(map(str, result['houses_for']))}; "
-             f"against {','.join(map(str, result['houses_against']))})",
-             f"Promise: {p['cusp']}th cusp sub lord {p['cusp_sub_lord']} (star lord {p['csl_star_lord']}) signifies "
-             f"{','.join(map(str, p['signifies']))} → {p['verdict']}.",
-             "Windows (maha/antar/pratyantar: verdict, score):"]
+    p, risk = result["promise"], result["kind"] == "risk"
+    label = (lambda v: RISK_LABEL[v].upper()) if risk else (lambda v: v.upper())
+    lines = [f"NADI PREDICTION — {result['title']} (combination {','.join(map(str, result['houses_for']))}; "
+             f"negating {','.join(map(str, result['houses_against']))}"
+             + (f"; significator {'/'.join(result['significators'])}" if result["significators"] else "") + ")"
+             + (" — this is a RISK reading: a strong window means more risk, not good news." if risk else ""),
+             f"Promise: {p['cusp']}th cusp sub lord {p['cusp_sub_lord']} signifies {','.join(map(str, p['signifies']))} "
+             f"→ {p['verdict']}.",
+             "Windows (dasa/bhukti/antar: verdict):"]
     for w in result["windows"]:
-        lords = result["lords"]
-        why = "; ".join(f"{l} {lords[l]['verdict']} (gives {','.join(map(str, lords[l]['gives']))}, sub {lords[l]['sub_lord']})"
-                        for l in dict.fromkeys([w["antar"], w["praty"]]))
-        lines.append(f"- {w['starts']} to {w['ends']} {w['maha']}/{w['antar']}/{w['praty']}: {w['verdict'].upper()} "
-                     f"({w['score']}). {why}." + (f" Transit: {'; '.join(w['transit'])}." if w["transit"] else ""))
+        lj = result["lords"]
+        why = "; ".join(f"{l} {lj[l]['verdict']} (sub {lj[l]['sub_lord']})" for l in dict.fromkeys([w["maha"], w["antar"], w["praty"]]))
+        lines.append(f"- {w['starts']} to {w['ends']} {w['maha']}/{w['antar']}/{w['praty']}: {label(w['verdict'])} "
+                     f"({w['score']}). {why}." + (f" {'; '.join(w['transit'])}." if w["transit"] else ""))
     return "\n".join(lines)

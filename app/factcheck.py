@@ -77,7 +77,7 @@ def facts_from(synth: dict, chart: dict, extra: list | None = None, kp: dict | N
                 spans["praty"].append(span(pd, maha=md["lord"], antar=ad["lord"]))
     kp_windows = {t: [{"s": date.fromisoformat(w["starts"]), "e": date.fromisoformat(w["ends"]), "verdict": w["verdict"],
                        "label": f"{w['antar']}/{w['praty']}"} for w in r["windows"]] for t, r in (kp or {}).items()}
-    return {"kp": kp_windows, "spans": spans, "today": date.fromisoformat(synth["today"]), "planets": P, "lagna": synth["lagna"]["sign"], "months": months, "yogas": yogas,
+    return {"kp": kp_windows, "kp_kind": {t: r.get("kind", "event") for t, r in (kp or {}).items()}, "spans": spans, "today": date.fromisoformat(synth["today"]), "planets": P, "lagna": synth["lagna"]["sign"], "months": months, "yogas": yogas,
             "sade_sati": "sade_sati" in synth["transits_now"],
             "maha": (d.get("maha") or {}).get("lord"), "antar": (d.get("antar") or {}).get("lord")}
 
@@ -266,7 +266,8 @@ POSITIVE = re.compile(r"\b(strong|strongest|favourable|favorable|best|excellent|
                       r"peak|promising|supportive|golden)\b", re.I)
 NEGATIVE = re.compile(r"\b(challenging|difficult|hard|tough|avoid|struggle|weak|worst|unfavourable|unfavorable|"
                       r"blocked|setback)\b", re.I)
-TOPIC_WORDS = {"career": r"career|job|work|promotion|profession|business", "marriage": r"marri|wedding|spouse",
+TOPIC_WORDS = {"career": r"career|job|work|promotion|profession", "business": r"business|trade", "marriage": r"marri|wedding|spouse",
+               "vehicle": r"vehicle|car\b", "exams": r"exam|interview", "job_change": r"change|switch|new job",
                "love": r"love|relationship", "money": r"money|income|wealth|financ|gains", "property": r"property|vehicle|house",
                "foreign": r"abroad|foreign|visa|settle", "children": r"child|baby", "education": r"exam|study|education",
                "health": r"health|recover", "litigation": r"court|case|dispute|legal"}
@@ -291,6 +292,8 @@ def verdict_checks(sent: str, facts: dict, flag) -> None:
     if e < s:
         return
     for t in topics:
+        if facts.get("kp_kind", {}).get(t) == "risk":
+            continue  # "strong" means high risk there; wording checks would invert
         span = max((e - s).days, 1)
         cover = {}
         for w in facts["kp"][t]:
