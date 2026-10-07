@@ -29,9 +29,21 @@ SYSTEM = (
     "your career house'); skip degrees, KP sub-lords and technical terms unless they ask for them.\n"
     "Answer ANY question about their kundli: personality, career, marriage, health tendencies, finances, "
     "education, dasha timing, transits, muhurta, divisional charts, Lal Kitab upay, guna milan, or how a concept "
-    "works. Ground every answer in the chart data — never state a planetary position you have not been given, "
-    "and use each graha's 'dignity' field as given (exalted, debilitated, own, friendly, enemy, neutral); never "
-    "contradict it. Houses in grahas are KP (Placidus); Ashtakavarga sav_by_house starts from the lagna. "
+    "works. Ground every answer in the chart data — never state a planetary position you have not been given.\n"
+    "The chart data is pre-synthesised. 'planets' carry dignity, nature (benefic/malefic), the houses they own, "
+    "conjunctions ('with'), drishti received ('aspected_by') and Neecha Bhanga; 'houses' list the factors raising "
+    "(+) and lowering (-) each house with a net verdict; 'dasha' is what runs now and next, and dasha.next_24_months "
+    "lists every maha/antar/pratyantar period with its start and end dates — quote dates only from it, and name the "
+    "level correctly (a pratyantar is a sub-period inside the antardasha, not a new antardasha); 'transits_now' is today's "
+    "sky from the lagna and the Moon (with Sade Sati if active). Houses are whole-sign from the lagna; the 'kp' block "
+    "uses Placidus cusps.\n"
+    "SYNTHESISE, never read one placement in isolation: for any matter, weigh the + and - of its houses, the dignity "
+    "and drishti on their lords and occupants, the yogas involved, and whether the running daśā lords own or occupy "
+    "those houses — then explain the balance (e.g. 'Saturn in the 7th delays marriage, but it is exalted and "
+    "Jupiter aspects it, so marriage may come late and be very stable'). For questions about now or the coming "
+    "months, anchor in the maha/antar daśā and transits_now. Use the dignity, drishti, yogas and Neecha Bhanga "
+    "exactly as given; never infer or contradict them. For upay follow remedy_guide: mantras and daan on the "
+    "planet's own day, and gemstones only from suitable_stones. "
     "For questions about the "
     "present or future, call the tools (transits, transit events, panchang, dasha detail, divisional charts, "
     "Lal Kitab kundli) instead of guessing positions. For Lal Kitab questions call get_lal_kitab; for "
@@ -44,6 +56,9 @@ SYSTEM = (
     "decision say a review with the founding astrologer is worth it. If the question is unrelated to astrology or "
     "the chart, politely steer back. Today's date is given in the data.\n\nCHART DATA (JSON):\n"
 )
+
+# Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
+CONTEXT_VERSION = "synth-2"
 
 TOOLS = [
     {"name": "get_transits",
@@ -129,7 +144,11 @@ def run_tool(profile: dict, name: str, args: dict) -> dict:
         return astro.match_for(groom, bride, profile.get("owner"))
     if name == "get_dasha_detail":
         md = next((d for d in chart["dasha"] if d["lord"].lower() == str(args.get("mahadasha", "")).lower()), None)
-        return md or {"error": "No such mahadasha in this chart"}
+        if not md:
+            return {"error": "No such mahadasha in this chart"}
+        from app.synthesis import flat_periods
+        return {"maha": md["lord"], "starts": md["start"][:10], "ends": md["end"][:10],
+                "periods": flat_periods(md)}
     return {"error": f"Unknown tool {name}"}
 
 
@@ -256,6 +275,7 @@ def chat_events(profile: dict, message: str):
     pid = profile["id"]
     today = date.today().isoformat()  # transit-dependent answers go stale daily
     key = cache_key(message)
+    key = key and f"{CONTEXT_VERSION}:{key}"
     cached = storage.cache_get(pid, key, today) if key else None
     if cached:
         storage.add_message(pid, "user", message)

@@ -61,11 +61,13 @@ def test_dignity_rules():
     assert dignity("Venus", LEO) == "enemy" and dignity("Mars", LEO) == "friendly"
 
 
-def test_chat_context_carries_dignity_and_strength():
+def test_chat_context_is_synthesised():
     import json
     from app import ask
     c = TestClient(app).post("/chart", json={"dob": "1987-09-01", "tob": "14:30:00", "lat": 30.73629,
                                              "lon": 76.7884, "tz_name": "Asia/Kolkata"}).json()
-    d = json.loads(ask.llm_context({"chart": c, "request": {}}))
-    assert d["grahas"]["Moon"]["dignity"] == "debilitated"
-    assert len(d["ashtakavarga"]["sav_by_house"]) == 12 and "lord_exchanges_D1" in d
+    ctx = ask.llm_context({"chart": c, "request": {"name": "Sukh"}})
+    d = json.loads(ctx)
+    assert d["planets"]["Moon"]["dignity"] == "debilitated" and d["planets"]["Moon"]["neecha_bhanga"].startswith("cancelled")
+    assert set(d["houses"]) == {str(h) for h in range(1, 13)} and d["dasha"]["maha"]["lord"]
+    assert len(ctx) < 9000  # compressed: well under the old ~15k-character raw dump

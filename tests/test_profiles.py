@@ -108,7 +108,8 @@ def test_tools_run_against_engine(client):
     assert "Saturn" in chat.run_tool(p, "get_transits", {"when": "2026-10-05T00:00:00"})["grahas"]
     assert chat.run_tool(p, "get_panchang", {"date": "2026-10-05"})["tithi"]
     assert "D10" in chat.run_tool(p, "get_divisional_chart", {"name": "d10"})
-    assert chat.run_tool(p, "get_dasha_detail", {"mahadasha": "rahu"})["lord"] == "Rahu"
+    rahu = chat.run_tool(p, "get_dasha_detail", {"mahadasha": "rahu"})
+    assert rahu["maha"] == "Rahu" and all(x["maha"] == "Rahu" and x["pratyantar"] for x in rahu["periods"])
     assert isinstance(chat.run_tool(p, "get_transit_events", {"days": 7})["events"], list)
 
 

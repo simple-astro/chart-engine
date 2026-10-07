@@ -5,10 +5,7 @@ import json
 import re
 from datetime import datetime, timezone
 
-from core.ashtakavarga import ashtakavarga
-from core import yogas
-from core.dignity import dignity
-from core.parivartana import exchanges
+from app import synthesis
 
 GRAHAS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]
 SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio",
@@ -86,30 +83,5 @@ def lookup(chart: dict, q: str) -> str | None:
 
 
 def llm_context(profile: dict) -> str:
-    chart = profile["chart"]
-    md, ad = current_dasha(chart)
-    slim_dasha = [{"lord": d["lord"], "start": d["start"][:10], "end": d["end"][:10],
-                   "antardashas": [{"lord": c["lord"], "start": c["start"][:10], "end": c["end"][:10]}
-                                   for c in d.get("children", [])]} for d in chart["dasha"]]
-    signs = {p: g["sign_index"] for p, g in chart["grahas"].items()}
-    lagna = chart["lagna"]["sign_index"]
-    grahas = {p: {**g, "dignity": dignity(p, g["sign_index"])} for p, g in chart["grahas"].items()}
-    akv = ashtakavarga(signs, lagna)
-    d9 = {p: v["sign_index"] for p, v in chart["vargas"].get("D9", {}).items()} or None
-    strength = yogas.analyse(signs, lagna, d9, {p: g["combust"] for p, g in chart["grahas"].items()})
-    for p, nb in strength["neecha_bhanga"].items():
-        grahas[p]["neecha_bhanga"] = nb
-    for p, a in strength["aspects"].items():
-        grahas[p]["aspects_houses"], grahas[p]["aspects_planets"] = a["houses"], a["planets"]
-    data = {
-        "birth": profile["request"], "meta": chart["meta"], "lagna": chart["lagna"],
-        "grahas": grahas, "houses": chart["houses"], "significators": chart["significators"],
-        "ashtakavarga": {"sav_by_house": [akv["sav"][(lagna + h) % 12] for h in range(12)],
-                         "planet_bindus_in_own_sign": akv["own_bindus"]},
-        "lord_exchanges_D1": exchanges(signs, lagna),
-        "yogas": [{k: y[k] for k in ("name", "kind", "planets", "meaning")} for y in strength["yogas"]],
-        "navamsa_D9": chart["vargas"].get("D9"), "dasha": slim_dasha,
-        "current_mahadasha": md and md["lord"], "current_antardasha": ad and ad["lord"],
-        "today": datetime.now(timezone.utc).date().isoformat(),
-    }
-    return json.dumps(data, separators=(",", ":"))
+    """Pre-synthesised chart (see app.synthesis); full dasha and transit detail stay behind the chat tools."""
+    return json.dumps(synthesis.build(profile), separators=(",", ":"), ensure_ascii=False)
