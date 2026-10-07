@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SimpleJyotish Admin</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23d9a54d'/%3E%3Ctext x='16' y='22' font-size='17' text-anchor='middle' fill='%231a1322'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E">
+<script>(function(){try{var t=localStorage.getItem("sj-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t)}catch(e){}})();</script>
+<style>
+  :root{
+    color-scheme:light;
+    --bg:#fbf7ef; --bg2:#f3ecdf; --card:#fffdf9; --ink:#241e31; --ink2:#4a4360; --mut:#6d6682;
+    --acc:#8a5e14; --g1:#e0b05f; --g2:#c98f2e; --soft:rgba(138,94,20,.09); --track:#efe3cc;
+    --line:rgba(36,30,49,.12); --ok:#2e7d32; --warn:#b45309; --bad:#c0392b;
+    --shadow:0 1px 2px rgba(36,30,49,.05),0 8px 24px rgba(36,30,49,.06);
+    --sans:system-ui,-apple-system,"Segoe UI",Inter,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0a0812; --bg2:#120e1f; --card:#1b162b; --ink:#f1ecf7; --ink2:#cfc8e0; --mut:#9f98b8;
+    --acc:#e5bb72; --g1:#e8c178; --g2:#c79440; --soft:rgba(229,187,114,.11); --track:#2c2440;
+    --line:rgba(255,255,255,.1); --ok:#6ee7a0; --warn:#f0a35a; --bad:#ff8a80;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.4);
+  }}
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#0a0812; --bg2:#120e1f; --card:#1b162b; --ink:#f1ecf7; --ink2:#cfc8e0; --mut:#9f98b8;
+    --acc:#e5bb72; --g1:#e8c178; --g2:#c79440; --soft:rgba(229,187,114,.11); --track:#2c2440;
+    --line:rgba(255,255,255,.1); --ok:#6ee7a0; --warn:#f0a35a; --bad:#ff8a80;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+  a{color:var(--acc)}
+  .top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .top .in{max-width:1200px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px}
+  .brand{font:600 1.3rem Georgia,"Times New Roman",serif;margin-right:auto;display:flex;align-items:center;gap:9px}
+  .brand i{font-style:normal;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(140deg,var(--g1),var(--g2));color:#1a1322;font-size:15px}
+  .brand b{font-weight:600} .brand em{font-style:normal;color:var(--acc)}
+  .brand span{font:600 .72rem var(--sans);letter-spacing:1px;text-transform:uppercase;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+  main{max-width:1200px;margin:0 auto;padding:22px 16px 60px}
+  h2{font:600 1.05rem var(--sans);margin:0 0 4px}
+  .sub{color:var(--mut);font-size:.86rem;margin:0 0 14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px;margin-bottom:18px}
+
+  /* KPI row */
+  .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:18px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);min-width:0}
+  .tile .label{color:var(--mut);font-size:.8rem}
+  .tile .value{font:600 1.7rem/1.2 var(--sans);margin-top:4px;color:var(--ink)}
+  .tile .hint{color:var(--mut);font-size:.78rem;margin-top:6px}
+  .meter{height:6px;border-radius:99px;background:var(--track);margin-top:10px;overflow:hidden}
+  .meter i{display:block;height:100%;border-radius:99px;background:var(--g2);transition:width .3s}
+  .meter.warn i{background:var(--warn)} .meter.full i{background:var(--bad)}
+
+  /* settings */
+  form.settings{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px;align-items:start}
+  label{display:block;font-size:.8rem;font-weight:600;color:var(--ink2);margin-bottom:6px}
+  input,select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit}
+  input:focus,select:focus{outline:2px solid var(--g2);outline-offset:1px}
+  .help{color:var(--mut);font-size:.78rem;margin-top:5px}
+  .actions{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin-top:2px}
+  .btn{border:0;border-radius:10px;padding:10px 18px;font:600 .95rem var(--sans);cursor:pointer;color:#1a1322;background:linear-gradient(140deg,var(--g1),var(--g2))}
+  .btn:disabled{opacity:.55;cursor:default}
+  .btn.ghost{background:var(--bg2);color:var(--ink);border:1px solid var(--line)}
+  .status{font-size:.88rem;color:var(--mut)} .status.ok{color:var(--ok)} .status.err{color:var(--bad)}
+
+  /* tables */
+  .scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.88rem}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.nowrap{white-space:nowrap}
+  td.q{min-width:220px;max-width:380px}
+  td.q div{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  tr.row{cursor:pointer} tr.row:hover td{background:var(--soft)}
+  tr.row:focus-visible td{outline:2px solid var(--g2);outline-offset:-2px}
+  tr.detail td{background:var(--bg2);white-space:normal}
+  .qa{display:grid;gap:10px;padding:4px 2px;position:sticky;left:10px;max-width:min(900px,calc(100vw - 90px))}
+  .qa b{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin-bottom:3px}
+  .qa div{white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+  .tag{display:inline-block;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);white-space:nowrap}
+  .tag.ai{border-color:var(--g2);color:var(--acc)}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .toolbar input{max-width:320px}
+  .empty{color:var(--mut);padding:18px 4px;text-align:center}
+  .more{display:flex;justify-content:center;margin-top:12px}
+
+  @media(max-width:980px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))} .kpis .tile:last-child{grid-column:1/-1} form.settings{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.kpis{grid-template-columns:1fr 1fr} form.settings{grid-template-columns:1fr} .brand span{display:none} .tile .value{font-size:1.4rem}}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <div class="brand"><i>✦</i><b>Simple<em>Jyotish</em></b><span>Admin</span></div>
+  <button class="btn ghost" id="refresh" type="button">Refresh</button>
+  <a href="/">Back to app</a>
+</div></header>
+
+<main>
+  <section class="kpis" aria-label="Today at a glance">
+    <div class="tile"><div class="label">AI questions today</div><div class="value" id="k-today">–</div>
+      <div class="meter" id="k-meter" role="meter" aria-label="Share of today's overall limit used" aria-valuemin="0"><i style="width:0"></i></div>
+      <div class="hint" id="k-today-hint">&nbsp;</div></div>
+    <div class="tile"><div class="label">Estimated cost today</div><div class="value" id="k-cost-today">–</div><div class="hint">Anthropic API, before tax</div></div>
+    <div class="tile"><div class="label">Estimated cost, all time</div><div class="value" id="k-cost-all">–</div><div class="hint" id="k-all-hint">&nbsp;</div></div>
+    <div class="tile"><div class="label">Testers</div><div class="value" id="k-testers">–</div><div class="hint" id="k-active">&nbsp;</div></div>
+    <div class="tile"><div class="label">Charts saved</div><div class="value" id="k-charts">–</div><div class="hint">Across all testers</div></div>
+  </section>
+
+  <section class="card">
+    <h2>Settings</h2>
+    <p class="sub">Changes apply to the next question. No redeploy needed.</p>
+    <form class="settings" id="settings">
+      <div><label for="s-model">Model</label><select id="s-model"></select><div class="help" id="s-model-help"></div></div>
+      <div><label for="s-words">Reply length (words)</label><input id="s-words" type="number" min="100" max="800" step="10" required><div class="help">100 to 800. Longer replies cost more.</div></div>
+      <div><label for="s-per">Questions per tester per day</label><input id="s-per" type="number" min="0" max="1000" required><div class="help">0 pauses chat for testers.</div></div>
+      <div><label for="s-total">Questions per day, all testers</label><input id="s-total" type="number" min="0" max="10000" required><div class="help">Your daily spending ceiling.</div></div>
+      <div class="actions"><button class="btn" type="submit" id="save">Save settings</button><span class="status" id="save-status" role="status"></span></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Testers</h2>
+    <p class="sub">Each tester is one browser that entered the access code. Names come from the charts they saved.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Tester</th><th>Charts</th><th class="num">Today</th><th class="num">All questions</th><th>Last active</th></tr></thead>
+      <tbody id="testers"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section class="card">
+    <h2>Questions</h2>
+    <p class="sub">Every question testers asked, newest first. Select a row to read the full answer.</p>
+    <div class="toolbar"><input id="filter" type="search" placeholder="Filter by tester, chart or words" aria-label="Filter questions"></div>
+    <div class="scroll"><table>
+      <thead><tr><th>When</th><th>Tester</th><th>Chart</th><th>Question</th><th>Answered by</th><th class="num">Tokens</th><th class="num">Est. cost</th></tr></thead>
+      <tbody id="queries"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+    </table></div>
+    <div class="more"><button class="btn ghost" id="more" type="button" hidden>Load older questions</button></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const compact = n => n >= 1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M' : n >= 1e4 ? (n/1e3).toFixed(0) + 'K' : n >= 1e3 ? (n/1e3).toFixed(1).replace(/\.0$/,'') + 'K' : String(n);
+const money = v => v == null ? '–' : v === 0 ? '$0' : v < 0.01 ? '$' + v.toFixed(4) : v < 100 ? '$' + v.toFixed(2) : '$' + Math.round(v).toLocaleString();
+const when = ts => ts ? new Date(ts).toLocaleString(undefined, {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : '–';
+const SOURCE = {llm: ['AI answer', 'ai'], cache: ['Reused answer', ''], lookup: ['Chart lookup', '']};
+let models = {}, rows = [], oldest = null;
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (r.status === 401 || r.status === 403) { location.reload(); throw new Error('Signed out'); }
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+  return r.json();
+}
+
+function renderOverview(o) {
+  models = o.models;
+  const s = o.settings, cap = s.daily_limit_total, used = o.today.paid_questions;
+  $('k-today').textContent = used.toLocaleString();
+  const pct = cap ? Math.min(100, used / cap * 100) : 100;
+  const m = $('k-meter');
+  m.firstElementChild.style.width = pct + '%';
+  m.classList.toggle('warn', pct >= 75 && pct < 100); m.classList.toggle('full', pct >= 100);
+  m.setAttribute('aria-valuemax', cap); m.setAttribute('aria-valuenow', used);
+  $('k-today-hint').textContent = cap ? `of ${cap.toLocaleString()} allowed today` + (pct >= 100 ? ' · limit reached' : '') : 'Chat is paused (limit 0)';
+  $('k-cost-today').textContent = money(o.today.cost);
+  $('k-cost-all').textContent = money(o.all_time.cost);
+  $('k-all-hint').textContent = `${o.all_time.paid_questions.toLocaleString()} AI questions so far`;
+  $('k-testers').textContent = o.testers.length.toLocaleString();
+  const active = o.testers.filter(t => t.questions_today > 0).length;
+  $('k-active').textContent = `${active} asked something today`;
+  $('k-charts').textContent = o.charts.toLocaleString();
+
+  const sel = $('s-model');
+  sel.innerHTML = Object.entries(models).map(([id, m]) =>
+    `<option value="${esc(id)}">${esc(m.label)}</option>`).join('');
+  sel.value = s.model; showModelHelp();
+  $('s-words').value = s.word_limit; $('s-per').value = s.daily_limit_per_tester; $('s-total').value = s.daily_limit_total;
+
+  $('testers').innerHTML = o.testers.length ? o.testers.map(t => `<tr>
+      <td class="nowrap">${esc(t.label)}</td>
+      <td>${t.charts ? esc(t.chart_names) : '<span style="color:var(--mut)">None yet</span>'}</td>
+      <td class="num">${(t.questions_today || 0).toLocaleString()}</td>
+      <td class="num">${(t.questions || 0).toLocaleString()}</td>
+      <td class="nowrap">${esc(when(t.last_seen || t.first_seen))}</td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">No testers yet. Share the access code to get started.</td></tr>';
+}
+
+function showModelHelp() { const m = models[$('s-model').value]; $('s-model-help').textContent = m ? `${m.note}. $${m.in} in / $${m.out} out per million tokens.` : ''; }
+$('s-model').addEventListener('change', showModelHelp);
+
+function renderQueries() {
+  const f = $('filter').value.trim().toLowerCase();
+  const list = f ? rows.filter(r => [r.tester, r.profile_name, r.question, r.answer].some(x => String(x || '').toLowerCase().includes(f))) : rows;
+  $('queries').innerHTML = list.length ? list.map(r => {
+    const [src, cls] = SOURCE[r.kind] || [r.kind, ''];
+    const tokens = r.kind === 'llm' ? `${compact(r.input_tokens + r.cache_read_tokens + r.cache_write_tokens)} in · ${compact(r.output_tokens)} out` : '–';
+    return `<tr class="row" tabindex="0" data-id="${r.id}" aria-expanded="false">
+      <td class="nowrap">${esc(when(r.ts))}</td><td class="nowrap">${esc(r.tester)}</td><td>${esc(r.profile_name || 'Deleted chart')}</td>
+      <td class="q"><div>${esc(r.question)}</div></td>
+      <td><span class="tag ${cls}">${esc(src)}</span>${r.kind === 'llm' ? `<div style="color:var(--mut);font-size:.78rem;margin-top:3px">${esc(r.model_label || r.model || '')}</div>` : ''}</td>
+      <td class="num">${tokens}</td><td class="num">${r.kind === 'llm' ? money(r.cost) : '$0'}</td></tr>`;
+  }).join('') : `<tr><td colspan="7" class="empty">${rows.length ? 'No questions match that filter.' : 'No questions yet.'}</td></tr>`;
+}
+
+function toggle(tr) {
+  const next = tr.nextElementSibling;
+  if (next && next.classList.contains('detail')) { next.remove(); tr.setAttribute('aria-expanded', 'false'); return; }
+  const r = rows.find(x => String(x.id) === tr.dataset.id); if (!r) return;
+  const d = document.createElement('tr'); d.className = 'detail';
+  d.innerHTML = `<td colspan="7"><div class="qa"><div><b>Question</b><div>${esc(r.question)}</div></div>
+    <div><b>Answer</b><div>${r.answer ? esc(r.answer) : '<span style="color:var(--mut)">Not recorded (asked before answer logging was added).</span>'}</div></div></div></td>`;
+  tr.after(d); tr.setAttribute('aria-expanded', 'true');
+}
+$('queries').addEventListener('click', e => { const tr = e.target.closest('tr.row'); if (tr) toggle(tr); });
+$('queries').addEventListener('keydown', e => { const tr = e.target.closest('tr.row'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(tr); } });
+$('filter').addEventListener('input', renderQueries);
+
+async function loadQueries(reset) {
+  const page = await api('/admin/api/queries?limit=50' + (!reset && oldest ? '&before_id=' + oldest : ''));
+  rows = reset ? page : rows.concat(page);
+  oldest = rows.length ? rows[rows.length - 1].id : null;
+  $('more').hidden = page.length < 50;
+  renderQueries();
+}
+$('more').addEventListener('click', () => loadQueries(false));
+
+async function loadAll() {
+  try { renderOverview(await api('/admin/api/overview')); await loadQueries(true); }
+  catch (e) { $('queries').innerHTML = `<tr><td colspan="7" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
+}
+$('refresh').addEventListener('click', loadAll);
+
+$('settings').addEventListener('submit', async e => {
+  e.preventDefault();
+  const st = $('save-status'); st.className = 'status'; st.textContent = 'Saving…'; $('save').disabled = true;
+  try {
+    const body = {model: $('s-model').value, word_limit: +$('s-words').value,
+                  daily_limit_per_tester: +$('s-per').value, daily_limit_total: +$('s-total').value};
+    await api('/admin/api/settings', {method: 'PUT', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
+    st.className = 'status ok'; st.textContent = 'Saved. The next question uses these settings.';
+    renderOverview(await api('/admin/api/overview'));
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+  $('save').disabled = false;
+});
+
+loadAll();
+</script>
+</body>
+</html>

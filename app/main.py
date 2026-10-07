@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import access
+from app import access, admin
 from app.astro import router as astro_router
 from app.profiles import router as profiles_router
 from app.profiles import usage_router
@@ -53,6 +53,7 @@ app = FastAPI(
 
 app.middleware("http")(access.gate)
 app.include_router(access.router)
+app.include_router(admin.router)
 app.include_router(router)
 app.include_router(profiles_router)
 app.include_router(astro_router)

@@ -50,16 +50,27 @@ def _connect() -> sqlite3.Connection:
         " tool_rounds INTEGER DEFAULT 0, words INTEGER DEFAULT 0, question TEXT)"
     )
     conn.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
-    for table in ("profiles", "usage_log"):
+    for table, col in (("profiles", "owner"), ("usage_log", "owner"), ("usage_log", "answer")):
         cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
-        if "owner" not in cols:
-            conn.execute(f"ALTER TABLE {table} ADD COLUMN owner TEXT")
+        if col not in cols:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT")
     return conn
 
 
 def _scope(owner: str | None) -> tuple[str, tuple]:
     """SQL filter for one tester's rows. owner=None is local single-user mode: no filter."""
     return ("", ()) if owner is None else (" AND owner = ?", (owner,))
+
+
+def get_setting(key: str) -> str | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+    return r["value"] if r else None
+
+
+def set_setting(key: str, value: str) -> None:
+    with _lock, _connect() as conn:
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, value))
 
 
 def secret() -> str:
@@ -156,14 +167,14 @@ def cache_put(profile_id: int, qkey: str, day: str, answer: str) -> None:
 
 def log_usage(profile_id: int, kind: str, question: str, *, model: str | None = None, input_tokens: int = 0,
               output_tokens: int = 0, cache_read: int = 0, cache_write: int = 0, tool_rounds: int = 0,
-              words: int = 0, owner: str | None = None) -> None:
+              words: int = 0, owner: str | None = None, answer: str | None = None) -> None:
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     with _lock, _connect() as conn:
         conn.execute(
             "INSERT INTO usage_log (ts, profile_id, kind, model, input_tokens, output_tokens, cache_read_tokens,"
-            " cache_write_tokens, tool_rounds, words, question, owner) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            " cache_write_tokens, tool_rounds, words, question, owner, answer) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (now, profile_id, kind, model, input_tokens, output_tokens, cache_read, cache_write, tool_rounds,
-             words, question[:200], owner))
+             words, question[:2000], owner, answer[:6000] if answer else None))
 
 
 def llm_requests_today(owner: str | None = None) -> int:
@@ -189,3 +200,50 @@ def usage_summary(recent: int = 20) -> dict:
                                     "cache_read_tokens": r["cr"], "cache_write_tokens": r["cw"]} for r in tot},
             "today_llm": {"requests": day["n"], "tokens": day["t"]},
             "recent": [dict(r) for r in rows]}
+
+
+def _today() -> str:
+    return datetime.now(timezone.utc).date().isoformat()
+
+
+def recent_queries(limit: int = 50, before_id: int | None = None) -> list[dict]:
+    """Newest-first chat log with the chart name, for the admin page."""
+    where, args = ("WHERE u.id < ?", (before_id,)) if before_id else ("", ())
+    with _lock, _connect() as conn:
+        rows = conn.execute(
+            "SELECT u.id, u.ts, u.kind, u.model, u.input_tokens, u.output_tokens, u.cache_read_tokens,"
+            " u.cache_write_tokens, u.tool_rounds, u.words, u.question, u.answer, u.owner, u.profile_id,"
+            f" p.name AS profile_name FROM usage_log u LEFT JOIN profiles p ON p.id = u.profile_id {where}"
+            " ORDER BY u.id DESC LIMIT ?", (*args, limit)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def token_totals(today_only: bool) -> list[dict]:
+    """Paid-token sums per model, for cost estimates."""
+    where, args = ("AND substr(ts, 1, 10) = ?", (_today(),)) if today_only else ("", ())
+    with _lock, _connect() as conn:
+        rows = conn.execute(
+            "SELECT model, COUNT(*) n, COALESCE(SUM(input_tokens),0) inp, COALESCE(SUM(output_tokens),0) out,"
+            " COALESCE(SUM(cache_read_tokens),0) cr, COALESCE(SUM(cache_write_tokens),0) cw"
+            f" FROM usage_log WHERE kind = 'llm' {where} GROUP BY model", args).fetchall()
+    return [dict(r) for r in rows]
+
+
+def tester_summary() -> list[dict]:
+    """One row per tester (owner): their charts and question counts."""
+    with _lock, _connect() as conn:
+        prof = conn.execute(
+            "SELECT owner, COUNT(*) charts, GROUP_CONCAT(name, ', ') names, MIN(created_at) first_seen"
+            " FROM profiles GROUP BY owner").fetchall()
+        q = conn.execute(
+            "SELECT owner, COUNT(*) total, SUM(substr(ts, 1, 10) = ?) today, SUM(kind = 'llm') paid,"
+            " MAX(ts) last_seen FROM usage_log GROUP BY owner", (_today(),)).fetchall()
+    rows = {r["owner"]: {"owner": r["owner"], "charts": r["charts"], "chart_names": r["names"],
+                         "first_seen": r["first_seen"], "questions": 0, "questions_today": 0,
+                         "paid_questions": 0, "last_seen": None} for r in prof}
+    for r in q:
+        row = rows.setdefault(r["owner"], {"owner": r["owner"], "charts": 0, "chart_names": "",
+                                           "first_seen": None})
+        row.update(questions=r["total"], questions_today=r["today"] or 0, paid_questions=r["paid"] or 0,
+                   last_seen=r["last_seen"])
+    return sorted(rows.values(), key=lambda r: r.get("last_seen") or r.get("first_seen") or "", reverse=True)

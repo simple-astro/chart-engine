@@ -1,0 +1,174 @@
+"""Admin page: sign-in, settings that drive the chat, caps, and the question log."""
+from types import SimpleNamespace as NS
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app import access, chat
+from app.main import app
+
+BODY = {"name": "Asha", "dob": "1990-05-15", "tob": "14:30:00", "lat": 28.6139, "lon": 77.209,
+        "tz_name": "Asia/Kolkata"}
+
+
+@pytest.fixture
+def gated(tmp_path, monkeypatch):
+    monkeypatch.setenv("CHART_DB_PATH", str(tmp_path / "p.db"))
+    monkeypatch.setenv("TESTER_ACCESS_CODES", "tester-code")
+    monkeypatch.setenv("ADMIN_ACCESS_CODE", "admin-code")
+    for var in ("CHART_LLM_MODEL", "CHAT_DAILY_LIMIT_PER_TESTER", "CHAT_DAILY_LIMIT_TOTAL"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    access._fails.clear()
+    yield
+    access._fails.clear()
+
+
+def _tester() -> TestClient:
+    c = TestClient(app)
+    assert c.post("/login", data={"code": "tester-code"}, follow_redirects=False).status_code == 303
+    return c
+
+
+def _admin(c: TestClient | None = None) -> TestClient:
+    c = c or TestClient(app)
+    r = c.post("/login", data={"code": "admin-code", "next": "/admin"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/admin"
+    return c
+
+
+class FakeStream:
+    def __init__(self, text="Your career looks steady.", stop="end_turn"):
+        self.text_stream, self._stop = [text], stop
+
+    def __enter__(self): return self
+    def __exit__(self, *a): return False
+
+    def get_final_message(self):
+        return NS(stop_reason=self._stop, content=[], model=None,
+                  usage=NS(input_tokens=1000, output_tokens=200, cache_read_input_tokens=0,
+                           cache_creation_input_tokens=0))
+
+
+@pytest.fixture
+def fake_llm(monkeypatch):
+    calls = {"plain": [], "beta": []}
+    state = {"stop": "end_turn"}
+
+    def maker(kind):
+        def stream(**kw):
+            calls[kind].append(kw)
+            return FakeStream(stop=state["stop"])
+        return NS(stream=stream)
+
+    monkeypatch.setattr(chat, "_client", lambda: NS(messages=maker("plain"), beta=NS(messages=maker("beta"))))
+    return calls, state
+
+
+def test_admin_page_asks_for_the_admin_code(gated):
+    assert "Admin code" in TestClient(app).get("/admin").text
+    t = _tester()
+    assert "Admin code" in t.get("/admin").text  # a tester browser can reach the admin form
+    assert t.get("/admin/api/overview").status_code == 403
+
+
+def test_tester_code_on_admin_form_is_refused(gated):
+    r = TestClient(app).post("/login", data={"code": "tester-code", "next": "/admin"}, follow_redirects=False)
+    assert r.status_code == 401 and "tester code" in r.text
+
+
+def test_admin_sign_in_from_a_tester_browser_keeps_their_charts(gated):
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    _admin(t)
+    assert "Settings" in t.get("/admin").text
+    assert [p["id"] for p in t.get("/profiles").json()] == [pid]
+    assert t.get("/me").json() == {"admin": True, "gated": True}
+    # signing in again with the tester code does not drop admin
+    t.post("/login", data={"code": "tester-code"}, follow_redirects=False)
+    assert t.get("/admin/api/overview").status_code == 200
+
+
+def test_next_only_allows_known_pages(gated):
+    r = TestClient(app).post("/login", data={"code": "admin-code", "next": "https://evil.example"},
+                             follow_redirects=False)
+    assert r.headers["location"] == "/"
+
+
+def test_settings_roundtrip_and_validation(gated):
+    a = _admin()
+    s = a.get("/admin/api/overview").json()["settings"]
+    assert s == {"model": "claude-haiku-4-5", "word_limit": 300, "daily_limit_per_tester": 30,
+                 "daily_limit_total": 300}
+    new = {"model": "claude-sonnet-5-5", "word_limit": 200, "daily_limit_per_tester": 5, "daily_limit_total": 50}
+    assert a.put("/admin/api/settings", json=new).json() == new
+    for bad in ({"model": "gpt-4"}, {"word_limit": 20}, {"daily_limit_total": -1}, {"word_limit": True},
+                {"word_limit": "300"}, {"nope": 1}, {"model": "claude-opus-5-5", "word_limit": 5}):
+        assert a.put("/admin/api/settings", json=bad).status_code == 422, bad
+    assert a.get("/admin/api/overview").json()["settings"] == new  # rejected saves changed nothing
+    assert _tester().put("/admin/api/settings", json=new).status_code == 403
+
+
+def test_haiku_request_shape(gated, fake_llm):
+    calls, _ = fake_llm
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    t.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"})
+    kw = calls["plain"][0]
+    assert kw["model"] == "claude-haiku-4-5" and kw["max_tokens"] == 1500 and not calls["beta"]
+    assert "HARD LIMIT of 300 words" in kw["system"][0]["text"]
+
+
+def test_newer_model_request_shape_and_word_limit(gated, fake_llm):
+    calls, _ = fake_llm
+    _admin().put("/admin/api/settings", json={"model": "claude-opus-5-5", "word_limit": 150})
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    t.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"})
+    kw = calls["beta"][0]
+    assert kw["model"] == "claude-opus-5-5" and kw["max_tokens"] == chat.MAX_TOKENS_THINKING
+    assert kw["output_config"] == {"effort": "low"} and kw["fallbacks"] == "default"
+    assert kw["betas"] == ["server-side-fallback-2026-07-01"] and "thinking" not in kw
+    assert "HARD LIMIT of 150 words" in kw["system"][0]["text"]
+
+
+def test_refusal_gets_a_friendly_reply(gated, fake_llm):
+    _, state = fake_llm
+    state["stop"] = "refusal"
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    r = t.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"}).json()
+    assert "can't help with that question" in r["reply"]
+
+
+def test_caps_come_from_admin_settings(gated, fake_llm):
+    _admin().put("/admin/api/settings", json={"daily_limit_per_tester": 1})
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    assert t.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"}).status_code == 200
+    assert t.post(f"/profiles/{pid}/chat", json={"message": "What about my marriage prospects?"}).status_code == 429
+
+
+def test_question_log_and_costs(gated, fake_llm):
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    t.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"})
+    a = _admin()
+    [row] = a.get("/admin/api/queries").json()
+    assert row["question"] == "How is my career outlook?" and row["answer"] == "Your career looks steady."
+    assert row["profile_name"] == "Asha" and row["tester"].startswith("Tester ") and "owner" not in row
+    assert row["cost"] == pytest.approx((1000 * 1.0 + 200 * 5.0) / 1e6)  # Haiku 4.5 rates
+    o = a.get("/admin/api/overview").json()
+    assert o["today"]["paid_questions"] == 1 and o["today"]["cost"] == pytest.approx(0.002)
+    assert o["charts"] == 1 and len(o["testers"]) == 1 and o["testers"][0]["owner"] is None
+    assert o["testers"][0]["chart_names"] == "Asha" and o["testers"][0]["questions_today"] == 1
+    assert _tester().get("/admin/api/queries").status_code == 403
+
+
+def test_local_mode_admin_is_open(tmp_path, monkeypatch):
+    monkeypatch.setenv("CHART_DB_PATH", str(tmp_path / "p.db"))
+    monkeypatch.delenv("TESTER_ACCESS_CODES", raising=False)
+    monkeypatch.delenv("ADMIN_ACCESS_CODE", raising=False)
+    c = TestClient(app)
+    assert "Settings" in c.get("/admin").text and c.get("/admin/api/overview").status_code == 200
+    assert c.get("/me").json() == {"admin": True, "gated": False}

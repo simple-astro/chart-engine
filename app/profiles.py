@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import json
-import os
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app import access, chat, storage
+from app import access, chat, config, storage
 from app.routes import chart as compute_chart
 from app.schemas import ChartRequest
 
@@ -43,8 +42,7 @@ def _check_quota(request: Request) -> None:
     """Daily caps on paid chat turns; active only when the tester gate is on."""
     if not access.enabled():
         return
-    per_tester = int(os.environ.get("CHAT_DAILY_LIMIT_PER_TESTER", "30"))
-    total = int(os.environ.get("CHAT_DAILY_LIMIT_TOTAL", "300"))
+    per_tester, total = config.get("daily_limit_per_tester"), config.get("daily_limit_total")
     if storage.llm_requests_today(_owner(request)) >= per_tester or storage.llm_requests_today() >= total:
         raise HTTPException(status_code=429, detail="You've reached today's question limit for the test version. "
                                                     "Please come back tomorrow.")

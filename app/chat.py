@@ -5,15 +5,15 @@ import os
 import re
 from datetime import date, datetime, timezone
 
-from app import ask, storage
+from app import ask, config, storage
 from app.schemas import PanchangRequest, TransitRequest, TransitScanRequest
 
-DEFAULT_MODEL = "claude-haiku-4-5-20251001"  # cheap + fast; override with CHART_LLM_MODEL
 MAX_TOOL_ROUNDS = 6
-MAX_WORDS = 300
 HISTORY_LIMIT = 6
-# Output budget per model call (300-word answers need ~500 tokens; the rest is headroom, no extended thinking).
+# Output budget per model call. Haiku 4.5 runs without thinking, so a few hundred words need ~1500.
+# The newer models always think first and thinking counts against max_tokens, so they get more room.
 MAX_TOKENS = 1500
+MAX_TOKENS_THINKING = 8000
 
 SYSTEM = (
     "You are SimpleJyotish — a warm, knowledgeable Vedic astrology (Jyotish, KP-aware) assistant, chatting with "
@@ -27,7 +27,7 @@ SYSTEM = (
     "present or future, call the tools (transits, transit events, panchang, dasha detail, divisional charts, "
     "Lal Kitab kundli) instead of guessing positions. For Lal Kitab questions call get_lal_kitab; for "
     "compatibility or match-making call list_profiles then match_with_profile.\n"
-    "Length: HARD LIMIT of 300 words per reply, counting headings and bullets (aim for 120-180; never exceed 220). "
+    "Length: HARD LIMIT of {words} words per reply, counting headings and bullets; aim well under it. "
     "Lead with the direct answer, then the 3-5 most relevant placements; skip exhaustive lists, and offer to go "
     "deeper on one point instead of covering everything.\n"
     "Style: warm and conversational, never stiff; clear short bullets when helpful. Frame outcomes as tendencies, "
@@ -147,27 +147,40 @@ STATUS = {
 }
 
 
+def _stream(client, model: str, **kw):
+    """Haiku 4.5 takes a plain request. The 5.x models always think, so give them room, keep chat at low
+    effort, and opt into server-side refusal fallbacks so a declined question is answered by another model."""
+    if model == "claude-haiku-4-5":
+        return client.messages.stream(model=model, max_tokens=MAX_TOKENS, **kw)
+    return client.beta.messages.stream(model=model, max_tokens=MAX_TOKENS_THINKING,
+                                       output_config={"effort": "low"},
+                                       betas=["server-side-fallback-2026-07-01"], fallbacks="default", **kw)
+
+
 def events(profile: dict, history: list[dict], message: str):
     """Run one chat turn, yielding {"type": "status"|"delta", "text": ...} as it progresses."""
     client = _client()
     msgs = [{"role": m["role"], "content": m["content"]} for m in history[-HISTORY_LIMIT:]]
     msgs.append({"role": "user", "content": message})
-    system = [{"type": "text", "text": SYSTEM + ask.llm_context(profile),
+    system = [{"type": "text", "text": SYSTEM.format(words=config.word_limit()) + ask.llm_context(profile),
                "cache_control": {"type": "ephemeral"}}]
-    model = os.environ.get("CHART_LLM_MODEL", DEFAULT_MODEL)
+    model = config.model()
     wrote = False
     for _ in range(MAX_TOOL_ROUNDS):
-        with client.messages.stream(model=model, max_tokens=MAX_TOKENS, system=system, tools=TOOLS,
-                                    messages=msgs) as stream:
+        with _stream(client, model, system=system, tools=TOOLS, messages=msgs) as stream:
             for text in stream.text_stream:
                 yield {"type": "delta", "text": text}
                 wrote = wrote or bool(text.strip())
             resp = stream.get_final_message()
         u = getattr(resp, "usage", None)
-        yield {"type": "usage", "model": model, "round": 1,
+        yield {"type": "usage", "model": getattr(resp, "model", None) or model, "round": 1,
                "input": getattr(u, "input_tokens", 0) or 0, "output": getattr(u, "output_tokens", 0) or 0,
                "cache_read": getattr(u, "cache_read_input_tokens", 0) or 0,
                "cache_write": getattr(u, "cache_creation_input_tokens", 0) or 0}
+        if resp.stop_reason == "refusal":
+            yield {"type": "delta", "text": ("\n\n" if wrote else "") + "I can't help with that question. "
+                   "Please ask me something else about your chart."}
+            return
         if resp.stop_reason != "tool_use":
             return
         if wrote:
@@ -191,7 +204,7 @@ def _json(obj) -> str:
     return json.dumps(obj, separators=(",", ":"))
 
 
-def limit_words(text: str, limit: int = MAX_WORDS) -> str:
+def limit_words(text: str, limit: int) -> str:
     """Backstop for the prompt's length rule: cut at the last whole line/sentence within `limit` words."""
     if len(text.split()) <= limit:
         return text
@@ -235,7 +248,8 @@ def chat_events(profile: dict, message: str):
     if cached:
         storage.add_message(pid, "user", message)
         storage.add_message(pid, "assistant", cached)
-        storage.log_usage(pid, "cache", message, words=len(cached.split()), owner=profile.get("owner"))
+        storage.log_usage(pid, "cache", message, words=len(cached.split()), owner=profile.get("owner"),
+                          answer=cached)
         yield {"type": "delta", "text": cached}
         yield {"type": "done", "mode": "cache"}
         return
@@ -262,7 +276,7 @@ def chat_events(profile: dict, message: str):
         parts, mode = [direct], "lookup"
         yield {"type": "delta", "text": direct}
     text = "".join(parts).strip()
-    trimmed = limit_words(text) if mode == "llm" else text
+    trimmed = limit_words(text, config.word_limit()) if mode == "llm" else text
     if trimmed != text:
         text = trimmed
         yield {"type": "replace", "text": text}
@@ -272,7 +286,8 @@ def chat_events(profile: dict, message: str):
     storage.add_message(pid, "assistant", text)
     storage.log_usage(pid, mode, message, model=use["model"], input_tokens=use["input"],
                       output_tokens=use["output"], cache_read=use["cache_read"], cache_write=use["cache_write"],
-                      tool_rounds=use["rounds"], words=len(text.split()), owner=profile.get("owner"))
+                      tool_rounds=use["rounds"], words=len(text.split()), owner=profile.get("owner"),
+                      answer=text)
     if mode == "llm" and key:
         storage.cache_put(pid, key, today, text)
     yield {"type": "done", "mode": mode}

@@ -140,6 +140,6 @@ def test_answer_reuse_and_usage_log(client, monkeypatch):
     r2 = client.post(f"/profiles/{pid}/chat", json={"message": "how is my CAREER outlook"}).json()
     assert (r1["mode"], r2["mode"]) == ("llm", "cache") and r1["reply"] == r2["reply"]
     assert len(n) == 1  # the second ask never reached the model
-    assert n[0]["model"] == chat.DEFAULT_MODEL and n[0]["max_tokens"] == 1500
+    assert n[0]["model"] == "claude-haiku-4-5" and n[0]["max_tokens"] == 1500
     u = client.get("/usage").json()
     assert u["by_kind"]["llm"]["input_tokens"] == 100 and u["by_kind"]["cache"]["requests"] == 1
