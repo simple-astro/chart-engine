@@ -76,6 +76,20 @@ def kp_prediction(profile_id: int, topic: str, request: Request, months: int = 2
     return kp_predict.predict(p["chart"], topic, months=max(1, min(60, months)))
 
 
+@router.get("/{profile_id}/kp/{topic}/days")
+def kp_event_days(profile_id: int, topic: str, request: Request, start: str | None = None, days: int = 90) -> dict:
+    from datetime import date
+    from core import kp_predict
+    if topic not in kp_predict.TOPICS:
+        raise HTTPException(status_code=422, detail=f"Unknown topic. Use one of: {', '.join(kp_predict.TOPICS)}")
+    p = _require(profile_id, request)
+    try:
+        s = date.fromisoformat(start) if start else None
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="start must be YYYY-MM-DD") from exc
+    return kp_predict.event_days(p["chart"], topic, s, max(1, min(366, days)), p["request"].get("tz_name") or "UTC")
+
+
 @router.put("/{profile_id}")
 def update_profile(profile_id: int, req: ChartRequest, request: Request) -> dict:
     _require(profile_id, request)

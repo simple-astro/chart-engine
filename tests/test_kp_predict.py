@@ -132,3 +132,38 @@ def test_accident_requires_rahu_or_ketu(chart):
     for w in K.predict(chart, "accident", START)["windows"]:
         if w["verdict"] in ("strong", "favourable"):
             assert any(n.startswith("Significator") for n in w["transit"])
+
+
+def test_bhava_chalit_matches_the_book_example():
+    """Taneja's illustration H1 (7 June 1950, 22:30, Delhi): every planet's houses by position and lordship
+    in the Nirayana Bhava Chalit, including Rahu/Ketu as agents, exactly as printed in the book."""
+    c = TestClient(app).post("/chart", json={"dob": "1950-06-07", "tob": "22:30:00", "lat": 28.6667,
+                                             "lon": 77.2167, "tz_name": "Asia/Kolkata"}).json()
+    book = {"Sun": {5, 8}, "Moon": {2, 7}, "Mars": {4, 8, 11}, "Mercury": {4, 6, 9}, "Jupiter": {1, 3, 12},
+            "Saturn": {1, 2, 7}, "Venus": {3, 5, 10}, "Rahu": {1, 2, 3, 4, 8, 11, 12}, "Ketu": {4, 6, 8, 9, 11}}
+    assert {p: K.own_houses(c, p) for p in book} == book
+    cusp1 = c["houses"][0]["longitude"]
+    assert abs(cusp1 - (270 + 11 + 24 / 60)) < 0.25  # Capricorn 11°24′ in the book
+
+
+def test_event_days_follow_the_transit_rules(chart):
+    r = K.event_days(chart, "career", START, 180, "Asia/Kolkata")
+    assert r["significators"] and r["days"]
+    sig = set(r["significators"])
+    for d in r["days"]:
+        assert d["window"] in ("strong", "favourable") and d["hits"]
+        assert any(any(f in h for f in K.FAST) for h in d["hits"])  # a fast planet fixes the day
+    dates = [date.fromisoformat(d["date"]) for d in r["days"]]
+    assert all((b - a).days > 2 for a, b in zip(dates, dates[1:]))  # one day per cluster
+
+
+def test_event_days_endpoint_and_tool(tmp_path, monkeypatch):
+    monkeypatch.setenv("CHART_DB_PATH", str(tmp_path / "p.db"))
+    c = TestClient(app)
+    pid = c.post("/profiles", json=BIRTH).json()["id"]
+    r = c.get(f"/profiles/{pid}/kp/career/days?start=2026-10-08&days=60").json()
+    assert r["days_checked"] == 60 and r["topic"] == "career"
+    assert c.get(f"/profiles/{pid}/kp/career/days?start=oops").status_code == 422
+    from app import chat, storage
+    out = chat.run_tool(storage.get(pid), "get_event_days", {"topic": "career", "start": "2026-10-08", "days": 30})
+    assert out["days_checked"] == 30

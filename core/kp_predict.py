@@ -281,3 +281,82 @@ def brief(result: dict) -> str:
         lines.append(f"- {w['starts']} to {w['ends']} {w['maha']}/{w['antar']}/{w['praty']}: {label(w['verdict'])} "
                      f"({w['score']}). {why}." + (f" {'; '.join(w['transit'])}." if w["transit"] else ""))
     return "\n".join(lines)
+
+
+# ----- day-level timing (the book's transit rules) -----
+FAST = {"Sun", "Mercury", "Venus", "Mars", "Moon"}
+ORB = 1.0  # "within one degree"
+
+
+def significators(chart: dict, topic: str) -> dict[str, dict]:
+    """Planets that signify the event (their three-level reading supports it)."""
+    _, _, good, bad, _, _, kind = TOPICS[topic]
+    rule = RISK_RULES.get(topic, {}) if kind == "risk" else None
+    js = {p: judge_lord(chart, p, good, bad, rule) for p in chart["grahas"]}
+    return {p: j for p, j in js.items() if j["verdict"] in ("supports", "leans good")}
+
+
+def _sep(a: float, b: float) -> float:
+    d = abs(a - b) % 360.0
+    return min(d, 360.0 - d)
+
+
+def event_days(chart: dict, topic: str, start: date | None = None, days: int = 90, tz_name: str = "UTC",
+               limit: int = 7) -> dict:
+    """Most likely days in the next ``days`` days, inside windows the DBA allows, with the transit reasons."""
+    from itertools import combinations
+    from zoneinfo import ZoneInfo
+    if topic not in TOPICS:
+        raise ValueError(f"unknown topic: {topic}")
+    days = max(1, min(366, days))
+    start = start or datetime.now(timezone.utc).date()
+    good = TOPICS[topic][2]
+    sig = significators(chart, topic)
+    names = set(sig)
+    natal = {p: chart["grahas"][p]["longitude"] for p in names}
+    cusps = {c["house"]: c["longitude"] for c in chart["houses"] if c["house"] in good}
+    plan = predict(chart, topic, start, months=days / 30.44 + 1)
+    ayan = chart["meta"].get("ayanamsha", "krishnamurti")
+    tz = ZoneInfo(tz_name)
+    found = []
+    for i in range(days):
+        d = start + timedelta(days=i)
+        w = next((x for x in plan["windows"] if x["starts"] <= d.isoformat() < x["ends"]), None)
+        if not w or w["verdict"] not in ("strong", "favourable"):
+            continue
+        tr = transit_positions(datetime(d.year, d.month, d.day, 12, tzinfo=tz).astimezone(timezone.utc), ayan)
+        lon = {p: g.longitude for p, g in tr.items()}
+        hits, fast = [], False
+        for p in names:
+            for q in names:
+                if _sep(lon[p], natal[q]) <= ORB:
+                    hits.append(f"{p} transits over your natal {q}" if p != q else f"{p} returns to its natal degree")
+                    fast |= p in FAST
+            for h, cl in cusps.items():
+                if _sep(lon[p], cl) <= ORB:
+                    hits.append(f"{p} crosses your {h}{_ord(h)} cusp")
+                    fast |= p in FAST
+        for a, b in combinations(sorted(names - {"Moon"}), 2):
+            if int(lon[a] // 30) == int(lon[b] // 30) and _sep(lon[a], lon[b]) <= ORB:
+                hits.append(f"{a} and {b} conjoin within a degree")
+                fast |= bool({a, b} & FAST)
+        if "Moon" in names:
+            with_moon = [p for p in names - {"Moon"} if int(lon[p] // 30) == int(lon["Moon"] // 30)]
+            if len(with_moon) >= 3:
+                hits.append("the Moon joins " + ", ".join(sorted(with_moon)))
+                fast = True
+        star = NAKSHATRA_LORDS[int(lon[w["praty"]] // NAKSHATRA_ARC)]
+        if star in names:
+            hits.append(f"Antar lord {w['praty']} moves through the star of {star}")
+        if hits and fast:
+            found.append({"date": d.isoformat(), "score": len(hits) + (1 if w["verdict"] == "strong" else 0),
+                          "period": f"{w['maha']}/{w['antar']}/{w['praty']}", "window": w["verdict"], "hits": hits})
+    best = []  # strongest day of each cluster (transits linger over neighbouring days)
+    for x in sorted(found, key=lambda x: (-x["score"], x["date"])):
+        if all(abs((date.fromisoformat(x["date"]) - date.fromisoformat(y["date"])).days) > 2 for y in best):
+            best.append(x)
+        if len(best) == limit:
+            break
+    return {"topic": topic, "title": TOPICS[topic][0], "kind": TOPICS[topic][6], "from": start.isoformat(),
+            "days_checked": days, "significators": sorted(names), "candidate_days": len(found),
+            "days": sorted(best, key=lambda x: x["date"])}

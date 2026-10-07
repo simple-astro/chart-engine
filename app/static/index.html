@@ -211,7 +211,8 @@
   .stat b{font-size:1rem;color:var(--acc);font-weight:600}
   .grid{display:flex;flex-direction:column;gap:22px}
   .chartcard{display:grid;grid-template-columns:minmax(280px,420px) 1fr;grid-template-areas:"h h" "c k" "c l" "c n";column-gap:32px;align-content:start}
-  .chartcard>h3{grid-area:h} .chartcard>#chart{grid-area:c} .chartcard>.ckey{grid-area:k;margin-top:0;align-self:start}
+  .chartcard>.chhead{grid-area:h;display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:14px}
+  .chhead h3{font:600 1.15rem var(--serif);margin:0;text-align:center} .chseg{width:min(280px,100%)} .chartcard>#chart{grid-area:c} .chartcard>.ckey{grid-area:k;margin-top:0;align-self:start}
   .chartcard>.clegend{grid-area:l;justify-content:flex-start} .chartcard>.hint{grid-area:n;text-align:left!important}
   @media (max-width:900px){.chartcard{grid-template-columns:1fr;grid-template-areas:"h" "c" "k" "l" "n"}
     .chartcard>.ckey{margin-top:16px} .chartcard>.clegend{justify-content:center} .chartcard>.hint{text-align:center!important}}
@@ -379,6 +380,10 @@
   .kpw summary::-webkit-details-marker{display:none}
   .kpd{font-weight:600;font-size:.88rem} .kpl{color:var(--mut);font-size:.84rem;flex:1} .kpw .badge{margin:0}
   .kpw ul{margin:0;padding:0 14px 12px 30px;font-size:.84rem;line-height:1.5;color:var(--mut)} .kpw .kptr{color:var(--acc)}
+  .kpdw{padding:0 14px 12px 30px} .kpdays{font-size:.84rem;padding:7px 12px}
+  .kpdd{margin:10px 0 4px;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+  .kpdd li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:var(--soft);font-size:.84rem}
+  .kpdd b{color:var(--acc)} .kpdd span{color:var(--mut);line-height:1.4}
   /* lord exchange */
   .xcard{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:8px 0;background:var(--bg2)}
   .xcard p{margin:8px 0} .xnone{border-style:dashed}
@@ -690,10 +695,12 @@
       <div class="stats" id="summary"></div>
     </div>
     <div class="grid">
-      <aside class="card chartcard"><h3>Rasi chart (D1) · North Indian</h3><div id="chart" class="chart"></div>
+      <aside class="card chartcard"><div class="chhead"><h3 id="charttitle">Rasi chart (D1) · North Indian</h3>
+        <div class="seg chseg" role="radiogroup" aria-label="Chart view"><button type="button" role="radio" aria-checked="true" class="on" data-v="lagna">Lagna</button><button type="button" role="radio" aria-checked="false" data-v="chalit">Bhava Chalit</button></div></div>
+        <div id="chart" class="chart"></div>
         <div id="chartkey" class="ckey" aria-label="Planets"></div>
         <div class="clegend"><span><i class="bd ex">▲</i>Exalted</span><span><i class="bd db">▼</i>Debilitated</span><span><i class="bd own">⌂</i>Own sign</span><span><i class="bd rt">R</i>Retrograde</span><span><i class="bd cb">C</i>Combust</span><span><i class="sw"></i>Lagna</span></div>
-        <div class="hint">Numbers are signs (1 = Aries). Tap any planet to ask Sukh what it means for you.</div></aside>
+        <div class="hint" id="charthint">Numbers are signs (1 = Aries). Tap any planet to ask Sukh what it means for you.</div></aside>
       <div class="card panel">
         <nav class="tabs" id="tabs">
           <button data-tab="interp" class="on">Reading</button><button data-tab="bhava">Interpretation</button><button data-tab="dpred">Dasha Prediction</button><button data-tab="muhurat">Muhurat</button><button data-tab="lucky">Lucky &amp; Remedies</button><button data-tab="kptime">KP Timing</button><button data-tab="xchg">Lord Exchange</button><button data-tab="akv">Ashtakavarga</button><button data-tab="planets">Planets</button><button data-tab="houses">Houses</button>
@@ -747,7 +754,7 @@
 <script src="/static/strength.js?v=1"></script>
 <script src="/static/guide.js?v=5"></script>
 <script src="/static/tools.js?v=2"></script>
-<script src="/static/kptiming.js?v=4"></script>
+<script src="/static/kptiming.js?v=5"></script>
 <script>
 {const f=window.fetch.bind(window);window.fetch=async(u,o)=>{const r=await f(u,o);if(r.status===401&&String(u).startsWith('/'))location.reload();return r}}
 const $=id=>document.getElementById(id);
@@ -1006,7 +1013,7 @@ $('f').addEventListener('submit',async e=>{
 // North Indian diamond: houses fixed, signs rotate from the lagna. byH: {0..11: ['Su','Mo',...]}
 const BD={ex:['▲','ex','Exalted'],db:['▼','db','Debilitated'],own:['⌂','own','Own sign'],R:['R','rt','Retrograde'],C:['C','cb','Combust']};
 let drawN=0;
-function drawNorth(el,lagnaIdx,byH){
+function drawNorth(el,lagnaIdx,byH,houseSigns){
   const P=[[200,95],[100,45],[45,100],[95,200],[45,300],[100,355],[200,305],[300,355],[355,300],[305,200],[355,100],[300,45]];
   const gid='ag'+(++drawN);
   let v='<svg viewBox="-2 -2 404 404" xmlns="http://www.w3.org/2000/svg">'+
@@ -1020,7 +1027,7 @@ function drawNorth(el,lagnaIdx,byH){
   const lab=p=>typeof p==='string'?p:'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
     (p.d?'<tspan class="dg" dx="1.5">'+p.d+'</tspan>':'')+(p.b||[]).map(k=>'<tspan class="bd '+BD[k][1]+'" dx="1">'+BD[k][0]+'</tspan>').join('')+'</tspan>';
   P.forEach(([x,y],h)=>{
-    const sg=(lagnaIdx+h)%12, pls=byH[h]||[], deg=pls.some(p=>typeof p!=='string');
+    const sg=houseSigns?houseSigns[h]:(lagnaIdx+h)%12, pls=byH[h]||[], deg=pls.some(p=>typeof p!=='string');
     const per=deg&&pls.length<=3?1:2, rows=Math.ceil(pls.length/per), lh=deg?15:16;
     const top=y-(rows-1)*lh/2+5;
     v+='<text class="sn" x="'+x+'" y="'+(pls.length?top-15:y+4)+'" text-anchor="middle">'+(sg+1)+'</text>';
@@ -1029,7 +1036,10 @@ function drawNorth(el,lagnaIdx,byH){
   el.innerHTML=v+'</svg>';
 }
 // ----- main chart: planet tooltip + key highlight -----
-let CHART_TIP=null,PLANET_Q=null,HOUSE_OF={},tipPinned=false;
+let CHART_TIP=null,PLANET_Q=null,HOUSE_OF={},tipPinned=false,CHART_VIEW='lagna',RERENDER=null;
+document.querySelector('.chseg').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b||b.dataset.v===CHART_VIEW)return;
+  CHART_VIEW=b.dataset.v;document.querySelectorAll('.chseg button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-checked',String(x===b))});
+  focusPlanet(null);if(RERENDER)RERENDER()});
 const ctip=document.createElement('div');ctip.className='ctip';ctip.hidden=true;
 function focusPlanet(n,anchor,pin){
   tipPinned=!!(n&&pin);
@@ -1194,16 +1204,25 @@ function render(c,req){
     ['Sun',c.grahas.Sun.sign],['Dasha now',md0?md0.lord+(ad0?' / '+ad0.lord:''):'—']
   ].map(([a,b])=>'<div class="stat"><small>'+a+'</small><b>'+esc(b)+'</b></div>').join('');
 
-  const byH={};
   const status=n=>{const g=c.grahas[n],d=window.planetDignity(c,n);
     return [d==='exalted'?'ex':d==='debilitated'?'db':d==='own'?'own':null,g.retrograde?'R':null,g.combust?'C':null].filter(Boolean)};
-  Object.entries(c.grahas).forEach(([n,g])=>{const h=(g.sign_index-l.sign_index+12)%12,b=status(n);
+  // Lagna view: whole-sign houses from the lagna. Bhava Chalit view: houses start at the Placidus cusps
+  // (the Nirayana Bhava Chalit used for every planet's position and lordship in the Nadi predictions).
+  const drawMain=()=>{
+  const byH={}, chalit=CHART_VIEW==='chalit';
+  const houseOf=([n,g])=>chalit?(g.house-1):(g.sign_index-l.sign_index+12)%12;
+  Object.entries(c.grahas).forEach(([n,g])=>{const h=houseOf([n,g]),b=status(n);
     (byH[h]=byH[h]||[]).push({t:ABBR[n],d:Math.floor(g.degrees_in_sign)+'°',p:n,b,cls:b.find(k=>k==='ex'||k==='db')})});
-  drawNorth($('chart'),l.sign_index,byH);
-  HOUSE_OF=Object.fromEntries(Object.entries(c.grahas).map(([n,g])=>[n,(g.sign_index-l.sign_index+12)%12]));
+  drawNorth($('chart'),l.sign_index,byH,chalit?c.houses.map(x=>x.sign_index):null);
+  HOUSE_OF=Object.fromEntries(Object.entries(c.grahas).map(e=>[e[0],houseOf(e)]));
+  $('charttitle').textContent=chalit?'Nirayana Bhava Chalit · North Indian':'Rasi chart (D1) · North Indian';
+  $('charthint').textContent=chalit?'Each house starts at its cusp (numbers are the cusp signs). Nadi predictions read every planet’s position and lordship from this chart.'
+    :'Numbers are signs (1 = Aries). Tap any planet to ask Sukh what it means for you.';
+  };
+  drawMain();RERENDER=drawMain;
   const nbOf=n=>(((c.strength||{}).neecha_bhanga||{})[n]||{}).cancelled;
   CHART_TIP=n=>{const g=c.grahas[n],b=status(n);
-    return '<b>'+n+'</b><small>'+g.sign+' '+dms(g.degrees_in_sign)+' · House '+((g.sign_index-l.sign_index+12)%12+1)+'</small><small>'+esc(g.nakshatra)+' pada '+g.pada+'</small>'+
+    return '<b>'+n+'</b><small>'+g.sign+' '+dms(g.degrees_in_sign)+' · House '+((g.sign_index-l.sign_index+12)%12+1)+(g.house!==((g.sign_index-l.sign_index+12)%12+1)?' (Bhava Chalit '+g.house+')':'')+'</small><small>'+esc(g.nakshatra)+' pada '+g.pada+'</small>'+
       (b.length?'<div class="tags">'+b.map(k=>'<span class="tag bd '+BD[k][1]+'">'+BD[k][0]+' '+BD[k][2]+'</span>').join('')+
         (nbOf(n)?'<span class="tag bd ex">Neecha Bhanga · cancelled</span>':'')+'</div>':'')+
       '<button type="button" class="tipask" data-ask="'+n+'">Ask Sukh about '+n+' →</button>'};

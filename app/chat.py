@@ -45,7 +45,8 @@ SYSTEM = (
     "exactly as given; never infer or contradict them. When a KP prediction is supplied (or fetched with "
     "get_kp_prediction), it is the verdict: say whether the matter is promised and which windows are strong or "
     "challenging exactly as computed, explain why through the star lord (what the period gives) and the sub lord "
-    "(whether it delivers) in plain words, and never upgrade or downgrade a window. A RISK reading (illness, "
+    "(whether it delivers) in plain words, and never upgrade or downgrade a window. When asked for an exact date or "
+    "day, call get_event_days and give only the dates it returns, with their transit reasons. A RISK reading (illness, "
     "accident, dispute, separation, career loss) is a period to take care in, never a certainty: say so gently, "
     "never alarm, and pair it with practical steps and an upay. For upay follow remedy_guide: mantras and daan on the "
     "planet's own day, and gemstones only from suitable_stones. "
@@ -63,7 +64,7 @@ SYSTEM = (
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "nadi-2"
+CONTEXT_VERSION = "nadi-3"
 
 TOOLS = [
     {"name": "get_transits",
@@ -105,6 +106,14 @@ TOOLS = [
      "input_schema": {"type": "object", "properties": {
          "topic": {"type": "string", "enum": list(__import__("core.kp_predict", fromlist=["TOPICS"]).TOPICS)},
          "months": {"type": "integer", "description": "How far ahead, 1-60. Default 24."}}, "required": ["topic"]}},
+    {"name": "get_event_days",
+     "description": "Most likely exact days for a life matter in a date range, from the transit rules (a significator "
+                    "over a natal significator or a combination cusp within 1°, two significators conjoined, the Moon "
+                    "joining three, the Antar lord in a significator's star), inside DBA windows that allow it.",
+     "input_schema": {"type": "object", "properties": {
+         "topic": {"type": "string", "enum": list(__import__("core.kp_predict", fromlist=["TOPICS"]).TOPICS)},
+         "start": {"type": "string", "description": "YYYY-MM-DD; default today"},
+         "days": {"type": "integer", "description": "How many days to scan, 1-366. Default 90."}}, "required": ["topic"]}},
     {"name": "get_dasha_detail",
      "description": "Antardasha/pratyantar periods inside one mahadasha.",
      "input_schema": {"type": "object", "properties": {
@@ -157,6 +166,12 @@ def run_tool(profile: dict, name: str, args: dict) -> dict:
         from core import kp_predict
         months = max(1, min(60, int(args.get("months") or 24)))
         return {"brief": kp_predict.brief(kp_predict.predict(chart, str(args.get("topic")), months=months))}
+    if name == "get_event_days":
+        from datetime import date as _d
+        from core import kp_predict
+        start = _d.fromisoformat(args["start"]) if args.get("start") else None
+        return kp_predict.event_days(chart, str(args.get("topic")), start, int(args.get("days") or 90),
+                                     (profile.get("request") or {}).get("tz_name") or "UTC")
     if name == "get_dasha_detail":
         md = next((d for d in chart["dasha"] if d["lord"].lower() == str(args.get("mahadasha", "")).lower()), None)
         if not md:
@@ -185,6 +200,7 @@ STATUS = {
     "get_divisional_chart": "Reading the divisional chart…",
     "get_dasha_detail": "Reading the dasha periods…",
     "get_kp_prediction": "Working out the KP timing…",
+    "get_event_days": "Finding the likely days…",
     "get_lal_kitab": "Reading your Lal Kitab kundli…",
     "list_profiles": "Checking saved profiles…",
     "match_with_profile": "Matching the two charts…",
