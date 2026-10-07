@@ -12,6 +12,7 @@ NodeType = Literal["mean", "true"]
 
 class ChartRequest(BaseModel):
     name: str = Field(default="", max_length=200)
+    place: str = Field(default="", max_length=200)
     dob: date
     tob: time
     lat: float = Field(ge=-90, le=90)

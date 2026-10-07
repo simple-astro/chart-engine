@@ -12,6 +12,7 @@ from core.grahas import Graha
 from core.panchang import compute_panchang
 from core.transit_scan import scan_events
 from core.transits import transit_positions
+from core.vargas import varga_sign
 
 router = APIRouter()
 
@@ -62,9 +63,17 @@ def chart(req: ChartRequest) -> dict:
         node_type=req.node_type,
     )
     try:
-        return compute_natal_chart(birth)
+        return with_varga_lagna(compute_natal_chart(birth))
     except Exception as exc:  # invalid tz, bad inputs -> 422
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+def with_varga_lagna(c: dict) -> dict:
+    """Add the ascendant's sign in each divisional chart (kept out of the engine's golden output)."""
+    if "varga_lagna" not in c:
+        asc = c["lagna"]["ascendant"]
+        c["varga_lagna"] = {k: varga_sign(asc, int(k[1:])) for k in c["vargas"]}
+    return c
 
 
 @router.post("/transits")

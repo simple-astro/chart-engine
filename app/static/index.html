@@ -104,8 +104,53 @@
   .icon{width:38px;height:38px;padding:0;display:grid;place-items:center;border-radius:11px;border:1px solid var(--line);
     background:var(--card);cursor:pointer;transition:.18s}
   .icon:hover{border-color:var(--acc);color:var(--acc)}
-  #pdel:hover{border-color:var(--bad);color:var(--bad)}
-  #themebtn{font-size:15px}
+  .icon svg,.mi svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .icon.round{border-radius:50%;color:var(--ink)}
+  .icon.gold{background:linear-gradient(140deg,var(--g1),var(--g2));border:0;color:#1a1322;box-shadow:0 2px 10px rgba(201,143,46,.3)}
+  .icon.gold:hover{color:#1a1322;transform:translateY(-1px)} .icon.gold svg{stroke-width:2.2}
+  .adm{padding:7px 14px;font-size:.85rem;border-radius:999px}
+
+  /* chart switcher */
+  .who{position:relative}
+  .pill{display:flex;align-items:center;gap:10px;padding:5px 12px 5px 5px;border-radius:999px;border:1px solid var(--line);
+    background:var(--card);color:var(--ink);cursor:pointer;max-width:280px;text-align:left;transition:border-color .18s,background .18s}
+  .pill:hover,.pill[aria-expanded="true"]{border-color:var(--acc)}
+  .av{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font:600 .9rem var(--sans);
+    color:#1a1322;background:linear-gradient(140deg,var(--g1),var(--g2))}
+  .pt{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+  .pt b,.pt small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pt b{font-weight:600;font-size:.92rem} .pt small{color:var(--mut);font-size:.74rem}
+  .chev{flex:none;width:16px;height:16px;fill:none;stroke:var(--mut);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
+  .pill[aria-expanded="true"] .chev{transform:rotate(180deg)}
+  .menu{position:fixed;width:320px;max-height:min(70vh,560px);overflow:auto;z-index:90;padding:6px;
+    background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(20px) saturate(1.4);
+    border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.28);animation:pop .16s ease-out;transform-origin:top right}
+  @keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+  .menu .grab{display:none}
+  .mh{font-size:.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--mut);padding:8px 10px 6px}
+  #psearch{width:calc(100% - 8px);margin:2px 4px 6px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--ink)}
+  .prow,.mi{display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:0;border-radius:10px;background:none;
+    color:var(--ink);cursor:pointer;text-align:left;font:inherit}
+  .prow:hover,.prow:focus-visible,.mi:hover,.mi:focus-visible{background:var(--soft);outline:none}
+  .prow .av{width:30px;height:30px;font-size:.82rem}
+  .prow .pt{flex:1} .prow .ck{width:16px;height:16px;fill:none;stroke:var(--acc);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .prow:not(.cur) .ck{visibility:hidden}
+  .mi{font-size:.92rem;padding:10px} .mi svg{color:var(--mut)} .mi span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mi.danger,.mi.danger svg{color:var(--bad)}
+  .sep{height:1px;background:var(--line);margin:6px 8px}
+  .empty-s{padding:10px;color:var(--mut);font-size:.85rem}
+
+  /* scrim + confirm dialog */
+  .scrim{position:fixed;inset:0;z-index:85;background:rgba(10,8,18,.35);backdrop-filter:blur(2px);animation:fade .16s}
+  @keyframes fade{from{opacity:0}}
+  .dlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:95;width:min(320px,calc(100vw - 32px));
+    background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.35);
+    text-align:center;overflow:hidden;animation:pop .16s ease-out}
+  .dlg h3{font:600 1.05rem var(--sans);margin:20px 18px 6px} .dlg p{margin:0 20px 18px;color:var(--mut);font-size:.88rem}
+  .dbtn{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+  .dbtn button{padding:13px;border:0;background:none;color:var(--acc);font:500 .98rem var(--sans);cursor:pointer}
+  .dbtn button+button{border-left:1px solid var(--line)} .dbtn button:hover{background:var(--soft)}
+  .dbtn .danger{color:var(--bad);font-weight:600}
 
   main{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:30px 22px 130px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);backdrop-filter:blur(12px)}
@@ -172,6 +217,9 @@
   .chart .sn{fill:var(--mut);font:600 11px var(--sans)}
   .chart .pl{fill:var(--ink);font:600 14px var(--sans)}
   .chart .asc{fill:var(--soft)}
+  .chart .pl.sm{font-size:12px} .chart .dg{fill:var(--acc);font-size:.72em;font-weight:500}
+  .vchart{margin:4px 0 16px} .vchart h4{text-align:center;font:600 1.05rem var(--serif);margin:0 0 10px}
+  .vchart svg{max-width:360px}
   .panel{padding:10px 26px 26px;min-width:0}
   .tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);margin:0 -26px 20px;padding:0 18px;scrollbar-width:none}
   .tabs::-webkit-scrollbar{display:none}
@@ -196,6 +244,10 @@
   .sec summary b{font-weight:600}
   .sec ul{margin:10px 0 2px;padding-left:20px} .sec li{margin:6px 0;color:var(--mut)}
   .sec li b{color:var(--ink)}
+  .sec summary .badge{vertical-align:2px;margin-left:6px;font-family:var(--sans)}
+  .sec.subsec{margin-left:14px} .sec.past summary{opacity:.6}
+  .stats.lucky{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+  .stats.lucky em{display:block;font-style:normal;font-size:.75rem;color:var(--mut);margin-top:3px}
   .tree{margin:0;padding-left:18px;list-style:none} .tree li{margin:4px 0}
   .tree .tree{border-left:1px solid var(--line);margin-left:7px;padding-left:14px}
   .tree summary{cursor:pointer} .tree summary:hover{color:var(--acc)}
@@ -279,7 +331,16 @@
   footer{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 22px 40px;color:var(--mut);font-size:.8rem;text-align:center}
 
   /* ---------- responsive ---------- */
-  @media(max-width:1040px){.brand span{display:none}}
+  @media(max-width:620px){
+    .brand{font-size:1.15rem;gap:8px} .brand i{width:30px;height:30px;font-size:15px}
+    .pt small,.adm{display:none} .pill{max-width:140px;padding-right:10px} .icon.round{width:36px;height:36px}
+    .menu{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;max-height:78vh;border-radius:20px 20px 0 0;
+      padding:6px 8px calc(14px + env(safe-area-inset-bottom));animation:sheet .22s ease-out}
+    .menu .grab{display:block;width:38px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 6px}
+    .prow,.mi{padding:12px 10px}
+  }
+  @keyframes sheet{from{transform:translateY(100%)}to{transform:none}}
+  @media(max-width:360px){.brand span{display:none}}
   @media(max-width:980px){
     .hero{grid-template-columns:1fr;gap:26px;padding-top:18px} .hero h1{font-size:2.5rem} .wheel{display:none}
     .grid{grid-template-columns:1fr} .chartcard{position:static} .lk{grid-template-columns:1fr}
@@ -297,15 +358,33 @@
 <body>
 <header class="top"><div class="in">
   <div class="brand"><i>✦</i><span>Simple<em>Jyotish</em></span></div>
-  <div class="sel" id="saved" hidden>
-    <select id="plist" aria-label="Saved profiles"></select>
-    <button type="button" class="icon" id="pdel" title="Delete this saved profile" aria-label="Delete profile">🗑</button>
+  <a class="btn ghost adm" id="adminlink" href="/admin" hidden>Admin</a>
+  <div class="who" id="saved" hidden>
+    <button type="button" class="pill" id="pbtn" aria-haspopup="menu" aria-expanded="false" aria-controls="pmenu">
+      <span class="av" id="pav" aria-hidden="true"></span>
+      <span class="pt"><b id="pnm"></b><small id="psub"></small></span>
+      <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+    </button>
   </div>
-  <button type="button" class="icon" id="themebtn" title="Theme" aria-label="Theme"></button>
-  <a class="btn ghost" id="adminlink" href="/admin" hidden>Admin</a>
-  <button type="button" class="btn ghost" id="matchbtn">♥ Match making</button>
-  <button type="button" class="btn" id="newbtn">+ New chart</button>
+  <button type="button" class="icon round" id="themebtn" title="Theme" aria-label="Theme"></button>
+  <button type="button" class="icon round gold" id="newbtn" title="New chart" aria-label="New chart"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 </div></header>
+<div class="scrim" id="scrim" hidden></div>
+<div class="menu" id="pmenu" role="menu" aria-label="Your charts" hidden>
+  <div class="grab" aria-hidden="true"></div>
+  <div class="mh">Your charts</div>
+  <input id="psearch" type="search" placeholder="Search charts" aria-label="Search charts" hidden>
+  <div class="plist" id="plist"></div>
+  <div class="sep"></div>
+  <button type="button" role="menuitem" class="mi" id="mnew"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New chart</button>
+  <button type="button" role="menuitem" class="mi" id="matchbtn"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>Match making</button>
+  <button type="button" role="menuitem" class="mi" id="medit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg><span>Edit details</span></button>
+  <button type="button" role="menuitem" class="mi danger" id="mdel"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg><span>Delete chart</span></button>
+</div>
+<div class="dlg" id="confirm" role="alertdialog" aria-modal="true" aria-labelledby="cft" aria-describedby="cfd" hidden>
+  <h3 id="cft"></h3><p id="cfd">This removes the chart and its chat history. This can’t be undone.</p>
+  <div class="dbtn"><button type="button" id="cfno">Cancel</button><button type="button" class="danger" id="cfyes">Delete</button></div>
+</div>
 
 <main>
   <!-- ===== form view ===== -->
@@ -368,14 +447,20 @@
     </div>
     <div class="grid">
       <aside class="card chartcard"><h3>Rasi chart (D1) · North Indian</h3><div id="chart" class="chart"></div>
-        <div class="hint">Numbers are signs (1 = Aries). Su Mo Ma… are planets; ᴿ = retrograde. Shaded house = lagna.</div></aside>
+        <div class="hint">Numbers are signs (1 = Aries). Su Mo Ma… are planets with their degree in the sign; ᴿ = retrograde. Shaded house = lagna.</div></aside>
       <div class="card panel">
         <nav class="tabs" id="tabs">
-          <button data-tab="interp" class="on">Reading</button><button data-tab="planets">Planets</button><button data-tab="houses">Houses</button>
+          <button data-tab="interp" class="on">Reading</button><button data-tab="bhava">Interpretation</button><button data-tab="dpred">Dasha Prediction</button><button data-tab="lucky">Lucky &amp; Remedies</button><button data-tab="planets">Planets</button><button data-tab="houses">Houses</button>
           <button data-tab="nadi">Nadi</button><button data-tab="lal">Lal Kitab</button><button data-tab="dasha">Dasha</button><button data-tab="vargas">Divisional</button>
         </nav>
         <div class="pane" id="t-interp"><div id="interpbody"></div>
           <div class="hint">Generated from traditional rules. General guidance, not a prediction or a substitute for a consultation.</div></div>
+        <div class="pane" id="t-bhava" hidden><div id="bhavabody"></div>
+          <div class="hint">House-by-house reading using whole-sign houses from your ascendant, matching the chart drawing. Traditional guidance, not a certainty.</div></div>
+        <div class="pane" id="t-dpred" hidden><div id="dpredbody"></div>
+          <div class="hint">Vimśottarī daśā. Open any sub-period to read it. Timing is broad; transits fine-tune when events happen.</div></div>
+        <div class="pane" id="t-lucky" hidden><div class="stats lucky" id="luckytiles"></div><div id="luckybody"></div>
+          <div class="hint">Based on the rulers of your 1st, 5th and 9th houses. Traditional remedies, not medical or financial advice.</div></div>
         <div class="pane" id="t-planets" hidden><div class="scroll"><table id="grahas"></table></div></div>
         <div class="pane" id="t-houses" hidden><div class="scroll"><table id="houses"></table></div>
           <div class="hint">KP (Placidus) cusps. “→ H#” is the house that lord currently sits in.</div></div>
@@ -383,7 +468,7 @@
           <div class="hint">Each sign is split into 150 nadi amshas of 0°12′. “Nadi #” is the amsha within the sign (1–150).</div></div>
         <div class="pane" id="t-lal" hidden><div id="lalbody"><div class="hint">Loading…</div></div></div>
         <div class="pane" id="t-dasha" hidden><div id="dasha"></div></div>
-        <div class="pane" id="t-vargas" hidden><div id="vtabs" class="vt"></div><div class="scroll"><table id="vtable"></table></div></div>
+        <div class="pane" id="t-vargas" hidden><div id="vtabs" class="vt"></div><div class="vchart"><h4 id="vtitle"></h4><div id="vchart" class="chart"></div></div><div class="scroll"><table id="vtable"></table></div></div>
       </div>
     </div>
   </section>
@@ -404,12 +489,16 @@
 </div>
 
 <script src="/static/interp.js"></script>
+<script src="/static/insights.js"></script>
 <script>
 {const f=window.fetch.bind(window);window.fetch=async(u,o)=>{const r=await f(u,o);if(r.status===401&&String(u).startsWith('/'))location.reload();return r}}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const dms=d=>{const x=Math.floor(d),m=Math.floor((d-x)*60);return x+'° '+String(m).padStart(2,'0')+'′'};
 const SIGNS=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+const VNAME={D1:'Rasi',D2:'Hora · wealth',D3:'Drekkana · siblings',D4:'Chaturthamsa · property',D7:'Saptamsa · children',
+  D9:'Navamsa · marriage',D10:'Dasamsa · career',D12:'Dwadasamsa · parents',D16:'Shodasamsa · vehicles',D20:'Vimsamsa · spirituality',
+  D24:'Chaturvimsamsa · education',D27:'Bhamsa · strength',D30:'Trimsamsa · misfortunes',D40:'Khavedamsa',D45:'Akshavedamsa',D60:'Shashtiamsa · past karma'};
 const ABBR={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'};
 try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){}
 
@@ -418,7 +507,9 @@ const MQ=matchMedia('(prefers-color-scheme:dark)');
 const themeMode=()=>document.documentElement.getAttribute('data-theme')||'auto';
 function paintTheme(){
   const m=themeMode(), dark=m==='dark'||(m==='auto'&&MQ.matches);
-  $('themebtn').textContent=m==='auto'?'◐':dark?'☾':'☀';
+  $('themebtn').innerHTML='<svg viewBox="0 0 24 24">'+(m==='auto'?'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>'
+    :dark?'<path d="M20 14.5A8 8 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5z"/>'
+    :'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>')+'</svg>';
   const label=m==='auto'?'Theme: follows your system — click for light':m==='light'?'Theme: light — click for dark':'Theme: dark — click to follow your system';
   $('themebtn').title=label;$('themebtn').setAttribute('aria-label',label);
 }
@@ -436,8 +527,8 @@ let hasChart=false;
 function hideAll(){$('viewForm').hidden=true;$('out').hidden=true;$('viewMatch').hidden=true}
 function showForm(){hideAll();$('viewForm').hidden=false;$('cancel').hidden=!hasChart;closeChat();$('fab').hidden=true;window.scrollTo({top:0,behavior:'smooth'})}
 function showResults(){hasChart=true;hideAll();$('out').hidden=false;$('fab').hidden=$('pop').hidden?false:true;window.scrollTo({top:0})}
-$('newbtn').onclick=()=>{$('f').reset();try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){};$('placeinfo').textContent='Search and pick a city, or enter coordinates below.';showForm()};
-$('cancel').onclick=showResults;
+$('newbtn').onclick=()=>{editId=null;$('go').textContent='Generate chart';$('f').reset();try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){};$('placeinfo').textContent='Search and pick a city, or enter coordinates below.';showForm()};
+$('cancel').onclick=()=>{editId=null;$('go').textContent='Generate chart';showResults()};
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.tab==='lal')loadLal();
   [...$('tabs').children].forEach(x=>x.classList.toggle('on',x===b));
@@ -468,31 +559,88 @@ $('place').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault()
 
 
 // ----- saved profiles -----
-let currentId=null;
+let currentId=null,editId=null,saved=[];
+const initial=n=>(String(n||'?').trim()[0]||'?').toUpperCase();
+const niceDate=d=>{try{return new Date(d+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}catch(e){return d}};
+const subLine=q=>[niceDate(q.dob),(q.place||'').split(',')[0]].filter(Boolean).join(' · ');
+const CHECK='<svg class="ck" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function paintPill(){
+  const p=saved.find(x=>String(x.id)===String(currentId))||saved[0]; if(!p)return;
+  $('pav').textContent=initial(p.name);$('pnm').textContent=p.name;$('psub').textContent=subLine(p.request);
+  $('pbtn').setAttribute('aria-label','Current chart: '+p.name+'. Open chart menu');
+  const first=esc(p.name.split(' ')[0]);
+  $('medit').querySelector('span').innerHTML='Edit '+first+'’s details';
+  $('mdel').querySelector('span').innerHTML='Delete '+first+'’s chart';
+}
+function paintList(){
+  const f=$('psearch').value.trim().toLowerCase();
+  const list=f?saved.filter(p=>(p.name+' '+(p.request.place||'')+' '+p.request.dob).toLowerCase().includes(f)):saved;
+  $('plist').innerHTML=list.length?list.map(p=>'<button type="button" role="menuitemradio" aria-checked="'+(String(p.id)===String(currentId))+'" class="prow'+(String(p.id)===String(currentId)?' cur':'')+'" data-id="'+p.id+'">'+
+    '<span class="av">'+esc(initial(p.name))+'</span><span class="pt"><b>'+esc(p.name)+'</b><small>'+esc(subLine(p.request))+'</small></span>'+CHECK+'</button>').join('')
+    :'<div class="empty-s">No charts match “'+esc(f)+'”.</div>';
+}
 async function loadList(select){
   try{
-    const list=await (await fetch('/profiles')).json();
-    $('saved').hidden=!list.length;
-    $('plist').innerHTML=list.map(p=>'<option value="'+p.id+'">'+esc(p.name)+' · '+p.request.dob+'</option>').join('');
-    if(select)$('plist').value=select;
-    return list;
+    saved=await (await fetch('/profiles')).json();
+    $('saved').hidden=!saved.length;
+    if(select)currentId=select;
+    $('psearch').hidden=saved.length<=5;
+    paintPill();paintList();
+    return saved;
   }catch(e){return []}
+}
+// ----- chart menu: popover on desktop, bottom sheet on phones -----
+const isPhone=()=>matchMedia('(max-width:620px)').matches;
+const menuItems=()=>[...$('pmenu').querySelectorAll('.prow,.mi')];
+function openMenu(){
+  const m=$('pmenu'),r=$('pbtn').getBoundingClientRect();
+  m.style.top=isPhone()?'':(r.bottom+8)+'px';m.style.right=isPhone()?'':Math.max(12,innerWidth-r.right)+'px';
+  $('psearch').value='';paintList();
+  m.hidden=false;$('scrim').hidden=!isPhone();$('pbtn').setAttribute('aria-expanded','true');
+  (m.querySelector('.prow.cur')||menuItems()[0]).focus();
+}
+function closeMenu(focusBack){
+  if($('pmenu').hidden)return;
+  $('pmenu').hidden=true;$('scrim').hidden=true;$('pbtn').setAttribute('aria-expanded','false');
+  if(focusBack)$('pbtn').focus();
+}
+$('pbtn').onclick=()=>$('pmenu').hidden?openMenu():closeMenu();
+$('scrim').onclick=()=>{closeMenu();closeConfirm()};
+document.addEventListener('click',e=>{if(!$('pmenu').hidden&&!e.target.closest('#pmenu,#pbtn'))closeMenu()});
+addEventListener('resize',()=>closeMenu());
+$('pmenu').addEventListener('keydown',e=>{
+  const it=menuItems(),i=it.indexOf(document.activeElement);
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();it[(i+(e.key==='ArrowDown'?1:-1)+it.length)%it.length].focus()}
+  else if(e.key==='Escape'){e.preventDefault();closeMenu(true)}
+});
+$('psearch').addEventListener('input',paintList);
+$('plist').addEventListener('click',e=>{const b=e.target.closest('.prow');if(!b)return;closeMenu();loadProfile(b.dataset.id)});
+$('mnew').onclick=()=>{closeMenu();$('newbtn').click()};
+$('medit').onclick=()=>{closeMenu();const p=saved.find(x=>String(x.id)===String(currentId));if(!p)return;
+  fillForm(p.request);editId=p.id;$('save').checked=true;showForm();$('go').textContent='Save changes'};
+$('mdel').onclick=()=>{closeMenu();
+  const p=saved.find(x=>String(x.id)===String(currentId));if(!p)return;
+  $('cft').textContent='Delete '+p.name+'’s chart?';$('confirm').hidden=false;$('scrim').hidden=false;$('cfno').focus()};
+function closeConfirm(){$('confirm').hidden=true;if($('pmenu').hidden)$('scrim').hidden=true}
+$('cfno').onclick=()=>{closeConfirm();$('pbtn').focus()};
+$('confirm').addEventListener('keydown',e=>{if(e.key==='Escape')closeConfirm()});
+$('cfyes').onclick=async()=>{
+  const id=String(currentId);closeConfirm();
+  await fetch('/profiles/'+id,{method:'DELETE'});
+  currentId=null;hasChart=false;closeChat();
+  const list=await loadList(); if(list.length)loadProfile(list[0].id); else {$('out').hidden=true;showForm()}
+};
+function fillForm(q){
+  $('name').value=q.name;$('dob').value=q.dob;$('tob').value=q.tob.slice(0,5);$('lat').value=q.lat;$('lon').value=q.lon;
+  $('place').value=q.place||'';$('tz').value=q.tz_name;$('unk').checked=q.tob_unknown;$('ayan').value=q.ayanamsha;$('node').value=q.node_type;
 }
 async function loadProfile(id){
   if(!id)return;  // guard: '/profiles/' is the list endpoint and would return an array
   const r=await fetch('/profiles/'+encodeURIComponent(id)); if(!r.ok)return;
   const p=await r.json(),q=p&&p.request; if(!q)return;
-  $('name').value=q.name;$('dob').value=q.dob;$('tob').value=q.tob.slice(0,5);$('lat').value=q.lat;$('lon').value=q.lon;
-  $('tz').value=q.tz_name;$('unk').checked=q.tob_unknown;$('ayan').value=q.ayanamsha;$('node').value=q.node_type;
-  currentId=p.id;$('plist').value=p.id;render(p.chart,q);setAsk();showResults();
+  fillForm(q);
+  currentId=p.id;paintPill();render(p.chart,q);setAsk();showResults();
 }
-$('plist').onchange=()=>loadProfile($('plist').value);
-$('pdel').onclick=async()=>{
-  const id=$('plist').value; if(!id||!confirm('Delete this saved profile and its chat?'))return;
-  await fetch('/profiles/'+id,{method:'DELETE'});
-  if(String(currentId)===id){currentId=null;hasChart=false;closeChat()}
-  const list=await loadList(); if(list.length)loadProfile(list[0].id); else {$('out').hidden=true;showForm()}
-};
 
 // ----- chat popup -----
 function openChat(){$('pop').hidden=false;$('fab').hidden=true;setTimeout(()=>{if(!$('q').disabled)$('q').focus();toBottom()},60)}
@@ -578,16 +726,17 @@ $('askf').addEventListener('submit',async e=>{
 // ----- submit -----
 $('f').addEventListener('submit',async e=>{
   e.preventDefault();
-  const body={name:$('name').value,dob:$('dob').value,tob:($('unk').checked?'12:00':$('tob').value)+':00',
+  const body={name:$('name').value,place:$('place').value.trim(),dob:$('dob').value,tob:($('unk').checked?'12:00':$('tob').value)+':00',
     lat:parseFloat($('lat').value),lon:parseFloat($('lon').value),tz_name:$('tz').value.trim(),
     tob_unknown:$('unk').checked,ayanamsha:$('ayan').value,node_type:$('node').value};
   if(body.tob.length>8)body.tob=body.tob.slice(0,8);
   $('go').disabled=true;$('msg').className='hint full';$('msg').textContent='Calculating…';
   try{
-    const r=await fetch($('save').checked?'/profiles':'/chart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    const r=await fetch(editId?'/profiles/'+editId:$('save').checked?'/profiles':'/chart',{method:editId?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json();
     if(!r.ok){const d=j.detail;throw new Error(Array.isArray(d)?d.map(x=>x.loc.slice(1).join('.')+': '+x.msg).join('; '):(d||r.statusText))}
-    if($('save').checked){currentId=j.id;render(j.chart,body);await loadList(j.id)}else{currentId=null;render(j,body)}
+    if(editId){editId=null;$('go').textContent='Generate chart'}
+    if($('save').checked||j.id){currentId=j.id;render(j.chart,body);await loadList(j.id)}else{currentId=null;render(j,body)}
     setAsk();$('msg').textContent='';showResults();
   }catch(err){$('msg').className='hint full err';$('msg').textContent='Error: '+err.message}
   finally{$('go').disabled=false}
@@ -600,10 +749,14 @@ function drawNorth(el,lagnaIdx,byH){
     '<polygon class="asc" points="200,0 300,100 200,200 100,100"/>'+
     '<rect class="ln" x="1" y="1" width="398" height="398"/>'+
     '<path class="ln" d="M0 0L400 400M400 0L0 400M200 0L400 200L200 400L0 200Z"/>';
+  // byH entries are 'Su' strings or {t:'Su', d:'15°'} when degrees are shown.
+  const lab=p=>typeof p==='string'?p:p.t+'<tspan class="dg" dx="2">'+p.d+'</tspan>';
   P.forEach(([x,y],h)=>{
-    const sg=(lagnaIdx+h)%12, pls=byH[h]||[];
-    v+='<text class="sn" x="'+x+'" y="'+(y-(pls.length?12:-4))+'" text-anchor="middle">'+(sg+1)+'</text>';
-    for(let i=0;i<pls.length;i+=2) v+='<text class="pl" x="'+x+'" y="'+(y+6+i*8)+'" text-anchor="middle">'+pls.slice(i,i+2).join(' ')+'</text>';
+    const sg=(lagnaIdx+h)%12, pls=byH[h]||[], deg=pls.some(p=>typeof p!=='string');
+    const per=deg&&pls.length<=3?1:2, rows=Math.ceil(pls.length/per), lh=deg?15:16;
+    const top=y-(rows-1)*lh/2+5;
+    v+='<text class="sn" x="'+x+'" y="'+(pls.length?top-15:y+4)+'" text-anchor="middle">'+(sg+1)+'</text>';
+    for(let r=0;r<rows;r++) v+='<text class="pl'+(deg&&per===2?' sm':'')+'" x="'+x+'" y="'+(top+r*lh)+'" text-anchor="middle">'+pls.slice(r*per,r*per+per).map(lab).join(' ')+'</text>';
   });
   el.innerHTML=v+'</svg>';
 }
@@ -681,14 +834,15 @@ function render(c,req){
   const md0=(c.dasha||[]).find(d=>now0>=new Date(d.start)&&now0<new Date(d.end));
   const ad0=md0&&(md0.children||[]).find(d=>now0>=new Date(d.start)&&now0<new Date(d.end));
   $('bname').textContent=(req&&req.name)||m.name||'Birth chart';
-  $('bmeta').textContent=req?[req.dob,req.tob_unknown?'time unknown':req.tob.slice(0,5),req.tz_name].join(' · '):'';
+  const where=req&&(req.place||(Math.abs(req.lat).toFixed(2)+'°'+(req.lat>=0?'N':'S')+', '+Math.abs(req.lon).toFixed(2)+'°'+(req.lon>=0?'E':'W')));
+  $('bmeta').textContent=req?[req.dob,req.tob_unknown?'time unknown':req.tob.slice(0,5),where,req.tz_name].join(' · '):'';
   $('summary').innerHTML=[
     ['Lagna',l.sign],['Moon',c.grahas.Moon.sign],['Nakshatra',c.grahas.Moon.nakshatra+' '+c.grahas.Moon.pada],
     ['Sun',c.grahas.Sun.sign],['Dasha now',md0?md0.lord+(ad0?' / '+ad0.lord:''):'—']
   ].map(([a,b])=>'<div class="stat"><small>'+a+'</small><b>'+esc(b)+'</b></div>').join('');
 
   const byH={};
-  Object.entries(c.grahas).forEach(([n,g])=>{const h=(g.sign_index-l.sign_index+12)%12;(byH[h]=byH[h]||[]).push(ABBR[n]+(g.retrograde?'ᴿ':''))});
+  Object.entries(c.grahas).forEach(([n,g])=>{const h=(g.sign_index-l.sign_index+12)%12;(byH[h]=byH[h]||[]).push({t:ABBR[n]+(g.retrograde?'ᴿ':''),d:Math.floor(g.degrees_in_sign)+'°'})});
   drawNorth($('chart'),l.sign_index,byH);
   lastReq=req||null;lkLoaded=false;
   if(!$('t-lal').hidden)loadLal();
@@ -709,6 +863,13 @@ function render(c,req){
         at(x.sign_lord),at(x.kp.star_lord),at(x.kp.sub_lord)]}));
 
   $('interpbody').innerHTML=window.interpret(c).map(sec=>'<details class="sec" open><summary><b>'+sec.title+'</b></summary><ul>'+sec.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></details>').join('');
+  const secs=(list,openAll)=>list.map(s=>'<details class="sec'+(s.sub?' subsec':'')+(s.past?' past':'')+'"'+(openAll||s.open?' open':'')+'><summary><b>'+s.title+'</b>'+(s.badge?' '+s.badge:'')+'</summary><ul>'+s.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></details>').join('');
+  $('bhavabody').innerHTML=secs(window.houseReading(c),false);
+  const dp=window.dashaReading(c);
+  $('dpredbody').innerHTML=dp.current?'<p class="sub">You are now running <b>'+esc(dp.current)+'</b>.</p>'+secs(dp.sections):'<div class="hint">No current daśā found for this chart.</div>';
+  const lk=window.luckyReading(c);
+  $('luckytiles').innerHTML=lk.tiles.map(([a,b,n])=>'<div class="stat"><small>'+a+'</small><b>'+esc(b)+'</b>'+(n?'<em>'+esc(n)+'</em>':'')+'</div>').join('');
+  $('luckybody').innerHTML=secs(lk.sections,true);
 
   const now=Date.now(),fd=s=>new Date(s).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
   const node=(d,open)=>{const cur=now>=new Date(d.start)&&now<new Date(d.end);
@@ -720,7 +881,11 @@ function render(c,req){
   const vt=$('vtabs');vt.innerHTML='';
   Object.keys(c.vargas).forEach((k,i)=>{const b=document.createElement('button');b.type='button';b.textContent=k;
     b.onclick=()=>{[...vt.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');
-      table($('vtable'),['Planet','Sign'],Object.entries(c.vargas[k]).map(([p,v])=>[p,v.sign||SIGNS[v.sign_index]]))};
+      const vl=(c.varga_lagna||{})[k], vByH={};
+      Object.entries(c.vargas[k]).forEach(([p,v])=>{const h=(v.sign_index-vl+12)%12;(vByH[h]=vByH[h]||[]).push(ABBR[p]+(c.grahas[p].retrograde?'ᴿ':''))});
+      $('vtitle').textContent=k+(VNAME[k]?' · '+VNAME[k]:'')+(vl==null?'':' · '+SIGNS[vl]+' ascendant');
+      if(vl==null)$('vchart').innerHTML='';else drawNorth($('vchart'),vl,vByH);
+      table($('vtable'),['Planet','Sign','House'],Object.entries(c.vargas[k]).map(([p,v])=>[p,v.sign||SIGNS[v.sign_index],vl==null?'—':'H'+((v.sign_index-vl+12)%12+1)]))};
     vt.appendChild(b); if(i===0)b.click()});
 }
 loadList().then(l=>{if(l.length)loadProfile(l[0].id)});

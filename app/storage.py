@@ -103,6 +103,19 @@ def save(name: str, request: dict, chart: dict, owner: str | None = None) -> dic
     return _row(row, True)
 
 
+def update(profile_id: int, name: str, request: dict, chart: dict, owner: str | None = None) -> dict | None:
+    """Replace a profile's birth details and chart; cached answers no longer apply."""
+    where, args = _scope(owner)
+    with _lock, _connect() as conn:
+        cur = conn.execute(f"UPDATE profiles SET name = ?, request = ?, chart = ? WHERE id = ?{where}",
+                           (name, json.dumps(request), json.dumps(chart), profile_id, *args))
+        if not cur.rowcount:
+            return None
+        conn.execute("DELETE FROM answer_cache WHERE profile_id = ?", (profile_id,))
+        row = conn.execute("SELECT * FROM profiles WHERE id = ?", (profile_id,)).fetchone()
+    return _row(row, True)
+
+
 def list_all(owner: str | None = None) -> list[dict]:
     where, args = _scope(owner)
     with _lock, _connect() as conn:

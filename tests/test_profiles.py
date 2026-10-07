@@ -24,6 +24,23 @@ def test_profile_roundtrip(client):
     assert client.get(f"/profiles/{pid}").status_code == 404
 
 
+def test_profile_keeps_birthplace(client):
+    pid = client.post("/profiles", json={**BODY, "place": "New Delhi, Delhi, India"}).json()["id"]
+    assert client.get(f"/profiles/{pid}").json()["request"]["place"] == "New Delhi, Delhi, India"
+    old = client.post("/profiles", json=BODY).json()["id"]
+    assert client.get(f"/profiles/{old}").json()["request"]["place"] == ""
+
+
+def test_profile_edit_updates_in_place(client):
+    pid = client.post("/profiles", json=BODY).json()["id"]
+    r = client.put(f"/profiles/{pid}", json={**BODY, "name": "T2", "tob": "06:00:00", "place": "Delhi"})
+    assert r.status_code == 200 and r.json()["name"] == "T2"
+    assert [p["id"] for p in client.get("/profiles").json()] == [pid]  # no duplicate
+    p = client.get(f"/profiles/{pid}").json()
+    assert p["request"]["tob"] == "06:00:00" and p["chart"]["lagna"]["sign"] != "Virgo"
+    assert client.put("/profiles/9999", json=BODY).status_code == 404
+
+
 def _pid(client):
     return client.post("/profiles", json=BODY).json()["id"]
 
