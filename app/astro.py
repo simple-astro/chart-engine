@@ -1,15 +1,27 @@
-"""Additional astrology branches: Lal Kitab and Ashtakoota match-making."""
+"""Additional astrology branches: Lal Kitab, Ashtakoota match-making and daily muhurat."""
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from datetime import date
 
-from app import storage
+from pydantic import BaseModel, Field
+
+from app import muhurat, storage
 from app.routes import chart as compute_chart
 from app.schemas import ChartRequest
 from core import lalkitab, matchmaking
 
 router = APIRouter(tags=["astrology"])
+
+
+class MuhuratRequest(BaseModel):
+    start: date
+    days: int = Field(default=1, ge=1, le=14)
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    tz_name: str
+    birth_nakshatra: int | None = Field(default=None, ge=0, le=26)
+    birth_moon_sign: int | None = Field(default=None, ge=0, le=11)
 
 
 class MatchRequest(BaseModel):
@@ -40,3 +52,14 @@ def lal_kitab(req: ChartRequest) -> dict:
 @router.post("/matchmaking")
 def match(req: MatchRequest, request: Request) -> dict:
     return match_for(req.groom_id, req.bride_id, request.state.owner)
+
+
+
+@router.post("/muhurat")
+def daily_muhurat(req: MuhuratRequest) -> dict:
+    try:
+        days = muhurat.muhurat_days(req.start, req.days, req.lat, req.lon, req.tz_name,
+                                    req.birth_nakshatra, req.birth_moon_sign)
+    except Exception as exc:  # bad timezone or polar day without sunrise
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"tz_name": req.tz_name, "days": days}

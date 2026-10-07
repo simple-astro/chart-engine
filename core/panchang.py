@@ -36,6 +36,7 @@ class Panchang:
     rahu_kalam: tuple[datetime, datetime]
     yamaganda: tuple[datetime, datetime]
     gulika: tuple[datetime, datetime]
+    moon_sign_index: int = 0  # sidereal sign of the Moon at sunrise
 
 
 def _jd_to_utc(jd: float) -> datetime:
@@ -107,4 +108,5 @@ def compute_panchang(d: date, lat: float, lon: float, tz_name: str) -> Panchang:
         rahu_kalam=_window(sunrise, seg, C.RAHU_KALAM_SEGMENT[vedic_wd]),
         yamaganda=_window(sunrise, seg, C.YAMAGANDA_SEGMENT[vedic_wd]),
         gulika=_window(sunrise, seg, C.GULIKA_SEGMENT[vedic_wd]),
+        moon_sign_index=int(moon_lon // 30.0),
     )
