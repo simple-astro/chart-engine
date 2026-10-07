@@ -95,7 +95,7 @@ def test_chat_tool_loop_and_history(client, monkeypatch):
     resp = client.post(f"/profiles/{pid}/chat/stream", json={"message": "And marriage?"})
     import json as _j
     evs = [_j.loads(l) for l in resp.text.splitlines()]
-    assert evs[-1] == {"type": "done", "mode": "llm"} and "".join(e.get("text", "") for e in evs) == "Saturn is in your 5th."
+    assert evs[-1] == {"type": "done", "mode": "llm"} and "".join(e["text"] for e in evs if e["type"] == "delta") == "Saturn is in your 5th."
     assert len(calls[2]["messages"]) == 3  # prior user+assistant turn is sent as history
     assert client.delete(f"/profiles/{pid}/chat").status_code == 200
     assert client.get(f"/profiles/{pid}/chat").json() == []

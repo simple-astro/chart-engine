@@ -58,7 +58,7 @@ SYSTEM = (
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "synth-2"
+CONTEXT_VERSION = "synth-4"
 
 TOOLS = [
     {"name": "get_transits",
@@ -190,11 +190,7 @@ def events(profile: dict, history: list[dict], message: str):
     client = _client()
     msgs = [{"role": m["role"], "content": m["content"]} for m in history[-HISTORY_LIMIT:]]
     msgs.append({"role": "user", "content": message})
-    system_text = SYSTEM.format(words=config.word_limit()) + ask.llm_context(profile)
-    remarks = storage.tester_remarks(profile.get("owner"))
-    if remarks:
-        system_text += f"\n\n[CONTEXT NOTE: {remarks}]"
-    system = [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}]
+    system = _system(profile)
     model = config.model()
     wrote = False
     for _ in range(MAX_TOOL_ROUNDS):
@@ -225,9 +221,56 @@ def events(profile: dict, history: list[dict], message: str):
                     out = run_tool(profile, b.name, b.input or {})
                 except Exception as exc:  # report tool failures to the model, not the user
                     out = {"error": str(exc)}
+                yield {"type": "tool_out", "data": out}
                 results.append({"type": "tool_result", "tool_use_id": b.id, "content": _json(out)})
         msgs.append({"role": "user", "content": results})
     yield {"type": "delta", "text": "\n\nI couldn't finish looking that up. Please try a narrower question."}
+
+
+def _system(profile: dict) -> list[dict]:
+    text = SYSTEM.format(words=config.word_limit()) + ask.llm_context(profile)
+    remarks = storage.tester_remarks(profile.get("owner"))
+    if remarks:
+        text += f"\n\n[CONTEXT NOTE: {remarks}]"
+    return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
+
+
+def revise(profile: dict, history: list[dict], message: str, draft: str, note: str) -> tuple[str, dict]:
+    """One correction pass: show the model its draft and the contradictions, get a fixed answer back."""
+    client, model = _client(), config.model()
+    msgs = [{"role": m["role"], "content": m["content"]} for m in history[-HISTORY_LIMIT:]]
+    msgs += [{"role": "user", "content": message}, {"role": "assistant", "content": draft},
+             {"role": "user", "content": note}]
+    with _stream(client, model, system=_system(profile), messages=msgs) as stream:
+        resp = stream.get_final_message()
+    u = getattr(resp, "usage", None)
+    use = {"input": getattr(u, "input_tokens", 0) or 0, "output": getattr(u, "output_tokens", 0) or 0,
+           "cache_read": getattr(u, "cache_read_input_tokens", 0) or 0,
+           "cache_write": getattr(u, "cache_creation_input_tokens", 0) or 0}
+    return "".join(b.text for b in resp.content if getattr(b, "type", "") == "text").strip(), use
+
+
+def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs: list):
+    """Check the answer against the chart; revise once, then drop any sentence that is still wrong.
+    Yields status events and finally {"type": "checked", "text", "report", "usage"}."""
+    from app import factcheck, synthesis
+    facts = factcheck.facts_from(synthesis.build(profile), profile["chart"], tool_outs)
+    issues = factcheck.check(text, facts)
+    report = {"found": [f"{i['claim']} → {i['truth']}" for i in issues], "revised": False, "removed": []}
+    use = None
+    if issues:
+        yield {"type": "status", "text": "Double-checking against your chart…"}
+        try:
+            fixed, use = revise(profile, history, message, text, factcheck.correction_note(issues))
+        except Exception:  # if the correction call fails, fall back to removing the wrong sentences
+            fixed = ""
+        if fixed:
+            report["revised"] = True
+            text, issues = fixed, factcheck.check(fixed, facts)
+        if issues:
+            report["removed"] = [i["sentence"] for i in issues]
+            text = factcheck.strip(text, issues)
+    yield {"type": "checked", "text": text, "report": report, "usage": use}
 
 
 def _json(obj) -> str:
@@ -277,6 +320,10 @@ def chat_events(profile: dict, message: str):
     key = cache_key(message)
     key = key and f"{CONTEXT_VERSION}:{key}"
     cached = storage.cache_get(pid, key, today) if key else None
+    if cached:  # re-verify: a cached answer must still pass the current fact check
+        from app import factcheck, synthesis
+        if factcheck.check(cached, factcheck.facts_from(synthesis.build(profile), profile["chart"])):
+            cached = None
     if cached:
         storage.add_message(pid, "user", message)
         storage.add_message(pid, "assistant", cached)
@@ -288,8 +335,12 @@ def chat_events(profile: dict, message: str):
 
     history = storage.get_messages(pid)
     parts: list[str] = []
+    tool_outs: list = []
     mode = "llm"
+    report = None
     use = {"model": None, "input": 0, "output": 0, "cache_read": 0, "cache_write": 0, "rounds": 0}
+    # Drafts are held back until checked against the chart, so the user only ever sees verified text.
+    yield {"type": "status", "text": "Reading your chart…"}
     try:
         for ev in events(profile, history, message):
             if ev["type"] == "usage":
@@ -298,28 +349,41 @@ def chat_events(profile: dict, message: str):
                 for k in ("input", "output", "cache_read", "cache_write"):
                     use[k] += ev[k]
                 continue
+            if ev["type"] == "tool_out":
+                tool_outs.append(ev["data"])
+                continue
             if ev["type"] == "delta":
+                if not parts:
+                    yield {"type": "status", "text": "Writing your answer…"}
                 parts.append(ev["text"])
+                continue
             yield ev
     except RuntimeError:  # no key / SDK missing: still answer simple data questions
         direct = ask.lookup(profile["chart"], message)
         if direct is None:
             raise
         parts, mode = [direct], "lookup"
-        yield {"type": "delta", "text": direct}
     text = "".join(parts).strip()
-    trimmed = limit_words(text, config.word_limit()) if mode == "llm" else text
-    if trimmed != text:
-        text = trimmed
-        yield {"type": "replace", "text": text}
+    if mode == "llm" and text:
+        for ev in guard(profile, history, message, text, tool_outs):
+            if ev["type"] != "checked":
+                yield ev
+                continue
+            text, report = ev["text"], ev["report"]
+            if ev["usage"]:
+                use["rounds"] += 1
+                for k in ("input", "output", "cache_read", "cache_write"):
+                    use[k] += ev["usage"][k]
+        text = limit_words(text, config.word_limit())
     if not text:  # never store or show a blank answer
         raise RuntimeError("The assistant didn't produce an answer. Please try again.")
+    yield {"type": "delta", "text": text}
     storage.add_message(pid, "user", message)
     storage.add_message(pid, "assistant", text)
     storage.log_usage(pid, mode, message, model=use["model"], input_tokens=use["input"],
                       output_tokens=use["output"], cache_read=use["cache_read"], cache_write=use["cache_write"],
                       tool_rounds=use["rounds"], words=len(text.split()), owner=profile.get("owner"),
-                      answer=text)
+                      answer=text, factcheck=report)
     if mode == "llm" and key:
         storage.cache_put(pid, key, today, text)
     yield {"type": "done", "mode": mode}

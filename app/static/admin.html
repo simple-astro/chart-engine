@@ -247,10 +247,13 @@ function renderQueries() {
     const [src, cls] = SOURCE[r.kind] || [r.kind, ''];
     const tokens = r.kind === 'llm' ? `${compact(r.input_tokens + r.cache_read_tokens + r.cache_write_tokens)} in · ${compact(r.output_tokens)} out` : '–';
     const noteIcon = r.admin_remarks ? '📝' : '–';
+    const fc = r.factcheck, fcTag = !fc ? '' : fc.found.length
+      ? `<span class="tag" style="background:rgba(192,57,43,.12);color:var(--bad)" title="Wrong facts caught before the user saw them">${fc.found.length} fixed</span>`
+      : '<span class="tag" style="background:rgba(46,125,50,.12);color:var(--ok)" title="All facts matched the chart">✓ checked</span>';
     return `<tr class="row" tabindex="0" data-id="${r.id}" aria-expanded="false">
       <td class="nowrap">${esc(when(r.ts))}</td><td class="nowrap">${esc(r.tester)}</td><td>${esc(r.profile_name || 'Deleted chart')}</td>
       <td class="q"><div>${esc(r.question)}</div></td>
-      <td><span class="tag ${cls}">${esc(src)}</span>${r.kind === 'llm' ? `<div style="color:var(--mut);font-size:.78rem;margin-top:3px">${esc(r.model_label || r.model || '')}</div>` : ''}</td>
+      <td><span class="tag ${cls}">${esc(src)}</span> ${fcTag}${r.kind === 'llm' ? `<div style="color:var(--mut);font-size:.78rem;margin-top:3px">${esc(r.model_label || r.model || '')}</div>` : ''}</td>
       <td class="num">${tokens}</td><td class="num">${r.kind === 'llm' ? money(r.cost) : '$0'}</td><td class="num" style="cursor:pointer;font-size:1.2em" title="View or add admin notes">${noteIcon}</td></tr>`;
   }).join('') : `<tr><td colspan="8" class="empty">${rows.length ? 'No questions match that filter.' : 'No questions yet.'}</td></tr>`;
 }
@@ -263,6 +266,7 @@ function toggle(tr) {
   d.innerHTML = `<td colspan="8"><div class="qa">
     <div><b>Question</b><div>${esc(r.question)}</div></div>
     <div><b>Answer</b><div>${r.answer ? esc(r.answer) : '<span style="color:var(--mut)">Not recorded (asked before answer logging was added).</span>'}</div></div>
+    ${r.factcheck && r.factcheck.found.length ? `<div><b>Fact check</b><div style="font-size:.88rem">Caught in the draft and ${r.factcheck.revised ? 'corrected by a rewrite' : 'removed'}:<ul style="margin:4px 0">${r.factcheck.found.map(x => `<li>${esc(x)}</li>`).join('')}</ul>${r.factcheck.removed.length ? `<div style="color:var(--bad)">Still wrong after the rewrite, so removed: ${r.factcheck.removed.map(esc).join(' | ')}</div>` : ''}</div></div>` : ''}
     <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><b>Admin notes</b>
     <div style="display:flex;gap:8px;align-items:flex-start">
     <textarea id="rem-${r.id}" style="flex:1;min-height:60px;padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--bg2);color:var(--ink)" placeholder="Add a private note to personalize future responses (admin only)">${esc(r.admin_remarks || '')}</textarea>

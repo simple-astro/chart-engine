@@ -64,7 +64,7 @@ def _connect() -> sqlite3.Connection:
         " send_time TEXT NOT NULL DEFAULT '08:00', active INTEGER NOT NULL DEFAULT 1, last_sent TEXT,"
         " live_lat REAL, live_lon REAL, live_tz TEXT, live_place TEXT, created_at TEXT NOT NULL)"
     )
-    for table, col in (("profiles", "owner"), ("usage_log", "owner"), ("usage_log", "answer"), ("usage_log", "admin_remarks")):
+    for table, col in (("profiles", "owner"), ("usage_log", "owner"), ("usage_log", "answer"), ("usage_log", "admin_remarks"), ("usage_log", "factcheck")):
         cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
         if col not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT")
@@ -194,14 +194,16 @@ def cache_put(profile_id: int, qkey: str, day: str, answer: str) -> None:
 
 def log_usage(profile_id: int, kind: str, question: str, *, model: str | None = None, input_tokens: int = 0,
               output_tokens: int = 0, cache_read: int = 0, cache_write: int = 0, tool_rounds: int = 0,
-              words: int = 0, owner: str | None = None, answer: str | None = None) -> None:
+              words: int = 0, owner: str | None = None, answer: str | None = None, factcheck: dict | None = None) -> None:
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     with _lock, _connect() as conn:
         conn.execute(
             "INSERT INTO usage_log (ts, profile_id, kind, model, input_tokens, output_tokens, cache_read_tokens,"
-            " cache_write_tokens, tool_rounds, words, question, owner, answer) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " cache_write_tokens, tool_rounds, words, question, owner, answer, factcheck)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (now, profile_id, kind, model, input_tokens, output_tokens, cache_read, cache_write, tool_rounds,
-             words, question[:2000], owner, answer[:6000] if answer else None))
+             words, question[:2000], owner, answer[:6000] if answer else None,
+             json.dumps(factcheck) if factcheck else None))
 
 
 def llm_requests_today(owner: str | None = None) -> int:
@@ -239,10 +241,15 @@ def recent_queries(limit: int = 50, before_id: int | None = None) -> list[dict]:
     with _lock, _connect() as conn:
         rows = conn.execute(
             "SELECT u.id, u.ts, u.kind, u.model, u.input_tokens, u.output_tokens, u.cache_read_tokens,"
-            " u.cache_write_tokens, u.tool_rounds, u.words, u.question, u.answer, u.admin_remarks, u.owner, u.profile_id,"
+            " u.cache_write_tokens, u.tool_rounds, u.words, u.question, u.answer, u.admin_remarks, u.factcheck, u.owner, u.profile_id,"
             f" p.name AS profile_name FROM usage_log u LEFT JOIN profiles p ON p.id = u.profile_id {where}"
             " ORDER BY u.id DESC LIMIT ?", (*args, limit)).fetchall()
-    return [dict(r) for r in rows]
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["factcheck"] = json.loads(d["factcheck"]) if d.get("factcheck") else None
+        out.append(d)
+    return out
 
 
 def token_totals(today_only: bool) -> list[dict]:
