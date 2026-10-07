@@ -65,6 +65,6 @@ _INDEX = _STATIC / "index.html"
 
 @app.get("/", include_in_schema=False)
 async def index() -> FileResponse:
-    return FileResponse(_INDEX)
+    return FileResponse(_INDEX, headers={"Cache-Control": "no-cache"})
 
 app.mount("/static", StaticFiles(directory=_STATIC), name="static")

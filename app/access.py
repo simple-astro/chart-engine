@@ -176,7 +176,8 @@ def login_page(error: str = "", admin: bool = False) -> str:
                 "see them. The SimpleJyotish team may review questions and answers to improve the service.</small>")
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>SimpleJyotish — {label}</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23d9a54d'/%3E%3Ctext x='16' y='22' font-size='17' text-anchor='middle' fill='%231a1322'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="/static/sun.svg">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <style>
 :root{{--bg:#fbf7ef;--card:#fffdf9;--ink:#241e31;--mut:#6d6682;--acc:#8a5e14;--line:rgba(36,30,49,.12);--bad:#c0392b}}
 @media (prefers-color-scheme:dark){{:root{{--bg:#0a0812;--card:#1b162b;--ink:#f1ecf7;--mut:#9f98b8;--acc:#e5bb72;--line:rgba(255,255,255,.1);--bad:#ff8a80}}}}
@@ -186,9 +187,9 @@ h1{{font:600 1.7rem Georgia,serif;margin:0 0 6px}}h1 em{{font-style:normal;color
 label{{display:block;font-size:.78rem;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:7px}}
 input{{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}}
 button{{width:100%;margin-top:14px;padding:13px;border:0;border-radius:12px;font:600 1rem system-ui,sans-serif;cursor:pointer;color:#1a1322;background:linear-gradient(140deg,#e0b05f,#c98f2e)}}
-.err{{color:var(--bad);font-size:.9rem;margin:0 0 14px}}small{{display:block;margin-top:16px;color:var(--mut);font-size:.8rem}}a{{color:var(--acc)}}
+.logo{{display:block;width:72px;height:72px;margin:0 0 12px}}.err{{color:var(--bad);font-size:.9rem;margin:0 0 14px}}small{{display:block;margin-top:16px;color:var(--mut);font-size:.8rem}}a{{color:var(--acc)}}
 </style></head><body><form class="card" method="post" action="/login">
-<h1>Simple<em>Jyotish</em></h1><p>{intro}</p>{err}{hidden}
+<img class="logo" src="/static/sun.svg" alt=""><h1>Simple<em>Jyotish</em></h1><p>{intro}</p>{err}{hidden}
 <label for="code">{label}</label><input id="code" name="code" type="password" autocomplete="off" autofocus required>
 <button type="submit">Continue</button>{foot}
 </form></body></html>"""

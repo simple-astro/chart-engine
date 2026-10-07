@@ -40,7 +40,7 @@ def me(request: Request) -> dict:
 def admin_page(request: Request):
     if not request.state.admin:
         return HTMLResponse(access.login_page(admin=True))
-    return FileResponse(_PAGE, media_type="text/html")
+    return FileResponse(_PAGE, media_type="text/html", headers={"Cache-Control": "no-cache"})
 
 
 @router.get("/admin/api/overview")
