@@ -227,6 +227,7 @@
     };
     return { L, g, house, signOf, lordOf, owns, inHouse, dignity };
   }
+  window.planetDignity = (c, p) => ctx(c).dignity(p);
 
   function houseScore(x, h) {
     const lord = x.lordOf(h), at = x.house(lord);
@@ -369,6 +370,91 @@
       sections.push({ title: `Next: ${nx.lord} Mahādaśā · from ${fd(nx.start)}`, badge: badge(r.verdict), items: r.items.slice(0, 3) });
     }
     return { current: md.lord + (ad ? ' / ' + ad.lord : ''), sections };
+  };
+
+  // ----- guidance-first summary: what to do, what to avoid, which upay -----
+  const AREA = [
+    { key: 'career', name: 'Career & work', houses: [10], key_planet: x => x.lordOf(10),
+      good: { dos: ['Take on visible responsibility — your chart supports recognition and leadership.', 'Go ahead with the promotion, launch or new role you have been planning; pick a shubh day for the first step.'],
+        donts: ['Don’t undersell yourself or stay hidden in the background.'] },
+      care: { dos: ['Stay steady and keep building skills — slow progress here is still progress.', 'Keep seniors on your side: share your work and communicate often.'],
+        donts: ['Don’t quit or switch jobs on impulse.', 'Avoid open clashes with bosses or authorities.'] } },
+    { key: 'money', name: 'Money & savings', houses: [2, 11], key_planet: x => x.lordOf(2),
+      good: { dos: ['Invest steadily for the long term — your chart supports building wealth.', 'Use your network; gains come through people you know.'],
+        donts: ['Don’t let comfort turn into overspending.'] },
+      care: { dos: ['Keep an emergency fund and track what you spend each month.', 'Save in small, regular amounts rather than big jumps.'],
+        donts: ['Avoid lending money or standing guarantee for others.', 'Stay away from speculation and get-rich-quick offers.'] } },
+    { key: 'love', name: 'Love & marriage', houses: [7], key_planet: x => ['debilitated', 'enemy'].includes(x.dignity('Venus')) ? 'Venus' : x.lordOf(7),
+      good: { dos: ['Express care openly — small gestures keep the bond strong.', 'A good time to move forward on engagement or marriage; choose a shubh muhurat.'],
+        donts: ['Don’t take a supportive partner for granted.'] },
+      care: { dos: ['Listen more than you argue; patience is your best upay here.', 'Match kundlis carefully before marriage.'],
+        donts: ['Don’t make big relationship decisions in anger or in a hurry.', 'Keep work and family stress out of the relationship.'] } },
+    { key: 'health', name: 'Health & energy', houses: [1, 6], key_planet: x => x.lordOf(1),
+      good: { dos: ['Keep a regular routine — your body recovers well when you rest.', 'Stay active; vitality is one of your strengths.'],
+        donts: ['Don’t ignore small symptoms just because you usually bounce back.'] },
+      care: { dos: ['Get regular check-ups, especially for your {body}.', 'Sleep, food and daily movement matter more for you than for most.'],
+        donts: ['Avoid skipping meals and late nights.', 'Don’t self-medicate — follow your doctor.'] } },
+    { key: 'home', name: 'Home & family', houses: [4], key_planet: x => x.lordOf(4),
+      good: { dos: ['Spend time with your mother and family — home is your source of strength.', 'Good support for buying property or a vehicle; choose a shubh muhurat.'],
+        donts: ['Don’t let work crowd out family time.'] },
+      care: { dos: ['Keep your home calm, clean and full of light — it helps your peace of mind.', 'Read property papers carefully before any deal.'],
+        donts: ['Avoid family disputes over property or money.', 'Don’t sign property deals in a hurry.'] } },
+  ];
+  const SCORE = { strong: 2, good: 1, mixed: 0, care: -1 };
+  const LEVEL = {
+    good: { cls: 'good', label: 'Looking good' }, mixed: { cls: '', label: 'Mixed' }, care: { cls: 'warn', label: 'Needs care' },
+  };
+
+  window.guideReading = function (c) {
+    const x = ctx(c), now = Date.now(), cur = d => now >= new Date(d.start) && now < new Date(d.end);
+    const md = (c.dasha || []).find(cur), ad = md && (md.children || []).find(cur);
+    const active = new Set([md, ad].filter(Boolean).flatMap(d => areas(x, d.lord)));
+    const sign = SIGNS[x.L];
+
+    const lifeAreas = AREA.map(a => {
+      let s = a.houses.reduce((t, h) => t + SCORE[houseScore(x, h)], 0) / a.houses.length;
+      if (a.key === 'love') s += { exalted: 1, own: 1, debilitated: -1 }[x.dignity('Venus')] || 0;
+      const lv = s >= 1 ? 'good' : s >= 0 ? 'mixed' : 'care';
+      const set = lv === 'care' ? a.care : a.good;
+      const fill = t => t.replace('{body}', BODY[sign]);
+      const dos = (lv === 'mixed' ? [a.good.dos[0], a.care.dos[0]] : set.dos).map(fill);
+      const donts = (lv === 'mixed' ? a.care.donts : set.donts).map(fill);
+      const kp = a.key_planet(x), h = a.houses[0];
+      const head = lv === 'care' ? HOUSE[h].care : HOUSE[h].good + (lv === 'mixed' ? ' Expect some ups and downs.' : '');
+      return {
+        key: a.key, name: a.name, level: LEVEL[lv], focus: a.houses.some(hh => active.has(hh)),
+        outlook: head, dos, donts: [...donts, `Watch for ${PLANET[kp].risk}.`],
+        remedy: { planet: kp, text: REMEDY[kp], why: `strengthens ${kp}, which ${kp === 'Venus' && a.key === 'love' ? 'rules love' : `rules your ${ord(h)} house`}` },
+      };
+    });
+
+    let period = null;
+    if (md) {
+      const v = periodVerdict(x, md.lord).v;
+      period = {
+        md: md.lord, ad: ad && ad.lord, until: fd(md.end), adUntil: ad && fd(ad.end), verdict: v,
+        text: MD_THEME[md.lord],
+        now: ad ? `Right now ${ad.lord} adds ${PLANET[ad.lord].gift}, until ${fd(ad.end)}.` : '',
+        focus: [...active].sort((a, b) => a - b).slice(0, 4).map(h => HOUSE[h].short),
+      };
+    }
+
+    const seven = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+    const weak = seven.find(p => x.dignity(p) === 'debilitated') || seven.find(p => x.g[p].combust)
+      || (lifeAreas.find(a => a.level.cls === 'warn') || {}).remedy?.planet;
+    const lag = x.lordOf(1), lk = LUCK[lag];
+    const remedies = [];
+    if (md) remedies.push({ planet: md.lord, title: `For your current period`, why: `${md.lord} runs your life chapter until ${fd(md.end)}. Keeping it happy smooths the whole period.`, text: REMEDY[md.lord] });
+    if (weak && weak !== (md && md.lord)) {
+      const why = x.dignity(weak) === 'debilitated' ? `${weak} is weak in your chart (debilitated), so it needs support.`
+        : x.g[weak].combust ? `${weak} is too close to the Sun (combust) in your chart, so its gifts stay hidden without support.`
+          : `${weak} rules an area of your life that needs care right now.`;
+      remedies.push({ planet: weak, title: `To strengthen ${weak}`, why, text: REMEDY[weak] });
+    }
+    remedies.push({ planet: lag, title: 'Your life stone', why: `${lag} rules your ${sign} ascendant — it protects your health, confidence and direction.`,
+      text: `${lk.gem}, worn on the ${lk.wear}. Try it for a few days first and consult before buying a costly stone.` });
+
+    return { period, areas: lifeAreas, remedies, lucky: { day: lk.day, color: lk.color, num: lk.num }, rising: sign, moon: x.g.Moon.sign };
   };
 
   window.luckyReading = function (c) {

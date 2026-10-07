@@ -17,7 +17,7 @@
     --ink:#241e31; --mut:#6d6682;
     --acc:#8a5e14; --acc2:#6a3fc2; --g1:#e0b05f; --g2:#c98f2e;
     --soft:rgba(138,94,20,.09); --line:rgba(36,30,49,.12);
-    --ok:#2e7d32; --bad:#c0392b;
+    --ok:#2e7d32; --bad:#c0392b; --cmb:#c46a12;
     --shadow:0 1px 2px rgba(36,30,49,.05),0 10px 30px rgba(36,30,49,.08);
     color-scheme:light;
     --glow:none; --r:18px;
@@ -31,7 +31,7 @@
     --ink:#f1ecf7; --mut:#9f98b8;
     --acc:#e5bb72; --acc2:#b89bf5; --g1:#e8c178; --g2:#c79440;
     --soft:rgba(229,187,114,.11); --line:rgba(255,255,255,.1);
-    --ok:#6ee7a0; --bad:#ff8a80;
+    --ok:#6ee7a0; --bad:#ff8a80; --cmb:#ffae5c;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 40px rgba(0,0,0,.45);
     --glow:0 0 22px rgba(229,187,114,.22);
   }}
@@ -41,7 +41,7 @@
     --ink:#f1ecf7; --mut:#9f98b8;
     --acc:#e5bb72; --acc2:#b89bf5; --g1:#e8c178; --g2:#c79440;
     --soft:rgba(229,187,114,.11); --line:rgba(255,255,255,.1);
-    --ok:#6ee7a0; --bad:#ff8a80;
+    --ok:#6ee7a0; --bad:#ff8a80; --cmb:#ffae5c;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 40px rgba(0,0,0,.45);
     --glow:0 0 22px rgba(229,187,114,.22);
   }
@@ -209,16 +209,160 @@
   .stat:hover{border-color:var(--acc);transform:translateY(-2px)}
   .stat small{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
   .stat b{font-size:1rem;color:var(--acc);font-weight:600}
-  .grid{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:22px;align-items:start}
-  .chartcard{padding:22px;position:sticky;top:80px}
+  .grid{display:flex;flex-direction:column;gap:22px}
+  .chartcard{display:grid;grid-template-columns:minmax(280px,420px) 1fr;grid-template-areas:"h h" "c k" "c l" "c n";column-gap:32px;align-content:start}
+  .chartcard>h3{grid-area:h} .chartcard>#chart{grid-area:c} .chartcard>.ckey{grid-area:k;margin-top:0;align-self:start}
+  .chartcard>.clegend{grid-area:l;justify-content:flex-start} .chartcard>.hint{grid-area:n;text-align:left!important}
+  @media (max-width:900px){.chartcard{grid-template-columns:1fr;grid-template-areas:"h" "c" "k" "l" "n"}
+    .chartcard>.ckey{margin-top:16px} .chartcard>.clegend{justify-content:center} .chartcard>.hint{text-align:center!important}}
+  .chartcard{padding:22px;position:relative}
   .chartcard h3{font:600 1.15rem var(--serif);margin-bottom:14px;text-align:center}
   .chartcard .hint{text-align:center;margin-top:12px}
+  .chart{position:relative}
   .chart svg{display:block;width:100%;max-width:420px;margin:0 auto;filter:drop-shadow(0 2px 12px rgba(201,143,46,.18))}
-  .chart .ln{stroke:var(--acc);stroke-width:1.3;fill:none;opacity:.85}
-  .chart .sn{fill:var(--mut);font:600 11px var(--sans)}
+  .chart .bgsq{fill:var(--solid);stroke:var(--acc);stroke-width:2.2}
+  .chart .ln{stroke:var(--acc);stroke-width:1.1;fill:none;opacity:.75}
+  .chart .kd{fill:var(--acc);opacity:.04}
+  .chart .asclbl{fill:var(--acc);font:700 8px var(--sans);letter-spacing:1.8px}
+  .chart .sn{fill:var(--mut);font:500 10.5px var(--sans);opacity:.85}
   .chart .pl{fill:var(--ink);font:600 14px var(--sans)}
-  .chart .asc{fill:var(--soft)}
-  .chart .pl.sm{font-size:12px} .chart .dg{fill:var(--acc);font-size:.72em;font-weight:500}
+  .chart .pl.sm{font-size:12px} .chart .dg{fill:var(--mut);font-size:.7em;font-weight:500}
+  .chart .bd{font-size:.66em;font-weight:700}
+  .chart .pg{cursor:pointer}
+  .chart.hl .pg{fill-opacity:.2} .chart.hl .pg.on{fill-opacity:1}
+  .chart .pn.ex{fill:var(--ok)} .chart .pn.db{fill:var(--bad)}
+  .bd.ex{fill:var(--ok);color:var(--ok)} .bd.db{fill:var(--bad);color:var(--bad)} .bd.own{fill:var(--acc);color:var(--acc)}
+  .bd.rt{fill:var(--acc2);color:var(--acc2)} .bd.cb{fill:var(--cmb);color:var(--cmb)}
+  .ctip{position:absolute;z-index:5;pointer-events:none;background:var(--solid);border:1px solid var(--line);border-radius:12px;
+    box-shadow:var(--shadow);padding:9px 12px;font-size:.8rem;line-height:1.45;min-width:170px;max-width:240px;transform:translate(-50%,calc(-100% - 12px))}
+  .ctip.below{transform:translate(-50%,12px)}
+  .ctip b{font-size:.9rem} .ctip small{display:block} .ctip .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+  .tag{font-size:.7rem;font-weight:600;padding:1px 7px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+  .ckey{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:16px}
+  .gk{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid var(--line);border-radius:11px;background:var(--bg2);
+    cursor:pointer;text-align:left;min-width:0;transition:border-color .15s,transform .15s}
+  .gk:hover,.gk:focus-visible{border-color:var(--acc);outline:none;transform:translateY(-1px)}
+  .gk>b{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:.74rem;
+    background:linear-gradient(140deg,var(--g1),var(--g2));color:#1a1322}
+  .gk>span{min-width:0;font-size:.78rem;font-weight:600;line-height:1.2}
+  .gk small{display:block;font-weight:400;font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gk i{font-style:normal;font-size:.68rem;font-weight:700;margin-left:2px}
+  .gk.ex{box-shadow:inset 3px 0 0 var(--ok)} .gk.db{box-shadow:inset 3px 0 0 var(--bad)}
+  .clegend{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin-top:12px;font-size:.76rem;color:var(--mut)}
+  .clegend i{font-style:normal;font-weight:700;margin-right:4px}
+  .clegend .sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px;
+    background:linear-gradient(140deg,var(--g1),var(--g2));opacity:.55}
+  @media (max-width:420px){.ckey{grid-template-columns:repeat(2,1fr)}}
+  /* guidance page */
+  #guide{display:flex;flex-direction:column;gap:20px;margin-bottom:26px}
+  .sukh{padding:26px 30px;background:linear-gradient(135deg,color-mix(in srgb,var(--g1) 15%,var(--solid)),var(--solid) 65%)}
+  .sukh-id{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .sukh-id img{flex:none;filter:drop-shadow(0 3px 8px rgba(201,143,46,.4))}
+  .sukh-id b{font:600 1.3rem var(--serif);margin-right:8px}
+  .sukh-id small{display:block;color:var(--mut);font-size:.78rem}
+  .ai{display:inline-block;font:600 .6rem var(--sans);letter-spacing:.8px;text-transform:uppercase;padding:2px 7px;border-radius:99px;
+    border:1px solid var(--acc);color:var(--acc);vertical-align:3px}
+  .ph .ai{border-color:rgba(26,19,34,.45);color:#1a1322;margin-left:4px}
+  .sukh h2{font:600 2.1rem var(--serif);margin-bottom:8px}
+  .sukh .lead{font-size:1.1rem;margin:0 0 6px} .sukh .lead .badge{vertical-align:2px;margin-left:4px}
+  .sukh p{max-width:780px;margin:0 0 8px}
+  .focusrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0 2px;font-size:.8rem}
+  .focusrow>span:first-child{text-transform:uppercase;letter-spacing:1px;font-size:.66rem;color:var(--mut);margin-right:4px}
+  .fchip{padding:3px 11px;border-radius:99px;background:var(--soft);color:var(--acc);font-weight:600}
+  .cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch}
+  .gcard{padding:22px 24px}
+  .gcard h3{font:600 1.3rem var(--serif);margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .gcard h3 small{font:500 .8rem var(--sans);color:var(--mut)} .gcard h3 .badge{font-family:var(--sans);margin:0}
+  .gsub{color:var(--mut);font-size:.85rem;margin:-4px 0 10px}
+  #gtoday{display:flex;flex-direction:column}
+  .gweek{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
+  .gweek h5{margin:0 0 8px;font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--mut)}
+  .gwd{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px}
+  .gwd button{border:1px solid var(--line);background:var(--bg2);border-radius:10px;padding:6px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.72rem;color:var(--mut)}
+  .gwd button:hover{border-color:var(--acc)} .gwd b{color:var(--ink);font-size:.8rem}
+  .dd{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:6px 0}
+  .dd h5{margin:0 0 4px;font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px}
+  .dd h5.ok{color:var(--ok)} .dd h5.bad{color:var(--bad)}
+  .dd ul{margin:0;padding-left:17px;font-size:.9rem;line-height:1.5} .dd li{margin:3px 0}
+  .gtimes,.glucky{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 6px}
+  .gtimes span,.glucky span{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:7px 12px}
+  .gtimes small,.glucky small{display:block;font-size:.64rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
+  .gtimes b,.glucky b{color:var(--acc);font-size:.92rem;font-weight:600}
+  .grem{margin:0;padding:0;list-style:none;counter-reset:r}
+  .grem li{position:relative;padding:0 0 12px 38px;margin-bottom:12px;border-bottom:1px solid var(--line);counter-increment:r}
+  .grem li:last-child{border-bottom:0;margin-bottom:4px}
+  .grem li::before{content:counter(r);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+    font-size:.8rem;font-weight:700;background:linear-gradient(140deg,var(--g1),var(--g2));color:#1a1322}
+  .grem p{margin:2px 0 3px;font-size:.92rem} .grem small{color:var(--mut);font-size:.78rem;line-height:1.4;display:block}
+  .gh{font:600 1.5rem var(--serif);margin:10px 0 -4px}
+  .ggrid{display:flex;flex-direction:column;gap:14px}
+  .dd.one{grid-template-columns:1fr;margin-top:12px} .dd h5.mid{color:var(--mut)} .gfair{margin:0;font-size:.88rem}
+  .garea{padding:20px 22px;display:grid;grid-template-columns:1.25fr 1fr 1fr 1.05fr;gap:22px;align-items:start}
+  .gmain{display:flex;flex-direction:column;gap:9px;min-width:0}
+  .gdo h5,.gdont h5{margin:2px 0 6px;font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px}
+  .gdo h5{color:var(--ok)} .gdont h5{color:var(--bad)}
+  .gdo ul,.gdont ul{margin:0;padding-left:17px;font-size:.9rem;line-height:1.5} .gdo li,.gdont li{margin:0 0 5px}
+  @media (max-width:1050px){.garea{grid-template-columns:1fr 1fr} .gmain,.gup{grid-column:1/-1}}
+  .gmore{display:none}
+  @media (max-width:600px){.garea{grid-template-columns:1fr;gap:14px}
+    .gmore{display:inline-flex;align-self:flex-start;border:1px solid var(--line);background:var(--bg2);border-radius:99px;padding:7px 14px;
+      font-weight:600;font-size:.84rem;color:var(--ink);cursor:pointer}
+    .gmore .op{display:inline} .gmore .cl{display:none}
+    .garea.shut .gmore .op{display:none} .garea.shut .gmore .cl{display:inline}
+    .garea.shut .gdo,.garea.shut .gdont,.garea.shut .gup{display:none}
+    .cta .btn{flex:1 1 100%;text-align:center}}
+  .garea header{display:flex;align-items:center;gap:10px}
+  .garea h4{font:600 1.2rem var(--serif);flex:1} .garea .badge{margin:0}
+  .gico{width:36px;height:36px;padding:7px;border-radius:11px;background:var(--soft);stroke:var(--acc);fill:none;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .fnow{align-self:flex-start;font-size:.7rem;font-weight:600;color:var(--acc2);background:color-mix(in srgb,var(--acc2) 13%,transparent);padding:2px 9px;border-radius:99px}
+  .gout{margin:0}
+  .gup{background:var(--bg2);border-left:3px solid var(--acc);border-radius:10px;padding:10px 13px;font-size:.88rem}
+  .gup b{font-size:.66rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--acc)} .gup p{margin:2px 0} .gup small{color:var(--mut)}
+  .garea .linkbtn{align-self:flex-start;padding-top:2px;text-decoration:none;font-weight:600;font-size:.88rem}
+  .garea .linkbtn:hover{text-decoration:underline}
+  .kundli>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:14px;padding:18px 24px;border:1px solid var(--line);
+    border-radius:var(--r);background:var(--card);box-shadow:var(--shadow);transition:border-color .15s}
+  .kundli>summary::-webkit-details-marker{display:none}
+  .kundli>summary:hover{border-color:var(--acc)}
+  .kundli .kt{flex:1} .kundli .kt b{display:block;font:600 1.25rem var(--serif)} .kundli .kt small{color:var(--mut);font-size:.85rem}
+  .chev{width:11px;height:11px;border-right:2px solid var(--acc);border-bottom:2px solid var(--acc);transform:rotate(45deg);transition:transform .2s;margin:0 6px 4px 0}
+  .kundli[open]>summary{margin-bottom:22px} .kundli[open] .chev{transform:rotate(225deg);margin-bottom:-4px}
+  .phav{flex:none}
+  @media (max-width:760px){.g2,.dd{grid-template-columns:1fr} .sukh{padding:22px 18px} .sukh h2{font-size:1.7rem} .gcard,.garea{padding:18px}}
+  /* lord exchange */
+  .xcard{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:8px 0;background:var(--bg2)}
+  .xcard p{margin:8px 0} .xnone{border-style:dashed}
+  .xhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .xpl{font:600 1.15rem var(--serif)} .xarrow{color:var(--acc);font-weight:700} .xarrow.sm{font-size:.85rem}
+  .xhead .badge{margin-left:auto}
+  .xflow{white-space:nowrap}
+  .xtable td:nth-child(5){min-width:200px;color:var(--mut)}
+  /* ashtakavarga */
+  .akchart{position:relative;margin:6px 0 4px}
+  .akplot{position:relative;height:190px;display:grid;grid-template-columns:repeat(12,1fr);gap:4px;border-bottom:1px solid var(--line)}
+  .akb{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;cursor:default;outline:none}
+  .akb i{display:block;width:min(70%,30px);border-radius:4px 4px 0 0;transition:filter .15s}
+  .akb:hover i,.akb:focus-visible i{filter:brightness(1.12)}
+  .akb .akv{font-size:.72rem;font-weight:600;color:var(--mut);margin-bottom:3px}
+  .akb i.strong,.aksw.strong{background:linear-gradient(180deg,var(--g1),var(--g2))}
+  .akb i.avg,.aksw.avg{background:color-mix(in srgb,var(--mut) 45%,transparent)}
+  .akb i.weak,.aksw.weak{background:color-mix(in srgb,var(--bad) 55%,transparent)}
+  .aksw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .akref{position:absolute;left:0;right:0;border-top:1px dashed var(--acc);opacity:.7;pointer-events:none;z-index:1}
+  .akref span{position:absolute;right:0;top:-16px;font-size:.66rem;color:var(--acc);font-weight:600}
+  .aklabels{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;text-align:center;font-size:.72rem;font-weight:600;margin-top:5px}
+  .aklabels small{display:block;font-weight:400;color:var(--mut);font-size:.64rem}
+  .akps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .akp{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg2);display:flex;flex-direction:column;gap:3px}
+  .akp .badge{align-self:flex-start}
+  .akd{color:var(--acc);font-size:.7rem;letter-spacing:1px} .akd span{color:var(--line)}
+  .aktable td,.aktable th{text-align:center;padding:6px 7px} .aktable td:first-child,.aktable th:first-child{text-align:left}
+  .aktable th small{display:block;font-weight:400;color:var(--mut);font-size:.64rem}
+  .aktable td.here{outline:2px solid var(--acc);outline-offset:-2px;border-radius:4px;font-weight:700}
+  .aktable tr.sav td{border-top:2px solid var(--line)} .aktable tr.sav td.strong{color:var(--acc)} .aktable tr.sav td.weak{color:var(--bad)}
+  .stat em{display:block;font-style:normal;font-size:.72rem;color:var(--mut)}
   .vchart{margin:4px 0 16px} .vchart h4{text-align:center;font:600 1.05rem var(--serif);margin:0 0 10px}
   .vchart svg{max-width:360px}
   .panel{padding:10px 26px 26px;min-width:0}
@@ -490,16 +634,21 @@
 
   <!-- ===== results view ===== -->
   <section id="out" hidden>
+    <div id="guide"></div>
+    <details class="kundli" id="kundli">
+    <summary><span class="kt"><b>Kundli details</b><small>Birth chart, planets, daśā, Ashtakavarga, divisional charts and more</small></span><span class="chev" aria-hidden="true"></span></summary>
     <div class="card banner">
       <div><h2 id="bname"></h2><div class="meta" id="bmeta"></div></div>
       <div class="stats" id="summary"></div>
     </div>
     <div class="grid">
       <aside class="card chartcard"><h3>Rasi chart (D1) · North Indian</h3><div id="chart" class="chart"></div>
-        <div class="hint">Numbers are signs (1 = Aries). Su Mo Ma… are planets with their degree in the sign; ᴿ = retrograde. Shaded house = lagna.</div></aside>
+        <div id="chartkey" class="ckey" aria-label="Planets"></div>
+        <div class="clegend"><span><i class="bd ex">▲</i>Exalted</span><span><i class="bd db">▼</i>Debilitated</span><span><i class="bd own">⌂</i>Own sign</span><span><i class="bd rt">R</i>Retrograde</span><span><i class="bd cb">C</i>Combust</span><span><i class="sw"></i>Lagna</span></div>
+        <div class="hint">Numbers are signs (1 = Aries). Hover or tap a planet for details.</div></aside>
       <div class="card panel">
         <nav class="tabs" id="tabs">
-          <button data-tab="interp" class="on">Reading</button><button data-tab="bhava">Interpretation</button><button data-tab="dpred">Dasha Prediction</button><button data-tab="muhurat">Muhurat</button><button data-tab="lucky">Lucky &amp; Remedies</button><button data-tab="planets">Planets</button><button data-tab="houses">Houses</button>
+          <button data-tab="interp" class="on">Reading</button><button data-tab="bhava">Interpretation</button><button data-tab="dpred">Dasha Prediction</button><button data-tab="muhurat">Muhurat</button><button data-tab="lucky">Lucky &amp; Remedies</button><button data-tab="xchg">Lord Exchange</button><button data-tab="akv">Ashtakavarga</button><button data-tab="planets">Planets</button><button data-tab="houses">Houses</button>
           <button data-tab="nadi">Nadi</button><button data-tab="lal">Lal Kitab</button><button data-tab="dasha">Dasha</button><button data-tab="vargas">Divisional</button>
         </nav>
         <div class="pane" id="t-interp"><div id="interpbody"></div>
@@ -510,6 +659,8 @@
           <div class="hint">Vimśottarī daśā. Open any sub-period to read it. Timing is broad; transits fine-tune when events happen.</div></div>
         <div class="pane" id="t-muhurat" hidden><div id="mbody"><div class="hint">Loading…</div></div>
           <div class="hint">Traditional panchang rules (tithi, weekday, nakshatra, yoga, karana) plus your own Tara and Chandra bala. For weddings and other major events, confirm the final muhurat with an astrologer.</div></div>
+        <div class="pane" id="t-xchg" hidden><div id="xbody"></div></div>
+        <div class="pane" id="t-akv" hidden><div id="akvbody"></div></div>
         <div class="pane" id="t-lucky" hidden><div class="stats lucky" id="luckytiles"></div><div id="luckybody"></div>
           <div class="hint">Based on the rulers of your 1st, 5th and 9th houses. Traditional remedies, not medical or financial advice.</div></div>
         <div class="pane" id="t-planets" hidden><div class="scroll"><table id="grahas"></table></div></div>
@@ -522,27 +673,30 @@
         <div class="pane" id="t-vargas" hidden><div id="vtabs" class="vt"></div><div class="vchart"><h4 id="vtitle"></h4><div id="vchart" class="chart"></div></div><div class="scroll"><table id="vtable"></table></div></div>
       </div>
     </div>
+    </details>
   </section>
 </main>
 
 <footer><b>SimpleJyotish</b> · simplejyotish.com — founded by Sukhdeep Singh, Nadi astrologer since 2014.<br>Charts computed with the Swiss Ephemeris. Readings and remedies are traditional guidance, not predictions, and not a substitute for medical, legal or financial advice.</footer>
 
 <!-- ===== chat popup ===== -->
-<button class="fab" id="fab" hidden aria-label="Open chat"><span><img src="/static/sun.svg" width="24" height="24" alt=""></span> Ask your chart</button>
-<div class="pop" id="pop" role="dialog" aria-label="Chat with your chart" hidden>
-  <div class="ph"><div class="t"><b>SimpleJyotish</b><small id="pname">Ask anything</small></div>
+<button class="fab" id="fab" hidden aria-label="Ask Sukh"><span><img src="/static/sun.svg" width="24" height="24" alt=""></span> Ask Sukh</button>
+<div class="pop" id="pop" role="dialog" aria-label="Chat with Sukh" hidden>
+  <div class="ph"><img class="phav" src="/static/sun.svg" alt="" width="34" height="34"><div class="t"><b>Sukh <span class="ai">AI Jyotishi</span></b><small id="pname">Ask anything</small></div>
     <button type="button" id="clearchat" title="Start a new conversation">New chat</button>
     <button type="button" id="tgbtn" title="Continue on Telegram" hidden>✈️</button>
     <button type="button" id="closechat" aria-label="Close">✕</button></div>
   <div id="log" class="log"></div>
   <div class="chips" id="chips"></div>
-  <form id="askf" class="ask"><textarea id="q" rows="1" placeholder="Ask anything about your chart…"></textarea><button type="submit" class="btn" id="askbtn">Send</button></form>
+  <form id="askf" class="ask"><textarea id="q" rows="1" placeholder="Ask Sukh anything…"></textarea><button type="submit" class="btn" id="askbtn">Send</button></form>
   <div id="asknote" class="hint"></div>
 </div>
 
-<script src="/static/interp.js"></script>
-<script src="/static/insights.js"></script>
-<script src="/static/muhurat.js"></script>
+<script src="/static/interp.js?v=2"></script>
+<script src="/static/insights.js?v=3"></script>
+<script src="/static/muhurat.js?v=2"></script>
+<script src="/static/strength.js?v=1"></script>
+<script src="/static/guide.js?v=4"></script>
 <script>
 {const f=window.fetch.bind(window);window.fetch=async(u,o)=>{const r=await f(u,o);if(r.status===401&&String(u).startsWith('/'))location.reload();return r}}
 const $=id=>document.getElementById(id);
@@ -702,7 +856,7 @@ function closeChat(){$('pop').hidden=true;if(hasChart&&!$('out').hidden)$('fab')
 $('fab').onclick=openChat;$('closechat').onclick=closeChat;
 $('tgbtn').onclick=async()=>{try{const r=await fetch('/api/telegram/link',{method:'POST'});const j=await r.json();if(!r.ok)throw new Error(j.detail||r.statusText);window.location.href=j.deep_link}catch(e){alert('Error: '+e.message)}};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pop').hidden)closeChat()});
-const EX=['Give me an overview of my chart','How is my career outlook?','What does my 7th house say about marriage?','What is my current dasha and what does it mean?','How do current transits affect me?','Which remedies suit my chart?'];
+const EX=['What should I focus on this year?','When is a good time to change jobs?','Which remedies suit me right now?','How will my married life be?','Any health precautions for me?','What should I avoid this month?'];
 function md(t){ // tiny, safe markdown: headings, **bold**, `code`, bullets, paragraphs
   const inl=x=>esc(x).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g,'$1<i>$2</i>').replace(/`(.+?)`/g,'<code>$1</code>');
   let html='',inList=false;
@@ -740,7 +894,7 @@ async function setAsk(){
     if(id!==currentId)return;
     h.forEach(m=>m.role==='user'?addUser(m.content):addBot(m.content));
     $('chips').hidden=h.length>0;
-    if(!h.length)$('log').innerHTML='<div class="empty"><span class="big">🙏</span><b>Namaste'+( $('name').value?', '+esc($('name').value.split(' ')[0]):'')+'</b>Ask me anything about your kundli — career, marriage, timing, transits, muhurta or Lal Kitab upay. Or pick a question below.</div>';
+    if(!h.length)$('log').innerHTML='<div class="empty"><span class="big">🙏</span><b>Namaste'+( $('name').value?', '+esc($('name').value.split(' ')[0]):'')+'. I’m Sukh.</b>I’m an AI Jyotishi built on Sukhdeep Singh’s Nadi method. Tell me what’s on your mind — career, marriage, money, health — and I’ll tell you what your chart says and what you can do about it.</div>';
     else toBottom();
   }catch(e){}
 }
@@ -798,14 +952,21 @@ $('f').addEventListener('submit',async e=>{
 });
 
 // North Indian diamond: houses fixed, signs rotate from the lagna. byH: {0..11: ['Su','Mo',...]}
+const BD={ex:['▲','ex','Exalted'],db:['▼','db','Debilitated'],own:['⌂','own','Own sign'],R:['R','rt','Retrograde'],C:['C','cb','Combust']};
+let drawN=0;
 function drawNorth(el,lagnaIdx,byH){
   const P=[[200,95],[100,45],[45,100],[95,200],[45,300],[100,355],[200,305],[300,355],[355,300],[305,200],[355,100],[300,45]];
-  let v='<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">'+
-    '<polygon class="asc" points="200,0 300,100 200,200 100,100"/>'+
-    '<rect class="ln" x="1" y="1" width="398" height="398"/>'+
-    '<path class="ln" d="M0 0L400 400M400 0L0 400M200 0L400 200L200 400L0 200Z"/>';
-  // byH entries are 'Su' strings or {t:'Su', d:'15°'} when degrees are shown.
-  const lab=p=>typeof p==='string'?p:p.t+'<tspan class="dg" dx="2">'+p.d+'</tspan>';
+  const gid='ag'+(++drawN);
+  let v='<svg viewBox="-2 -2 404 404" xmlns="http://www.w3.org/2000/svg">'+
+    '<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--g1);stop-opacity:.42"/><stop offset="1" style="stop-color:var(--g2);stop-opacity:.14"/></linearGradient></defs>'+
+    '<rect class="bgsq" x="0" y="0" width="400" height="400"/>'+
+    '<polygon class="kd" points="400,200 300,100 200,200 300,300"/><polygon class="kd" points="200,400 300,300 200,200 100,300"/><polygon class="kd" points="0,200 100,100 200,200 100,300"/>'+
+    '<polygon fill="url(#'+gid+')" points="200,0 300,100 200,200 100,100"/>'+
+    '<path class="ln" d="M0 0L400 400M400 0L0 400M200 0L400 200L200 400L0 200Z"/>'+
+    '<text class="asclbl" x="200" y="32" text-anchor="middle">LAGNA</text>';
+  // byH entries are 'Su' strings, or {t:'Su', d:'15°', p:'Sun', b:['ex','R'], cls} for the main chart.
+  const lab=p=>typeof p==='string'?p:'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
+    (p.d?'<tspan class="dg" dx="1.5">'+p.d+'</tspan>':'')+(p.b||[]).map(k=>'<tspan class="bd '+BD[k][1]+'" dx="1">'+BD[k][0]+'</tspan>').join('')+'</tspan>';
   P.forEach(([x,y],h)=>{
     const sg=(lagnaIdx+h)%12, pls=byH[h]||[], deg=pls.some(p=>typeof p!=='string');
     const per=deg&&pls.length<=3?1:2, rows=Math.ceil(pls.length/per), lh=deg?15:16;
@@ -815,6 +976,27 @@ function drawNorth(el,lagnaIdx,byH){
   });
   el.innerHTML=v+'</svg>';
 }
+// ----- main chart: planet tooltip + key highlight -----
+let CHART_TIP=null;
+const ctip=document.createElement('div');ctip.className='ctip';ctip.hidden=true;
+function focusPlanet(n,anchor){
+  $('chart').classList.toggle('hl',!!n);
+  $('chart').querySelectorAll('.pg').forEach(t=>t.classList.toggle('on',t.dataset.p===n));
+  if(!n||!anchor||!CHART_TIP){ctip.hidden=true;return}
+  const card=$('chart').closest('.chartcard');if(ctip.parentNode!==card)card.appendChild(ctip);
+  const r=anchor.getBoundingClientRect(),cr=card.getBoundingClientRect();
+  ctip.innerHTML=CHART_TIP(n);ctip.hidden=false;
+  const x=Math.min(Math.max(r.left+r.width/2-cr.left,100),cr.width-100);
+  const below=r.top<170;ctip.classList.toggle('below',below);
+  ctip.style.left=x+'px';ctip.style.top=((below?r.bottom:r.top)-cr.top)+'px';
+}
+$('chart').addEventListener('pointerover',e=>{const t=e.target.closest('.pg');if(t)focusPlanet(t.dataset.p,t)});
+$('chart').addEventListener('pointerout',e=>{if(e.target.closest('.pg')&&!e.relatedTarget?.closest?.('.pg'))focusPlanet(null)});
+$('chartkey').addEventListener('pointerover',e=>{const b=e.target.closest('.gk');if(b)focusPlanet(b.dataset.p,$('chart').querySelector('.pg[data-p="'+b.dataset.p+'"]'))});
+$('chartkey').addEventListener('pointerleave',()=>focusPlanet(null));
+$('chartkey').addEventListener('focusin',e=>{const b=e.target.closest('.gk');if(b)focusPlanet(b.dataset.p,$('chart').querySelector('.pg[data-p="'+b.dataset.p+'"]'))});
+$('chartkey').addEventListener('focusout',()=>focusPlanet(null));
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('.pg,.gk'))focusPlanet(null)});
 let lastReq=null,lkLoaded=false,lastChart=null;
 // ----- muhurat -----
 const MU={loaded:false,data:null,sel:0,here:null};
@@ -831,6 +1013,28 @@ async function loadMuhurat(force){
     MU.data=d;if(force)MU.sel=0;paintMuhurat();
   }catch(e){MU.loaded=false;box.innerHTML='<div class="hint err">Couldn’t load the muhurat: '+esc(e.message)+'</div>'}
 }
+async function loadToday(){
+  if(!lastReq||!lastChart)return;
+  const req=lastReq,moon=lastChart.grahas.Moon,place=(req.place||'').split(',')[0]||'your birthplace';
+  try{
+    const r=await fetch('/muhurat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({lat:req.lat,lon:req.lon,tz_name:req.tz_name,
+      start:tzToday(req.tz_name),days:7,birth_nakshatra:moon.nakshatra_index,birth_moon_sign:moon.sign_index})});
+    const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);
+    if(req!==lastReq||!$('gtoday'))return;
+    window.renderToday($('gtoday'),{...d.days[0],tz:d.tz_name},place,d.days);
+  }catch(e){if($('gtoday'))$('gtoday').innerHTML='<h3>Today for you</h3><div class="hint">Couldn’t load today’s panchang.</div>'}
+}
+function openTab(name){
+  $('kundli').open=true;
+  const b=document.querySelector('#tabs [data-tab="'+name+'"]');if(b)b.click();
+  $('tabs').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('guide').addEventListener('click',e=>{
+  const a=e.target.closest('[data-ask]');
+  if(a){openChat();if(a.dataset.ask&&!$('q').disabled){$('q').value=a.dataset.ask;$('askf').requestSubmit()}return}
+  const m=e.target.closest('.gmore');if(m){const c=m.closest('.garea');c.classList.toggle('shut');m.setAttribute('aria-expanded',String(!c.classList.contains('shut')));return}
+  const g=e.target.closest('[data-goto]');if(g)openTab(g.dataset.goto);
+});
 function paintMuhurat(){
   const place=MU.here?'your current location':((lastReq.place||'').split(',')[0]||'the birthplace');
   window.renderMuhurat($('mbody'),MU.data,{sel:MU.sel,today:true,here:!!MU.here,placeName:place});
@@ -926,8 +1130,17 @@ function render(c,req){
   ].map(([a,b])=>'<div class="stat"><small>'+a+'</small><b>'+esc(b)+'</b></div>').join('');
 
   const byH={};
-  Object.entries(c.grahas).forEach(([n,g])=>{const h=(g.sign_index-l.sign_index+12)%12;(byH[h]=byH[h]||[]).push({t:ABBR[n]+(g.retrograde?'ᴿ':''),d:Math.floor(g.degrees_in_sign)+'°'})});
+  const status=n=>{const g=c.grahas[n],d=window.planetDignity(c,n);
+    return [d==='exalted'?'ex':d==='debilitated'?'db':d==='own'?'own':null,g.retrograde?'R':null,g.combust?'C':null].filter(Boolean)};
+  Object.entries(c.grahas).forEach(([n,g])=>{const h=(g.sign_index-l.sign_index+12)%12,b=status(n);
+    (byH[h]=byH[h]||[]).push({t:ABBR[n],d:Math.floor(g.degrees_in_sign)+'°',p:n,b,cls:b.find(k=>k==='ex'||k==='db')})});
   drawNorth($('chart'),l.sign_index,byH);
+  CHART_TIP=n=>{const g=c.grahas[n],b=status(n);
+    return '<b>'+n+'</b><small>'+g.sign+' '+dms(g.degrees_in_sign)+' · House '+((g.sign_index-l.sign_index+12)%12+1)+'</small><small>'+esc(g.nakshatra)+' pada '+g.pada+'</small>'+
+      (b.length?'<div class="tags">'+b.map(k=>'<span class="tag bd '+BD[k][1]+'">'+BD[k][0]+' '+BD[k][2]+'</span>').join('')+'</div>':'')};
+  $('chartkey').innerHTML=Object.entries(c.grahas).map(([n,g])=>{const b=status(n),hi=b.find(k=>k==='ex'||k==='db');
+    return '<button type="button" class="gk'+(hi?' '+hi:'')+'" data-p="'+n+'"><b>'+ABBR[n]+'</b><span>'+n+b.map(k=>'<i class="bd '+BD[k][1]+'" title="'+BD[k][2]+'">'+BD[k][0]+'</i>').join('')+
+      '<small>'+g.sign+' '+Math.floor(g.degrees_in_sign)+'°</small></span></button>'}).join('');
   lastReq=req||null;lkLoaded=false;lastChart=c;MU.loaded=false;MU.data=null;MU.sel=0;
   if(!$('t-muhurat').hidden)loadMuhurat();
   if(!$('t-lal').hidden)loadLal();
@@ -955,6 +1168,8 @@ function render(c,req){
   const lk=window.luckyReading(c);
   $('luckytiles').innerHTML=lk.tiles.map(([a,b,n])=>'<div class="stat"><small>'+a+'</small><b>'+esc(b)+'</b>'+(n?'<em>'+esc(n)+'</em>':'')+'</div>').join('');
   $('luckybody').innerHTML=secs(lk.sections,true);
+  window.renderExchange($('xbody'),c);window.renderAshtakavarga($('akvbody'),c);
+  window.renderGuide($('guide'),window.guideReading(c),(req&&req.name)||m.name);$('kundli').open=false;loadToday();
 
   const now=Date.now(),fd=s=>new Date(s).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
   const node=(d,open)=>{const cur=now>=new Date(d.start)&&now<new Date(d.end);

@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from app import access, chat, config, storage
 from app.routes import chart as compute_chart
-from app.routes import with_varga_lagna
+from app.routes import with_extras
 from app.schemas import ChartRequest
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
@@ -63,7 +63,7 @@ def list_profiles(request: Request) -> list[dict]:
 @router.get("/{profile_id}")
 def get_profile(profile_id: int, request: Request) -> dict:
     p = _require(profile_id, request)
-    with_varga_lagna(p["chart"])  # charts saved before divisional ascendants were added
+    with_extras(p["chart"])  # also fills in data for charts saved before it existed
     return p
 
 

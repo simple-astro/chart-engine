@@ -7,8 +7,10 @@ from fastapi import APIRouter, HTTPException
 
 from app.schemas import ChartRequest, PanchangRequest, TransitRequest, TransitScanRequest
 from core import ephemeris
+from core.ashtakavarga import ashtakavarga
 from core.chart import ENGINE_VERSION, BirthData, compute_natal_chart
 from core.grahas import Graha
+from core.parivartana import exchanges, lord_placements
 from core.panchang import compute_panchang
 from core.transit_scan import scan_events
 from core.transits import transit_positions
@@ -63,16 +65,25 @@ def chart(req: ChartRequest) -> dict:
         node_type=req.node_type,
     )
     try:
-        return with_varga_lagna(compute_natal_chart(birth))
+        return with_extras(compute_natal_chart(birth))
     except Exception as exc:  # invalid tz, bad inputs -> 422
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-def with_varga_lagna(c: dict) -> dict:
-    """Add the ascendant's sign in each divisional chart (kept out of the engine's golden output)."""
+def with_extras(c: dict) -> dict:
+    """Derived data kept out of the engine's golden output: divisional ascendants,
+    Ashtakavarga, and lord exchanges (Rasi and Navamsa)."""
     if "varga_lagna" not in c:
         asc = c["lagna"]["ascendant"]
         c["varga_lagna"] = {k: varga_sign(asc, int(k[1:])) for k in c["vargas"]}
+    signs = {p: g["sign_index"] for p, g in c["grahas"].items()}
+    lagna = c["lagna"]["sign_index"]
+    c["ashtakavarga"] = ashtakavarga(signs, lagna)
+    c["lords"] = lord_placements(signs, lagna)
+    c["exchanges"] = {"D1": exchanges(signs, lagna)}
+    if "D9" in c["vargas"]:
+        d9 = {p: v["sign_index"] for p, v in c["vargas"]["D9"].items()}
+        c["exchanges"]["D9"] = exchanges(d9, c["varga_lagna"]["D9"])
     return c
 
 
