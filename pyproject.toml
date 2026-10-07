@@ -27,7 +27,7 @@ dev = [
 packages = ["app", "core"]
 
 [tool.setuptools.package-data]
-app = ["static/*.html", "static/*.js"]
+app = ["static/*.html", "static/*.js", "static/*.svg", "static/*.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
