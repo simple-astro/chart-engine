@@ -32,7 +32,7 @@
         const r = await fetch(`/profiles/${profileId}/kp/${current}/days?start=${s}&days=${days}`);
         const d = await r.json(); if (!r.ok) throw new Error(d.detail || r.statusText);
         out.innerHTML = d.days.length ? `<ol class="kpdd">${d.days.map(x => `<li><b>${fd(x.date)}</b><span>${x.hits.map(esc).join(' · ')}</span></li>`).join('')}</ol>
-            <p class="hint">Significators: ${esc(d.significators.join(', '))}. A transiting significator within 1° of a natal significator or a combination cusp, two significators conjoined, the Moon joining three, or the Antar lord in a significator’s star — with a fast planet involved.</p>`
+            <p class="hint">Possible days only — tested on dated events, the window is reliable but exact-day timing is not (it needs a birth time accurate to the minute). Significators: ${esc(d.significators.join(', '))}. A transiting significator within 1° of a natal significator or a combination cusp, two significators conjoined, the Moon joining three, or the Antar lord in a significator’s star — with a fast planet involved.</p>`
           : '<p class="hint">No exact transit trigger in this window — the event is more likely in another window.</p>';
       } catch (err) { out.innerHTML = `<p class="hint err">Couldn’t check the days: ${esc(err.message)}</p>`; }
       b.disabled = false;
@@ -55,7 +55,7 @@
               <summary><span class="kpd">${fd(w.starts)} – ${fd(w.ends)}</span><span class="kpl">${esc(w.antar)} / ${esc(w.praty)}</span>
                 <span class="badge ${vb(w.verdict)}">${esc(vl(w.verdict))}</span></summary>
               <ul>${w.reasons.map(x => `<li>${esc(x)}</li>`).join('')}${w.transit.map(x => `<li class="kptr">${esc(x)}</li>`).join('')}</ul>
-              ${w.verdict === 'strong' || w.verdict === 'favourable' ? `<div class="kpdw"><button type="button" class="btn ghost kpdays" data-s="${w.starts}" data-e="${w.ends}">${risk ? 'Find the days to take care' : 'Find the likely days'}</button><div class="kpdl" aria-live="polite"></div></div>` : ''}
+              ${w.verdict === 'strong' || w.verdict === 'favourable' ? `<div class="kpdw"><button type="button" class="btn ghost kpdays" data-s="${w.starts}" data-e="${w.ends}">${risk ? 'Possible days to take care' : 'Possible trigger days'}</button><div class="kpdl" aria-live="polite"></div></div>` : ''}
             </details></li>`).join('')}</ol>
           <p class="hint">Mahadasha ${esc(d.windows[0] ? d.windows[0].maha : '')} throughout unless shown otherwise in the reasons.
             The Dasa lord weighs most, then the Bhukti, then the Antar. Traditional guidance, not certainty.</p>`;

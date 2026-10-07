@@ -46,7 +46,8 @@ SYSTEM = (
     "get_kp_prediction), it is the verdict: say whether the matter is promised and which windows are strong or "
     "challenging exactly as computed, explain why through the star lord (what the period gives) and the sub lord "
     "(whether it delivers) in plain words, and never upgrade or downgrade a window. When asked for an exact date or "
-    "day, call get_event_days and give only the dates it returns, with their transit reasons. A RISK reading (illness, "
+    "day, call get_event_days and give only the dates it returns, clearly as possible days, not certainties — the "
+    "window is reliable, the exact day is not (it needs a birth time accurate to the minute). A RISK reading (illness, "
     "accident, dispute, separation, career loss) is a period to take care in, never a certainty: say so gently, "
     "never alarm, and pair it with practical steps and an upay. For upay follow remedy_guide: mantras and daan on the "
     "planet's own day, and gemstones only from suitable_stones. "
@@ -64,7 +65,7 @@ SYSTEM = (
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "nadi-3"
+CONTEXT_VERSION = "kp-2"
 
 TOOLS = [
     {"name": "get_transits",

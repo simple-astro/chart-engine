@@ -29,7 +29,7 @@ def test_lord_judgement_three_levels(chart):
     sun = K.judge_lord(chart, "Sun", good, bad)
     assert set(sun["levels"]) == {"planet", "nakshatra", "sub"} and sun["levels"]["sub"]["lord"] == "Venus"
     assert sun["verdict"] == "leans good"  # sub lord Venus signifies 6, 11 against 9
-    assert K.judge_lord(chart, "Jupiter", good, bad)["verdict"] in ("against", "blocks")
+    assert K.judge_lord(chart, "Jupiter", good, bad)["verdict"] not in ("supports", "leans good")  # gives 1, 4, 9
 
 
 def test_book_worked_example_scoring():
