@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
-from datetime import date
+from datetime import date, datetime, timezone
 
 from pydantic import BaseModel, Field
 
 from app import muhurat, storage
 from app.routes import chart as compute_chart
 from app.schemas import ChartRequest
-from core import lalkitab, matchmaking
+from core import horary, lalkitab, matchmaking
 
 router = APIRouter(tags=["astrology"])
 
@@ -22,6 +22,25 @@ class MuhuratRequest(BaseModel):
     tz_name: str
     birth_nakshatra: int | None = Field(default=None, ge=0, le=26)
     birth_moon_sign: int | None = Field(default=None, ge=0, le=11)
+
+
+class FindRequest(BaseModel):
+    activity: str
+    start: date
+    days: int = Field(default=30, ge=1, le=90)
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    tz_name: str
+    birth_nakshatra: int | None = Field(default=None, ge=0, le=26)
+    birth_moon_sign: int | None = Field(default=None, ge=0, le=11)
+
+
+class HoraryRequest(BaseModel):
+    number: int = Field(ge=1, le=249)
+    kind: str
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    asked_at: datetime | None = None  # defaults to now
 
 
 class MatchRequest(BaseModel):
@@ -53,6 +72,31 @@ def lal_kitab(req: ChartRequest) -> dict:
 def match(req: MatchRequest, request: Request) -> dict:
     return match_for(req.groom_id, req.bride_id, request.state.owner)
 
+
+
+@router.post("/horary")
+def kp_horary(req: HoraryRequest) -> dict:
+    when = req.asked_at or datetime.now(timezone.utc)
+    if when.tzinfo is None:
+        raise HTTPException(status_code=422, detail="asked_at needs a timezone")
+    try:
+        return horary.judge(req.number, req.kind, when, req.lat, req.lon)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/horary/kinds")
+def horary_kinds() -> list[dict]:
+    return [{"kind": k, "title": v[0], "house": v[1]} for k, v in horary.QUESTIONS.items()]
+
+
+@router.post("/muhurat/find")
+def find_muhurat(req: FindRequest) -> dict:
+    try:
+        return muhurat.find_dates(req.activity, req.start, req.days, req.lat, req.lon, req.tz_name,
+                                  req.birth_nakshatra, req.birth_moon_sign)
+    except Exception as exc:  # unknown activity, bad timezone, polar day
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("/muhurat")

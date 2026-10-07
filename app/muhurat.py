@@ -189,3 +189,37 @@ def muhurat_days(start: date, days: int, lat: float, lon: float, tz_name: str,
             "activities": acts, "windows": windows(p),
         })
     return out
+
+
+def good_windows(w: dict) -> list[dict]:
+    """Abhijit plus Amrit/Shubh/Labh Choghadiyas that don't overlap Rahu kalam, Yamaganda or Gulika."""
+    bad = [tuple(datetime.fromisoformat(x) for x in w[k]) for k in ("rahu_kalam", "yamaganda", "gulika")]
+    clash = lambda s, e: any(s < b and e > a for a, b in bad)
+    out = []
+    if w["abhijit"]:
+        out.append({"name": "Abhijit", "start": w["abhijit"][0], "end": w["abhijit"][1], "best": True})
+    for c in w["choghadiya"]:
+        s, e = datetime.fromisoformat(c["start"]), datetime.fromisoformat(c["end"])
+        if c["quality"] in ("best", "good") and not clash(s, e):
+            out.append({"name": c["name"], "start": c["start"], "end": c["end"], "best": c["quality"] == "best"})
+    return sorted(out, key=lambda x: x["start"])
+
+
+def find_dates(activity: str, start: date, days: int, lat: float, lon: float, tz_name: str,
+               birth_nak: int | None = None, birth_moon_sign: int | None = None, limit: int = 5) -> dict:
+    """The best days for one activity in a date range, strongest first."""
+    act = next((a for a in ACTIVITIES if a["key"] == activity), None)
+    if not act:
+        raise ValueError(f"unknown activity: {activity}")
+    found, checked = [], 0
+    for d in muhurat_days(start, days, lat, lon, tz_name, birth_nak, birth_moon_sign):
+        checked += 1
+        a = next(x for x in d["activities"] if x["key"] == activity)
+        if a["verdict"] in ("excellent", "good"):
+            found.append({"date": d["date"], "weekday": d["weekday"], "verdict": a["verdict"], "label": a["label"],
+                          "score": a["score"], "why": [w for w in a["why"] if w["good"]], "cautions": [w for w in a["why"] if w["bad"]],
+                          "note": a["note"], "tithi": d["tithi"]["name"], "nakshatra": d["nakshatra"],
+                          "windows": good_windows(d["windows"]), "rahu_kalam": d["windows"]["rahu_kalam"]})
+    found.sort(key=lambda x: (-x["score"], x["date"]))
+    return {"activity": {"key": act["key"], "name": act["name"], "icon": act["icon"]}, "checked": checked,
+            "matches": len(found), "dates": found[:limit]}

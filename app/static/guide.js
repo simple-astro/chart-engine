@@ -50,7 +50,8 @@
         <div class="gup"><b>Upay</b><p>${esc(a.remedy.text)}</p><small>Why: ${esc(a.remedy.why)}.</small></div>
       </article>`).join('');
 
-    el.innerHTML = hero + `<div class="g2">${today}${rem}</div><h3 class="gh">Your life areas</h3><div class="ggrid">${areas}</div>`;
+    el.innerHTML = hero + `<div class="g2">${today}${rem}</div>
+      <h3 class="gh">Plan &amp; decide</h3><div class="g2" id="gtools"></div><h3 class="gh">Your life areas</h3><div class="ggrid">${areas}</div>`;
   };
 
   window.renderToday = function (el, d, place, week) {
