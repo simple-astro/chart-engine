@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 
 from app import muhurat
 from core.constants import SIGN_LORDS
+from core.yogas import neecha_bhanga
 
 EXALT = {"Sun": 0, "Moon": 1, "Mars": 9, "Mercury": 5, "Jupiter": 3, "Venus": 11, "Saturn": 6}
 REMEDY = {
@@ -67,7 +68,9 @@ def weak_planet(chart: dict) -> tuple[str, str] | None:
     g = chart["grahas"]
     for p, ex in EXALT.items():
         if g[p]["sign_index"] == (ex + 6) % 12:
-            return p, f"{p} is weak in your chart (debilitated), so it needs support."
+            nb = neecha_bhanga({q: x["sign_index"] for q, x in g.items()}, chart["lagna"]["sign_index"]).get(p, {})
+            return p, (f"{p} is debilitated, but the debilitation is cancelled (Neecha Bhanga): early struggles in its areas turn into strength. This upay speeds that up." if nb.get("cancelled")
+                       else f"{p} is weak in your chart (debilitated), so it needs support.")
     for p in EXALT:
         if g[p].get("combust"):
             return p, f"{p} sits too close to the Sun (combust), so its gifts stay hidden without support."

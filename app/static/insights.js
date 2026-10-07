@@ -446,7 +446,10 @@
     const remedies = [];
     if (md) remedies.push({ planet: md.lord, title: `For your current period`, why: `${md.lord} runs your life chapter until ${fd(md.end)}. Keeping it happy smooths the whole period.`, text: REMEDY[md.lord] });
     if (weak && weak !== (md && md.lord)) {
-      const why = x.dignity(weak) === 'debilitated' ? `${weak} is weak in your chart (debilitated), so it needs support.`
+      const nb = ((c.strength || {}).neecha_bhanga || {})[weak];
+      const why = x.dignity(weak) === 'debilitated' ? (nb && nb.cancelled
+        ? `${weak} is debilitated, but the debilitation is cancelled (Neecha Bhanga): early struggles in its areas turn into strength. This upay speeds that up.`
+        : `${weak} is weak in your chart (debilitated), so it needs support.`)
         : x.g[weak].combust ? `${weak} is too close to the Sun (combust) in your chart, so its gifts stay hidden without support.`
           : `${weak} rules an area of your life that needs care right now.`;
       remedies.push({ planet: weak, title: `To strengthen ${weak}`, why, text: REMEDY[weak] });

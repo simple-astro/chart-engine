@@ -6,6 +6,7 @@ import re
 from datetime import datetime, timezone
 
 from core.ashtakavarga import ashtakavarga
+from core import yogas
 from core.dignity import dignity
 from core.parivartana import exchanges
 
@@ -94,12 +95,19 @@ def llm_context(profile: dict) -> str:
     lagna = chart["lagna"]["sign_index"]
     grahas = {p: {**g, "dignity": dignity(p, g["sign_index"])} for p, g in chart["grahas"].items()}
     akv = ashtakavarga(signs, lagna)
+    d9 = {p: v["sign_index"] for p, v in chart["vargas"].get("D9", {}).items()} or None
+    strength = yogas.analyse(signs, lagna, d9, {p: g["combust"] for p, g in chart["grahas"].items()})
+    for p, nb in strength["neecha_bhanga"].items():
+        grahas[p]["neecha_bhanga"] = nb
+    for p, a in strength["aspects"].items():
+        grahas[p]["aspects_houses"], grahas[p]["aspects_planets"] = a["houses"], a["planets"]
     data = {
         "birth": profile["request"], "meta": chart["meta"], "lagna": chart["lagna"],
         "grahas": grahas, "houses": chart["houses"], "significators": chart["significators"],
         "ashtakavarga": {"sav_by_house": [akv["sav"][(lagna + h) % 12] for h in range(12)],
                          "planet_bindus_in_own_sign": akv["own_bindus"]},
         "lord_exchanges_D1": exchanges(signs, lagna),
+        "yogas": [{k: y[k] for k in ("name", "kind", "planets", "meaning")} for y in strength["yogas"]],
         "navamsa_D9": chart["vargas"].get("D9"), "dasha": slim_dasha,
         "current_mahadasha": md and md["lord"], "current_antardasha": ad and ad["lord"],
         "today": datetime.now(timezone.utc).date().isoformat(),

@@ -726,7 +726,7 @@
 </div>
 
 <script src="/static/interp.js?v=2"></script>
-<script src="/static/insights.js?v=3"></script>
+<script src="/static/insights.js?v=4"></script>
 <script src="/static/muhurat.js?v=2"></script>
 <script src="/static/strength.js?v=1"></script>
 <script src="/static/guide.js?v=5"></script>
@@ -1183,12 +1183,14 @@ function render(c,req){
     (byH[h]=byH[h]||[]).push({t:ABBR[n],d:Math.floor(g.degrees_in_sign)+'°',p:n,b,cls:b.find(k=>k==='ex'||k==='db')})});
   drawNorth($('chart'),l.sign_index,byH);
   HOUSE_OF=Object.fromEntries(Object.entries(c.grahas).map(([n,g])=>[n,(g.sign_index-l.sign_index+12)%12]));
+  const nbOf=n=>(((c.strength||{}).neecha_bhanga||{})[n]||{}).cancelled;
   CHART_TIP=n=>{const g=c.grahas[n],b=status(n);
     return '<b>'+n+'</b><small>'+g.sign+' '+dms(g.degrees_in_sign)+' · House '+((g.sign_index-l.sign_index+12)%12+1)+'</small><small>'+esc(g.nakshatra)+' pada '+g.pada+'</small>'+
-      (b.length?'<div class="tags">'+b.map(k=>'<span class="tag bd '+BD[k][1]+'">'+BD[k][0]+' '+BD[k][2]+'</span>').join('')+'</div>':'')+
+      (b.length?'<div class="tags">'+b.map(k=>'<span class="tag bd '+BD[k][1]+'">'+BD[k][0]+' '+BD[k][2]+'</span>').join('')+
+        (nbOf(n)?'<span class="tag bd ex">Neecha Bhanga · cancelled</span>':'')+'</div>':'')+
       '<button type="button" class="tipask" data-ask="'+n+'">Ask Sukh about '+n+' →</button>'};
   PLANET_Q=n=>{const g=c.grahas[n],h=(g.sign_index-l.sign_index+12)%12+1,ord=h+(['th','st','nd','rd'][h<4?h:0]),
-      st=status(n).map(k=>BD[k][2].toLowerCase());
+      st=status(n).map(k=>k==='db'&&nbOf(n)?'debilitated, but cancelled by Neecha Bhanga':BD[k][2].toLowerCase());
     return 'Tell me about my '+n+' — it is in '+g.sign+' in my '+ord+' house'+(st.length?' ('+st.join(', ')+')':'')+
       '. What does it mean for my life, and what should I do about it?'};
   $('chartkey').innerHTML=Object.entries(c.grahas).map(([n,g])=>{const b=status(n),hi=b.find(k=>k==='ex'||k==='db');
