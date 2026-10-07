@@ -236,6 +236,7 @@
   .ctip{position:absolute;z-index:5;pointer-events:none;background:var(--solid);border:1px solid var(--line);border-radius:12px;
     box-shadow:var(--shadow);padding:9px 12px;font-size:.8rem;line-height:1.45;min-width:170px;max-width:240px;transform:translate(-50%,calc(-100% - 12px))}
   .ctip.below{transform:translate(-50%,12px)}
+  .tipsep{border:0;border-top:1px solid var(--line);margin:10px -12px}
   .ctip b{font-size:.9rem} .ctip small{display:block} .ctip .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
   .tag{font-size:.7rem;font-weight:600;padding:1px 7px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
   .ckey{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:16px}
@@ -248,6 +249,12 @@
   .gk small{display:block;font-weight:400;font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .gk i{font-style:normal;font-size:.68rem;font-weight:700;margin-left:2px}
   .gk.ex{box-shadow:inset 3px 0 0 var(--ok)} .gk.db{box-shadow:inset 3px 0 0 var(--bad)}
+  .gka{margin-left:auto;flex:none;font-style:normal;font-size:.68rem;font-weight:600;color:var(--acc);padding:2px 7px;border-radius:99px;
+    background:var(--soft);opacity:.75;transition:opacity .15s} .gk:hover .gka,.gk:focus-visible .gka{opacity:1}
+  .tipask{display:block;width:100%;margin-top:8px;padding:8px 10px;border:0;border-radius:9px;cursor:pointer;pointer-events:auto;
+    font:600 .8rem var(--sans);color:#1a1322;background:linear-gradient(140deg,var(--g1),var(--g2));text-align:center}
+  @media (hover:hover) and (pointer:fine){.tipask{background:none;color:var(--acc);padding:6px 0 0;border-top:1px solid var(--line);border-radius:0;font-size:.74rem}
+    .tipask::before{content:"Click the planet · "}}
   .clegend{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin-top:12px;font-size:.76rem;color:var(--mut)}
   .clegend i{font-style:normal;font-weight:700;margin-right:4px}
   .clegend .sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px;
@@ -645,7 +652,7 @@
       <aside class="card chartcard"><h3>Rasi chart (D1) · North Indian</h3><div id="chart" class="chart"></div>
         <div id="chartkey" class="ckey" aria-label="Planets"></div>
         <div class="clegend"><span><i class="bd ex">▲</i>Exalted</span><span><i class="bd db">▼</i>Debilitated</span><span><i class="bd own">⌂</i>Own sign</span><span><i class="bd rt">R</i>Retrograde</span><span><i class="bd cb">C</i>Combust</span><span><i class="sw"></i>Lagna</span></div>
-        <div class="hint">Numbers are signs (1 = Aries). Hover or tap a planet for details.</div></aside>
+        <div class="hint">Numbers are signs (1 = Aries). Tap any planet to ask Sukh what it means for you.</div></aside>
       <div class="card panel">
         <nav class="tabs" id="tabs">
           <button data-tab="interp" class="on">Reading</button><button data-tab="bhava">Interpretation</button><button data-tab="dpred">Dasha Prediction</button><button data-tab="muhurat">Muhurat</button><button data-tab="lucky">Lucky &amp; Remedies</button><button data-tab="xchg">Lord Exchange</button><button data-tab="akv">Ashtakavarga</button><button data-tab="planets">Planets</button><button data-tab="houses">Houses</button>
@@ -977,26 +984,39 @@ function drawNorth(el,lagnaIdx,byH){
   el.innerHTML=v+'</svg>';
 }
 // ----- main chart: planet tooltip + key highlight -----
-let CHART_TIP=null;
+let CHART_TIP=null,PLANET_Q=null,HOUSE_OF={},tipPinned=false;
 const ctip=document.createElement('div');ctip.className='ctip';ctip.hidden=true;
-function focusPlanet(n,anchor){
+function focusPlanet(n,anchor,pin){
+  tipPinned=!!(n&&pin);
+  // A tap shows every planet in that house: they sit too close together to pick one with a finger.
+  const group=pin&&n?Object.keys(HOUSE_OF).filter(p=>HOUSE_OF[p]===HOUSE_OF[n]):[n];
   $('chart').classList.toggle('hl',!!n);
-  $('chart').querySelectorAll('.pg').forEach(t=>t.classList.toggle('on',t.dataset.p===n));
+  $('chart').querySelectorAll('.pg').forEach(t=>t.classList.toggle('on',group.includes(t.dataset.p)));
   if(!n||!anchor||!CHART_TIP){ctip.hidden=true;return}
   const card=$('chart').closest('.chartcard');if(ctip.parentNode!==card)card.appendChild(ctip);
   const r=anchor.getBoundingClientRect(),cr=card.getBoundingClientRect();
-  ctip.innerHTML=CHART_TIP(n);ctip.hidden=false;
+  ctip.innerHTML=group.map(CHART_TIP).join('<hr class="tipsep">');ctip.hidden=false;
   const x=Math.min(Math.max(r.left+r.width/2-cr.left,100),cr.width-100);
-  const below=r.top<170;ctip.classList.toggle('below',below);
+  const below=r.top-ctip.offsetHeight-12<70;ctip.classList.toggle('below',below);
   ctip.style.left=x+'px';ctip.style.top=((below?r.bottom:r.top)-cr.top)+'px';
 }
-$('chart').addEventListener('pointerover',e=>{const t=e.target.closest('.pg');if(t)focusPlanet(t.dataset.p,t)});
-$('chart').addEventListener('pointerout',e=>{if(e.target.closest('.pg')&&!e.relatedTarget?.closest?.('.pg'))focusPlanet(null)});
+$('chart').addEventListener('pointerover',e=>{const t=e.target.closest('.pg');if(t&&!tipPinned)focusPlanet(t.dataset.p,t)});
+$('chart').addEventListener('pointerout',e=>{if(!tipPinned&&e.pointerType!=='touch'&&e.target.closest('.pg')&&!e.relatedTarget?.closest?.('.pg,.ctip'))focusPlanet(null)});
 $('chartkey').addEventListener('pointerover',e=>{const b=e.target.closest('.gk');if(b)focusPlanet(b.dataset.p,$('chart').querySelector('.pg[data-p="'+b.dataset.p+'"]'))});
-$('chartkey').addEventListener('pointerleave',()=>focusPlanet(null));
+$('chartkey').addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')focusPlanet(null)});
 $('chartkey').addEventListener('focusin',e=>{const b=e.target.closest('.gk');if(b)focusPlanet(b.dataset.p,$('chart').querySelector('.pg[data-p="'+b.dataset.p+'"]'))});
-$('chartkey').addEventListener('focusout',()=>focusPlanet(null));
-document.addEventListener('pointerdown',e=>{if(!e.target.closest('.pg,.gk'))focusPlanet(null)});
+$('chartkey').addEventListener('focusout',()=>{if(!tipPinned)focusPlanet(null)});
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('.pg,.gk,.ctip'))focusPlanet(null)});
+function askAbout(n){
+  if(!PLANET_Q)return;
+  focusPlanet(null);openChat();
+  if(!$('q').disabled&&!$('askbtn').disabled){$('q').value=PLANET_Q(n);$('askf').requestSubmit()}
+}
+// Mouse: click asks straight away. Touch: tap pins the card, whose button asks.
+const canHover=()=>matchMedia('(hover:hover) and (pointer:fine)').matches;
+$('chart').addEventListener('click',e=>{const t=e.target.closest('.pg');if(!t)return;canHover()?askAbout(t.dataset.p):focusPlanet(t.dataset.p,t,true)});
+ctip.addEventListener('click',e=>{const b=e.target.closest('.tipask');if(b)askAbout(b.dataset.ask)});
+$('chartkey').addEventListener('click',e=>{const b=e.target.closest('.gk');if(b)askAbout(b.dataset.p)});
 let lastReq=null,lkLoaded=false,lastChart=null;
 // ----- muhurat -----
 const MU={loaded:false,data:null,sel:0,here:null};
@@ -1135,12 +1155,18 @@ function render(c,req){
   Object.entries(c.grahas).forEach(([n,g])=>{const h=(g.sign_index-l.sign_index+12)%12,b=status(n);
     (byH[h]=byH[h]||[]).push({t:ABBR[n],d:Math.floor(g.degrees_in_sign)+'°',p:n,b,cls:b.find(k=>k==='ex'||k==='db')})});
   drawNorth($('chart'),l.sign_index,byH);
+  HOUSE_OF=Object.fromEntries(Object.entries(c.grahas).map(([n,g])=>[n,(g.sign_index-l.sign_index+12)%12]));
   CHART_TIP=n=>{const g=c.grahas[n],b=status(n);
     return '<b>'+n+'</b><small>'+g.sign+' '+dms(g.degrees_in_sign)+' · House '+((g.sign_index-l.sign_index+12)%12+1)+'</small><small>'+esc(g.nakshatra)+' pada '+g.pada+'</small>'+
-      (b.length?'<div class="tags">'+b.map(k=>'<span class="tag bd '+BD[k][1]+'">'+BD[k][0]+' '+BD[k][2]+'</span>').join('')+'</div>':'')};
+      (b.length?'<div class="tags">'+b.map(k=>'<span class="tag bd '+BD[k][1]+'">'+BD[k][0]+' '+BD[k][2]+'</span>').join('')+'</div>':'')+
+      '<button type="button" class="tipask" data-ask="'+n+'">Ask Sukh about '+n+' →</button>'};
+  PLANET_Q=n=>{const g=c.grahas[n],h=(g.sign_index-l.sign_index+12)%12+1,ord=h+(['th','st','nd','rd'][h<4?h:0]),
+      st=status(n).map(k=>BD[k][2].toLowerCase());
+    return 'Tell me about my '+n+' — it is in '+g.sign+' in my '+ord+' house'+(st.length?' ('+st.join(', ')+')':'')+
+      '. What does it mean for my life, and what should I do about it?'};
   $('chartkey').innerHTML=Object.entries(c.grahas).map(([n,g])=>{const b=status(n),hi=b.find(k=>k==='ex'||k==='db');
-    return '<button type="button" class="gk'+(hi?' '+hi:'')+'" data-p="'+n+'"><b>'+ABBR[n]+'</b><span>'+n+b.map(k=>'<i class="bd '+BD[k][1]+'" title="'+BD[k][2]+'">'+BD[k][0]+'</i>').join('')+
-      '<small>'+g.sign+' '+Math.floor(g.degrees_in_sign)+'°</small></span></button>'}).join('');
+    return '<button type="button" class="gk'+(hi?' '+hi:'')+'" data-p="'+n+'" aria-label="Ask Sukh about '+n+'"><b>'+ABBR[n]+'</b><span>'+n+b.map(k=>'<i class="bd '+BD[k][1]+'" title="'+BD[k][2]+'">'+BD[k][0]+'</i>').join('')+
+      '<small>'+g.sign+' '+Math.floor(g.degrees_in_sign)+'°</small></span><em class="gka" aria-hidden="true">Ask</em></button>'}).join('');
   lastReq=req||null;lkLoaded=false;lastChart=c;MU.loaded=false;MU.data=null;MU.sel=0;
   if(!$('t-muhurat').hidden)loadMuhurat();
   if(!$('t-lal').hidden)loadLal();

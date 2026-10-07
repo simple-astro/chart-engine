@@ -52,3 +52,20 @@ def test_chart_includes_strength_data():
     c = r.json()
     assert c["ashtakavarga"]["sav_total"] == 337 and len(c["lords"]) == 12
     assert set(c["exchanges"]) == {"D1", "D9"}
+
+
+def test_dignity_rules():
+    from core.dignity import dignity
+    assert dignity("Moon", SCORPIO) == "debilitated" and dignity("Moon", TAURUS) == "exalted"
+    assert dignity("Moon", CANCER) == "own" and dignity("Sun", LEO) == "own"
+    assert dignity("Venus", LEO) == "enemy" and dignity("Mars", LEO) == "friendly"
+
+
+def test_chat_context_carries_dignity_and_strength():
+    import json
+    from app import ask
+    c = TestClient(app).post("/chart", json={"dob": "1987-09-01", "tob": "14:30:00", "lat": 30.73629,
+                                             "lon": 76.7884, "tz_name": "Asia/Kolkata"}).json()
+    d = json.loads(ask.llm_context({"chart": c, "request": {}}))
+    assert d["grahas"]["Moon"]["dignity"] == "debilitated"
+    assert len(d["ashtakavarga"]["sav_by_house"]) == 12 and "lord_exchanges_D1" in d

@@ -5,6 +5,10 @@ import json
 import re
 from datetime import datetime, timezone
 
+from core.ashtakavarga import ashtakavarga
+from core.dignity import dignity
+from core.parivartana import exchanges
+
 GRAHAS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]
 SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio",
          "Sagittarius", "Capricorn", "Aquarius", "Pisces"]
@@ -86,9 +90,16 @@ def llm_context(profile: dict) -> str:
     slim_dasha = [{"lord": d["lord"], "start": d["start"][:10], "end": d["end"][:10],
                    "antardashas": [{"lord": c["lord"], "start": c["start"][:10], "end": c["end"][:10]}
                                    for c in d.get("children", [])]} for d in chart["dasha"]]
+    signs = {p: g["sign_index"] for p, g in chart["grahas"].items()}
+    lagna = chart["lagna"]["sign_index"]
+    grahas = {p: {**g, "dignity": dignity(p, g["sign_index"])} for p, g in chart["grahas"].items()}
+    akv = ashtakavarga(signs, lagna)
     data = {
         "birth": profile["request"], "meta": chart["meta"], "lagna": chart["lagna"],
-        "grahas": chart["grahas"], "houses": chart["houses"], "significators": chart["significators"],
+        "grahas": grahas, "houses": chart["houses"], "significators": chart["significators"],
+        "ashtakavarga": {"sav_by_house": [akv["sav"][(lagna + h) % 12] for h in range(12)],
+                         "planet_bindus_in_own_sign": akv["own_bindus"]},
+        "lord_exchanges_D1": exchanges(signs, lagna),
         "navamsa_D9": chart["vargas"].get("D9"), "dasha": slim_dasha,
         "current_mahadasha": md and md["lord"], "current_antardasha": ad and ad["lord"],
         "today": datetime.now(timezone.utc).date().isoformat(),
