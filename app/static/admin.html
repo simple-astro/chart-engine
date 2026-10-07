@@ -145,6 +145,7 @@
       <div><label for="s-words">Reply length (words)</label><input id="s-words" type="number" min="100" max="800" step="10" required><div class="help">100 to 800. Longer replies cost more.</div></div>
       <div><label for="s-per">Questions per tester per day</label><input id="s-per" type="number" min="0" max="1000" required><div class="help">0 pauses chat for testers.</div></div>
       <div><label for="s-total">Questions per day, all testers</label><input id="s-total" type="number" min="0" max="10000" required><div class="help">Your daily spending ceiling.</div></div>
+      <div><label for="s-tg">Telegram questions per person per day</label><input id="s-tg" type="number" min="0" max="1000" required><div class="help">The free morning guide is not counted. 0 turns Telegram chat off.</div></div>
       <div class="actions"><button class="btn" type="submit" id="save">Save settings</button><span class="status" id="save-status" role="status"></span></div>
     </form>
   </section>
@@ -225,7 +226,7 @@ function renderOverview(o) {
   sel.innerHTML = Object.entries(models).map(([id, m]) =>
     `<option value="${esc(id)}">${esc(m.label)}</option>`).join('');
   sel.value = s.model; showModelHelp();
-  $('s-words').value = s.word_limit; $('s-per').value = s.daily_limit_per_tester; $('s-total').value = s.daily_limit_total;
+  $('s-words').value = s.word_limit; $('s-per').value = s.daily_limit_per_tester; $('s-total').value = s.daily_limit_total; $('s-tg').value = s.telegram_daily_limit;
 
   $('testers').innerHTML = o.testers.length ? o.testers.map(t => `<tr>
       <td class="nowrap">${esc(t.label)}</td>
@@ -379,7 +380,7 @@ $('settings').addEventListener('submit', async e => {
   const st = $('save-status'); st.className = 'status'; st.textContent = 'Saving…'; $('save').disabled = true;
   try {
     const body = {model: $('s-model').value, word_limit: +$('s-words').value,
-                  daily_limit_per_tester: +$('s-per').value, daily_limit_total: +$('s-total').value};
+                  daily_limit_per_tester: +$('s-per').value, daily_limit_total: +$('s-total').value, telegram_daily_limit: +$('s-tg').value};
     await api('/admin/api/settings', {method: 'PUT', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
     st.className = 'status ok'; st.textContent = 'Saved. The next question uses these settings.';
     renderOverview(await api('/admin/api/overview'));

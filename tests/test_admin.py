@@ -99,8 +99,9 @@ def test_settings_roundtrip_and_validation(gated):
     a = _admin()
     s = a.get("/admin/api/overview").json()["settings"]
     assert s == {"model": "claude-haiku-4-5", "word_limit": 300, "daily_limit_per_tester": 30,
-                 "daily_limit_total": 300}
-    new = {"model": "claude-sonnet-5-5", "word_limit": 200, "daily_limit_per_tester": 5, "daily_limit_total": 50}
+                 "daily_limit_total": 300, "telegram_daily_limit": 5}
+    new = {"model": "claude-sonnet-5-5", "word_limit": 200, "daily_limit_per_tester": 5, "daily_limit_total": 50,
+           "telegram_daily_limit": 3}
     assert a.put("/admin/api/settings", json=new).json() == new
     for bad in ({"model": "gpt-4"}, {"word_limit": 20}, {"daily_limit_total": -1}, {"word_limit": True},
                 {"word_limit": "300"}, {"nope": 1}, {"model": "claude-opus-5-5", "word_limit": 5}):

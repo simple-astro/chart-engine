@@ -57,6 +57,13 @@ def _connect() -> sqlite3.Connection:
         " last_used TEXT)"
     )
     conn.execute("CREATE TABLE IF NOT EXISTS owner_codes (owner TEXT PRIMARY KEY, code_id INTEGER NOT NULL)")
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS tg_users ("
+        " chat_id INTEGER PRIMARY KEY, owner TEXT, profile_id INTEGER, first_name TEXT,"
+        " step TEXT NOT NULL DEFAULT 'date', draft TEXT NOT NULL DEFAULT '{}',"
+        " send_time TEXT NOT NULL DEFAULT '08:00', active INTEGER NOT NULL DEFAULT 1, last_sent TEXT,"
+        " live_lat REAL, live_lon REAL, live_tz TEXT, live_place TEXT, created_at TEXT NOT NULL)"
+    )
     for table, col in (("profiles", "owner"), ("usage_log", "owner"), ("usage_log", "answer"), ("usage_log", "admin_remarks")):
         cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
         if col not in cols:
@@ -346,3 +353,48 @@ def tester_remarks(owner: str | None) -> str | None:
         r = conn.execute("SELECT admin_remarks FROM usage_log WHERE owner = ? AND admin_remarks IS NOT NULL"
                         " ORDER BY id DESC LIMIT 1", (owner,)).fetchone()
     return r["admin_remarks"] if r else None
+
+
+# ----- Telegram users: onboarding state, morning-guide schedule -----
+TG_FIELDS = {"owner", "profile_id", "first_name", "step", "draft", "send_time", "active", "last_sent",
+             "live_lat", "live_lon", "live_tz", "live_place"}
+
+
+def tg_get(chat_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM tg_users WHERE chat_id = ?", (chat_id,)).fetchone()
+    if not r:
+        return None
+    u = dict(r)
+    u["draft"] = json.loads(u["draft"] or "{}")
+    return u
+
+
+def tg_save(chat_id: int, **fields) -> dict:
+    bad = set(fields) - TG_FIELDS
+    if bad:
+        raise ValueError(f"unknown tg_users fields: {bad}")
+    if "draft" in fields:
+        fields["draft"] = json.dumps(fields["draft"])
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with _lock, _connect() as conn:
+        conn.execute("INSERT OR IGNORE INTO tg_users (chat_id, created_at) VALUES (?, ?)", (chat_id, now))
+        if fields:
+            cols = ", ".join(f"{k} = ?" for k in fields)
+            conn.execute(f"UPDATE tg_users SET {cols} WHERE chat_id = ?", (*fields.values(), chat_id))
+    return tg_get(chat_id)
+
+
+def tg_ready() -> list[dict]:
+    """Onboarded, active users who may be due a morning guide."""
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT * FROM tg_users WHERE step = 'done' AND active = 1 AND profile_id IS NOT NULL").fetchall()
+    return [dict(r) for r in rows]
+
+
+def tg_claim_send(chat_id: int, day: str) -> bool:
+    """Atomically mark today's guide as sent; False if it already was (so it goes out once)."""
+    with _lock, _connect() as conn:
+        cur = conn.execute("UPDATE tg_users SET last_sent = ? WHERE chat_id = ? AND (last_sent IS NULL OR last_sent <> ?)",
+                           (day, chat_id, day))
+        return cur.rowcount == 1

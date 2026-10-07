@@ -28,12 +28,14 @@ FIELDS = {
     "word_limit": ("CHAT_WORD_LIMIT", 300, lambda v: isinstance(v, int) and 100 <= v <= 800),
     "daily_limit_per_tester": ("CHAT_DAILY_LIMIT_PER_TESTER", 30, lambda v: isinstance(v, int) and 0 <= v <= 1000),
     "daily_limit_total": ("CHAT_DAILY_LIMIT_TOTAL", 300, lambda v: isinstance(v, int) and 0 <= v <= 10000),
+    "telegram_daily_limit": ("TELEGRAM_DAILY_LIMIT", 5, lambda v: isinstance(v, int) and 0 <= v <= 1000),
 }
 LIMITS_TEXT = {
     "model": "must be one of the listed models",
     "word_limit": "must be a whole number from 100 to 800",
     "daily_limit_per_tester": "must be a whole number from 0 to 1000",
     "daily_limit_total": "must be a whole number from 0 to 10000",
+    "telegram_daily_limit": "must be a whole number from 0 to 1000",
 }
 
 
