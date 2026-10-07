@@ -135,8 +135,8 @@
     <p class="sub">Every question testers asked, newest first. Select a row to read the full answer.</p>
     <div class="toolbar"><input id="filter" type="search" placeholder="Filter by tester, chart or words" aria-label="Filter questions"></div>
     <div class="scroll"><table>
-      <thead><tr><th>When</th><th>Tester</th><th>Chart</th><th>Question</th><th>Answered by</th><th class="num">Tokens</th><th class="num">Est. cost</th></tr></thead>
-      <tbody id="queries"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+      <thead><tr><th>When</th><th>Tester</th><th>Chart</th><th>Question</th><th>Answered by</th><th class="num">Tokens</th><th class="num">Est. cost</th><th class="num">Note</th></tr></thead>
+      <tbody id="queries"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
     </table></div>
     <div class="more"><button class="btn ghost" id="more" type="button" hidden>Load older questions</button></div>
   </section>
@@ -200,12 +200,13 @@ function renderQueries() {
   $('queries').innerHTML = list.length ? list.map(r => {
     const [src, cls] = SOURCE[r.kind] || [r.kind, ''];
     const tokens = r.kind === 'llm' ? `${compact(r.input_tokens + r.cache_read_tokens + r.cache_write_tokens)} in · ${compact(r.output_tokens)} out` : '–';
+    const noteIcon = r.admin_remarks ? '📝' : '–';
     return `<tr class="row" tabindex="0" data-id="${r.id}" aria-expanded="false">
       <td class="nowrap">${esc(when(r.ts))}</td><td class="nowrap">${esc(r.tester)}</td><td>${esc(r.profile_name || 'Deleted chart')}</td>
       <td class="q"><div>${esc(r.question)}</div></td>
       <td><span class="tag ${cls}">${esc(src)}</span>${r.kind === 'llm' ? `<div style="color:var(--mut);font-size:.78rem;margin-top:3px">${esc(r.model_label || r.model || '')}</div>` : ''}</td>
-      <td class="num">${tokens}</td><td class="num">${r.kind === 'llm' ? money(r.cost) : '$0'}</td></tr>`;
-  }).join('') : `<tr><td colspan="7" class="empty">${rows.length ? 'No questions match that filter.' : 'No questions yet.'}</td></tr>`;
+      <td class="num">${tokens}</td><td class="num">${r.kind === 'llm' ? money(r.cost) : '$0'}</td><td class="num" style="cursor:pointer;font-size:1.2em" title="View or add admin notes">${noteIcon}</td></tr>`;
+  }).join('') : `<tr><td colspan="8" class="empty">${rows.length ? 'No questions match that filter.' : 'No questions yet.'}</td></tr>`;
 }
 
 function toggle(tr) {
@@ -213,9 +214,37 @@ function toggle(tr) {
   if (next && next.classList.contains('detail')) { next.remove(); tr.setAttribute('aria-expanded', 'false'); return; }
   const r = rows.find(x => String(x.id) === tr.dataset.id); if (!r) return;
   const d = document.createElement('tr'); d.className = 'detail';
-  d.innerHTML = `<td colspan="7"><div class="qa"><div><b>Question</b><div>${esc(r.question)}</div></div>
-    <div><b>Answer</b><div>${r.answer ? esc(r.answer) : '<span style="color:var(--mut)">Not recorded (asked before answer logging was added).</span>'}</div></div></div></td>`;
+  d.innerHTML = `<td colspan="8"><div class="qa">
+    <div><b>Question</b><div>${esc(r.question)}</div></div>
+    <div><b>Answer</b><div>${r.answer ? esc(r.answer) : '<span style="color:var(--mut)">Not recorded (asked before answer logging was added).</span>'}</div></div>
+    <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><b>Admin notes</b>
+    <div style="display:flex;gap:8px;align-items:flex-start">
+    <textarea id="rem-${r.id}" style="flex:1;min-height:60px;padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--bg2);color:var(--ink)" placeholder="Add a private note to personalize future responses (admin only)">${esc(r.admin_remarks || '')}</textarea>
+    <button class="btn" data-id="${r.id}" style="white-space:nowrap;height:fit-content" onclick="saveRemark(this)">Save note</button>
+    </div></div></div></td>`;
   tr.after(d); tr.setAttribute('aria-expanded', 'true');
+}
+
+async function saveRemark(btn) {
+  const qid = btn.dataset.id;
+  const remarks = document.getElementById(`rem-${qid}`).value.trim();
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await api(`/admin/api/queries/${qid}/remarks`, {
+      method: 'PUT',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({remarks})
+    });
+    const r = rows.find(x => String(x.id) === qid);
+    if (r) r.admin_remarks = remarks || undefined;
+    renderQueries();
+    btn.textContent = 'Saved ✓';
+    setTimeout(() => btn.textContent = 'Save note', 2000);
+  } catch (err) {
+    btn.textContent = 'Error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+  }
 }
 $('queries').addEventListener('click', e => { const tr = e.target.closest('tr.row'); if (tr) toggle(tr); });
 $('queries').addEventListener('keydown', e => { const tr = e.target.closest('tr.row'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(tr); } });

@@ -75,3 +75,15 @@ def queries(request: Request, limit: int = 50, before_id: int | None = None) -> 
         r["cost"] = config.cost(r["model"], r["input_tokens"], r["output_tokens"], r["cache_read_tokens"],
                                 r["cache_write_tokens"]) if r["kind"] == "llm" else 0.0
     return rows
+
+
+@router.put("/admin/api/queries/{query_id}/remarks")
+async def save_remarks(request: Request, query_id: int) -> dict:
+    _require_admin(request)
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=422, detail="Expected a JSON object")
+    remarks = body.get("remarks", "").strip()
+    if not storage.update_remarks(query_id, remarks or None):
+        raise HTTPException(status_code=404, detail="Query not found")
+    return {"ok": True}

@@ -50,7 +50,7 @@ def _connect() -> sqlite3.Connection:
         " tool_rounds INTEGER DEFAULT 0, words INTEGER DEFAULT 0, question TEXT)"
     )
     conn.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
-    for table, col in (("profiles", "owner"), ("usage_log", "owner"), ("usage_log", "answer")):
+    for table, col in (("profiles", "owner"), ("usage_log", "owner"), ("usage_log", "answer"), ("usage_log", "admin_remarks")):
         cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
         if col not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT")
@@ -207,12 +207,12 @@ def _today() -> str:
 
 
 def recent_queries(limit: int = 50, before_id: int | None = None) -> list[dict]:
-    """Newest-first chat log with the chart name, for the admin page."""
+    """Newest-first chat log with the chart name and admin remarks, for the admin page."""
     where, args = ("WHERE u.id < ?", (before_id,)) if before_id else ("", ())
     with _lock, _connect() as conn:
         rows = conn.execute(
             "SELECT u.id, u.ts, u.kind, u.model, u.input_tokens, u.output_tokens, u.cache_read_tokens,"
-            " u.cache_write_tokens, u.tool_rounds, u.words, u.question, u.answer, u.owner, u.profile_id,"
+            " u.cache_write_tokens, u.tool_rounds, u.words, u.question, u.answer, u.admin_remarks, u.owner, u.profile_id,"
             f" p.name AS profile_name FROM usage_log u LEFT JOIN profiles p ON p.id = u.profile_id {where}"
             " ORDER BY u.id DESC LIMIT ?", (*args, limit)).fetchall()
     return [dict(r) for r in rows]
@@ -247,3 +247,20 @@ def tester_summary() -> list[dict]:
         row.update(questions=r["total"], questions_today=r["today"] or 0, paid_questions=r["paid"] or 0,
                    last_seen=r["last_seen"])
     return sorted(rows.values(), key=lambda r: r.get("last_seen") or r.get("first_seen") or "", reverse=True)
+
+
+def update_remarks(query_id: int, remarks: str | None) -> bool:
+    """Update admin remarks for a question (admin only, not visible to tester)."""
+    with _lock, _connect() as conn:
+        return conn.execute("UPDATE usage_log SET admin_remarks = ? WHERE id = ?",
+                          (remarks, query_id)).rowcount > 0
+
+
+def tester_remarks(owner: str | None) -> str | None:
+    """Get most recent admin remarks about this tester (for subtle personalization)."""
+    if not owner:
+        return None
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT admin_remarks FROM usage_log WHERE owner = ? AND admin_remarks IS NOT NULL"
+                        " ORDER BY id DESC LIMIT 1", (owner,)).fetchone()
+    return r["admin_remarks"] if r else None

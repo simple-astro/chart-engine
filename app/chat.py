@@ -162,8 +162,11 @@ def events(profile: dict, history: list[dict], message: str):
     client = _client()
     msgs = [{"role": m["role"], "content": m["content"]} for m in history[-HISTORY_LIMIT:]]
     msgs.append({"role": "user", "content": message})
-    system = [{"type": "text", "text": SYSTEM.format(words=config.word_limit()) + ask.llm_context(profile),
-               "cache_control": {"type": "ephemeral"}}]
+    system_text = SYSTEM.format(words=config.word_limit()) + ask.llm_context(profile)
+    remarks = storage.tester_remarks(profile.get("owner"))
+    if remarks:
+        system_text += f"\n\n[CONTEXT NOTE: {remarks}]"
+    system = [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}]
     model = config.model()
     wrote = False
     for _ in range(MAX_TOOL_ROUNDS):

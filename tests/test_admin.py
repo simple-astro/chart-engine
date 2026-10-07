@@ -172,3 +172,44 @@ def test_local_mode_admin_is_open(tmp_path, monkeypatch):
     c = TestClient(app)
     assert "Settings" in c.get("/admin").text and c.get("/admin/api/overview").status_code == 200
     assert c.get("/me").json() == {"admin": True, "gated": False}
+
+
+def test_admin_can_add_remarks_to_questions(gated, fake_llm):
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    t.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"})
+    a = _admin()
+    [q] = a.get("/admin/api/queries").json()
+    assert q.get("admin_remarks") is None
+    r = a.put(f"/admin/api/queries/{q['id']}/remarks", json={"remarks": "Strong 10th house - monitor Saturn transit"})
+    assert r.status_code == 200
+    [q] = a.get("/admin/api/queries").json()
+    assert q["admin_remarks"] == "Strong 10th house - monitor Saturn transit"
+    r = a.put(f"/admin/api/queries/{q['id']}/remarks", json={"remarks": ""})
+    assert r.status_code == 200
+    [q] = a.get("/admin/api/queries").json()
+    assert q.get("admin_remarks") is None or q["admin_remarks"] == ""
+
+
+def test_remarks_are_injected_into_system_prompt(gated, fake_llm):
+    calls, _ = fake_llm
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    t.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"})
+    a = _admin()
+    [q] = a.get("/admin/api/queries").json()
+    a.put(f"/admin/api/queries/{q['id']}/remarks", json={"remarks": "Previous observation: very practical person"})
+    t.post(f"/profiles/{pid}/chat", json={"message": "What about finances?"})
+    kw = calls["plain"][1]  # second call
+    assert "Previous observation: very practical person" in kw["system"][0]["text"]
+
+
+def test_remarks_only_visible_to_admin(gated, fake_llm):
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    t.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"})
+    _admin(t)  # upgrade tester to admin (same browser/session)
+    [q] = t.get("/admin/api/queries").json()
+    t.put(f"/admin/api/queries/{q['id']}/remarks", json={"remarks": "Secret note"})
+    t2 = _tester()  # new tester browser
+    assert t2.get("/admin/api/queries").status_code == 403
