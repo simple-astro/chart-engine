@@ -65,7 +65,7 @@ SYSTEM = (
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "kp-2"
+CONTEXT_VERSION = "kp-3"
 
 TOOLS = [
     {"name": "get_transits",
@@ -95,7 +95,9 @@ TOOLS = [
      "description": "Saved profiles (id, name, birth date) that can be used as a match-making partner.",
      "input_schema": {"type": "object", "properties": {}}},
     {"name": "match_with_profile",
-     "description": "Ashtakoota (36-point) Guna Milan and Manglik check between the native and another saved profile.",
+     "description": "Match-making between the native and another saved profile: the overall verdict (lead with it), "
+                    "strengths and clashes in plain words, Guna Milan score before and after dosha cancellations, "
+                    "Nadi/Bhakoot/Gana dosha status, Manglik match, and each person's KP marriage promise.",
      "input_schema": {"type": "object", "properties": {
          "partner_id": {"type": "integer", "description": "Profile id from list_profiles"},
          "native_role": {"type": "string", "enum": ["groom", "bride"],

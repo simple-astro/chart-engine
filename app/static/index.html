@@ -548,6 +548,17 @@
   .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--g2),var(--g1))}
   .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
   .mini{padding:20px} .mini h3{font:600 1.15rem var(--serif);margin-bottom:8px}
+  .mmhero{align-items:center} .mmv{flex:1;min-width:200px} .mmv>.badge{margin:0 0 4px} .mmv h2{font:600 1.7rem var(--serif);margin:0 0 6px}
+  .mmv p{margin:0 0 6px;font-size:1rem;line-height:1.5} .mmhero .mmv>.badge{display:none}
+  .mmsc{padding:22px;margin-top:16px} .mmsec{padding:22px;margin-top:16px} .mmsec h3{font:600 1.2rem var(--serif);margin:0 0 6px}
+  .mmrow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+  .mmsec h3+.mmrow{border-top:0} .mmrow small{display:block;margin-top:2px} .mmrow .badge{margin:0;white-space:nowrap} .mmrow .badge{display:inline-block} .mmrow .badge::first-letter{text-transform:uppercase}
+  .mmp{padding:2px} .mmp h4{font:600 1.15rem var(--serif);margin:0 0 2px} .mmp .mmrow{margin-top:10px;padding-bottom:2px} .mmp>small{display:block}
+  .mmdet summary{cursor:pointer;display:flex;gap:10px;align-items:baseline;list-style:none} .mmdet summary::-webkit-details-marker{display:none}
+  .mmdet[open] summary{margin-bottom:10px}
+  @media (max-width:600px){.mmhero{display:grid;grid-template-columns:auto 1fr;gap:12px 16px;padding:20px} .mmv{display:contents}
+    .mmv p,.mmv .hint{grid-column:1/-1;margin:0} .mmv h2{font-size:1.45rem;margin:0}
+    .mmhero .ring{width:84px;height:84px} .mmhero .ring div{width:66px;height:66px} .mmhero .ring b{font-size:1.4rem} .mmsc,.mmsec{padding:18px}}
 
   /* ---------- chat popup ---------- */
   .fab{position:fixed;right:24px;bottom:24px;z-index:40;display:flex;align-items:center;gap:9px;padding:15px 22px;border-radius:999px;
@@ -701,7 +712,7 @@
   <!-- ===== match making view ===== -->
   <section id="viewMatch" hidden>
     <h2 class="serif" style="font-size:1.9rem;margin-bottom:6px">Match making</h2>
-    <p class="hint" style="margin:0 0 18px">Ashtakoota (36-point) Guna Milan and Manglik check between two saved profiles.</p>
+    <p class="hint" style="margin:0 0 18px">Guna Milan with dosha cancellations, Manglik check and each person’s marriage promise (KP), between two saved profiles.</p>
     <div class="card matchhead">
       <div><label for="mgroom">Groom</label><select id="mgroom" style="width:100%;max-width:none"></select></div>
       <div><label for="mbride">Bride</label><select id="mbride" style="width:100%;max-width:none"></select></div>
@@ -1198,18 +1209,34 @@ $('mgo').onclick=async()=>{
   $('mgo').disabled=false;
 };
 function renderMatch(d){
-  const pct=Math.round(d.total/d.max*100),fmt=n=>Number.isInteger(n)?n:n.toFixed(1);
-  const person=(p,role)=>'<div class="card mini"><h3>'+role+': '+esc(p.name)+'</h3>Moon in <b>'+esc(p.moon_sign)+'</b> · '+esc(p.nakshatra)+' pada '+p.pada+
-    '<div style="margin-top:6px">'+(p.manglik.manglik?'<span class="badge warn">Manglik ('+p.manglik.level+')</span>':'<span class="badge good">Not Manglik</span>')+
-    '<small> Mars in H'+p.manglik.mars_house_from_lagna+' from lagna, H'+p.manglik.mars_house_from_moon+' from Moon</small></div></div>';
+  const pct=Math.round(d.adjusted_total/d.max*100),fmt=n=>Number.isInteger(n)?n:n.toFixed(1),o=d.overall;
+  const TB={good:'good',care:'',think:'warn'},DS={present:'warn',reduced:'',cancelled:'good'};
+  const PB={'promised':'good','promised with obstacles':'','not clearly promised':'warn'};
+  const ML={none:'Not Manglik',mild:'Mildly Manglik',moderate:'Manglik',strong:'Strongly Manglik'};
+  const MS={none:'good',balanced:'good',minor:'',concern:'warn'};
+  const list=(xs,empty)=>xs.length?'<ul>'+xs.map(x=>'<li>'+esc(x.text)+'</li>').join('')+'</ul>':'<p class="hint" style="margin:0">'+empty+'</p>';
+  const mars=m=>m.references.map(r=>'H'+r.house+' from '+r.from).join(' · ');
+  const person=(p,role)=>{const m=p.manglik,pr=p.promise;
+    return '<div class="mmp"><h4>'+role+': '+esc(p.name)+'</h4><small class="hint">Moon in '+esc(p.moon_sign)+' · '+esc(p.nakshatra)+' pada '+p.pada+'</small>'+
+    '<div class="mmrow"><span>Mangal dosha</span><span class="badge '+(m.effective==='none'?'good':m.effective==='mild'?'':'warn')+'">'+
+      (m.manglik&&m.effective==='none'?(m.cancelled?'Cancelled':'Eased'):ML[m.effective])+'</span></div>'+
+    '<small class="hint">Mars '+mars(m)+(m.exceptions.length?' — '+esc(m.exceptions.join('; ')):'')+'</small>'+
+    (pr?'<div class="mmrow"><span>Marriage promise</span><span class="badge '+PB[pr.verdict]+'">'+esc(pr.verdict)+'</span></div>'+
+      '<small class="hint">7th cusp sub lord <b>'+esc(pr.cusp_sub_lord)+'</b> (star lord '+esc(pr.star_lord)+') signifies houses '+pr.signifies.join(', ')+
+      ' — for: '+(pr.for.join(', ')||'none')+'; against: '+(pr.against.join(', ')||'none')+'.</small>':'')+'</div>'};
   $('mres').innerHTML=
-    '<div class="card score"><div class="ring" style="--p:'+pct+'"><div><span><b>'+fmt(d.total)+'</b><br><small>of '+d.max+'</small></span></div></div>'+
-    '<div><h2 style="font:600 1.5rem Georgia,serif">'+esc(d.verdict)+'</h2><div class="hint" style="margin-top:4px">'+pct+'% · 18+ is generally considered acceptable</div></div></div>'+
-    '<div class="card panel" style="margin-top:18px;padding-top:18px"><h3 style="margin-bottom:10px">Ashtakoota (8 kootas)</h3><div class="scroll"><table id="mtable"></table></div></div>'+
-    '<div class="twocol">'+person(d.groom,'Groom')+person(d.bride,'Bride')+'</div>'+
-    '<div class="callout" style="margin-top:14px">'+esc(d.manglik_note)+'</div>'+
-    d.notes.map(n=>'<div class="callout">'+esc(n)+'</div>').join('')+
-    '<div class="hint">'+esc(d.disclaimer)+'</div>';
+    '<div class="card score mmhero"><div class="ring" style="--p:'+pct+'"><div><span><b>'+fmt(d.adjusted_total)+'</b><br><small>of '+d.max+'</small></span></div></div>'+
+    '<div class="mmv"><span class="badge '+TB[o.tier]+'">'+esc(o.label)+'</span><h2>'+esc(o.label)+'</h2><p>'+esc(o.summary)+'</p>'+
+    '<div class="hint">Guna Milan '+fmt(d.total)+'/36'+(d.adjusted_total!==d.total?' · '+fmt(d.adjusted_total)+' after cancelled doshas':'')+' · 18+ is the usual minimum</div></div></div>'+
+    '<div class="card dd mmsc"><div><h5 class="ok">Where you’ll click</h5>'+list(d.strengths,'No standout strengths in the traditional checks.')+'</div>'+
+    '<div><h5 class="bad">Where you may clash</h5>'+list(d.clashes,'No major friction points found.')+'</div></div>'+
+    '<div class="card mmsec"><h3>Doshas</h3>'+(d.doshas.length?d.doshas.map(x=>'<div class="mmrow"><span><b>'+esc(x.name)+'</b><small class="hint">'+esc(x.why)+'</small></span>'+
+      '<span class="badge '+DS[x.status]+'">'+esc(x.status)+'</span></div>').join(''):'<p class="hint" style="margin:0">No Nadi, Bhakoot or Gana dosha between these charts.</p>')+
+    '<div class="mmrow mmm"><span><b>Manglik match</b><small class="hint">'+esc(d.manglik.text)+'</small></span><span class="badge '+MS[d.manglik.status]+'">'+
+      ({none:'no concern',balanced:'balanced',minor:'minor',concern:'needs care'})[d.manglik.status]+'</span></div></div>'+
+    '<div class="twocol">'+['groom','bride'].map(k=>'<div class="card mini">'+person(d[k],k==='groom'?'Groom':'Bride')+'</div>').join('')+'</div>'+
+    '<details class="card mmsec mmdet"><summary><b>Guna Milan details</b><small class="hint">8 kootas · '+fmt(d.total)+'/36</small></summary><div class="scroll"><table id="mtable"></table></div></details>'+
+    '<p class="hint">'+esc(d.disclaimer)+'</p>';
   table($('mtable'),['Koota','Groom','Bride','Score','','What it looks at'],d.kootas.map(k=>
     ['<b>'+k.name+'</b>',esc(k.groom),esc(k.bride),'<b>'+fmt(k.got)+'</b> / '+k.max,'<div class="bar"><i style="width:'+(k.got/k.max*100)+'%"></i></div>',esc(k.meaning)]));
   $('mres').hidden=false;$('mres').scrollIntoView({behavior:'smooth'});

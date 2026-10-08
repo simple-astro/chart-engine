@@ -82,3 +82,59 @@ def test_chat_tools(client):
     assert chat.run_tool(p, "get_lal_kitab", {})["planets"]
     assert [x["id"] for x in chat.run_tool(p, "list_profiles", {})["profiles"]] == [b]
     assert chat.run_tool(p, "match_with_profile", {"partner_id": b, "native_role": "groom"})["max"] == 36
+
+
+def _chart(moon_sign, nak, pada=1, **signs):
+    c = _fake_chart(moon_sign, nak, lagna=signs.pop("lagna", 0), mars=signs.pop("Mars", 0))
+    c["grahas"]["Moon"]["pada"] = pada
+    for p, s in signs.items():
+        c["grahas"][p]["sign_index"] = s
+    return c
+
+
+def _dosha(r, koota):
+    return next(d for d in r["doshas"] if d["koota"] == koota)
+
+
+def test_bhakoot_cancelled_when_moon_signs_share_a_lord():
+    r = mm.compute_match(_chart(0, 0), _chart(7, 16))  # Aries / Scorpio: 6/8, both ruled by Mars
+    d = _dosha(r, "Bhakoot")
+    assert d["status"] == "cancelled" and "Mars" in d["why"] and d["name"] == "Bhakoot Dosha (6/8)"
+    assert r["adjusted_total"] == r["total"] + 7
+
+
+def test_nadi_cancelled_for_same_sign_different_nakshatra_but_not_same_pada():
+    r = mm.compute_match(_chart(1, 2), _chart(1, 3))  # Krittika / Rohini in Taurus: both Antya nadi
+    assert _dosha(r, "Nadi")["status"] == "cancelled"
+    same = mm.compute_match(_chart(3, 8), _chart(3, 8))
+    assert _dosha(same, "Nadi")["status"] == "present" and same["adjusted_total"] == same["total"] == 28
+    assert _dosha(mm.compute_match(_chart(3, 8, pada=1), _chart(3, 8, pada=3)), "Nadi")["status"] == "reduced"
+
+
+def test_manglik_levels_and_exceptions():
+    strong = mm.manglik(_chart(0, 0, Mars=6, Jupiter=1))  # Mars 7th from lagna, Moon and Venus
+    assert strong["level"] == "strong" and strong["effective"] == "strong" and strong["hits"] == ["Lagna", "Moon", "Venus"]
+    aspected = mm.manglik(_chart(0, 0, Mars=6, Jupiter=0))  # Jupiter's 7th aspect falls on Mars
+    assert aspected["effective"] == "moderate" and "Jupiter aspects Mars" in aspected["exceptions"]
+    own = mm.manglik(_chart(0, 0, Mars=0, Jupiter=1))  # Mars in Aries, own sign
+    assert own["manglik"] and own["cancelled"] and own["effective"] == "none"
+
+
+def test_manglik_match_concern_or_balanced_by_saturn():
+    groom = _chart(0, 0, Mars=6, Jupiter=1, Saturn=2)
+    r = mm.compute_match(groom, _chart(4, 10, Mars=2, Jupiter=1, Saturn=2))
+    assert r["manglik"]["status"] == "concern" and any(c["area"] == "Mangal dosha" for c in r["clashes"])
+    r = mm.compute_match(groom, _chart(4, 10, Mars=2, Jupiter=1, Saturn=6))  # bride's Saturn in her 7th
+    assert r["manglik"]["status"] == "balanced"
+
+
+def test_overall_verdict_and_promise_on_real_charts(client):
+    a = client.post("/profiles", json=A).json()["id"]
+    b = client.post("/profiles", json=B).json()["id"]
+    m = client.post("/matchmaking", json={"groom_id": a, "bride_id": b}).json()
+    assert m["overall"]["tier"] in mm.TIER and m["overall"]["summary"].endswith(".")
+    assert m["adjusted_total"] >= m["total"]
+    for side in ("groom", "bride"):
+        p = m[side]["promise"]
+        assert p["verdict"] in ("promised", "promised with obstacles", "not clearly promised") and p["cusp_sub_lord"]
+    assert m["strengths"] or m["clashes"]
