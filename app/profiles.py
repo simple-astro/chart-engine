@@ -67,6 +67,22 @@ def get_profile(profile_id: int, request: Request) -> dict:
     return p
 
 
+@router.get("/{profile_id}/transit")
+def transit_overlay(profile_id: int, request: Request, date: str | None = None) -> dict:
+    from datetime import date as _date, datetime as _dt
+    from zoneinfo import ZoneInfo
+    from app import transit_view
+    p = _require(profile_id, request)
+    tz = ZoneInfo(p["request"].get("tz_name") or "UTC")
+    try:
+        day = _date.fromisoformat(date) if date else _dt.now(tz).date()
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="date must be YYYY-MM-DD") from exc
+    if not 1900 <= day.year <= 2100:
+        raise HTTPException(status_code=422, detail="date must be between 1900 and 2100")
+    return transit_view.overlay(p, day)
+
+
 @router.get("/{profile_id}/kp/{topic}")
 def kp_prediction(profile_id: int, topic: str, request: Request, months: int = 24) -> dict:
     from core import kp_predict
