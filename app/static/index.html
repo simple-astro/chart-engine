@@ -294,6 +294,23 @@
   .dd h5.ok{color:var(--ok)} .dd h5.bad{color:var(--bad)}
   .dd ul{margin:0;padding-left:17px;font-size:.9rem;line-height:1.5} .dd li{margin:3px 0}
   .gtimes,.glucky{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 6px}
+  .tgrid{display:grid;grid-template-columns:1.1fr 1fr;gap:22px;align-items:start}
+  .tcol{min-width:0} .twhy{margin:0 0 8px;font-size:1rem;line-height:1.5}
+  .tsukh{display:flex;gap:9px;align-items:flex-start;background:var(--soft);border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:.92rem;line-height:1.45}
+  .tsukh img{flex:none;margin-top:1px}
+  .gtimes .tbad b{color:var(--bad)} .tcol .gtimes{margin-top:0}
+  .tchips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+  .tchips>div{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-width:0}
+  .tchips small,.tup small{display:block;font-size:.64rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
+  .tchips b{display:flex;align-items:center;gap:6px;color:var(--ink);font-size:.95rem;font-weight:600;margin:2px 0}
+  .tchips em,.tup em{display:block;font-style:normal;font-size:.74rem;color:var(--mut);line-height:1.35}
+  .tsw{width:14px;height:14px;border-radius:50%;flex:none;border:1px solid var(--line)}
+  .tup{border-left:3px solid var(--acc);background:var(--soft);border-radius:0 12px 12px 0;padding:9px 12px;margin-top:8px}
+  .tup p{margin:2px 0 3px;font-size:.92rem}
+  .tfoot{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;margin-top:10px}
+  #gtoday,.gcard+.gcard{margin-top:20px}
+  @media (max-width:760px){.tgrid{grid-template-columns:1fr;gap:6px}}
+  @media (max-width:420px){.tchips{gap:6px} .tchips>div{padding:7px 8px} .tchips b{font-size:.88rem}}
   .gtimes span,.glucky span{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:7px 12px}
   .gtimes small,.glucky small{display:block;font-size:.64rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
   .gtimes b,.glucky b{color:var(--acc);font-size:.92rem;font-weight:600}
@@ -790,7 +807,7 @@
 <script src="/static/insights.js?v=4"></script>
 <script src="/static/muhurat.js?v=2"></script>
 <script src="/static/strength.js?v=1"></script>
-<script src="/static/guide.js?v=5"></script>
+<script src="/static/guide.js?v=6"></script>
 <script src="/static/tools.js?v=2"></script>
 <script src="/static/kptiming.js?v=6"></script>
 <script src="/static/transit.js?v=1"></script>
@@ -1128,17 +1145,34 @@ async function loadMuhurat(force){
     MU.data=d;if(force)MU.sel=0;paintMuhurat();
   }catch(e){MU.loaded=false;box.innerHTML='<div class="hint err">Couldn’t load the muhurat: '+esc(e.message)+'</div>'}
 }
+// Times follow where the viewer is: the birthplace by default, or their current location once shared.
+try{const h=JSON.parse(localStorage.getItem('sj_here')||'null');if(h&&isFinite(h.lat)&&isFinite(h.lon)&&h.tz_name)MU.here=h}catch(e){}
+function setHere(h){MU.here=h;try{h?localStorage.setItem('sj_here',JSON.stringify(h)):localStorage.removeItem('sj_here')}catch(e){}}
 async function loadToday(){
   if(!lastReq||!lastChart)return;
-  const req=lastReq,moon=lastChart.grahas.Moon,place=(req.place||'').split(',')[0]||'your birthplace';
+  const req=lastReq,c=lastChart,moon=c.grahas.Moon,loc=MU.here||{lat:req.lat,lon:req.lon,tz_name:req.tz_name};
+  const place=MU.here?'your current location':((req.place||'').split(',')[0]||'your birthplace');
+  const now=Date.now(),md=(c.dasha||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end));
+  const ad=md&&(md.children||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end));
+  const post=(u,b)=>fetch(u,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);return d});
   try{
-    const r=await fetch('/muhurat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({lat:req.lat,lon:req.lon,tz_name:req.tz_name,
-      start:tzToday(req.tz_name),days:7,birth_nakshatra:moon.nakshatra_index,birth_moon_sign:moon.sign_index})});
-    const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);
+    const day=tzToday(loc.tz_name);
+    const [t,w]=await Promise.all([
+      post('/today',{...loc,date:day,lagna_sign:c.lagna.sign_index,birth_nakshatra:moon.nakshatra_index,birth_moon_sign:moon.sign_index,maha:md&&md.lord,antar:ad&&ad.lord}),
+      post('/muhurat',{...loc,start:day,days:7,birth_nakshatra:moon.nakshatra_index,birth_moon_sign:moon.sign_index})]);
     if(req!==lastReq||!$('gtoday'))return;
-    window.renderToday($('gtoday'),{...d.days[0],tz:d.tz_name},place,d.days);
-  }catch(e){if($('gtoday'))$('gtoday').innerHTML='<h3>Today for you</h3><div class="hint">Couldn’t load today’s panchang.</div>'}
+    window.renderToday($('gtoday'),t,{place,here:!!MU.here,week:w.days});
+  }catch(e){if($('gtoday'))$('gtoday').innerHTML='<h3>Today for you</h3><div class="hint">Couldn’t load today: '+esc(e.message)+'</div>'}
 }
+document.addEventListener('click',e=>{
+  const b=e.target.closest('#tloc');if(!b)return;
+  if(MU.here){setHere(null);loadToday();loadMuhurat(true);return}
+  if(!navigator.geolocation){b.textContent='Location is not available in this browser';return}
+  b.textContent='Finding you…';
+  navigator.geolocation.getCurrentPosition(p=>{
+    setHere({lat:+p.coords.latitude.toFixed(4),lon:+p.coords.longitude.toFixed(4),tz_name:Intl.DateTimeFormat().resolvedOptions().timeZone});
+    loadToday();loadMuhurat(true)},()=>{b.textContent='Location blocked — using birthplace'},{timeout:10000});
+});
 function openTab(name){
   $('kundli').open=true;
   const b=document.querySelector('#tabs [data-tab="'+name+'"]');if(b)b.click();
@@ -1157,12 +1191,12 @@ function paintMuhurat(){
 $('mbody').addEventListener('click',e=>{
   const d=e.target.closest('[data-i]');if(d){MU.sel=+d.dataset.i;paintMuhurat();return}
   if(e.target.id!=='mloc')return;
-  if(MU.here){MU.here=null;loadMuhurat(true);return}
+  if(MU.here){setHere(null);loadMuhurat(true);loadToday();return}
   if(!navigator.geolocation){alert('Location is not available in this browser.');return}
   e.target.textContent='Finding you…';
   navigator.geolocation.getCurrentPosition(p=>{
-    MU.here={lat:+p.coords.latitude.toFixed(4),lon:+p.coords.longitude.toFixed(4),tz_name:Intl.DateTimeFormat().resolvedOptions().timeZone};
-    loadMuhurat(true)},()=>{e.target.textContent='Location blocked — using birthplace'},{timeout:10000});
+    setHere({lat:+p.coords.latitude.toFixed(4),lon:+p.coords.longitude.toFixed(4),tz_name:Intl.DateTimeFormat().resolvedOptions().timeZone});
+    loadMuhurat(true);loadToday()},()=>{e.target.textContent='Location blocked — using birthplace'},{timeout:10000});
 });
 async function loadLal(){
   if(lkLoaded||!lastReq)return;lkLoaded=true;

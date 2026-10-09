@@ -6,7 +6,7 @@ from datetime import date, datetime, timezone
 
 from pydantic import BaseModel, Field
 
-from app import muhurat, storage
+from app import muhurat, storage, today as today_mod
 from app.routes import chart as compute_chart
 from app.schemas import ChartRequest
 from core import horary, lalkitab, matchmaking
@@ -33,6 +33,21 @@ class FindRequest(BaseModel):
     tz_name: str
     birth_nakshatra: int | None = Field(default=None, ge=0, le=26)
     birth_moon_sign: int | None = Field(default=None, ge=0, le=11)
+
+
+GRAHA = r"^(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)$"
+
+
+class TodayRequest(BaseModel):
+    date: date
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    tz_name: str
+    lagna_sign: int = Field(ge=0, le=11)
+    birth_nakshatra: int = Field(ge=0, le=26)
+    birth_moon_sign: int = Field(ge=0, le=11)
+    maha: str | None = Field(default=None, pattern=GRAHA)
+    antar: str | None = Field(default=None, pattern=GRAHA)
 
 
 class HoraryRequest(BaseModel):
@@ -96,6 +111,15 @@ def find_muhurat(req: FindRequest) -> dict:
         return muhurat.find_dates(req.activity, req.start, req.days, req.lat, req.lon, req.tz_name,
                                   req.birth_nakshatra, req.birth_moon_sign)
     except Exception as exc:  # unknown activity, bad timezone, polar day
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/today")
+def today(req: TodayRequest) -> dict:
+    try:
+        return today_mod.today(req.date, req.lat, req.lon, req.tz_name, req.lagna_sign, req.birth_nakshatra,
+                               req.birth_moon_sign, req.maha, req.antar)
+    except Exception as exc:  # bad timezone or polar day without sunrise
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 

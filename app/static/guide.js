@@ -36,7 +36,6 @@
 
     const rem = `<section class="card gcard"><h3>Your remedies <small>upay</small></h3>
         <ol class="grem">${g.remedies.map(r => `<li><b>${esc(r.title)}</b><p>${esc(r.text)}</p><small>${esc(r.why)}</small></li>`).join('')}</ol>
-        <div class="glucky"><span><small>Lucky day</small><b>${esc(g.lucky.day)}</b></span><span><small>Colour</small><b>${esc(g.lucky.color)}</b></span><span><small>Number</small><b>${g.lucky.num}</b></span></div>
       </section>`;
 
     const areas = g.areas.map((a, i) => `<article class="card garea${i ? ' shut' : ''}">
@@ -50,25 +49,35 @@
         <div class="gup"><b>Upay</b><p>${esc(a.remedy.text)}</p><small>Why: ${esc(a.remedy.why)}.</small></div>
       </article>`).join('');
 
-    el.innerHTML = hero + `<div class="g2">${today}${rem}</div>
+    el.innerHTML = hero + `${today}${rem}
       <h3 class="gh">Plan &amp; decide</h3><div class="g2" id="gtools"></div><h3 class="gh">Your life areas</h3><div class="ggrid">${areas}</div>`;
   };
 
-  window.renderToday = function (el, d, place, week) {
+  window.renderToday = function (el, d, opt) {
     const t = iso => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: d.tz });
-    const good = d.activities.filter(a => a.verdict === 'excellent' || a.verdict === 'good');
-    const bad = d.activities.filter(a => a.verdict === 'avoid');
-    const fair = d.activities.filter(a => a.verdict === 'fair');
-    const w = d.windows;
-    el.innerHTML = `<h3>Today for you <span class="badge ${{ excellent: 'good', good: 'good', fair: '', avoid: 'warn' }[d.overall.verdict]}">${esc(d.overall.label)}</span></h3>
-      <p class="gsub">${esc(d.weekday)} · ${esc(d.tithi.name)} · ${esc(d.nakshatra)}${d.tara ? ` · your star: ${esc(d.tara.name)}` : ''}</p>
-      <div class="dd"><div><h5 class="ok">Good for</h5><ul>${good.length ? good.map(a => `<li>${esc(a.name)}</li>`).join('') : '<li>Routine work — keep big starts for a better day</li>'}</ul></div>
-        <div><h5 class="bad">Better to avoid</h5><ul>${bad.length ? bad.map(a => `<li>${esc(a.name)}</li>`).join('') : '<li>Nothing major today</li>'}</ul></div></div>
-      ${fair.length ? `<div class="dd one"><div><h5 class="mid">Fine with care</h5><p class="gfair">${fair.map(a => esc(a.name)).join(' · ')}</p></div></div>` : ''}
-      <div class="gtimes">${w.abhijit ? `<span><small>Best time</small><b>${t(w.abhijit[0])} – ${t(w.abhijit[1])}</b></span>` : ''}
-        <span><small>Avoid starting at</small><b>${t(w.rahu_kalam[0])} – ${t(w.rahu_kalam[1])}</b></span></div>
-      <small class="hint">Times for ${esc(place)}.</small>
-      ${week && week.length > 1 ? `<div class="gweek"><h5>This week</h5><div class="gwd">${week.map((w, i) => `<button type="button" data-goto="muhurat" title="${esc(w.weekday)}: ${esc(w.overall.label)}">
+    const day0 = opt.week && opt.week[0], cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+    const li = xs => xs.map(x => `<li>${esc(x)}</li>`).join('');
+    const c = d.colour, u = d.upay;
+    const best = d.best_times.length ? d.best_times.map(w => `<span><small>${esc(w.label)}</small><b>${t(w.start)} – ${t(w.end)}</b></span>`).join('')
+      : '<span><small>Best time</small><b>Keep it routine today</b></span>';
+    el.innerHTML = `<h3>Today for you <span class="badge ${{ excellent: 'good', good: 'good', fair: '', avoid: 'warn' }[d.rating.verdict]}">${esc(d.rating.label)}</span></h3>
+      <p class="gsub">${esc(d.weekday)}${day0 ? ` · ${esc(day0.tithi.name)}` : ''} · ${esc(d.nakshatra)}${d.tara ? ` · your star: ${esc(d.tara.name)}` : ''}</p>
+      <div class="tgrid"><div class="tcol">
+        <p class="twhy">${esc(cap(d.rating.why))}.</p>
+        ${d.sukh ? `<p class="tsukh"><img src="/static/sun.svg" alt="" width="22" height="22"><span>${esc(d.sukh)}</span></p>` : ''}
+        <div class="dd"><div><h5 class="ok">Do today</h5><ul>${li(d.do)}</ul></div><div><h5 class="bad">Avoid today</h5><ul>${li(d.avoid)}</ul></div></div>
+      </div><div class="tcol">
+        <div class="gtimes">${best}<span class="tbad"><small>Rahu Kaal — avoid</small><b>${t(d.rahu_kalam[0])} – ${t(d.rahu_kalam[1])}</b></span></div>
+        <div class="tchips">
+          <div title="${esc(c.why)}"><small>Wear</small><b><i class="tsw" style="background:${c.hex}"></i>${esc(cap(c.name))}</b>${c.avoid ? `<em>avoid ${esc(c.avoid)}</em>` : ''}</div>
+          <div title="Traditional number of ${esc(d.number.planet)}"><small>Number</small><b>${d.number.value}</b><em>${esc(d.number.planet)}</em></div>
+          <div><small>Travel</small><b>Not ${esc(d.direction.avoid)}</b><em>if you must: ${esc(d.direction.fix)}</em></div>
+        </div>
+        <div class="tup"><small>Today’s upay</small><p>Chant <b>${esc(u.mantra)}</b> 108 times, or donate ${esc(u.daan)}.</p><em>${esc(u.why)}.</em></div>
+      </div></div>
+      <div class="tfoot"><small class="hint">Times for ${esc(opt.place)}. Colour, number and direction are traditional associations, not promises.</small>
+        <button type="button" class="linkbtn" id="tloc">${opt.here ? 'Use birthplace times' : 'Use my current location'}</button></div>
+      ${opt.week && opt.week.length > 1 ? `<div class="gweek"><h5>This week</h5><div class="gwd">${opt.week.map((w, i) => `<button type="button" data-goto="muhurat" title="${esc(w.weekday)}: ${esc(w.overall.label)}">
         <span>${i ? esc(w.weekday.slice(0, 3)) : 'Today'}</span><b>${+w.date.slice(8)}</b><span class="mdot ${w.overall.verdict}"></span></button>`).join('')}</div>
         <button type="button" class="linkbtn" data-goto="muhurat">See the best days for travel, property, marriage…</button></div>` : ''}`;
   };
