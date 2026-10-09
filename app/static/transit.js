@@ -39,7 +39,7 @@
         paint(d);
         const re = await fetch(`/profiles/${profileId}/transit/events?date=${day}`, { signal: ctrl.signal });
         const ev = await re.json(); if (!re.ok) throw new Error(ev.detail || re.statusText);
-        lastEv = ev; paintEvents(ev);
+        lastEv = ev; paintPeriods(ev.periods); paintEvents(ev);
       } catch (e) { if (e.name !== 'AbortError') body.innerHTML = `<p class="hint err">Couldn’t load transits: ${esc(e.message)}</p>`; }
       body.classList.remove('loading');
     }
@@ -66,7 +66,8 @@
           <section class="trcard"><h4>Moon that day</h4><p class="trmoon"><b>${esc(m.nakshatra)}</b> in ${esc(m.sign)} · ${ord(m.h_moon)} from your Moon</p>
             <p class="hint" style="margin:2px 0 0">Your star (Tara): <b class="${m.tara_score > 0 ? 'ok' : m.tara_score < 0 ? 'bad' : ''}">${esc(m.tara)}</b> — ${esc(m.tara_note)}</p></section>
         </div>
-        <section id="trev" class="trev" aria-live="polite"><p class="hint">Reading life events…</p></section>
+        <section id="trper" class="trev" aria-live="polite"><p class="hint">Reading your periods…</p></section>
+        <section id="trev" class="trev" aria-live="polite"></section>
         <div class="trmain">
           <div><h4 class="trh">Transits over your chart</h4><div class="chart trchart" id="trchart"></div>
             <p class="hint">Houses counted from your ${esc(d.lagna_sign)} lagna. Highlighted planets run your daśā. R = retrograde.</p></div>
@@ -84,6 +85,38 @@
     const STATUS = { strong: 'good', open: 'good', not_now: 'mute', not_promised: 'warn' };
     const step = (ok, txt) => `<span class="evs ${ok ? 'ok' : 'no'}">${ok ? '✓' : '·'} ${txt}</span>`;
     const hl = (hs, t) => hs.map(h => `<i class="${t.houses_for.includes(h) ? 'hf' : t.houses_against.includes(h) ? 'ha' : ''}">${h}</i>`).join('') || '<i>—</i>';
+
+    const CELL = { supports: ['ps', '●', 'strongly supports'], 'leans good': ['pl', '◐', 'leans towards'],
+      mixed: ['pm', '–', 'neutral or mixed'], against: ['pa', '✗', 'works against'], blocks: ['pa', '✗✗', 'blocks'] };
+    const chips = (xs, cls) => xs.map(x => `<span class="pchip ${cls}">${esc(x)}</span>`).join('');
+
+    function paintPeriods(per) {
+      const box = body.querySelector('#trper'); if (!box || !per) return;
+      const card = l => {
+        const n = l.natal, t = l.transit;
+        const tr = !t ? '' : t.retrograde
+          ? `<p class="ptr">Now in your ${ord(t.house)} (${esc(t.sign)}) — <b>retrograde</b>: no transit meaning until it moves direct (Taneja).</p>`
+          : `<p class="ptr">Now transiting your ${ord(t.house)} (${esc(t.sign)}) · star ${esc(t.star_lord)} · sub ${esc(t.sub_lord)}${
+              t.supports.length ? ` — transit supports ${esc(t.supports.join(', ').toLowerCase())}${t.promised_too.length ? `; <b>${esc(t.promised_too.join(', ').toLowerCase())}</b> ${t.promised_too.length > 1 ? 'are' : 'is'} also promised by this period` : ''}.` : ' — no strong transit support right now.'}</p>`;
+        return `<li class="pcard"><div class="phd"><b>${esc(l.lord)}</b><span>${esc(l.title)}</span><small>until ${fd(l.end)}</small></div>
+          <p class="psum">${esc(l.summary)}</p>
+          <div class="pchips">${chips(l.strong, 'ps')}${chips(l.leans, 'pl')}${chips(l.against, 'pa')}${l.care === 'mixed' ? '<span class="pchip pc">Health: mixed</span>' : l.care ? '<span class="pchip pc">Health care</span>' : ''}</div>
+          <p class="pnat">Birth chart: in your ${ord(n.house)} (${esc(n.sign)})${n.retrograde ? ', retrograde' : ''} · star lord ${esc(n.star_lord)} · sub lord ${esc(n.sub_lord)} → houses: planet ${n.levels.planet.join(', ') || '—'}; star ${n.levels.nakshatra.join(', ') || '—'}; sub ${n.levels.sub.join(', ') || '—'}</p>
+          ${tr}</li>`;
+      };
+      const levels = ['maha', 'antar', 'praty'].filter(lv => per.matrix[0] && per.matrix[0].cells[lv]);
+      const lordOf = lv => (per.lords.find(l => l.levels_run.includes(lv)) || {}).lord || '';
+      const cell = (m, lv) => { const c = m.cells[lv], k = CELL[c.verdict] || CELL.mixed, risk = m.kind === 'risk';
+        return `<td class="c"><span class="pv ${k[0]}${risk ? ' risk' : ''}" title="${esc(lordOf(lv))} ${k[2]} ${esc(m.title.toLowerCase())}${c.note ? ' — ' + esc(c.note) : ''}">${k[1]}</span></td>`; };
+      const WIN = { strong: ['ps', 'Strong'], favourable: ['ps', 'Good'], mixed: ['pm', 'Mixed'], challenging: ['pa', 'Hard'] };
+      box.innerHTML = `<h4 class="trh">What your periods promise <small>each period lord read at planet · star · sub level</small></h4>
+        <ol class="pcards">${per.lords.map(card).join('')}</ol>
+        <div class="scroll"><table class="trtable ptable"><thead><tr><th>Matter</th>${levels.map(lv => `<th class="c">${esc(lordOf(lv))}<small>${{ maha: 'Maha', antar: 'Antar', praty: 'Praty' }[lv]}</small></th>`).join('')}<th class="c" title="The combined window right now">Now</th></tr></thead>
+        <tbody>${per.matrix.map(m => { const w = WIN[m.window] || WIN.mixed, risk = m.kind === 'risk';
+          return `<tr><td><b>${esc(m.title)}</b>${m.promise === 'not clearly promised' ? '<small>not clearly promised in the chart</small>' : ''}${risk ? '<small>● here means care is needed</small>' : ''}</td>${levels.map(lv => cell(m, lv)).join('')}
+            <td class="c"><span class="pw ${risk ? (w[0] === 'ps' ? 'pa' : 'pm') : w[0]}">${risk ? (w[0] === 'ps' ? 'Care' : 'Low') : w[1]}</span></td></tr>`; }).join('')}</tbody></table></div>
+        <p class="hint">● strongly supports · ◐ leans towards · – neutral or mixed · ✗ works against. “Now” combines the three (Dasa must allow, Bhukti pinpoints, Antar times). Transit lines are hints only. Traditional guidance, not certainty.</p>`;
+    }
 
     function paintEvents(e) {
       const box = body.querySelector('#trev'); if (!box) return;

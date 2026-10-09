@@ -90,10 +90,11 @@ def transit_overlay(profile_id: int, request: Request, date: str | None = None) 
 @router.get("/{profile_id}/transit/events")
 def transit_events(profile_id: int, request: Request, date: str | None = None) -> dict:
     """Transit significators (planet / star / sub) and the Promise -> Dasha -> Trigger ladder for each life matter."""
-    from app import transit_events as te, transit_view
+    from app import period_view, transit_events as te, transit_view
     p = _require(profile_id, request)
     day = _transit_day(p, date)
-    return te.events(p, day, transit_view.overlay(p, day))
+    ov = transit_view.overlay(p, day)
+    return {**te.events(p, day, ov), "periods": period_view.periods(p["chart"], day, ov["dasha"], ov["planets"])}
 
 
 @router.get("/{profile_id}/kp/{topic}")

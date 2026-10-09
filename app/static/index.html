@@ -401,6 +401,20 @@
   .chart .pn.trd{fill:var(--acc2)}
   .trnotes{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
   .trnotes li{padding:9px 12px;border-radius:10px;background:var(--bg2);border-left:3px solid var(--line);font-size:.88rem;line-height:1.45}
+  .pcards{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px}
+  .pcard{border:1px solid var(--line);border-radius:12px;background:var(--bg2);padding:12px 14px}
+  .phd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap} .phd b{font:600 1.15rem var(--serif);color:var(--acc)} .phd span{font-weight:600;font-size:.88rem} .phd small{color:var(--mut);font-size:.78rem;margin-left:auto}
+  .psum{margin:6px 0 8px;font-size:.92rem;line-height:1.45}
+  .pchips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+  .pchip{font-size:.74rem;font-weight:600;padding:2px 9px;border-radius:99px;border:1px solid var(--line)}
+  .pchip.ps{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,transparent);background:color-mix(in srgb,var(--ok) 10%,transparent)}
+  .pchip.pl{color:var(--ok);border-style:dashed} .pchip.pa{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent)} .pchip.pc{color:var(--cmb);border-color:color-mix(in srgb,var(--cmb) 45%,transparent)}
+  .pnat,.ptr{margin:3px 0 0;font-size:.8rem;line-height:1.45;color:var(--mut)} .ptr b{color:var(--ink)}
+  .ptable td small,.ptable th small{display:block;color:var(--mut);font-size:.7rem;font-weight:500}
+  .ptable td,.ptable th{white-space:normal} .ptable td:first-child{min-width:0}
+  @media (max-width:600px){.trtable.ptable td,.trtable.ptable th{padding:6px 3px;font-size:.8rem} .ptable td small{font-size:.66rem} .pw{padding:1px 5px;font-size:.7rem}} .pv{font-weight:700;font-size:1rem} .pv.ps{color:var(--ok)} .pv.pl{color:var(--ok);opacity:.8} .pv.pm{color:var(--mut)} .pv.pa{color:var(--bad)}
+  .pv.risk.ps,.pv.risk.pl{color:var(--cmb)} .pv.risk.pa{color:var(--ok)}
+  .pw{font-size:.76rem;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid var(--line);white-space:nowrap} .pw.ps{color:var(--ok)} .pw.pa{color:var(--bad)} .pw.pm{color:var(--mut)}
   .trev{margin:16px 0 6px} .trh small{font:500 .78rem var(--sans);color:var(--mut);margin-left:6px}
   .evl{list-style:none;margin:0;padding:0;display:grid;gap:8px}
   .ev{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;background:var(--bg2)}
@@ -831,7 +845,7 @@
 <script src="/static/guide.js?v=7"></script>
 <script src="/static/tools.js?v=2"></script>
 <script src="/static/kptiming.js?v=6"></script>
-<script src="/static/transit.js?v=6"></script>
+<script src="/static/transit.js?v=9"></script>
 <script>
 {const f=window.fetch.bind(window);window.fetch=async(u,o)=>{const r=await f(u,o);if(r.status===401&&String(u).startsWith('/'))location.reload();return r}}
 const $=id=>document.getElementById(id);

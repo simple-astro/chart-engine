@@ -212,6 +212,15 @@ def periods_in(chart: dict, start: date, end: date) -> list[dict]:
     return out
 
 
+def lord_verdict(chart: dict, topic: str, p: str) -> dict:
+    """How one period lord judges one life matter at planet / star / sub level (natural significator included)."""
+    _, _, good, bad, _, _, kind = TOPICS[topic]
+    j = judge_lord(chart, p, good, bad, RISK_RULES.get(topic, {}) if kind == "risk" else None, FACILITATORS.get(topic))
+    if NATURAL.get(topic) == p and VALUE[j["verdict"]] < VALUE["leans good"]:
+        j = {**j, "verdict": "leans good", "note": f"{p} is the natural significator"}
+    return j
+
+
 def predict(chart: dict, topic: str, start: date | None = None, months: int = 24) -> dict:
     if topic not in TOPICS:
         raise ValueError(f"unknown topic: {topic}")
@@ -225,10 +234,7 @@ def predict(chart: dict, topic: str, start: date | None = None, months: int = 24
 
     def lord(p):
         if p not in cache:
-            j = judge_lord(chart, p, good, bad, rule, fac)
-            if NATURAL.get(topic) == p and VALUE[j["verdict"]] < VALUE["leans good"]:
-                j = {**j, "verdict": "leans good", "note": f"{p} is the natural significator"}
-            cache[p] = j
+            cache[p] = lord_verdict(chart, topic, p)
         return cache[p]
     windows = []
     for per in periods_in(chart, start, end):
