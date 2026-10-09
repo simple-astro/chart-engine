@@ -48,6 +48,7 @@ class TodayRequest(BaseModel):
     birth_moon_sign: int = Field(ge=0, le=11)
     maha: str | None = Field(default=None, pattern=GRAHA)
     antar: str | None = Field(default=None, pattern=GRAHA)
+    antar_sign: int | None = Field(default=None, ge=0, le=11)  # natal sign of the Antardasha lord
 
 
 class HoraryRequest(BaseModel):
@@ -118,7 +119,7 @@ def find_muhurat(req: FindRequest) -> dict:
 def today(req: TodayRequest) -> dict:
     try:
         return today_mod.today(req.date, req.lat, req.lon, req.tz_name, req.lagna_sign, req.birth_nakshatra,
-                               req.birth_moon_sign, req.maha, req.antar)
+                               req.birth_moon_sign, req.maha, req.antar, req.antar_sign)
     except Exception as exc:  # bad timezone or polar day without sunrise
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

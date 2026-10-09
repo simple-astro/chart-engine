@@ -56,7 +56,7 @@
   window.renderToday = function (el, d, opt) {
     const t = iso => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: d.tz });
     const day0 = opt.week && opt.week[0], cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-    const li = xs => xs.map(x => `<li>${esc(x)}</li>`).join('');
+    const li = xs => xs.map(x => `<li>${esc(x.text)}<small>${esc(cap(x.why))}</small></li>`).join('');
     const c = d.colour, u = d.upay;
     const best = d.best_times.length ? d.best_times.map(w => `<span><small>${esc(w.label)}</small><b>${t(w.start)} – ${t(w.end)}</b></span>`).join('')
       : '<span><small>Best time</small><b>Keep it routine today</b></span>';
@@ -65,7 +65,7 @@
       <div class="tgrid"><div class="tcol">
         <p class="twhy">${esc(cap(d.rating.why))}.</p>
         ${d.sukh ? `<p class="tsukh"><img src="/static/sun.svg" alt="" width="22" height="22"><span>${esc(d.sukh)}</span></p>` : ''}
-        <div class="dd"><div><h5 class="ok">Do today</h5><ul>${li(d.do)}</ul></div><div><h5 class="bad">Avoid today</h5><ul>${li(d.avoid)}</ul></div></div>
+        <div class="dd tdd"><div><h5 class="ok">Do today</h5><ul>${li(d.do)}</ul></div><div><h5 class="bad">Avoid today</h5><ul>${li(d.avoid)}</ul></div></div>
       </div><div class="tcol">
         <div class="gtimes">${best}<span class="tbad"><small>Rahu Kaal — avoid</small><b>${t(d.rahu_kalam[0])} – ${t(d.rahu_kalam[1])}</b></span></div>
         <div class="tchips">

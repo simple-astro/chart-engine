@@ -28,7 +28,7 @@ def test_today_card_content():
     d = T.today(date(2026, 10, 8), **DELHI, lagna_sign=7, birth_nakshatra=17, birth_moon_sign=7,
                 maha="Venus", antar="Mercury")
     assert d["weekday"] == "Thursday" and d["rating"]["label"] and d["rating"]["why"]
-    assert 1 <= len(d["do"]) <= 3 and 1 <= len(d["avoid"]) <= 3 and d["avoid"][-1].startswith(("Starting new", "Starting"))
+    assert len(d["do"]) == 3 and 1 <= len(d["avoid"]) <= 3 and all(x["text"] and x["why"] for x in d["do"] + d["avoid"])
     assert d["direction"]["avoid"] == "south" and "curd" in d["direction"]["fix"]
     assert d["number"]["value"] == T.NUMBER[d["colour"]["planet"]]
     assert d["upay"]["mantra"] == "Om Gurave Namah" and d["sukh"].startswith("Your Mercury period")
@@ -62,3 +62,25 @@ def test_best_times_never_overlap_rahu_kaal_or_yamaganda():
         for w in d["best_times"]:
             for a, b in (d["rahu_kalam"], d["yamaganda"]):
                 assert not (w["start"] < b and w["end"] > a), (d["date"], w)
+
+
+def test_same_day_reads_differently_for_different_charts():
+    """Friday 2026-10-09, Moon in Virgo. Venus rules the 11th for Sagittarius but the 9th for Aquarius,
+    and Virgo is the 8th house for an Aquarius lagna."""
+    day = date(2026, 10, 9)
+    sag = T.today(day, **DELHI, lagna_sign=8, birth_nakshatra=17, birth_moon_sign=7, antar="Mercury", antar_sign=2)
+    aqu = T.today(day, **DELHI, lagna_sign=10, birth_nakshatra=4, birth_moon_sign=1, antar="Rahu", antar_sign=0)
+    why = lambda d, k: [x["why"] for x in d[k]]
+    assert "Venus rules Friday and your 11th house" in why(sag, "do")
+    assert "your Mercury period works through your 10th house" in why(sag, "do")
+    assert "Venus rules Friday and your 9th house" in why(aqu, "do")
+    assert "your Rahu period works through your 3rd house" in why(aqu, "do")
+    assert "the Moon passes your 8th house today" in why(aqu, "avoid")
+    assert not {x["text"] for x in sag["do"]} & {x["text"] for x in aqu["do"]}
+
+
+def test_moon_in_the_8th_from_lagna_goes_to_avoid():
+    day = date(2026, 10, 9)
+    moon = T.compute_panchang(day, **DELHI).moon_sign_index
+    d = T.today(day, **DELHI, lagna_sign=(moon - 7) % 12, birth_nakshatra=0, birth_moon_sign=(moon + 1) % 12)
+    assert any("8th house" in x["why"] for x in d["avoid"]) and not any("8th house" in x["why"] for x in d["do"])
