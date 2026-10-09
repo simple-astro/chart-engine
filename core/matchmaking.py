@@ -266,13 +266,14 @@ def _doshas(g: dict, b: dict, kootas: dict) -> list[dict]:
 
 
 def marriage_promise(chart: dict) -> dict | None:
-    """KP / Nadi: is marriage promised (7th cusp sub lord), and is separation indicated?"""
+    """KP / Nadi: is marriage promised (7th cusp sub lord)? Separation risk is deliberately left out of
+    match making: it is a one-chart reading, shown only in that person's own Dasha Prediction tab."""
     houses = chart.get("houses") or []
     if len(houses) < 12 or "kp" not in houses[6]:
         return None
-    p, sep = kp_predict.promise(chart, "marriage"), kp_predict.promise(chart, "divorce")
+    p = kp_predict.promise(chart, "marriage")
     return {"verdict": p["verdict"], "cusp_sub_lord": p["cusp_sub_lord"], "star_lord": p["csl_star_lord"],
-            "signifies": p["signifies"], "for": p["for"], "against": p["against"], "separation": sep["verdict"]}
+            "signifies": p["signifies"], "for": p["for"], "against": p["against"]}
 
 
 TIER = {"good": "Good match", "care": "Workable with care", "think": "Think carefully"}
@@ -325,9 +326,6 @@ def _strengths_clashes(kootas: list[dict], doshas: list[dict], mm: dict,
         if p["verdict"] == "not clearly promised":
             bad.insert(0, {"area": "marriage promise", "text": f"Marriage is not clearly promised in the {w}'s chart; "
                            "timing and a careful reading of the 7th house matter more here."})
-        elif p["separation"] == "indicated":
-            bad.append({"area": "staying together", "text": f"The {w}'s chart asks for extra care to keep harmony in "
-                        "marriage; patience and open talk help."})
     if mm["status"] in ("concern", "minor"):
         bad.append({"area": "Mangal dosha", "text": mm["text"]})
     return good[:4], bad[:4]

@@ -138,3 +138,11 @@ def test_overall_verdict_and_promise_on_real_charts(client):
         p = m[side]["promise"]
         assert p["verdict"] in ("promised", "promised with obstacles", "not clearly promised") and p["cusp_sub_lord"]
     assert m["strengths"] or m["clashes"]
+
+
+def test_match_never_carries_a_separation_reading(client):
+    a = client.post("/profiles", json=A).json()["id"]
+    b = client.post("/profiles", json=B).json()["id"]
+    m = client.post("/matchmaking", json={"groom_id": a, "bride_id": b}).json()
+    text = str(m).lower()
+    assert "separation" not in text and "divorce" not in text and "harmony in marriage" not in text
