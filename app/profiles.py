@@ -67,12 +67,9 @@ def get_profile(profile_id: int, request: Request) -> dict:
     return p
 
 
-@router.get("/{profile_id}/transit")
-def transit_overlay(profile_id: int, request: Request, date: str | None = None) -> dict:
+def _transit_day(p: dict, date: str | None):
     from datetime import date as _date, datetime as _dt
     from zoneinfo import ZoneInfo
-    from app import transit_view
-    p = _require(profile_id, request)
     tz = ZoneInfo(p["request"].get("tz_name") or "UTC")
     try:
         day = _date.fromisoformat(date) if date else _dt.now(tz).date()
@@ -80,7 +77,23 @@ def transit_overlay(profile_id: int, request: Request, date: str | None = None) 
         raise HTTPException(status_code=422, detail="date must be YYYY-MM-DD") from exc
     if not 1900 <= day.year <= 2100:
         raise HTTPException(status_code=422, detail="date must be between 1900 and 2100")
-    return transit_view.overlay(p, day)
+    return day
+
+
+@router.get("/{profile_id}/transit")
+def transit_overlay(profile_id: int, request: Request, date: str | None = None) -> dict:
+    from app import transit_view
+    p = _require(profile_id, request)
+    return transit_view.overlay(p, _transit_day(p, date))
+
+
+@router.get("/{profile_id}/transit/events")
+def transit_events(profile_id: int, request: Request, date: str | None = None) -> dict:
+    """Transit significators (planet / star / sub) and the Promise -> Dasha -> Trigger ladder for each life matter."""
+    from app import transit_events as te, transit_view
+    p = _require(profile_id, request)
+    day = _transit_day(p, date)
+    return te.events(p, day, transit_view.overlay(p, day))
 
 
 @router.get("/{profile_id}/kp/{topic}")

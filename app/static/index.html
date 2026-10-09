@@ -401,6 +401,26 @@
   .chart .pn.trd{fill:var(--acc2)}
   .trnotes{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
   .trnotes li{padding:9px 12px;border-radius:10px;background:var(--bg2);border-left:3px solid var(--line);font-size:.88rem;line-height:1.45}
+  .trev{margin:16px 0 6px} .trh small{font:500 .78rem var(--sans);color:var(--mut);margin-left:6px}
+  .evl{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  .ev{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;background:var(--bg2)}
+  .ev.active{border-left-color:var(--ok)} .ev.building{border-left-color:var(--acc)}
+  .ev summary{list-style:none;cursor:pointer;padding:11px 14px;display:grid;gap:6px} .ev summary::-webkit-details-marker{display:none}
+  .evt{display:flex;align-items:center;gap:8px;flex-wrap:wrap} .evt b{font-size:1rem} .evt .badge{margin:0}
+  .evsteps{display:flex;gap:6px;flex-wrap:wrap}
+  .evs{font-size:.74rem;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid var(--line)}
+  .evs.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent)} .evs.no{color:var(--mut)}
+  .evsum{font-size:.9rem;line-height:1.45}
+  .evnat{font-size:.84rem;line-height:1.45;color:var(--mut)} .evs.hint{color:var(--acc);border-color:color-mix(in srgb,var(--acc) 45%,transparent)}
+  .ev.strong{border-left-color:var(--ok)} .ev.open{border-left-color:var(--acc)}
+  .evw{margin:0;padding:0 14px 12px 30px;font-size:.84rem;line-height:1.5} .evw li{margin:3px 0} .evsup{color:var(--mut)}
+  .evrest{font-size:.88rem;margin:10px 0 4px} .evrest span{color:var(--mut)}
+  .badge.mute{opacity:.7}
+  .evchips{margin:4px 0 10px} .evtable td small{display:block;margin-top:2px;white-space:normal} .evtable td{vertical-align:top} .evtable td,.evtable th{white-space:normal} .evtable td:last-child{white-space:nowrap}
+  @media (max-width:600px){.evtable th,.evtable td{padding:7px 4px} .evtable{font-size:.8rem} .evtable i{min-width:14px;padding:0 3px;margin-right:1px}}
+  .evtable i{font-style:normal;display:inline-block;min-width:18px;padding:0 4px;margin:1px 2px 0 0;border-radius:6px;background:var(--soft);text-align:center;font-size:.76rem}
+  .evtable i.hf,.trev .hf,#trsig .hf{color:var(--ok);font-weight:700} .evtable i.ha,#trsig .ha{color:var(--bad);font-weight:700}
+  .evtable .mute{color:var(--mut)}
   .trnotes li.good{border-left-color:var(--ok)} .trnotes li.care{border-left-color:var(--bad)} .trnotes li.neutral{border-left-color:var(--acc)}
   .trtable td,.trtable th{padding:7px 8px;font-size:.86rem;vertical-align:top} .trtable .c{text-align:center}
   .trtable td small{display:block;color:var(--mut);font-size:.72rem} .trtable tr.trdr td:first-child b{color:var(--acc2)}
@@ -811,7 +831,7 @@
 <script src="/static/guide.js?v=7"></script>
 <script src="/static/tools.js?v=2"></script>
 <script src="/static/kptiming.js?v=6"></script>
-<script src="/static/transit.js?v=1"></script>
+<script src="/static/transit.js?v=6"></script>
 <script>
 {const f=window.fetch.bind(window);window.fetch=async(u,o)=>{const r=await f(u,o);if(r.status===401&&String(u).startsWith('/'))location.reload();return r}}
 const $=id=>document.getElementById(id);

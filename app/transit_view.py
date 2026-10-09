@@ -71,7 +71,7 @@ def overlay(profile: dict, day: date, hour: int = 12) -> dict:
         rows.append({
             "planet": p, "sign": g.sign, "sign_index": g.sign_index, "deg": round(g.degrees_in_sign, 2),
             "nakshatra": g.nakshatra, "pada": g.pada, "star_lord": k.star_lord, "sub_lord": k.sub_lord,
-            "retrograde": bool(g.retrograde) and p not in ("Rahu", "Ketu"),
+            "retrograde": bool(g.retrograde) and p not in ("Rahu", "Ketu"), "speed": round(g.speed, 4),
             "h_lagna": _h(g.sign_index, L), "h_moon": _h(g.sign_index, moon_sign),
             "h_bhava": planet_house(g.longitude, cusps), "sav": sav[g.sign_index],
             "over_natal": over, "dasha": role(p) if p in levels else "",
