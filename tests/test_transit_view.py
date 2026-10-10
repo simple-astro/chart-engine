@@ -37,3 +37,17 @@ def test_bad_dates_and_default(pid):
     assert c.get(f"/profiles/{i}/transit?date=2026-13-01").status_code == 422
     assert c.get(f"/profiles/{i}/transit?date=1800-01-01").status_code == 422
     assert c.get(f"/profiles/{i}/transit").json()["planets"]
+
+
+def test_transits_follow_the_viewers_time_zone(pid):
+    client, pid = pid
+    india = client.get(f"/profiles/{pid}/transit?date=2026-10-08").json()
+    canada = client.get(f"/profiles/{pid}/transit?date=2026-10-08&tz=America/Winnipeg").json()
+    assert india["tz"] == "Asia/Kolkata" and canada["tz"] == "America/Winnipeg"
+    moon = lambda d: next(p for p in d["planets"] if p["planet"] == "Moon")
+    # noon in Winnipeg is 10.5 hours after noon in India: the Moon has moved about 5-7 degrees
+    shift = (moon(canada)["sign_index"] * 30 + moon(canada)["deg"]) - (moon(india)["sign_index"] * 30 + moon(india)["deg"])
+    assert 4 < shift % 360 < 8
+    ev = client.get(f"/profiles/{pid}/transit/events?date=2026-10-08&tz=America/Winnipeg")
+    assert ev.status_code == 200
+    assert client.get(f"/profiles/{pid}/transit?tz=Not/AZone").status_code == 422

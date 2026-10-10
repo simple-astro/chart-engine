@@ -384,6 +384,12 @@
   .phav{flex:none}
   @media (max-width:760px){.g2,.dd{grid-template-columns:1fr} .sukh{padding:22px 18px} .sukh h2{font-size:1.7rem} .gcard,.garea{padding:18px}}
   /* transits */
+  .trloc{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:-6px 0 12px;font-size:.88rem;color:var(--mut)} .trloc b{color:var(--ink)}
+  .trlocp{border:1px solid var(--line);border-radius:12px;background:var(--bg2);padding:12px;margin:-4px 0 14px;display:grid;gap:10px}
+  .trlocb{display:flex;gap:8px;flex-wrap:wrap} .trlocp .row{display:flex;gap:8px} .trlocp input{flex:1;min-width:0}
+  .trlocs{display:grid;gap:4px} .trlocs:empty{display:none}
+  .trlocr{text-align:left;border:1px solid var(--line);background:var(--solid);border-radius:10px;padding:8px 10px;cursor:pointer;color:var(--ink);font-size:.9rem}
+  .trlocr:hover{border-color:var(--acc)} .trlocr small{display:block;color:var(--mut);font-size:.74rem}
   .trbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
   .trb{border:1px solid var(--line);background:var(--bg2);border-radius:10px;padding:8px 11px;font-weight:600;font-size:.86rem;color:var(--ink);cursor:pointer;min-width:40px}
   .trb:hover{border-color:var(--acc)} .trb.on{background:linear-gradient(140deg,var(--g1),var(--g2));color:#1a1322;border-color:transparent}
@@ -846,7 +852,7 @@
 <script src="/static/guide.js?v=7"></script>
 <script src="/static/tools.js?v=2"></script>
 <script src="/static/kptiming.js?v=6"></script>
-<script src="/static/transit.js?v=9"></script>
+<script src="/static/transit.js?v=10"></script>
 <script>
 {const f=window.fetch.bind(window);window.fetch=async(u,o)=>{const r=await f(u,o);if(r.status===401&&String(u).startsWith('/'))location.reload();return r}}
 const $=id=>document.getElementById(id);
@@ -1183,11 +1189,16 @@ async function loadMuhurat(force){
 }
 // Times follow where the viewer is: the birthplace by default, or their current location once shared.
 try{const h=JSON.parse(localStorage.getItem('sj_here')||'null');if(h&&isFinite(h.lat)&&isFinite(h.lon)&&h.tz_name)MU.here=h}catch(e){}
-function setHere(h){MU.here=h;try{h?localStorage.setItem('sj_here',JSON.stringify(h)):localStorage.removeItem('sj_here')}catch(e){}}
+function setHere(h){MU.here=h;try{h?localStorage.setItem('sj_here',JSON.stringify(h)):localStorage.removeItem('sj_here')}catch(e){}
+  window.dispatchEvent(new CustomEvent('sj-loc'))}
+const hereName=()=>MU.here?(MU.here.name||'your current location'):((lastReq&&lastReq.place||'').split(',')[0]||'your birthplace');
+// One location setting for the Today card, Muhurat and Transits: where the person is now (default the birthplace).
+window.SJ_LOC={get:()=>MU.here,name:hereName,birthTz:()=>lastReq&&lastReq.tz_name,
+  set:h=>{setHere(h);loadToday();loadMuhurat(true)}};
 async function loadToday(){
   if(!lastReq||!lastChart)return;
   const req=lastReq,c=lastChart,moon=c.grahas.Moon,loc=MU.here||{lat:req.lat,lon:req.lon,tz_name:req.tz_name};
-  const place=MU.here?'your current location':((req.place||'').split(',')[0]||'your birthplace');
+  const place=hereName();
   const now=Date.now(),md=(c.dasha||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end));
   const ad=md&&(md.children||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end));
   const post=(u,b)=>fetch(u,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);return d});
@@ -1221,7 +1232,7 @@ $('guide').addEventListener('click',e=>{
   const g=e.target.closest('[data-goto]');if(g)openTab(g.dataset.goto);
 });
 function paintMuhurat(){
-  const place=MU.here?'your current location':((lastReq.place||'').split(',')[0]||'the birthplace');
+  const place=hereName();
   window.renderMuhurat($('mbody'),MU.data,{sel:MU.sel,today:true,here:!!MU.here,placeName:place});
 }
 $('mbody').addEventListener('click',e=>{

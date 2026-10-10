@@ -67,10 +67,21 @@ def get_profile(profile_id: int, request: Request) -> dict:
     return p
 
 
-def _transit_day(p: dict, date: str | None):
+def _transit_tz(p: dict, tz: str | None) -> str:
+    """The viewer's time zone if given (transits follow where they are now), else the birthplace's."""
+    from zoneinfo import ZoneInfo
+    name = tz or p["request"].get("tz_name") or "UTC"
+    try:
+        ZoneInfo(name)
+    except Exception as exc:  # unknown or malformed zone name
+        raise HTTPException(status_code=422, detail="unknown time zone") from exc
+    return name
+
+
+def _transit_day(p: dict, date: str | None, tz: str | None = None):
     from datetime import date as _date, datetime as _dt
     from zoneinfo import ZoneInfo
-    tz = ZoneInfo(p["request"].get("tz_name") or "UTC")
+    tz = ZoneInfo(_transit_tz(p, tz))
     try:
         day = _date.fromisoformat(date) if date else _dt.now(tz).date()
     except ValueError as exc:
@@ -81,19 +92,19 @@ def _transit_day(p: dict, date: str | None):
 
 
 @router.get("/{profile_id}/transit")
-def transit_overlay(profile_id: int, request: Request, date: str | None = None) -> dict:
+def transit_overlay(profile_id: int, request: Request, date: str | None = None, tz: str | None = None) -> dict:
     from app import transit_view
     p = _require(profile_id, request)
-    return transit_view.overlay(p, _transit_day(p, date))
+    return transit_view.overlay(p, _transit_day(p, date, tz), tz_name=_transit_tz(p, tz))
 
 
 @router.get("/{profile_id}/transit/events")
-def transit_events(profile_id: int, request: Request, date: str | None = None) -> dict:
+def transit_events(profile_id: int, request: Request, date: str | None = None, tz: str | None = None) -> dict:
     """Transit significators (planet / star / sub) and the Promise -> Dasha -> Trigger ladder for each life matter."""
     from app import period_view, transit_events as te, transit_view
     p = _require(profile_id, request)
-    day = _transit_day(p, date)
-    ov = transit_view.overlay(p, day)
+    day = _transit_day(p, date, tz)
+    ov = transit_view.overlay(p, day, tz_name=_transit_tz(p, tz))
     return {**te.events(p, day, ov), "periods": period_view.periods(p["chart"], day, ov["dasha"], ov["planets"])}
 
 

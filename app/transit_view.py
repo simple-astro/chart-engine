@@ -45,9 +45,10 @@ def dasha_on(chart: dict, when: datetime) -> list[dict]:
     return out
 
 
-def overlay(profile: dict, day: date, hour: int = 12) -> dict:
+def overlay(profile: dict, day: date, hour: int = 12, tz_name: str | None = None) -> dict:
+    """Transits at ``hour`` o'clock on ``day`` in ``tz_name`` (where the person is now; default the birthplace)."""
     chart, req = profile["chart"], profile.get("request") or {}
-    tz = ZoneInfo(req.get("tz_name") or "UTC")
+    tz = ZoneInfo(tz_name or req.get("tz_name") or "UTC")
     when = datetime(day.year, day.month, day.day, hour, tzinfo=tz)
     tr = transit_positions(when.astimezone(timezone.utc), chart["meta"].get("ayanamsha", "krishnamurti"),
                            node_type=chart["meta"].get("node_type", "mean"))

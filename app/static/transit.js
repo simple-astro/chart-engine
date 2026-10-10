@@ -14,7 +14,10 @@
 
   window.renderTransit = function (el, profileId, tz) {
     if (profileId == null) { el.innerHTML = '<p class="hint">Save this chart to see transits over it.</p>'; return; }
-    const today = new Intl.DateTimeFormat('en-CA', { timeZone: tz || undefined, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const LOC = window.SJ_LOC || { get: () => null, name: () => 'your birthplace', set: () => {} };
+    const zone = () => (LOC.get() && LOC.get().tz_name) || tz;
+    const todayIn = z => new Intl.DateTimeFormat('en-CA', { timeZone: z || undefined, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    let today = todayIn(zone());
     let day = today, ctrl = null, evTopic = null, lastEv = null;
     el.innerHTML = `<div class="trbar" role="group" aria-label="Choose the transit date">
         <button type="button" class="trb" data-m="-1" title="Back one month">−1M</button>
@@ -23,6 +26,12 @@
         <button type="button" class="trb" data-d="1" title="Forward one day" aria-label="Next day">›</button>
         <button type="button" class="trb" data-m="1" title="Forward one month">+1M</button>
         <button type="button" class="trb trtoday" data-today="1">Today</button>
+      </div>
+      <div class="trloc"><span>📍 Times for <b id="trlocname"></b></span><button type="button" class="linkbtn" id="trlocbtn" aria-expanded="false">Change</button></div>
+      <div class="trlocp" id="trlocp" hidden>
+        <div class="trlocb"><button type="button" class="btn ghost" data-loc="here">Use my current location</button><button type="button" class="btn ghost" data-loc="birth">Birthplace</button></div>
+        <div class="row"><input id="trlocq" placeholder="Or search a city, e.g. Winnipeg" autocomplete="off" aria-label="Search a city"><button type="button" class="btn ghost" data-loc="search">Search</button></div>
+        <div class="trlocs" id="trlocs"></div>
       </div>
       <div id="trbody" aria-live="polite"><p class="hint">Loading the sky…</p></div>`;
     const body = el.querySelector('#trbody'), input = el.querySelector('#trdate');
@@ -34,10 +43,12 @@
       ctrl = new AbortController();
       body.classList.add('loading');
       try {
-        const r = await fetch(`/profiles/${profileId}/transit?date=${day}`, { signal: ctrl.signal });
+        const z = encodeURIComponent(zone() || '');
+        el.querySelector('#trlocname').textContent = LOC.name();
+        const r = await fetch(`/profiles/${profileId}/transit?date=${day}&tz=${z}`, { signal: ctrl.signal });
         const d = await r.json(); if (!r.ok) throw new Error(d.detail || r.statusText);
         paint(d);
-        const re = await fetch(`/profiles/${profileId}/transit/events?date=${day}`, { signal: ctrl.signal });
+        const re = await fetch(`/profiles/${profileId}/transit/events?date=${day}&tz=${z}`, { signal: ctrl.signal });
         const ev = await re.json(); if (!re.ok) throw new Error(ev.detail || re.statusText);
         lastEv = ev; paintPeriods(ev.periods); paintEvents(ev);
       } catch (e) { if (e.name !== 'AbortError') body.innerHTML = `<p class="hint err">Couldn’t load transits: ${esc(e.message)}</p>`; }
@@ -170,6 +181,47 @@
       if (e.target === input) return;
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { day = shift(day, e.key === 'ArrowLeft' ? -1 : 1, 0); load(); }
     });
+    // Location: transits follow where the person is now (shared with the Today card and Muhurat).
+    const locp = el.querySelector('#trlocp'), locs = el.querySelector('#trlocs'), locq = el.querySelector('#trlocq');
+    const locBtn = el.querySelector('#trlocbtn');
+    const closeLoc = () => { locp.hidden = true; locBtn.setAttribute('aria-expanded', 'false'); locs.innerHTML = ''; };
+    async function searchCity() {
+      const q = locq.value.trim(); if (q.length < 2) return;
+      locs.innerHTML = '<p class="hint">Searching…</p>';
+      try {
+        const j = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=en&name=' + encodeURIComponent(q))).json();
+        const list = (j.results || []).filter(p => p.timezone);
+        locs.innerHTML = list.length ? list.map((p, i) => `<button type="button" class="trlocr" data-i="${i}">${esc([p.name, p.admin1, p.country].filter(Boolean).join(', '))}<small>${esc(p.timezone)}</small></button>`).join('')
+          : '<p class="hint">No match — try another spelling.</p>';
+        locs.querySelectorAll('[data-i]').forEach(b => b.onclick = () => {
+          const p = list[+b.dataset.i];
+          LOC.set({ lat: +p.latitude.toFixed(4), lon: +p.longitude.toFixed(4), tz_name: p.timezone, name: [p.name, p.country].filter(Boolean).join(', ') });
+          closeLoc();
+        });
+      } catch (e) { locs.innerHTML = '<p class="hint err">City search is unavailable right now.</p>'; }
+    }
+    locBtn.addEventListener('click', () => { locp.hidden = !locp.hidden; locBtn.setAttribute('aria-expanded', String(!locp.hidden)); if (!locp.hidden) locq.focus(); });
+    locq.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); searchCity(); } });
+    locp.addEventListener('click', e => {
+      const b = e.target.closest('[data-loc]'); if (!b) return;
+      if (b.dataset.loc === 'search') return searchCity();
+      if (b.dataset.loc === 'birth') { LOC.set(null); closeLoc(); return; }
+      if (!navigator.geolocation) { locs.innerHTML = '<p class="hint err">Location is not available in this browser.</p>'; return; }
+      locs.innerHTML = '<p class="hint">Finding you…</p>';
+      navigator.geolocation.getCurrentPosition(p => {
+        LOC.set({ lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), tz_name: Intl.DateTimeFormat().resolvedOptions().timeZone });
+        closeLoc();
+      }, () => { locs.innerHTML = '<p class="hint err">Location was blocked — search a city instead.</p>'; }, { timeout: 10000 });
+    });
+    const gen = el._trGen = (el._trGen || 0) + 1;  // a re-render (another profile) retires this listener
+    const onLoc = () => {
+      if (el._trGen !== gen || !el.isConnected) return window.removeEventListener('sj-loc', onLoc);
+      const wasToday = day === today;
+      today = todayIn(zone());
+      if (wasToday) day = today;
+      load();
+    };
+    window.addEventListener('sj-loc', onLoc);
     load();
   };
 })();
