@@ -17,7 +17,7 @@ INTENTS = ("strengthen", "pacify", "maintain")
 COST = ("free", "low", "medium", "high")
 STATUSES = ("pending_astrologer", "approved", "retired")
 AUDIT_ACTIONS = ("keep", "clean", "donate", "throw", "respectful_disposal")
-DURATIONS = (1, 7, 21, 40, 43)
+DURATIONS = (1, 7, 21, 35, 40, 43)  # 35 = five consecutive weeks
 SLUG = re.compile(r"^[a-z0-9][a-z0-9_-]{1,79}$")
 
 # Never seeded or served: animal parts, wildlife products, anything illegal to own or trade.

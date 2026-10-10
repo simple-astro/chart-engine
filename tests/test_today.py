@@ -31,7 +31,8 @@ def test_today_card_content():
     assert len(d["do"]) == 3 and 1 <= len(d["avoid"]) <= 3 and all(x["text"] and x["why"] for x in d["do"] + d["avoid"])
     assert d["direction"]["avoid"] == "south" and "curd" in d["direction"]["fix"]
     assert d["number"]["value"] == T.NUMBER[d["colour"]["planet"]]
-    assert d["upay"]["mantra"] == "Om Gurave Namah" and d["sukh"].startswith("Your Mercury period")
+    assert d["upay"]["habit"].startswith("Thank a teacher") and "Namah" not in str(d["upay"])  # habits, not japa
+    assert d["sukh"].startswith("Your Mercury period")
     for w in d["best_times"]:
         assert w["start"] < w["end"] and not (w["start"] < d["rahu_kalam"][1] and w["end"] > d["rahu_kalam"][0])
 
@@ -51,7 +52,7 @@ def client(tmp_path, monkeypatch):
 def test_endpoint(client):
     body = dict(date="2026-10-08", **DELHI, lagna_sign=7, birth_nakshatra=17, birth_moon_sign=7, antar="Mercury")
     r = client.post("/today", json=body)
-    assert r.status_code == 200 and r.json()["upay"]["mantra"]
+    assert r.status_code == 200 and r.json()["upay"]["habit"]
     assert client.post("/today", json={**body, "antar": "Pluto"}).status_code == 422
     assert client.post("/today", json={**body, "tz_name": "Nowhere/City"}).status_code == 422
 

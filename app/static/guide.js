@@ -73,7 +73,7 @@
           <div title="Traditional number of ${esc(d.number.planet)}"><small>Number</small><b>${d.number.value}</b><em>${esc(d.number.planet)}</em></div>
           <div><small>Travel</small><b>Not ${esc(d.direction.avoid)}</b><em>if you must: ${esc(d.direction.fix)}</em></div>
         </div>
-        <div class="tup"><small>Today’s upay</small><p>Chant <b>${esc(u.mantra)}</b> 108 times, or donate ${esc(u.daan)}.</p><em>${esc(u.why)}.</em></div>
+        <div class="tup"><small>Today’s upay</small><p><b>${esc(u.habit)}.</b> If you can, also give ${esc(u.daan)}.</p><em>${esc(u.why)}.</em></div>
       </div></div>
       <div class="tfoot"><small class="hint">Times for ${esc(opt.place)}. Colour, number and direction are traditional associations, not promises.</small>
         <button type="button" class="linkbtn" id="tloc">${opt.here ? 'Use birthplace times' : 'Use my current location'}</button></div>

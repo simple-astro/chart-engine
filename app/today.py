@@ -5,7 +5,7 @@ Everything is traditional and personalised only through the native's own chart:
 - functional benefics/malefics by lagna: lords of 1, 5, 9 (and a yogakaraka) help, lords of 6, 8, 12 that own
   no trikona do not — used to pick the colour, number and the best hora;
 - the running Mahadasha / Antardasha lords;
-- the weekday lord's traditional work, colour, number, mantra and daan, and Disha Shool.
+- the weekday lord's traditional work, colour, number, daily habit and daan, and Disha Shool.
 Hora (planetary hour) runs from sunrise in the Chaldean order, starting with the weekday lord.
 """
 from __future__ import annotations
@@ -23,9 +23,14 @@ COLOUR = {"Sun": ("orange or saffron", "#e8892b"), "Moon": ("white or silver", "
           "Mercury": ("green", "#2f9e5b"), "Jupiter": ("yellow", "#e7b928"), "Venus": ("white or light pink", "#f4c6d0"),
           "Saturn": ("dark blue or black", "#22325c")}
 NUMBER = {"Sun": 1, "Moon": 2, "Jupiter": 3, "Mercury": 5, "Venus": 6, "Saturn": 8, "Mars": 9}
-MANTRA = {"Sun": "Om Suryaya Namah", "Moon": "Om Chandraya Namah", "Mars": "Om Mangalaya Namah",
-          "Mercury": "Om Budhaya Namah", "Jupiter": "Om Gurave Namah", "Venus": "Om Shukraya Namah",
-          "Saturn": "Om Shanaye Namah"}
+# Today's upay is a habit people actually keep (the product leads with conduct and service, not mantra japa).
+HABIT = {"Sun": "Offer water to the rising Sun and seek your father's or a senior's blessing",
+         "Moon": "Call or help your mother, and keep the evening calm and screen-free",
+         "Mars": "Move your body for 20 minutes, hold your temper, and help a brother or sibling",
+         "Mercury": "Keep every promise today, speak kindly, and check in on a sister or daughter",
+         "Jupiter": "Thank a teacher or elder, and apply a small turmeric or saffron tilak",
+         "Venus": "Wear clean, fresh clothes and do one thoughtful thing for your partner",
+         "Saturn": "Help a worker or someone elderly, and finish one pending task"}
 DAAN = {"Sun": "wheat or jaggery", "Moon": "rice or milk", "Mars": "red lentils (masoor)", "Mercury": "green moong",
         "Jupiter": "chana dal, turmeric or bananas", "Venus": "white sweets or curd", "Saturn": "black sesame or mustard oil"}
 # Disha Shool: what to eat or do before setting out if the journey can't wait.
@@ -281,7 +286,7 @@ def today(day: date, lat: float, lon: float, tz_name: str, lagna_sign: int, birt
     hs = horas(p, nxt.sunrise)
     dl = [x for x in (maha, antar) if x]
     upay_planet = next((x for x in dl[::-1] if x == lord), lord)
-    upay = {"planet": upay_planet, "mantra": MANTRA[upay_planet], "daan": DAAN[upay_planet],
+    upay = {"planet": upay_planet, "habit": HABIT[upay_planet], "daan": DAAN[upay_planet],
             "why": (f"{lord} rules today and also runs your {'Antardasha' if lord == antar else 'Mahadasha'}"
                     if lord in dl else f"{lord} rules {p.weekday}")}
     line = DASHA_LINE.get(antar or maha or "", "")

@@ -12,15 +12,15 @@ from core.yogas import neecha_bhanga
 
 EXALT = {"Sun": 0, "Moon": 1, "Mars": 9, "Mercury": 5, "Jupiter": 3, "Venus": 11, "Saturn": 6}
 REMEDY = {
-    "Sun": "Offer water to the rising Sun and respect your father and seniors; chant “Om Suryaya Namah” on Sundays.",
-    "Moon": "Respect your mother, keep a calm routine, and donate milk or rice on Mondays; chant “Om Chandraya Namah”.",
-    "Mars": "Exercise, control anger and visit Hanuman ji on Tuesdays; chant “Om Mangalaya Namah”.",
-    "Mercury": "Read, learn and keep promises; feed green fodder to cows on Wednesdays; chant “Om Budhaya Namah”.",
-    "Jupiter": "Respect teachers and elders and donate yellow items or turmeric on Thursdays; chant “Om Gurave Namah”.",
-    "Venus": "Respect women, keep your home clean and beautiful, and donate white sweets on Fridays; chant “Om Shukraya Namah”.",
-    "Saturn": "Be fair to workers and the poor, stay disciplined, and donate black sesame or mustard oil on Saturdays; chant “Om Shanaye Namah”.",
-    "Rahu": "Avoid shortcuts and intoxicants and feed birds or dogs; chant “Om Rahave Namah” on Saturdays.",
-    "Ketu": "Meditate, support spiritual causes and feed dogs; chant “Om Ketave Namah”.",
+    "Sun": "Offer water to the rising Sun and respect your father and seniors.",
+    "Moon": "Respect your mother, keep a calm routine, and donate milk or rice on Mondays.",
+    "Mars": "Exercise, control anger and visit Hanuman ji on Tuesdays.",
+    "Mercury": "Read, learn and keep promises; feed green fodder to cows on Wednesdays.",
+    "Jupiter": "Respect teachers and elders and donate yellow items or turmeric on Thursdays.",
+    "Venus": "Respect women, keep your home clean and beautiful, and donate white sweets on Fridays.",
+    "Saturn": "Be fair to workers and the poor, stay disciplined, and donate black sesame or mustard oil on Saturdays.",
+    "Rahu": "Avoid shortcuts and intoxicants and feed birds or dogs.",
+    "Ketu": "Meditate, support spiritual causes and feed dogs.",
 }
 GIFT = {"Sun": "confidence and recognition", "Moon": "emotional warmth and popularity", "Mars": "energy and courage",
         "Mercury": "intelligence and business sense", "Jupiter": "growth, wisdom and protection",

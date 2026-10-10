@@ -61,7 +61,8 @@ def test_private_seed_passes_every_content_rule():
     assert kinds == {"graha", "remedy", "rule", "rin", "home_audit"}
     assert {it["planet"] for it in items if it["kind"] == "graha"} == {
         "Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"}
-    assert all(it.get("review_status", "pending_astrologer") == "pending_astrologer" for it in items)
+    # the seed never pre-approves anything; retired items (e.g. mantra japa) are kept but never served
+    assert {it.get("review_status", "pending_astrologer") for it in items} <= {"pending_astrologer", "retired"}
 
 
 @pytest.fixture

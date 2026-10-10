@@ -134,15 +134,15 @@
     Ketu: 'A time of letting go and looking within: research, spirituality and detachment. Sudden breaks can open better paths.',
   };
   const REMEDY = {
-    Sun: 'Offer water to the rising Sun, respect your father and seniors; mantra “Om Suryaya Namah” on Sundays.',
-    Moon: 'Respect your mother, keep a calm routine, donate milk or rice on Mondays; mantra “Om Chandraya Namah”.',
-    Mars: 'Practise sport or physical work, control anger, visit Hanuman ji on Tuesdays; mantra “Om Mangalaya Namah”.',
-    Mercury: 'Read, learn and keep promises, feed green fodder to cows on Wednesdays; mantra “Om Budhaya Namah”.',
-    Jupiter: 'Respect teachers and elders, donate yellow items or turmeric on Thursdays; mantra “Om Gurave Namah”.',
-    Venus: 'Respect women, keep yourself and home clean and beautiful, donate white sweets on Fridays; mantra “Om Shukraya Namah”.',
-    Saturn: 'Be fair to workers and the poor, stay disciplined, donate black sesame or mustard oil on Saturdays; mantra “Om Shanaye Namah”.',
-    Rahu: 'Avoid shortcuts and intoxicants, feed birds or dogs, mantra “Om Rahave Namah” on Saturdays.',
-    Ketu: 'Meditate, help spiritual causes, feed dogs; mantra “Om Ketave Namah” on Tuesdays or Saturdays.',
+    Sun: 'Offer water to the rising Sun, respect your father and seniors.',
+    Moon: 'Respect your mother, keep a calm routine, donate milk or rice on Mondays.',
+    Mars: 'Practise sport or physical work, control anger, visit Hanuman ji on Tuesdays.',
+    Mercury: 'Read, learn and keep promises, feed green fodder to cows on Wednesdays.',
+    Jupiter: 'Respect teachers and elders, donate yellow items or turmeric on Thursdays.',
+    Venus: 'Respect women, keep yourself and home clean and beautiful, donate white sweets on Fridays.',
+    Saturn: 'Be fair to workers and the poor, stay disciplined, donate black sesame or mustard oil on Saturdays.',
+    Rahu: 'Avoid shortcuts and intoxicants, and feed birds or dogs on Saturdays.',
+    Ketu: 'Meditate, help spiritual causes, feed dogs.',
   };
   const LUCK = {
     Sun: { num: 1, day: 'Sunday', color: 'orange, gold', gem: 'Ruby (Manik)', wear: 'ring finger, in gold, on a Sunday morning' },

@@ -49,8 +49,9 @@ SYSTEM = (
     "day, call get_event_days and give only the dates it returns, clearly as possible days, not certainties — the "
     "window is reliable, the exact day is not (it needs a birth time accurate to the minute). A RISK reading (illness, "
     "accident, dispute, separation, career loss) is a period to take care in, never a certainty: say so gently, "
-    "never alarm, and pair it with practical steps and an upay. For upay follow remedy_guide: mantras and daan on the "
-    "planet's own day, and gemstones only from suitable_stones. "
+    "never alarm, and pair it with practical steps and an upay. For upay follow remedy_guide: lead with practical "
+    "habits, conduct, seva and daan on the planet's own day (people rarely keep up mantra japa, so suggest a mantra "
+    "only if they ask for one, and never a japa count), and gemstones only from suitable_stones. "
     "For questions about the "
     "present or future, call the tools (transits, transit events, panchang, dasha detail, divisional charts, "
     "Lal Kitab kundli) instead of guessing positions. For any day or muhurat question call get_panchang and give "
@@ -179,7 +180,7 @@ def day_guide(profile: dict, d: date) -> dict:
             "colours_to_avoid": [f"{c['name']} — {c['why']}" for c in col["avoid_list"]],
             "lucky_number": g["number"]["value"],
             "travel": f"avoid travelling {g['direction']['avoid']}; if you must, {g['direction']['fix']}",
-            "upay": f"{g['upay']['mantra']} (108 times) or donate {g['upay']['daan']} — {g['upay']['why']}",
+            "upay": f"{g['upay']['habit']}; if they can, give {g['upay']['daan']} — {g['upay']['why']}",
             "sukh_line": g["sukh"]},
     }
 

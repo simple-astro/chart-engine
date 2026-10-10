@@ -197,7 +197,7 @@ def build(profile: dict, now: datetime | None = None) -> dict:
         "suitable_stones": {p: STONE[p] for p in good_lords},
         "avoid_stones": {p: STONE[p] for p in dict.fromkeys(lord_of(h) for h in (6, 8, 12)) if p not in good_lords},
         "planet_days": DAY,
-        "rule": "Prefer free upay (mantra, daan, service, fasting on the planet's day). Suggest a stone only from "
+        "rule": "Prefer free, practical upay: daily habits, conduct, seva and daan on the planet's day; a mantra only if asked. Suggest a stone only from "
                 "suitable_stones, never from avoid_stones, and advise a trial and consultation before buying.",
     }
     d9 = {p: v["sign_index"] for p, v in c["vargas"].get("D9", {}).items()}
