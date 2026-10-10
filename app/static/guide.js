@@ -17,7 +17,8 @@
   };
   const ic = k => `<svg class="gico" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 
-  window.renderGuide = function (el, g, who) {
+  // el: the My Life screen (Sukh's summary + life areas); remEl: the Remedies screen.
+  window.renderGuide = function (el, g, who, remEl) {
     const first = esc((who || '').trim().split(' ')[0] || 'friend');
     const p = g.period;
     const hero = `<section class="card sukh">
@@ -31,8 +32,6 @@
         <div class="cta"><button type="button" class="btn" data-ask="">Ask Sukh anything</button>
           <button type="button" class="btn ghost" data-goto="muhurat">Good days this week</button></div>
       </section>`;
-
-    const today = `<section class="card gcard" id="gtoday"><h3>Today for you</h3><div class="hint">Checking today’s panchang…</div></section>`;
 
     const rem = `<section class="card gcard"><h3>Your remedies <small>upay</small></h3>
         <ol class="grem">${g.remedies.map(r => `<li><b>${esc(r.title)}</b><p>${esc(r.text)}</p><small>${esc(r.why)}</small></li>`).join('')}</ol>
@@ -49,8 +48,8 @@
         <div class="gup"><b>Upay</b><p>${esc(a.remedy.text)}</p><small>Why: ${esc(a.remedy.why)}.</small></div>
       </article>`).join('');
 
-    el.innerHTML = hero + `${today}${rem}
-      <h3 class="gh">Plan &amp; decide</h3><div class="g2" id="gtools"></div><h3 class="gh">Your life areas</h3><div class="ggrid">${areas}</div>`;
+    el.innerHTML = hero + `<h3 class="gh">Your life areas</h3><div class="ggrid">${areas}</div>`;
+    if (remEl) remEl.innerHTML = rem;
   };
 
   window.renderToday = function (el, d, opt) {
