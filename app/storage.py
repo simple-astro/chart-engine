@@ -68,6 +68,16 @@ def _connect() -> sqlite3.Connection:
         cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
         if col not in cols:
             conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT")
+    # The remedy library: reviewable JSON documents (app/remedies). Curated content lives here, not in the repo.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS remedy_items ("
+        " kind TEXT NOT NULL, slug TEXT NOT NULL, data TEXT NOT NULL,"
+        " review_status TEXT NOT NULL DEFAULT 'pending_astrologer', version INTEGER NOT NULL DEFAULT 1,"
+        " updated_at TEXT NOT NULL, PRIMARY KEY (kind, slug))"
+    )
+    if "daily_limit" not in {r["name"] for r in conn.execute("PRAGMA table_info(access_codes)")}:
+        # Questions per day for each tester on this code; NULL = the default from Settings.
+        conn.execute("ALTER TABLE access_codes ADD COLUMN daily_limit INTEGER")
     return conn
 
 
@@ -290,8 +300,10 @@ def _now() -> str:
 def list_codes() -> list[dict]:
     with _lock, _connect() as conn:
         rows = conn.execute(
-            "SELECT c.*, (SELECT COUNT(*) FROM owner_codes o WHERE o.code_id = c.id) testers"
-            " FROM access_codes c ORDER BY c.id DESC").fetchall()
+            "SELECT c.*, (SELECT COUNT(*) FROM owner_codes o WHERE o.code_id = c.id) testers,"
+            " (SELECT COUNT(*) FROM usage_log u JOIN owner_codes o ON o.owner = u.owner"
+            "  WHERE o.code_id = c.id AND u.kind = 'llm' AND substr(u.ts, 1, 10) = ?) asked_today"
+            " FROM access_codes c ORDER BY c.id DESC", (datetime.now(timezone.utc).date().isoformat(),)).fetchall()
     return [dict(r) | {"active": bool(r["active"])} for r in rows]
 
 
@@ -301,11 +313,17 @@ def add_code(code: str, label: str) -> dict:
         cur = conn.execute("INSERT INTO access_codes (code, label, created_at) VALUES (?, ?, ?)",
                            (code, label, _now()))
         r = conn.execute("SELECT * FROM access_codes WHERE id = ?", (cur.lastrowid,)).fetchone()
-    return dict(r) | {"active": bool(r["active"]), "testers": 0}
+    return dict(r) | {"active": bool(r["active"]), "testers": 0, "asked_today": 0}
 
 
-def update_code(code_id: int, *, active: bool | None = None, label: str | None = None) -> bool:
+_UNSET = object()
+
+
+def update_code(code_id: int, *, active: bool | None = None, label: str | None = None, daily_limit=_UNSET) -> bool:
+    """daily_limit: an int, or None to fall back to the default; leave it out to keep it unchanged."""
     sets, args = [], []
+    if daily_limit is not _UNSET:
+        sets.append("daily_limit = ?"); args.append(daily_limit)
     if active is not None:
         sets.append("active = ?"); args.append(int(active))
     if label is not None:
@@ -335,6 +353,16 @@ def note_code_login(code_id: int, owner: str) -> None:
     with _lock, _connect() as conn:
         conn.execute("UPDATE access_codes SET uses = uses + 1, last_used = ? WHERE id = ?", (_now(), code_id))
         conn.execute("INSERT OR REPLACE INTO owner_codes (owner, code_id) VALUES (?, ?)", (owner, code_id))
+
+
+def owner_daily_limit(owner: str | None) -> int | None:
+    """The questions-per-day limit set on the code this tester signed in with, or None for the default."""
+    if owner is None:
+        return None
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT c.daily_limit FROM owner_codes o JOIN access_codes c ON c.id = o.code_id"
+                         " WHERE o.owner = ?", (owner,)).fetchone()
+    return r["daily_limit"] if r else None
 
 
 def owner_code_labels() -> dict[str, str]:

@@ -69,7 +69,7 @@
       </div><div class="tcol">
         <div class="gtimes">${best}<span class="tbad"><small>Rahu Kaal — avoid</small><b>${t(d.rahu_kalam[0])} – ${t(d.rahu_kalam[1])}</b></span></div>
         <div class="tchips">
-          <div title="${esc(c.why)}"><small>Wear</small><b><i class="tsw" style="background:${c.hex}"></i>${esc(cap(c.name))}</b>${c.avoid ? `<em>avoid ${esc(c.avoid)}</em>` : ''}</div>
+          <div title="${esc(c.why)}"><small>Wear</small><b><i class="tsw" style="background:${c.hex}"></i>${esc(cap(c.name))}</b>${(c.avoid_list || []).length ? `<em>avoid ${esc(c.avoid_list.map(x => x.name).join(', '))}</em>` : ''}</div>
           <div title="Traditional number of ${esc(d.number.planet)}"><small>Number</small><b>${d.number.value}</b><em>${esc(d.number.planet)}</em></div>
           <div><small>Travel</small><b>Not ${esc(d.direction.avoid)}</b><em>if you must: ${esc(d.direction.fix)}</em></div>
         </div>

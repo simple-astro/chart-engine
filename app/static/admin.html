@@ -96,6 +96,9 @@
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86rem;letter-spacing:.3px}
   .tag.on{border-color:transparent;background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
   .tag.off{color:var(--mut)}
+  td.lim{white-space:nowrap} td.lim small{display:block;color:var(--mut);font-size:.74rem;margin-top:2px;white-space:normal}
+  td.lim .sbtn{margin-left:6px;padding:3px 8px} .limedit{display:inline-flex;gap:6px;align-items:center}
+  .limedit input{width:76px;padding:5px 8px}
   tr.paused td:not(:last-child){opacity:.55}
   tr.fresh td{background:var(--soft)}
   .acts{display:grid;grid-template-columns:auto auto;gap:6px;justify-content:end}
@@ -104,6 +107,34 @@
   .sbtn.danger:hover,.sbtn.danger.arm{border-color:var(--bad);color:var(--bad)}
   .sbtn.arm{font-weight:600}
 
+  /* compare models */
+  .cmpform{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;align-items:end;margin-bottom:10px}
+  .cmpq{grid-column:1/3} .cmpgo{grid-column:3}
+  .cmpres{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .cmpcard{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--bg2);min-width:0}
+  .cmpcard h3{margin:0 0 4px;font-size:1rem} .cmpmeta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .cmpans{white-space:pre-wrap;font-size:.9rem;line-height:1.5}
+  .cmpfc{font-size:.82rem;margin-top:8px;border-top:1px solid var(--line);padding-top:8px} .cmpfc ul{margin:4px 0;padding-left:18px}
+  @media(max-width:760px){.cmpform,.cmpres{grid-template-columns:1fr} .cmpq,.cmpgo{grid-column:auto}}
+  /* remedy library */
+  .rlcounts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .rlcounts span{border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:.82rem;background:var(--bg2)}
+  .rlcounts b{color:var(--acc)}
+  .rlimp{margin-bottom:14px} .rlimp summary{cursor:pointer;font-weight:600;font-size:.9rem;margin-bottom:8px}
+  .rlimp textarea,.rlitem textarea{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;font:.82rem ui-monospace,Menlo,monospace;background:var(--bg2);color:var(--ink);margin-top:8px}
+  .rlrow{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}
+  .rlfilters{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:8px}
+  .rlbtns{display:flex;gap:6px}
+  .rllist{display:grid;gap:8px;margin-top:8px}
+  .rlitem{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg2)}
+  .rlhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;cursor:pointer}
+  .rlhead b{flex:1;min-width:160px;font-size:.92rem}
+  .rlhead small{color:var(--mut);font-size:.76rem}
+  .tag.pend{color:var(--cmb,#b7791f)} .tag.retired{color:var(--mut)}
+  .rlbody{margin-top:8px;font-size:.86rem;line-height:1.5} .rlbody ul{margin:4px 0;padding-left:18px}
+  .rlbody .k{color:var(--mut);font-size:.76rem;text-transform:uppercase;letter-spacing:.6px;display:block;margin-top:6px}
+  .rlacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  @media(max-width:700px){.rlfilters{grid-template-columns:1fr 1fr} .rlbtns{grid-column:1/-1}}
   @media(max-width:980px){form.newcode{grid-template-columns:1fr 1fr} form.newcode .go{grid-column:1/-1}}
   @media(max-width:560px){form.newcode{grid-template-columns:1fr}}
   @media(max-width:900px){
@@ -150,6 +181,20 @@
     </form>
   </section>
 
+  <section class="card" id="cmp">
+    <h2>Compare models</h2>
+    <p class="sub">Ask one question about a saved chart to two models at once. Both answers go through the same fact check against the chart. Nothing is saved to that person's chat, and comparisons don't use up their daily questions; the cost is logged as "Model comparison".</p>
+    <div class="cmpform">
+      <div><label for="cmp-profile">Chart</label><select id="cmp-profile"></select></div>
+      <div><label for="cmp-a">Model A</label><select id="cmp-a"></select></div>
+      <div><label for="cmp-b">Model B</label><select id="cmp-b"></select></div>
+      <div class="cmpq"><label for="cmp-q">Question</label><input id="cmp-q" maxlength="2000" placeholder="e.g. Check my muhurat for tomorrow — what should I wear?"></div>
+      <div class="cmpgo"><button class="btn" type="button" id="cmp-run">Compare</button></div>
+    </div>
+    <span class="status" id="cmp-st" role="status"></span>
+    <div class="cmpres" id="cmp-res"></div>
+  </section>
+
   <section class="card">
     <h2>Access codes</h2>
     <p class="sub">Give each person or group their own code. You'll see who is using the app, and pausing a code signs those testers out straight away.</p>
@@ -161,10 +206,30 @@
       <span class="status" id="c-status" role="status"></span>
     </form>
     <div class="scroll"><table class="codes">
-      <thead><tr><th>For</th><th>Code</th><th>Status</th><th class="num">Testers</th><th class="num">Sign-ins</th><th>Last used</th><th></th></tr></thead>
-      <tbody id="codes"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+      <thead><tr><th>For</th><th>Code</th><th>Status</th><th class="num">Testers</th><th class="num">Sign-ins</th><th>Questions / day</th><th>Last used</th><th></th></tr></thead>
+      <tbody id="codes"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
     </table></div>
     <p class="help" id="c-env" hidden></p>
+  </section>
+
+  <section class="card" id="rl">
+    <h2>Remedies library</h2>
+    <p class="sub">The curated remedies, rules and correspondences. Users only see <b>approved</b> items. Import the private seed file, review each item, then approve it. Editing an item sends it back for review.</p>
+    <div class="rlcounts" id="rl-counts"></div>
+    <details class="rlimp"><summary>Import or update from a file</summary>
+      <p class="help">Paste the contents of <span class="mono">remedies_seed.yaml</span> (or JSON), or choose the file. Everything is checked first; if any item breaks a content rule, nothing is imported.</p>
+      <input type="file" id="rl-file" accept=".yaml,.yml,.json,text/yaml,application/json">
+      <textarea id="rl-text" rows="6" placeholder="items:&#10;  - kind: remedy&#10;    slug: …"></textarea>
+      <div class="rlrow"><button class="btn" type="button" id="rl-import">Import</button><span class="status" id="rl-imst" role="status"></span></div>
+    </details>
+    <div class="rlfilters">
+      <div><label for="rl-kind">Show</label><select id="rl-kind"><option value="">Everything</option><option value="remedy">Remedies</option><option value="graha">Planet correspondences</option><option value="rule">Prohibition rules</option><option value="rin">Rin (debts)</option><option value="home_audit">Home audit</option></select></div>
+      <div><label for="rl-status">Status</label><select id="rl-status"><option value="pending_astrologer">Waiting for review</option><option value="approved">Approved</option><option value="retired">Retired</option><option value="">All</option></select></div>
+      <div><label for="rl-planet">Planet</label><select id="rl-planet"><option value="">All planets</option></select></div>
+      <div class="rlbtns"><button class="sbtn" type="button" id="rl-export">Export</button><button class="sbtn" type="button" id="rl-approve-all" hidden>Approve all shown</button></div>
+    </div>
+    <span class="status" id="rl-st" role="status"></span>
+    <div id="rl-list" class="rllist"><p class="empty">Loading…</p></div>
   </section>
 
   <section class="card">
@@ -194,7 +259,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const compact = n => n >= 1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M' : n >= 1e4 ? (n/1e3).toFixed(0) + 'K' : n >= 1e3 ? (n/1e3).toFixed(1).replace(/\.0$/,'') + 'K' : String(n);
 const money = v => v == null ? '–' : v === 0 ? '$0' : v < 0.01 ? '$' + v.toFixed(4) : v < 100 ? '$' + v.toFixed(2) : '$' + Math.round(v).toLocaleString();
 const when = ts => ts ? new Date(ts).toLocaleString(undefined, {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : '–';
-const SOURCE = {llm: ['AI answer', 'ai'], cache: ['Reused answer', ''], lookup: ['Chart lookup', '']};
+const SOURCE = {llm: ['AI answer', 'ai'], cache: ['Reused answer', ''], lookup: ['Chart lookup', ''], compare: ['Model comparison', '']};
 let models = {}, rows = [], oldest = null;
 
 async function api(path, opts) {
@@ -222,10 +287,11 @@ function renderOverview(o) {
   $('k-active').textContent = `${active} asked something today`;
   $('k-charts').textContent = o.charts.toLocaleString();
 
+  providers = o.providers || {};
   const sel = $('s-model');
-  sel.innerHTML = Object.entries(models).map(([id, m]) =>
-    `<option value="${esc(id)}">${esc(m.label)}</option>`).join('');
+  sel.innerHTML = modelOptions(s.model);
   sel.value = s.model; showModelHelp();
+  fillCompare();
   $('s-words').value = s.word_limit; $('s-per').value = s.daily_limit_per_tester; $('s-total').value = s.daily_limit_total; $('s-tg').value = s.telegram_daily_limit;
 
   $('testers').innerHTML = o.testers.length ? o.testers.map(t => `<tr>
@@ -237,7 +303,21 @@ function renderOverview(o) {
     : '<tr><td colspan="5" class="empty">No testers yet. Share the access code to get started.</td></tr>';
 }
 
-function showModelHelp() { const m = models[$('s-model').value]; $('s-model-help').textContent = m ? `${m.note}. $${m.in} in / $${m.out} out per million tokens.` : ''; }
+// Models grouped by provider; a provider without its API key in Railway can't be chosen yet.
+let providers = {};
+function modelOptions(current) {
+  const by = {};
+  Object.entries(models).forEach(([id, m]) => (by[m.provider] = by[m.provider] || []).push([id, m]));
+  return Object.entries(by).map(([prov, list]) => {
+    const p = providers[prov] || {label: prov, ready: true}, off = !p.ready;
+    return `<optgroup label="${esc(p.label)}${off ? ` — add ${esc(p.env)} in Railway` : ''}">${list.map(([id, m]) =>
+      `<option value="${esc(id)}"${off && id !== current ? ' disabled' : ''}>${esc(m.label)}${off ? ' (needs key)' : ''}</option>`).join('')}</optgroup>`;
+  }).join('');
+}
+function showModelHelp() {
+  const m = models[$('s-model').value], p = m && providers[m.provider];
+  $('s-model-help').textContent = m ? `${p ? p.label + ' · ' : ''}${m.note}. $${m.in} in / $${m.out} out per million tokens.` : '';
+}
 $('s-model').addEventListener('change', showModelHelp);
 
 function renderQueries() {
@@ -310,7 +390,7 @@ async function loadQueries(reset) {
 $('more').addEventListener('click', () => loadQueries(false));
 
 // ----- access codes -----
-let codes = [], freshId = null;
+let codes = [], freshId = null, defaultLimit = 0, editing = null;
 const invite = c => `You're invited to try SimpleJyotish, a Vedic astrology app.\nOpen ${location.origin} and enter this access code: ${c.code}`;
 async function copy(text, btn, done) {
   try { await navigator.clipboard.writeText(text); } catch (e) {
@@ -324,17 +404,23 @@ function renderCodes() {
       <td class="nowrap"><span class="mono">${esc(c.code)}</span></td>
       <td><span class="tag ${c.active ? 'on' : 'off'}">${c.active ? 'Active' : 'Paused'}</span></td>
       <td class="num" data-k="Testers">${c.testers}</td><td class="num" data-k="Sign-ins">${c.uses}</td>
+      <td class="lim" data-k="Questions / day">${editing === c.id
+        ? `<span class="limedit"><input type="number" min="0" max="1000" step="1" inputmode="numeric" value="${c.daily_limit ?? ''}" placeholder="${defaultLimit}" aria-label="Questions per day for each tester on ${esc(c.label || c.code)}">
+           <button class="sbtn" type="button" data-act="savelim">Save</button><button class="sbtn" type="button" data-act="cancellim">Cancel</button></span>
+           <small>Each tester on this code. Leave empty for the default (${defaultLimit}).</small>`
+        : `<b>${c.daily_limit ?? defaultLimit}</b>${c.daily_limit == null ? ' <span class="opt">default</span>' : ''}
+           <button class="sbtn" type="button" data-act="editlim">Edit</button><small>${c.asked_today} asked today</small>`}</td>
       <td class="nowrap lu" data-k="Last used">${c.last_used ? esc(when(c.last_used)) : '<span style="color:var(--mut)">Not yet</span>'}</td>
       <td><div class="acts">
         <button class="sbtn" type="button" data-act="copy">Copy</button>
         <button class="sbtn" type="button" data-act="invite">Copy invite</button>
         <button class="sbtn" type="button" data-act="toggle">${c.active ? 'Pause' : 'Resume'}</button>
         <button class="sbtn danger" type="button" data-act="delete">Delete</button></div></td></tr>`).join('')
-    : '<tr><td colspan="7" class="empty">No codes yet. Create one above for each person or group you invite.</td></tr>';
+    : '<tr><td colspan="8" class="empty">No codes yet. Create one above for each person or group you invite.</td></tr>';
 }
 async function loadCodes() {
   const d = await api('/admin/api/codes');
-  codes = d.codes; $('c-gate').hidden = d.gated; renderCodes();
+  codes = d.codes; defaultLimit = d.default_limit; $('c-gate').hidden = d.gated; renderCodes();
   $('c-env').hidden = !d.env_codes;
   $('c-env').textContent = `Plus ${d.env_codes} code${d.env_codes > 1 ? 's' : ''} set in Railway (TESTER_ACCESS_CODES). Those are always active and can only be changed in Railway.`;
 }
@@ -349,6 +435,11 @@ $('c-form').addEventListener('submit', async e => {
   } catch (err) { st.className = 'status err'; st.textContent = err.message; }
   $('c-save').disabled = false;
 });
+$('codes').addEventListener('keydown', e => {
+  if (!e.target.closest('.limedit')) return;
+  if (e.key === 'Enter') { e.preventDefault(); e.target.closest('td').querySelector('[data-act="savelim"]').click(); }
+  if (e.key === 'Escape') { editing = null; renderCodes(); }
+});
 $('codes').addEventListener('click', async e => {
   const b = e.target.closest('button[data-act]'); if (!b) return;
   const c = codes.find(x => String(x.id) === b.closest('tr').dataset.id); if (!c) return;
@@ -356,6 +447,18 @@ $('codes').addEventListener('click', async e => {
   try {
     if (b.dataset.act === 'copy') return copy(c.code, b, 'Copied ✓');
     if (b.dataset.act === 'invite') return copy(invite(c), b, 'Copied ✓');
+    if (b.dataset.act === 'editlim') { editing = c.id; renderCodes(); const i = $('codes').querySelector('.limedit input'); i.focus(); i.select(); return; }
+    if (b.dataset.act === 'cancellim') { editing = null; renderCodes(); return; }
+    if (b.dataset.act === 'savelim') {
+      const raw = b.closest('td').querySelector('input').value.trim();
+      const n = raw === '' ? null : Number(raw);
+      if (n !== null && !(Number.isInteger(n) && n >= 0 && n <= 1000)) throw new Error('Questions per day must be a whole number from 0 to 1000, or empty for the default.');
+      await api(`/admin/api/codes/${c.id}`, {method: 'PATCH', headers: {'content-type': 'application/json'}, body: JSON.stringify({daily_limit: n})});
+      editing = null;
+      st.className = 'status ok';
+      st.textContent = n === null ? `${c.label || c.code}: back to the default of ${defaultLimit} questions a day.`
+        : `${c.label || c.code}: each tester can now ask ${n} question${n === 1 ? '' : 's'} a day.`;
+    }
     if (b.dataset.act === 'toggle') {
       await api(`/admin/api/codes/${c.id}`, {method: 'PATCH', headers: {'content-type': 'application/json'}, body: JSON.stringify({active: !c.active})});
       st.textContent = c.active ? `Paused ${c.code}. Its testers are signed out until you resume it.` : `Resumed ${c.code}.`;
@@ -373,8 +476,164 @@ $('codes').addEventListener('click', async e => {
   } catch (err) { st.className = 'status err'; st.textContent = err.message; }
 });
 
+// ----- remedy library -----
+const RL = {items: [], open: null, editing: null};
+const KIND = {remedy: 'Remedy', graha: 'Planet', rule: 'Rule', rin: 'Rin', home_audit: 'Home audit'};
+const STATUS_TAG = {pending_astrologer: ['Waiting for review', 'pend'], approved: ['Approved', 'on'], retired: ['Retired', 'retired']};
+const PLANETS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+$('rl-planet').insertAdjacentHTML('beforeend', PLANETS.map(p => `<option>${p}</option>`).join(''));
+const li = xs => (xs || []).length ? `<ul>${xs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+function rlTitle(i) {
+  if (i.kind === 'remedy') return [i.title, `${i.planet} · ${i.type.replace('_', ' ')} · ${i.source.replace('_', ' ')} · ${i.cost_tier} · ${i.intent.join('/')}`];
+  if (i.kind === 'graha') return [`${i.planet} correspondences`, `${i.weekday || ''} · ${(i.colors || []).join(', ')} · japa ${i.japa_count}`];
+  if (i.kind === 'rule') return [i.reason, `${i.planet} · when ${Object.entries(i.when).map(([k, v]) => k + ' ' + v).join(', ')}`];
+  if (i.kind === 'rin') return [i.name, i.when.any_of.map(c => `${c.planet} in ${c.houses.join('/')}`).join(' · ')];
+  return [i.prompt, `${i.zone} · ${i.planet} · ${i.suggested_action}`];
+}
+function rlBody(i) {
+  const parts = [];
+  const add = (k, v) => { if (v) parts.push(`<span class="k">${k}</span>${v}`); };
+  if (i.kind === 'remedy') {
+    add('Steps', li(i.steps)); add('Why (template)', esc(i.why_template)); add('Materials', esc((i.materials || []).join(', ')));
+    add('Timing', esc(Object.entries(i.timing || {}).filter(([, v]) => v !== null && v !== false).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`).join(' · ')));
+    add('Safety notes', li(i.safety_notes)); add('Light version', esc(i.light_variant)); add('Diaspora alternative', esc(i.diaspora_alternative));
+    add('Substitute', esc(i.substitute)); add('Mantra', esc(i.mantra));
+  } else if (i.kind === 'rule') {
+    add('Blocks', esc(Object.entries(i.blocks).map(([k, v]) => `${k}: ${[].concat(v).join(', ')}`).join(' · '))); add('Instead', esc(i.alternative));
+  } else if (i.kind === 'rin') {
+    add('Remedy', li(i.remedy_steps)); add('Why (template)', esc(i.why_template));
+  } else if (i.kind === 'home_audit') {
+    add('Explanation', esc(i.explanation));
+  } else {
+    add('Colours / metals', esc([...(i.colors || []), ...(i.metals || [])].join(', '))); add('Gem', esc(`${i.gem || ''} (substitutes: ${(i.gem_substitutes || []).join(', ')})`));
+    add('Foods', esc((i.foods || []).join(', '))); add('Relationships', esc((i.relationships || []).join(', '))); add('Beej mantra', esc(`${i.beej_mantra} · ${i.japa_count}`));
+  }
+  add('Note for the astrologer', esc(i.review_note));
+  return parts.join('');
+}
+const rlData = i => Object.fromEntries(Object.entries(i).filter(([k]) => !['kind', 'slug', 'review_status', 'version', 'updated_at'].includes(k)));
+function renderRL() {
+  const k = $('rl-kind').value, st = $('rl-status').value, pl = $('rl-planet').value;
+  const shown = RL.items.filter(i => (!k || i.kind === k) && (!st || i.review_status === st) && (!pl || i.planet === pl));
+  $('rl-approve-all').hidden = !shown.some(i => i.review_status !== 'approved');
+  $('rl-approve-all').textContent = `Approve all shown (${shown.filter(i => i.review_status !== 'approved').length})`;
+  $('rl-list').innerHTML = shown.length ? shown.map(i => {
+    const id = `${i.kind}/${i.slug}`, [t, sub] = rlTitle(i), [sl, sc] = STATUS_TAG[i.review_status];
+    return `<div class="rlitem" data-id="${esc(id)}"><div class="rlhead" data-act="toggle"><span class="tag">${KIND[i.kind]}</span><b>${esc(t)}<br><small>${esc(sub)}</small></b><span class="tag ${sc}">${sl}</span></div>
+      ${RL.open === id ? `<div class="rlbody">${rlBody(i)}
+        ${RL.editing === id ? `<textarea rows="14">${esc(JSON.stringify(rlData(i), null, 2))}</textarea>` : ''}
+        <div class="rlacts">${RL.editing === id ? '<button class="btn" type="button" data-act="save">Save changes</button><button class="sbtn" type="button" data-act="cancel">Cancel</button>'
+          : `${i.review_status !== 'approved' ? '<button class="sbtn" type="button" data-act="approved">Approve</button>' : ''}
+             ${i.review_status !== 'pending_astrologer' ? '<button class="sbtn" type="button" data-act="pending_astrologer">Back to review</button>' : ''}
+             ${i.review_status !== 'retired' ? '<button class="sbtn danger" type="button" data-act="retired">Retire</button>' : ''}
+             <button class="sbtn" type="button" data-act="edit">Edit</button><small style="color:var(--mut)">v${i.version} · ${esc(i.slug)}</small>`}</div></div>` : ''}</div>`;
+  }).join('') : '<p class="empty">Nothing here. Import the seed file above, or change the filters.</p>';
+}
+async function loadRL() {
+  const d = await api('/admin/api/remedies');
+  RL.items = d.items;
+  const tot = s => Object.values(d.counts).reduce((a, c) => a + (c[s] || 0), 0);
+  $('rl-counts').innerHTML = `<span><b>${tot('approved')}</b> approved</span><span><b>${tot('pending_astrologer')}</b> waiting for review</span><span><b>${tot('retired')}</b> retired</span>`
+    + Object.entries(d.counts).map(([k, c]) => `<span>${KIND[k]}: ${c.approved || 0}/${(c.approved || 0) + (c.pending_astrologer || 0)}</span>`).join('');
+  renderRL();
+}
+['rl-kind', 'rl-status', 'rl-planet'].forEach(id => $(id).addEventListener('change', renderRL));
+$('rl-file').addEventListener('change', async e => { const f = e.target.files[0]; if (f) $('rl-text').value = await f.text(); });
+$('rl-import').addEventListener('click', async () => {
+  const st = $('rl-imst'); st.className = 'status'; st.textContent = 'Checking…';
+  try {
+    const r = await api('/admin/api/remedies/import', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({text: $('rl-text').value})});
+    st.className = 'status ok'; st.textContent = `Added ${r.added}, updated ${r.updated}, unchanged ${r.unchanged}. New and changed items wait for review.`;
+    await loadRL();
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+});
+$('rl-export').addEventListener('click', async () => {
+  const d = await api('/admin/api/remedies/export');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], {type: 'application/json'}));
+  a.download = `remedies_export_${new Date().toISOString().slice(0, 10)}.json`; a.click();
+});
+async function rlPatch(i, body) {
+  const r = await api(`/admin/api/remedies/${i.kind}/${encodeURIComponent(i.slug)}`, {method: 'PATCH', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
+  RL.items = RL.items.map(x => x.kind === r.kind && x.slug === r.slug ? r : x);
+  return r;
+}
+$('rl-approve-all').addEventListener('click', async e => {
+  const b = e.target;
+  if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = 'Click again to approve all shown'; setTimeout(() => { if (b.isConnected) { b.classList.remove('arm'); renderRL(); } }, 4000); return; }
+  b.classList.remove('arm');
+  const k = $('rl-kind').value, st = $('rl-status').value, pl = $('rl-planet').value;
+  const todo = RL.items.filter(i => (!k || i.kind === k) && (!st || i.review_status === st) && (!pl || i.planet === pl) && i.review_status !== 'approved');
+  $('rl-st').className = 'status'; $('rl-st').textContent = `Approving ${todo.length}…`;
+  try { for (const i of todo) await rlPatch(i, {review_status: 'approved'}); $('rl-st').className = 'status ok'; $('rl-st').textContent = `Approved ${todo.length}.`; }
+  catch (err) { $('rl-st').className = 'status err'; $('rl-st').textContent = err.message; }
+  await loadRL();
+});
+$('rl-list').addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const card = b.closest('.rlitem'), id = card.dataset.id, i = RL.items.find(x => `${x.kind}/${x.slug}` === id); if (!i) return;
+  const st = $('rl-st'); st.className = 'status';
+  try {
+    if (b.dataset.act === 'toggle') { RL.open = RL.open === id ? null : id; RL.editing = null; return renderRL(); }
+    if (b.dataset.act === 'edit') { RL.editing = id; return renderRL(); }
+    if (b.dataset.act === 'cancel') { RL.editing = null; return renderRL(); }
+    if (b.dataset.act === 'save') {
+      let data; try { data = JSON.parse(card.querySelector('textarea').value); } catch (err) { throw new Error('That is not valid JSON: ' + err.message); }
+      await rlPatch(i, {data}); RL.editing = null;
+      st.className = 'status ok'; st.textContent = `Saved ${i.slug}. It is waiting for review again.`;
+    } else {
+      await rlPatch(i, {review_status: b.dataset.act});
+      st.className = 'status ok'; st.textContent = `${i.slug}: ${STATUS_TAG[b.dataset.act][0].toLowerCase()}.`;
+    }
+    await loadRL();
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+});
+
+// ----- compare models -----
+let cmpProfilesLoaded = false;
+async function fillCompare() {
+  const ready = id => (providers[models[id].provider] || {}).ready;
+  const opts = cur => modelOptions(cur);
+  const a = $('cmp-a'), b = $('cmp-b'), keepA = a.value, keepB = b.value;
+  a.innerHTML = opts(); b.innerHTML = opts();
+  const avail = Object.keys(models).filter(ready);
+  a.value = keepA && ready(keepA) ? keepA : avail[0] || '';
+  b.value = keepB && ready(keepB) ? keepB : avail.find(m => models[m].provider !== models[a.value]?.provider) || avail[1] || avail[0] || '';
+  if (!cmpProfilesLoaded) {
+    try {
+      const ps = await api('/admin/api/profiles');
+      $('cmp-profile').innerHTML = ps.length ? ps.map(p => `<option value="${p.id}">${esc(p.name)} · ${esc(p.dob || '')} · ${esc(p.tester)}</option>`).join('')
+        : '<option value="">No saved charts yet</option>';
+      cmpProfilesLoaded = true;
+    } catch (e) { $('cmp-st').textContent = e.message; }
+  }
+}
+$('cmp-run').addEventListener('click', async () => {
+  const st = $('cmp-st'), btn = $('cmp-run');
+  const ms = [...new Set([$('cmp-a').value, $('cmp-b').value].filter(Boolean))];
+  st.className = 'status'; st.textContent = `Asking ${ms.map(m => models[m].label).join(' and ')}… (this can take up to a minute)`;
+  btn.disabled = true; $('cmp-res').innerHTML = '';
+  try {
+    const d = await api('/admin/api/compare', {method: 'POST', headers: {'content-type': 'application/json'},
+      body: JSON.stringify({profile_id: +$('cmp-profile').value, question: $('cmp-q').value, models: ms})});
+    st.className = 'status ok'; st.textContent = `Answers for ${d.profile.name}.`;
+    $('cmp-res').innerHTML = d.results.map(r => {
+      if (r.error) return `<div class="cmpcard"><h3>${esc(r.label)}</h3><p class="status err">${esc(r.error)}</p></div>`;
+      const fc = r.factcheck || {found: [], removed: []}, u = r.usage;
+      return `<div class="cmpcard"><h3>${esc(r.label)}</h3>
+        <div class="cmpmeta"><span class="tag">${r.seconds}s</span><span class="tag">${money(r.cost)}</span>
+          <span class="tag">${compact(u.input + u.cache_read)} in · ${compact(u.output)} out</span>
+          <span class="tag ${fc.found.length ? 'pend' : 'on'}">${fc.found.length ? `${fc.found.length} fact error${fc.found.length > 1 ? 's' : ''} caught` : 'Fact check clean'}</span>
+          ${r.tools.length ? `<span class="tag">tools: ${esc([...new Set(r.tools)].join(', '))}</span>` : ''}</div>
+        <div class="cmpans">${esc(r.text || '(no answer)')}</div>
+        ${fc.found.length ? `<div class="cmpfc"><b>Caught in the draft</b>${fc.revised ? ' and corrected by a rewrite' : ''}:<ul>${fc.found.map(x => `<li>${esc(x)}</li>`).join('')}</ul>${fc.removed.length ? `<div style="color:var(--bad)">Still wrong, removed: ${fc.removed.map(esc).join(' | ')}</div>` : ''}</div>` : ''}</div>`;
+    }).join('');
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+  btn.disabled = false;
+});
+
 async function loadAll() {
-  try { renderOverview(await api('/admin/api/overview')); await loadCodes(); await loadQueries(true); }
+  try { renderOverview(await api('/admin/api/overview')); await loadCodes(); await loadRL(); await loadQueries(true); }
   catch (e) { $('queries').innerHTML = `<tr><td colspan="7" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
 }
 $('refresh').addEventListener('click', loadAll);

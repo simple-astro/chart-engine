@@ -269,3 +269,29 @@ def test_code_validation_and_admin_only(gated):
     assert t.get("/admin/api/codes").status_code == 403
     assert t.post("/admin/api/codes", json={}).status_code == 403
     assert t.delete("/admin/api/codes/1").status_code == 403
+
+
+def test_questions_per_day_can_be_raised_for_one_code(gated, fake_llm):
+    a = _admin()
+    a.put("/admin/api/settings", json={"daily_limit_per_tester": 1})
+    vip = a.post("/admin/api/codes", json={"label": "Family"}).json()
+    other = a.post("/admin/api/codes", json={"label": "Friends"}).json()
+    assert vip["daily_limit"] is None and a.get("/admin/api/codes").json()["default_limit"] == 1
+    assert a.patch(f"/admin/api/codes/{vip['id']}", json={"daily_limit": 3}).status_code == 200
+    t, _ = _login(vip["code"])
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    for q in ("How is my career?", "And my marriage?", "What about money?"):
+        assert t.post(f"/profiles/{pid}/chat", json={"message": q}).status_code == 200
+    assert t.post(f"/profiles/{pid}/chat", json={"message": "And my health?"}).status_code == 429
+    [row] = [c for c in a.get("/admin/api/codes").json()["codes"] if c["id"] == vip["id"]]
+    assert row["daily_limit"] == 3 and row["asked_today"] == 3
+    o, _ = _login(other["code"])  # other codes keep the default of 1
+    pid2 = o.post("/profiles", json=BODY).json()["id"]
+    assert o.post(f"/profiles/{pid2}/chat", json={"message": "How is my career?"}).status_code == 200
+    assert o.post(f"/profiles/{pid2}/chat", json={"message": "And my marriage?"}).status_code == 429
+    # back to the default, and validation
+    assert a.patch(f"/admin/api/codes/{vip['id']}", json={"daily_limit": None}).status_code == 200
+    assert [c for c in a.get("/admin/api/codes").json()["codes"] if c["id"] == vip["id"]][0]["daily_limit"] is None
+    for bad in (-1, 1001, 2.5, "10", True):
+        assert a.patch(f"/admin/api/codes/{vip['id']}", json={"daily_limit": bad}).status_code == 422
+    assert t.patch(f"/admin/api/codes/{vip['id']}", json={"daily_limit": 99}).status_code == 403

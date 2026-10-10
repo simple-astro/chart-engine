@@ -54,6 +54,22 @@ def timeline(dasha: list[dict], now: datetime, months: int = 24) -> list[dict]:
             for p in flat_periods(md) if p["ends"] > start and p["starts"] < stop]
 
 
+def _place(profile: dict) -> dict:
+    """Where the user is now (their chosen location in the app, else the birthplace) — times are for here."""
+    v, req = profile.get("viewer") or {}, profile.get("request") or {}
+    if v.get("tz_name"):
+        return {"place": v.get("name") or "current location", "time_zone": v["tz_name"]}
+    return {"place": (req.get("place") or "birthplace").split(",")[0], "time_zone": req.get("tz_name") or "UTC"}
+
+
+def _local(profile: dict, now: datetime) -> datetime:
+    from zoneinfo import ZoneInfo
+    try:
+        return now.astimezone(ZoneInfo(_place(profile)["time_zone"]))
+    except Exception:  # an unknown zone name: fall back to UTC rather than fail the chat
+        return now
+
+
 def build(profile: dict, now: datetime | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
     c, req = profile["chart"], profile.get("request") or {}
@@ -188,7 +204,8 @@ def build(profile: dict, now: datetime | None = None) -> dict:
     out = {
         "native": {k: req.get(k) for k in ("name", "dob", "tob", "place") if req.get(k)} | (
             {"birth_time_unknown": "lagna and houses are uncertain; lean on Moon, nakshatra and dasha"} if req.get("tob_unknown") else {}),
-        "today": now.date().isoformat(),
+        "today": _local(profile, now).date().isoformat(),
+        "user_location": _place(profile),
         "lagna": {"sign": SIGNS[L], "lord": lord_of(1), "lord_in_h": house[lord_of(1)], "lord_dignity": dig[lord_of(1)]},
         "moon": {"sign": SIGNS[moon], "nakshatra": g["Moon"]["nakshatra"], "pada": g["Moon"]["pada"],
                  "paksha": "waxing" if waxing else "waning"},

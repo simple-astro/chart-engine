@@ -5,7 +5,7 @@ import json
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app import access, chat, config, storage
 from app.routes import chart as compute_chart
@@ -24,8 +24,27 @@ def usage(request: Request, recent: int = 20) -> dict:
     return storage.usage_summary(max(1, min(recent, 200)))
 
 
+class Here(BaseModel):
+    """Where the user is now (the app's shared location setting): muhurat times and 'today' follow it."""
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    tz_name: str = Field(max_length=64)
+    name: str | None = Field(default=None, max_length=80)
+
+    @field_validator("tz_name")
+    @classmethod
+    def _known_zone(cls, v: str) -> str:
+        from zoneinfo import ZoneInfo
+        try:
+            ZoneInfo(v)
+        except Exception as exc:
+            raise ValueError("unknown time zone") from exc
+        return v
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
+    here: Here | None = None
 
 
 def _owner(request: Request) -> str | None:
@@ -43,8 +62,11 @@ def _check_quota(request: Request) -> None:
     """Daily caps on paid chat turns; active only when the tester gate is on."""
     if not access.enabled():
         return
-    per_tester, total = config.get("daily_limit_per_tester"), config.get("daily_limit_total")
-    if storage.llm_requests_today(_owner(request)) >= per_tester or storage.llm_requests_today() >= total:
+    owner = _owner(request)
+    own = storage.owner_daily_limit(owner)  # set per access code in the admin page; else the default
+    per_tester = own if own is not None else config.get("daily_limit_per_tester")
+    total = config.get("daily_limit_total")
+    if storage.llm_requests_today(owner) >= per_tester or storage.llm_requests_today() >= total:
         raise HTTPException(status_code=429, detail="You've reached today's question limit for the test version. "
                                                     "Please come back tomorrow.")
 
@@ -151,9 +173,13 @@ def chat_history(profile_id: int, request: Request) -> list[dict]:
     return storage.get_messages(profile_id)
 
 
+def _with_here(profile: dict, req: ChatRequest) -> dict:
+    return {**profile, "viewer": req.here.model_dump()} if req.here else profile
+
+
 @router.post("/{profile_id}/chat")
 def chat_send(profile_id: int, req: ChatRequest, request: Request) -> dict:
-    profile = _require(profile_id, request)
+    profile = _with_here(_require(profile_id, request), req)
     _check_quota(request)
     try:
         return chat.chat(profile, req.message)
@@ -166,7 +192,7 @@ def chat_send(profile_id: int, req: ChatRequest, request: Request) -> dict:
 @router.post("/{profile_id}/chat/stream")
 def chat_stream(profile_id: int, req: ChatRequest, request: Request) -> StreamingResponse:
     """Newline-delimited JSON events: status / delta / done / error."""
-    profile = _require(profile_id, request)
+    profile = _with_here(_require(profile_id, request), req)
     _check_quota(request)
 
     def gen():

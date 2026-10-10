@@ -22,6 +22,7 @@ class MuhuratRequest(BaseModel):
     tz_name: str
     birth_nakshatra: int | None = Field(default=None, ge=0, le=26)
     birth_moon_sign: int | None = Field(default=None, ge=0, le=11)
+    lagna_sign: int | None = Field(default=None, ge=0, le=11)  # personal colours to wear / avoid
 
 
 class FindRequest(BaseModel):
@@ -128,7 +129,7 @@ def today(req: TodayRequest) -> dict:
 def daily_muhurat(req: MuhuratRequest) -> dict:
     try:
         days = muhurat.muhurat_days(req.start, req.days, req.lat, req.lon, req.tz_name,
-                                    req.birth_nakshatra, req.birth_moon_sign)
+                                    req.birth_nakshatra, req.birth_moon_sign, req.lagna_sign)
     except Exception as exc:  # bad timezone or polar day without sunrise
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"tz_name": req.tz_name, "days": days}

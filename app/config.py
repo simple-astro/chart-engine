@@ -10,17 +10,59 @@ import os
 
 from app import storage
 
-# USD per million tokens. cache_write is the 5-minute TTL rate (1.25x input).
-MODELS = {
-    "claude-haiku-4-5": {"label": "Claude Haiku 4.5", "note": "Fastest and cheapest",
-                         "in": 1.0, "out": 5.0, "cache_read": 0.10, "cache_write": 1.25},
-    "claude-sonnet-5-5": {"label": "Claude Sonnet 5.5", "note": "Balanced quality and cost",
-                          "in": 2.0, "out": 10.0, "cache_read": 0.20, "cache_write": 2.50},
-    "claude-opus-5-5": {"label": "Claude Opus 5.5", "note": "Deeper answers, about 4x Haiku",
-                        "in": 4.0, "out": 20.0, "cache_read": 0.20, "cache_write": 5.00},
-    "claude-fable-5-1": {"label": "Claude Fable 5.1", "note": "Most capable, about 10x Haiku, slower",
-                         "in": 10.0, "out": 50.0, "cache_read": 0.25, "cache_write": 12.50},
+# Where each model is served. Claude uses Anthropic's API natively; the others go through the OpenAI-compatible
+# Chat Completions API (OpenAI itself, and Google's OpenAI-compatible Gemini endpoint). API keys live only in the
+# server's environment (Railway variables), never in the database or the browser.
+PROVIDERS = {
+    "anthropic": {"label": "Claude (Anthropic)", "env": "ANTHROPIC_API_KEY"},
+    "openai": {"label": "ChatGPT (OpenAI)", "env": "OPENAI_API_KEY", "base_url": "https://api.openai.com/v1",
+               "max_param": "max_completion_tokens"},
+    "gemini": {"label": "Gemini (Google)", "env": "GEMINI_API_KEY",
+               "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "max_param": "max_tokens"},
 }
+
+# USD per million tokens. cache_write is the 5-minute TTL rate (1.25x input) for Claude; OpenAI and Gemini cache
+# automatically (no write charge). Prices from the providers' pricing pages, October 2026; several Gemini prices
+# double on 1 January 2027.
+MODELS = {
+    "claude-haiku-4-5": {"provider": "anthropic", "label": "Claude Haiku 4.5", "note": "Fastest and cheapest Claude",
+                         "in": 1.0, "out": 5.0, "cache_read": 0.10, "cache_write": 1.25},
+    "claude-sonnet-5-5": {"provider": "anthropic", "label": "Claude Sonnet 5.5", "note": "Balanced quality and cost",
+                          "in": 2.0, "out": 10.0, "cache_read": 0.20, "cache_write": 2.50},
+    "claude-opus-5-5": {"provider": "anthropic", "label": "Claude Opus 5.5", "note": "Deeper answers, about 4x Haiku",
+                        "in": 4.0, "out": 20.0, "cache_read": 0.20, "cache_write": 5.00},
+    "claude-fable-5-1": {"provider": "anthropic", "label": "Claude Fable 5.1",
+                         "note": "Most capable, about 10x Haiku, slower",
+                         "in": 10.0, "out": 50.0, "cache_read": 0.25, "cache_write": 12.50},
+    "gpt-6-luna": {"provider": "openai", "label": "GPT-6 Luna", "note": "OpenAI's low-cost model",
+                   "in": 0.10, "out": 0.50, "cache_read": 0.01, "cache_write": 0.0},
+    "gpt-5.4-mini": {"provider": "openai", "label": "GPT-5.4 mini", "note": "OpenAI mini model",
+                     "in": 0.75, "out": 4.50, "cache_read": 0.075, "cache_write": 0.0},
+    "gpt-6.1-sol": {"provider": "openai", "label": "GPT-6.1 Sol", "note": "OpenAI's mid-range model",
+                    "in": 2.0, "out": 10.0, "cache_read": 0.10, "cache_write": 0.0},
+    "gemini-3.5-flash-lite": {"provider": "gemini", "label": "Gemini 3.5 Flash-Lite", "note": "Google's low-cost model",
+                              "in": 0.30, "out": 2.50, "cache_read": 0.03, "cache_write": 0.0},
+    "gemini-3.8-flash": {"provider": "gemini", "label": "Gemini 3.8 Flash",
+                         "note": "Google's latest Flash (prices double from Jan 2027)",
+                         "in": 0.75, "out": 3.75, "cache_read": 0.075, "cache_write": 0.0},
+    "gemini-3.1-pro-preview": {"provider": "gemini", "label": "Gemini 3.1 Pro (preview)",
+                               "note": "Google's most capable, preview",
+                               "in": 2.0, "out": 12.0, "cache_read": 0.20, "cache_write": 0.0},
+}
+
+
+def provider_of(model_id: str) -> str:
+    return MODELS.get(_model_id(model_id or ""), {}).get("provider", "anthropic")
+
+
+def provider_ready(provider: str) -> bool:
+    import os as _os
+    return bool(_os.environ.get(PROVIDERS[provider]["env"]))
+
+
+def providers_status() -> dict:
+    return {k: {"label": v["label"], "env": v["env"], "ready": provider_ready(k)} for k, v in PROVIDERS.items()}
+
 
 FIELDS = {
     # key: (env var, default, validator)
@@ -73,6 +115,9 @@ def update(values: dict) -> dict:
             raise ValueError(f"{key} {LIMITS_TEXT[key]}")
         if not FIELDS[key][2](value):
             raise ValueError(f"{key} {LIMITS_TEXT[key]}")
+        prov = provider_of(value) if key == "model" else None
+        if prov and prov != "anthropic" and not provider_ready(prov):
+            raise ValueError(f"model {MODELS[value]['label']} needs {PROVIDERS[prov]['env']} set in Railway first")
         clean[key] = value
     for key, value in clean.items():
         storage.set_setting(f"config.{key}", json.dumps(value))

@@ -98,3 +98,22 @@ def test_rating_says_what_it_is_about_and_why():
     assert "Avoid new starts" in labels and "Good for new starts" in labels
     sat_amavasya = T.today(date(2026, 10, 10), **DELHI, lagna_sign=8, birth_nakshatra=17, birth_moon_sign=7)
     assert "Shani Amavasya" in sat_amavasya["rating"]["why"]
+
+
+def test_colours_follow_the_lagna():
+    sag = T.colours(8, 6)  # Sagittarius lagna, Saturday: Saturn rules 2 and 3, so its colour is fine
+    assert sag["wear"]["planet"] == "Saturn" and [c["planet"] for c in sag["avoid"]] == ["Moon", "Venus"]
+    assert "8th house" in sag["avoid"][0]["why"] and "6th and 11th houses" in sag["avoid"][1]["why"]
+    fri = T.colours(8, 5)  # Friday: Venus is difficult for Sagittarius, so wear the lagna lord's colour
+    assert fri["wear"]["planet"] == "Jupiter" and "difficult" in fri["wear"]["why"]
+    assert all(c["planet"] != fri["wear"]["planet"] for c in fri["also_good"] + fri["avoid"])
+    sco = T.colours(7, 6)  # Scorpio: Moon (9th lord) helps, Venus (7th, 12th) does not — both "white"
+    good, bad = {w for c in sco["also_good"] for w in c["name"].split(" or ")}, {w for c in sco["avoid"] for w in c["name"].split(" or ")}
+    assert "white" not in good | bad and "silver" in good and "light pink" in bad and not good & bad
+
+
+def test_muhurat_days_carry_personal_colours():
+    from app import muhurat
+    days = muhurat.muhurat_days(date(2026, 10, 10), 2, **DELHI, birth_nak=17, birth_moon_sign=7, lagna_sign=8)
+    assert days[0]["colours"]["wear"]["planet"] == "Saturn" and days[1]["colours"]["wear"]["planet"] == "Sun"
+    assert muhurat.muhurat_days(date(2026, 10, 10), 1, **DELHI)[0]["colours"] is None

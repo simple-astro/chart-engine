@@ -136,8 +136,25 @@ def test_clean_draft_costs_no_extra_call(monkeypatch, tmp_path):
 
 def test_cached_answer_failing_the_check_is_not_reused(monkeypatch, tmp_path):
     r, calls, pid = _run(monkeypatch, tmp_path, ["Mercury rules your 10th house."])
-    key = f"{chat.CONTEXT_VERSION}:{chat.cache_key('How is my career?')}"
+    key = chat.answer_key(storage.get(pid), "How is my career?")
     from datetime import date
-    storage.cache_put(pid, key, date.today().isoformat(), "Mercury is exalted, a great sign.")
+    storage.cache_put(pid, key, chat.local_today(storage.get(pid)).isoformat(), "Mercury is exalted, a great sign.")
     again = chat.chat(storage.get(pid), "How is my career?")
     assert again["mode"] == "llm" and "exalted" not in again["reply"]
+
+
+def test_chat_day_guide_uses_the_users_place_and_local_clock(monkeypatch, tmp_path):
+    from datetime import date as _d, datetime as _dt
+    from zoneinfo import ZoneInfo
+    r, calls, pid = _run(monkeypatch, tmp_path, ["Mercury rules your 10th house."])
+    p = {**storage.get(pid), "viewer": {"lat": 49.8951, "lon": -97.1384, "tz_name": "America/Winnipeg", "name": "Winnipeg"}}
+    g = chat.day_guide(p, _d(2026, 10, 10))
+    assert g["place"] == "Winnipeg" and g["time_zone"] == "America/Winnipeg" and g["weekday"] == "Saturday"
+    assert g["local_times"]["sunrise"].endswith("AM") and "–" in g["local_times"]["rahu_kalam_avoid"]
+    assert g["for_you"]["wear"] and isinstance(g["for_you"]["colours_to_avoid"], list) and g["for_you"]["do"]
+    assert chat.local_today(p) == _dt.now(ZoneInfo("America/Winnipeg")).date()
+    from app import synthesis
+    s = synthesis.build(p)
+    assert s["user_location"] == {"place": "Winnipeg", "time_zone": "America/Winnipeg"}
+    assert s["today"] == chat.local_today(p).isoformat()
+    assert chat.where(storage.get(pid))["place"]  # without a chosen place: the birthplace

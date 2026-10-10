@@ -17,6 +17,7 @@ from core import constants as C
 from core.panchang import compute_panchang
 
 DAY_LORD = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]  # Sunday = 0
+DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 CHALDEAN = ["Sun", "Venus", "Mercury", "Moon", "Saturn", "Jupiter", "Mars"]
 COLOUR = {"Sun": ("orange or saffron", "#e8892b"), "Moon": ("white or silver", "#e9eef2"), "Mars": ("red", "#c8342b"),
           "Mercury": ("green", "#2f9e5b"), "Jupiter": ("yellow", "#e7b928"), "Venus": ("white or light pink", "#f4c6d0"),
@@ -87,6 +88,35 @@ def chart_planets(lagna_sign: int) -> tuple[list[str], set[str]]:
     good = list(dict.fromkeys(yogakaraka + [lord(1), lord(9), lord(5)]))
     bad = {p for p, hs in owned.items() if hs & {6, 8, 12} and not hs & {1, 5, 9}}
     return good, bad
+
+
+def colours(lagna_sign: int, weekday: int) -> dict:
+    """Colours for the day, read through the person's own chart (traditional planet colours):
+    wear the weekday lord's colour unless that planet is difficult for their lagna (then the lagna lord's);
+    the other helpful planets' colours also suit; the difficult planets' colours are best avoided."""
+    good, bad = chart_planets(lagna_sign)
+    lord = DAY_LORD[weekday]
+    wear = lord if lord not in bad else good[0]
+    rules = lambda p: " and ".join(_ord(h) for h in owned_houses(p, lagna_sign))
+    words = lambda p: COLOUR[p][0].split(" or ")  # "white or silver" -> ["white", "silver"]
+    helpful = [p for p in good if p != wear]
+    difficult = [p for p in sorted(bad) if p != wear]
+    # A colour shared by a helpful and a difficult planet (white: Moon and Venus) is recommended neither way;
+    # the day's own colour always stays.
+    shared = {w for p in helpful for w in words(p)} & {w for p in difficult for w in words(p)}
+    keep_wear = set(words(wear))
+
+    def c(p: str, drop: set) -> dict | None:
+        left = [w for w in words(p) if w not in drop]
+        return {"planet": p, "name": " or ".join(left), "hex": COLOUR[p][1]} if left else None
+
+    also = [x for p in helpful if (x := c(p, shared | keep_wear))]
+    avoid = [{**x, "why": f"{p} rules your {rules(p)} house{'s' if len(owned_houses(p, lagna_sign)) > 1 else ''} — "
+              f"a difficult planet for your lagna"} for p in difficult if (x := c(p, shared | keep_wear))]
+    return {"wear": {"planet": wear, "name": COLOUR[wear][0], "hex": COLOUR[wear][1], "why": (f"{DAY_NAMES[weekday]}'s colour ({lord})" if wear == lord else
+                                        f"{lord} rules {DAY_NAMES[weekday]} but is difficult for your lagna, so wear "
+                                        f"your lagna lord {wear}'s colour")},
+            "also_good": also, "avoid": avoid}
 
 
 def horas(p, next_sunrise: datetime) -> list[dict]:
@@ -244,11 +274,10 @@ def today(day: date, lat: float, lon: float, tz_name: str, lagna_sign: int, birt
 
     dos, avoid = personal_lists(p, f, acts, lord, lagna_sign, antar, antar_sign)
 
-    wear = lord if lord not in bad else good[0]
-    colour = {"planet": wear, "name": COLOUR[wear][0], "hex": COLOUR[wear][1],
-              "why": (f"{p.weekday}'s colour ({lord})" if wear == lord else
-                      f"{lord} rules {p.weekday} but is a difficult planet for your lagna, so wear your lagna lord {wear}'s colour"),
-              "avoid": COLOUR[lord][0] if wear != lord else None}
+    cols = colours(lagna_sign, wd)
+    wear = cols["wear"]["planet"]
+    colour = {**cols["wear"], "avoid": cols["avoid"][0]["name"] if cols["avoid"] else None,
+              "also_good": cols["also_good"], "avoid_list": cols["avoid"]}
     hs = horas(p, nxt.sunrise)
     dl = [x for x in (maha, antar) if x]
     upay_planet = next((x for x in dl[::-1] if x == lord), lord)

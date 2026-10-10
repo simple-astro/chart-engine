@@ -171,7 +171,9 @@ def windows(p) -> dict:
 
 
 def muhurat_days(start: date, days: int, lat: float, lon: float, tz_name: str,
-                 birth_nak: int | None = None, birth_moon_sign: int | None = None) -> list[dict]:
+                 birth_nak: int | None = None, birth_moon_sign: int | None = None,
+                 lagna_sign: int | None = None) -> list[dict]:
+    from app.today import colours  # local import: app.today imports this module
     out = []
     for i in range(days):
         p = compute_panchang(start + timedelta(days=i), lat, lon, tz_name)
@@ -187,6 +189,7 @@ def muhurat_days(start: date, days: int, lat: float, lon: float, tz_name: str,
             "tara": f["tara"], "chandra": f["chandra"],
             "overall": dict(zip(("verdict", "label"), _verdict(overall))),
             "activities": acts, "windows": windows(p),
+            "colours": colours(lagna_sign, f["weekday"]) if lagna_sign is not None else None,
         })
     return out
 

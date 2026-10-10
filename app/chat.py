@@ -53,7 +53,9 @@ SYSTEM = (
     "planet's own day, and gemstones only from suitable_stones. "
     "For questions about the "
     "present or future, call the tools (transits, transit events, panchang, dasha detail, divisional charts, "
-    "Lal Kitab kundli) instead of guessing positions. For Lal Kitab questions call get_lal_kitab; for "
+    "Lal Kitab kundli) instead of guessing positions. For any day or muhurat question call get_panchang and give "
+    "its local clock times for the user's place (never 'the 3rd part of daylight'), the colours to wear and to avoid "
+    "with their reasons, and the user's own do's and don'ts; 'today' in the data is the user's local date. For Lal Kitab questions call get_lal_kitab; for "
     "compatibility or match-making call list_profiles then match_with_profile.\n"
     "Length: HARD LIMIT of {words} words per reply, counting headings and bullets; aim well under it. "
     "Lead with the direct answer, then Do's, Don'ts and an upay; skip exhaustive lists, and offer to go deeper "
@@ -65,7 +67,7 @@ SYSTEM = (
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "kp-3"
+CONTEXT_VERSION = "kp-4"
 
 TOOLS = [
     {"name": "get_transits",
@@ -79,8 +81,12 @@ TOOLS = [
          "start": {"type": "string", "description": "ISO-8601 start; omit for now."},
          "days": {"type": "integer", "description": "1-31, default 30"}}}},
     {"name": "get_panchang",
-     "description": "Panchang (tithi, nakshatra, yoga, karana, sunrise/sunset, Rahu kalam) for a date at the "
-                    "birth location.",
+     "description": "Muhurat / day guide for a date where the user is now (their chosen location, else the "
+                    "birthplace): tithi, nakshatra, yoga, karana, sunrise/sunset, Rahu kalam / Yamaganda / Gulika "
+                    "and the best times as LOCAL clock times, plus a personal guide for that day — rating for new "
+                    "starts with its reasons, do's and don'ts, colours to wear and to avoid (with reasons), lucky "
+                    "number, travel direction and upay. Use it for any 'is this day good', muhurat or what-to-wear "
+                    "question.",
      "input_schema": {"type": "object", "properties": {
          "date": {"type": "string", "description": "YYYY-MM-DD; omit for today"}}}},
     {"name": "get_divisional_chart",
@@ -124,6 +130,60 @@ TOOLS = [
 ]
 
 
+def where(profile: dict) -> dict:
+    """Where the user is now: the location they chose in the app, else the birthplace."""
+    v, req = profile.get("viewer") or {}, profile.get("request") or {}
+    if v.get("tz_name") and v.get("lat") is not None and v.get("lon") is not None:
+        return {"lat": v["lat"], "lon": v["lon"], "tz_name": v["tz_name"], "place": v.get("name") or "your current location"}
+    return {"lat": req["lat"], "lon": req["lon"], "tz_name": req.get("tz_name") or "UTC",
+            "place": (req.get("place") or "your birthplace").split(",")[0]}
+
+
+def local_today(profile: dict) -> date:
+    """Today's date where the user is — not the server's (UTC) date."""
+    from zoneinfo import ZoneInfo
+    return datetime.now(ZoneInfo(where(profile)["tz_name"])).date()
+
+
+def day_guide(profile: dict, d: date) -> dict:
+    """Panchang with local clock times and the person's own guide for that day (app.today)."""
+    from zoneinfo import ZoneInfo
+    from app import routes, today as T
+    from app.transit_view import dasha_on
+    w, chart = where(profile), profile["chart"]
+    tz = ZoneInfo(w["tz_name"])
+    hm = lambda iso: datetime.fromisoformat(iso).astimezone(tz).strftime("%-I:%M %p")
+    span = lambda pair: f"{hm(pair[0])} – {hm(pair[1])}"
+    p = routes.panchang(PanchangRequest(on=d, lat=w["lat"], lon=w["lon"], tz_name=w["tz_name"]))
+    lords = {x["level"]: x["lord"] for x in dasha_on(chart, datetime(d.year, d.month, d.day, 12, tzinfo=tz))}
+    moon = chart["grahas"]["Moon"]
+    antar = lords.get("antar")
+    g = T.today(d, w["lat"], w["lon"], w["tz_name"], chart["lagna"]["sign_index"], moon["nakshatra_index"],
+                moon["sign_index"], lords.get("maha"), antar,
+                chart["grahas"][antar]["sign_index"] if antar in chart["grahas"] else None)
+    col = g["colour"]
+    return {
+        "place": w["place"], "time_zone": w["tz_name"], "date": p["date"], "weekday": p["weekday"],
+        "tithi": p["tithi"], "nakshatra": p["nakshatra"]["name"], "yoga": p["yoga"]["name"],
+        "karana": p["karana"]["name"],
+        "local_times": {"sunrise": hm(p["sunrise"]), "sunset": hm(p["sunset"]),
+                        "rahu_kalam_avoid": span(p["windows"]["rahu_kalam"]),
+                        "yamaganda_avoid": span(p["windows"]["yamaganda"]), "gulika_avoid": span(p["windows"]["gulika"]),
+                        "best_times": [f"{span([b['start'], b['end']])} ({b['label']})" for b in g["best_times"]]},
+        "for_you": {
+            "new_starts": g["rating"]["label"], "why": g["rating"]["why"],
+            "do": [f"{x['text']} — {x['why']}" for x in g["do"]],
+            "avoid": [f"{x['text']} — {x['why']}" for x in g["avoid"]],
+            "wear": f"{col['name']} — {col['why']}",
+            "also_good_colours": [c["name"] for c in col["also_good"]],
+            "colours_to_avoid": [f"{c['name']} — {c['why']}" for c in col["avoid_list"]],
+            "lucky_number": g["number"]["value"],
+            "travel": f"avoid travelling {g['direction']['avoid']}; if you must, {g['direction']['fix']}",
+            "upay": f"{g['upay']['mantra']} (108 times) or donate {g['upay']['daan']} — {g['upay']['why']}",
+            "sukh_line": g["sukh"]},
+    }
+
+
 def _utc(s: str | None) -> datetime:
     if not s:
         return datetime.now(timezone.utc)
@@ -147,8 +207,7 @@ def run_tool(profile: dict, name: str, args: dict) -> dict:
         return routes.transit_scan(TransitScanRequest(start=_utc(args.get("start")), days=days,
                                                       ayanamsha=ayan, node_type=node))
     if name == "get_panchang":
-        d = date.fromisoformat(args["date"]) if args.get("date") else date.today()
-        return routes.panchang(PanchangRequest(on=d, lat=req["lat"], lon=req["lon"], tz_name=req["tz_name"]))
+        return day_guide(profile, date.fromisoformat(args["date"]) if args.get("date") else local_today(profile))
     if name == "get_divisional_chart":
         key = str(args.get("name", "")).upper()
         if key not in chart["vargas"]:
@@ -220,13 +279,16 @@ def _stream(client, model: str, **kw):
                                        betas=["server-side-fallback-2026-07-01"], fallbacks="default", **kw)
 
 
-def events(profile: dict, history: list[dict], message: str):
+def events(profile: dict, history: list[dict], message: str, model: str | None = None):
     """Run one chat turn, yielding {"type": "status"|"delta", "text": ...} as it progresses."""
+    model = model or config.model()
+    if config.provider_of(model) != "anthropic":
+        yield from _compat_events(profile, history, message, model)
+        return
     client = _client()
     msgs = [{"role": m["role"], "content": m["content"]} for m in history[-HISTORY_LIMIT:]]
     msgs.append({"role": "user", "content": message + kp_context(profile, message)})
     system = _system(profile)
-    model = config.model()
     wrote = False
     for _ in range(MAX_TOOL_ROUNDS):
         with _stream(client, model, system=system, tools=TOOLS, messages=msgs) as stream:
@@ -272,20 +334,28 @@ def kp_context(profile: dict, message: str) -> str:
             "explain the reasons in plain words]\n" + "\n\n".join(briefs))
 
 
-def _system(profile: dict) -> list[dict]:
+def _system_text(profile: dict) -> str:
     text = SYSTEM.format(words=config.word_limit()) + ask.llm_context(profile)
     remarks = storage.tester_remarks(profile.get("owner"))
     if remarks:
         text += f"\n\n[CONTEXT NOTE: {remarks}]"
-    return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
+    return text
 
 
-def revise(profile: dict, history: list[dict], message: str, draft: str, note: str) -> tuple[str, dict]:
+def _system(profile: dict) -> list[dict]:
+    return [{"type": "text", "text": _system_text(profile), "cache_control": {"type": "ephemeral"}}]
+
+
+def revise(profile: dict, history: list[dict], message: str, draft: str, note: str,
+           model: str | None = None) -> tuple[str, dict]:
     """One correction pass: show the model its draft and the contradictions, get a fixed answer back."""
-    client, model = _client(), config.model()
+    model = model or config.model()
     msgs = [{"role": m["role"], "content": m["content"]} for m in history[-HISTORY_LIMIT:]]
     msgs += [{"role": "user", "content": message}, {"role": "assistant", "content": draft},
              {"role": "user", "content": note}]
+    if config.provider_of(model) != "anthropic":
+        return _compat_once(profile, msgs, model)
+    client = _client()
     with _stream(client, model, system=_system(profile), messages=msgs) as stream:
         resp = stream.get_final_message()
     u = getattr(resp, "usage", None)
@@ -295,7 +365,7 @@ def revise(profile: dict, history: list[dict], message: str, draft: str, note: s
     return "".join(b.text for b in resp.content if getattr(b, "type", "") == "text").strip(), use
 
 
-def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs: list):
+def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs: list, model: str | None = None):
     """Check the answer against the chart; revise once, then drop any sentence that is still wrong.
     Yields status events and finally {"type": "checked", "text", "report", "usage"}."""
     from app import factcheck, synthesis
@@ -310,7 +380,7 @@ def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs
     if issues:
         yield {"type": "status", "text": "Double-checking against your chart…"}
         try:
-            fixed, use = revise(profile, history, message, text, factcheck.correction_note(issues))
+            fixed, use = revise(profile, history, message, text, factcheck.correction_note(issues), model)
         except Exception:  # if the correction call fails, fall back to removing the wrong sentences
             fixed = ""
         if fixed:
@@ -362,12 +432,17 @@ def cache_key(message: str) -> str | None:
     return q
 
 
+def answer_key(profile: dict, message: str) -> str | None:
+    """Reused answers are per setup version and per time zone (times and 'today' depend on where the user is)."""
+    key = cache_key(message)
+    return key and f"{CONTEXT_VERSION}:{where(profile)['tz_name']}:{key}"
+
+
 def chat_events(profile: dict, message: str):
     """Persist the exchange around events(); reuse a same-day answer, or fall back to direct lookups."""
     pid = profile["id"]
-    today = date.today().isoformat()  # transit-dependent answers go stale daily
-    key = cache_key(message)
-    key = key and f"{CONTEXT_VERSION}:{key}"
+    today = local_today(profile).isoformat()  # transit-dependent answers go stale daily (the user's day)
+    key = answer_key(profile, message)
     cached = storage.cache_get(pid, key, today) if key else None
     if cached:  # re-verify: a cached answer must still pass the current fact check
         from app import factcheck, synthesis
@@ -449,3 +524,122 @@ def chat(profile: dict, message: str) -> dict:
         elif ev["type"] == "done":
             mode = ev["mode"]
     return {"mode": mode, "reply": "".join(text).strip()}
+
+
+# ----- other providers (OpenAI, Gemini) through the OpenAI-compatible Chat Completions API -----
+def _compat_client(provider: str):
+    spec = config.PROVIDERS[provider]
+    key = os.environ.get(spec["env"])
+    if not key:
+        raise RuntimeError(f"{spec['env']} is not set on the server. Add it in Railway to use {spec['label']}.")
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise RuntimeError("The 'openai' package is not installed (pip install -e '.[llm]').") from exc
+    return OpenAI(api_key=key, base_url=spec["base_url"])
+
+
+COMPAT_TOOLS = [{"type": "function", "function": {"name": t["name"], "description": t["description"],
+                                                  "parameters": t["input_schema"]}} for t in TOOLS]
+
+
+def _compat_call(client, provider: str, model: str, messages: list, tools: bool):
+    kw = {config.PROVIDERS[provider]["max_param"]: MAX_TOKENS_THINKING}  # newer models reason before answering
+    if tools:
+        kw |= {"tools": COMPAT_TOOLS, "tool_choice": "auto"}
+    return client.chat.completions.create(model=model, messages=messages, **kw)
+
+
+def _compat_usage(resp, model: str) -> dict:
+    u = getattr(resp, "usage", None)
+    prompt, out = getattr(u, "prompt_tokens", 0) or 0, getattr(u, "completion_tokens", 0) or 0
+    cached = getattr(getattr(u, "prompt_tokens_details", None), "cached_tokens", 0) or 0
+    return {"type": "usage", "model": model, "round": 1, "input": max(0, prompt - cached), "output": out,
+            "cache_read": cached, "cache_write": 0}
+
+
+def _compat_events(profile: dict, history: list[dict], message: str, model: str):
+    """The same turn as events(), for OpenAI-compatible providers: tools run here, answers are checked after."""
+    import json
+    provider = config.provider_of(model)
+    client = _compat_client(provider)
+    msgs = [{"role": "system", "content": _system_text(profile)}]
+    msgs += [{"role": m["role"], "content": m["content"]} for m in history[-HISTORY_LIMIT:]]
+    msgs.append({"role": "user", "content": message + kp_context(profile, message)})
+    wrote = False
+    for _ in range(MAX_TOOL_ROUNDS):
+        resp = _compat_call(client, provider, model, msgs, tools=True)
+        yield _compat_usage(resp, model)
+        choice = resp.choices[0]
+        msg, reason = choice.message, choice.finish_reason
+        text = msg.content or ""
+        if text:
+            yield {"type": "delta", "text": text}
+            wrote = wrote or bool(text.strip())
+        if reason == "content_filter":
+            yield {"type": "delta", "text": ("\n\n" if wrote else "") + "I can't help with that question. "
+                   "Please ask me something else about your chart."}
+            return
+        calls = msg.tool_calls or []
+        if not calls:
+            return
+        if wrote:
+            yield {"type": "delta", "text": "\n\n"}
+        msgs.append({"role": "assistant", "content": text or None,
+                     "tool_calls": [{"id": c.id, "type": "function",
+                                     "function": {"name": c.function.name, "arguments": c.function.arguments or "{}"}}
+                                    for c in calls]})
+        for c in calls:
+            yield {"type": "status", "text": STATUS.get(c.function.name, "Looking that up…")}
+            try:
+                args = json.loads(c.function.arguments or "{}")
+            except ValueError:
+                args = {}
+            try:
+                out = run_tool(profile, c.function.name, args if isinstance(args, dict) else {})
+            except Exception as exc:  # report tool failures to the model, not the user
+                out = {"error": str(exc)}
+            yield {"type": "tool_out", "data": out, "name": c.function.name, "args": args}
+            msgs.append({"role": "tool", "tool_call_id": c.id, "content": _json(out)})
+    yield {"type": "delta", "text": "\n\nI couldn't finish looking that up. Please try a narrower question."}
+
+
+def _compat_once(profile: dict, msgs: list, model: str) -> tuple[str, dict]:
+    """A single tool-free call (the fact-check correction pass) for OpenAI-compatible providers."""
+    provider = config.provider_of(model)
+    resp = _compat_call(_compat_client(provider), provider, model,
+                        [{"role": "system", "content": _system_text(profile)}] + msgs, tools=False)
+    use = _compat_usage(resp, model)
+    return (resp.choices[0].message.content or "").strip(), {k: use[k] for k in ("input", "output", "cache_read",
+                                                                                  "cache_write")}
+
+
+def answer_once(profile: dict, message: str, model: str) -> dict:
+    """One fresh, checked answer from a given model without saving anything — for the admin comparison."""
+    import time
+    t0 = time.monotonic()
+    parts, tool_outs = [], []
+    use = {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0, "rounds": 0}
+    for ev in events(profile, [], message, model):
+        if ev["type"] == "usage":
+            use["rounds"] += 1
+            for k in ("input", "output", "cache_read", "cache_write"):
+                use[k] += ev[k]
+        elif ev["type"] == "tool_out":
+            tool_outs.append(ev)
+        elif ev["type"] == "delta":
+            parts.append(ev["text"])
+    draft = "".join(parts).strip()
+    text, report = draft, None
+    if draft:
+        for ev in guard(profile, [], message, draft, tool_outs, model):
+            if ev["type"] == "checked":
+                text, report = ev["text"], ev["report"]
+                if ev["usage"]:
+                    use["rounds"] += 1
+                    for k in ("input", "output", "cache_read", "cache_write"):
+                        use[k] += ev["usage"][k]
+        text = limit_words(text, config.word_limit())
+    return {"model": model, "label": config.label(model), "text": text, "draft": draft, "factcheck": report,
+            "tools": [t["name"] for t in tool_outs], "usage": use, "seconds": round(time.monotonic() - t0, 1),
+            "cost": config.cost(model, use["input"], use["output"], use["cache_read"], use["cache_write"])}

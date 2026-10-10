@@ -294,6 +294,12 @@
   .dd h5.ok{color:var(--ok)} .dd h5.bad{color:var(--bad)}
   .dd ul{margin:0;padding-left:17px;font-size:.9rem;line-height:1.5} .dd li{margin:3px 0}
   .gtimes,.glucky{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 6px}
+  .mcol{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .mcol>div{border:1px solid var(--line);border-radius:12px;padding:9px 11px;background:var(--bg2)}
+  .mcol small{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin-bottom:3px}
+  .mcc{display:inline-flex;align-items:center;gap:6px;margin:2px 10px 2px 0;font-size:.9rem} .mcc i{width:13px;height:13px;border-radius:50%;border:1px solid var(--line);flex:none}
+  .mcol em{display:block;font-style:normal;font-size:.74rem;color:var(--mut);line-height:1.35}
+  @media (max-width:520px){.mcol{grid-template-columns:1fr}}
   .tgrid{display:grid;grid-template-columns:1.1fr 1fr;gap:22px;align-items:start}
   .tcol{min-width:0} .twhy{margin:0 0 8px;font-size:1rem;line-height:1.5}
   .tdd li small{display:block;color:var(--mut);font-size:.74rem;line-height:1.3;margin-top:1px}
@@ -847,9 +853,9 @@
 
 <script src="/static/interp.js?v=2"></script>
 <script src="/static/insights.js?v=4"></script>
-<script src="/static/muhurat.js?v=2"></script>
+<script src="/static/muhurat.js?v=3"></script>
 <script src="/static/strength.js?v=1"></script>
-<script src="/static/guide.js?v=7"></script>
+<script src="/static/guide.js?v=8"></script>
 <script src="/static/tools.js?v=2"></script>
 <script src="/static/kptiming.js?v=6"></script>
 <script src="/static/transit.js?v=10"></script>
@@ -1067,7 +1073,7 @@ $('askf').addEventListener('submit',async e=>{
   let text='',mode='llm',failed=false,started=false;
   const paint=()=>{const stick=nearBottom();bot.innerHTML=md(text)+(started?'':'');bot.classList.add('cursor');if(stick)toBottom()};
   try{
-    const r=await fetch('/profiles/'+id+'/chat/stream',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q})});
+    const r=await fetch('/profiles/'+id+'/chat/stream',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q,here:MU.here||null})});
     if(!r.ok||!r.body)throw new Error((await r.json().catch(()=>({}))).detail||r.statusText);
     const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
     for(;;){
@@ -1182,7 +1188,7 @@ async function loadMuhurat(force){
   const moon=lastChart.grahas.Moon;
   try{
     const r=await fetch('/muhurat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...loc,
-      start:tzToday(loc.tz_name),days:7,birth_nakshatra:moon.nakshatra_index,birth_moon_sign:moon.sign_index})});
+      start:tzToday(loc.tz_name),days:7,birth_nakshatra:moon.nakshatra_index,birth_moon_sign:moon.sign_index,lagna_sign:lastChart.lagna.sign_index})});
     const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);
     MU.data=d;if(force)MU.sel=0;paintMuhurat();
   }catch(e){MU.loaded=false;box.innerHTML='<div class="hint err">Couldn’t load the muhurat: '+esc(e.message)+'</div>'}

@@ -1,0 +1,26 @@
+{
+  "_note": "Neutral test fixture only. The curated remedy library is private and imported in the admin page.",
+  "items": [
+    {"kind": "graha", "planet": "Sun", "weekday": "Sunday", "colors": ["orange"], "metals": ["copper"],
+     "gem": "Ruby", "gem_substitutes": ["Red garnet"], "foods": ["wheat"], "beej_mantra": "Om Suryaya Namah",
+     "japa_count": 7000, "japa_count_alternates": [6000]},
+    {"kind": "remedy", "slug": "sun-arghya", "planet": "Sun", "type": "aacharan", "source": "parashari",
+     "intent": ["strengthen", "maintain"], "cost_tier": "free", "effort": 1, "title": "Offer water to the rising Sun",
+     "steps": ["At sunrise, offer water to the Sun from a copper vessel."], "materials": ["copper vessel", "water"],
+     "timing": {"weekday": null, "daytime_only": true, "duration_days": 43},
+     "why_template": "{planet} is your {role}; a daily offering strengthens it."},
+    {"kind": "remedy", "slug": "sun-wheat-daan", "planet": "Sun", "type": "daan", "source": "lal_kitab",
+     "intent": ["pacify"], "cost_tier": "low", "effort": 2, "title": "Give wheat on Sundays",
+     "steps": ["On Sunday before sunset, give wheat to someone in need."], "materials": ["wheat"],
+     "timing": {"weekday": "Sunday", "daytime_only": true, "duration_days": 43},
+     "why_template": "{planet} needs calming in your chart."},
+    {"kind": "rule", "slug": "sun-1-no-wheat-daan", "planet": "Sun", "when": {"house": 1, "system": "lal_kitab"},
+     "blocks": {"materials": ["wheat"]}, "reason": "With the Sun in the 1st, giving away its items is avoided.",
+     "alternative": "Respect your father and offer water to the rising Sun instead."},
+    {"kind": "rin", "slug": "test-rin", "name": "Test Rin", "when": {"any_of": [{"planet": "Ketu", "houses": [4]}]},
+     "remedy_steps": ["Serve your mother."], "why_template": "Ketu in house 4."},
+    {"kind": "home_audit", "slug": "north-clear", "zone": "North", "planet": "Mercury",
+     "prompt": "Is the north side of your home free of heavy objects?", "suggested_action": "clean",
+     "explanation": "North is Mercury's zone, linked to communication and cash flow."}
+  ]
+}

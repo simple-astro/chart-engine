@@ -74,6 +74,9 @@
         <div class="msum-h"><h3>${esc(dLong(day.date))}</h3><span class="badge ${BADGE[day.overall.verdict]}">Overall: ${esc(day.overall.label)}</span></div>
         <div class="mpan"><span>Tithi <b>${esc(day.tithi.name)}</b></span><span>Nakshatra <b>${esc(day.nakshatra)}</b></span><span>Yoga <b>${esc(day.yoga)}</b></span><span>Karana <b>${esc(day.karana)}</b></span></div>
         ${personal.length ? `<div class="mpers">${personal.join('<span class="sepdot">·</span>')}</div>` : ''}
+        ${day.colours ? `<div class="mcol"><div><small>Wear</small><span class="mcc"><i style="background:${day.colours.wear.hex}"></i><b>${esc(day.colours.wear.name)}</b></span>
+            ${day.colours.also_good.length ? `<em>also good: ${day.colours.also_good.map(c => esc(c.name)).join(', ')}</em>` : ''}<em>${esc(day.colours.wear.why)}</em></div>
+          ${day.colours.avoid.length ? `<div><small>Avoid</small>${day.colours.avoid.map(c => `<span class="mcc" title="${esc(c.why)}"><i style="background:${c.hex}"></i>${esc(c.name)}</span><em>${esc(c.why)}</em>`).join('')}</div>` : ''}</div>` : ''}
       </section>
       <h3 class="mh3">${state.sel === 0 && state.today ? 'Is today' : 'Is this day'} good for…</h3><div class="macts">${acts}</div>
       <h3 class="mh3">Best and worst times of the day</h3>${timeline}
