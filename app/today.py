@@ -62,6 +62,8 @@ TARA_DO = {"Sampat": "Money matters — pay, invest or ask for what you are owed
            "Mitra": "Meet friends, mentors and helpful people",
            "Param Mitra": "Important meetings — people are on your side today"}
 
+START_LABEL = {"excellent": "Great for new starts", "good": "Good for new starts", "fair": "Start with care",
+               "avoid": "Avoid new starts"}
 DASHA_LINE = {
     "Sun": "Your Sun period rewards leadership and dealing with authority",
     "Moon": "Your Moon period puts home, mind and family first",
@@ -205,27 +207,40 @@ def today(day: date, lat: float, lon: float, tz_name: str, lagna_sign: int, birt
     good, bad = chart_planets(lagna_sign)
     tara, chandra = f["tara"], f["chandra"]
 
-    # Why the day is rated as it is: the strongest personal factor first.
+    # The rating is about starting new things (the day's muhurat), so the badge says so, and the reason names
+    # the strongest causes — personal ones first, then the panchang's — rather than only the first one found.
+    cons = []
     if chandra and chandra["house"] == 8:
-        why = "the Moon is 8th from your Moon (Chandrashtama) — keep big decisions for another day"
-    elif tara and tara["score"] <= -1:
-        why = f"your star today is {tara['name']} ({tara['note'].split(' — ')[0]}) — go steady"
-    elif p.tithi_number == 30:
-        why = "it is Amavasya — good for prayer and rest, not new starts"
-    elif overall[0] in ("fair", "avoid") and (drag := next(iter(
-            (["Bhadra (Vishti karana) slows new work"] if p.karana == "Vishti" else [])
-            + ([f"{p.paksha} {muhurat._ordinal(p.tithi_paksha_index)} is a Rikta (empty) tithi"]
-               if p.tithi_paksha_index in muhurat.RIKTA else [])
-            + ([f"{p.yoga} yoga is inauspicious"] if p.yoga_number in muhurat.BAD_YOGAS else [])
-            + ([f"{p.nakshatra} is a harsh nakshatra for new beginnings"]
-               if p.nakshatra_index in muhurat.UGRA | muhurat.TIKSHNA else [])), None)):
-        good_bit = (f"your star is {tara['name']}, but " if tara and tara["score"] > 0 else "")
-        why = good_bit + drag
-    elif tara and tara["score"] > 0 and chandra and chandra["score"] > 0:
-        why = f"your star is {tara['name']} and the Moon is well placed from your Moon"
+        cons.append("the Moon is 8th from your Moon (Chandrashtama)")
+    if tara and tara["score"] <= -1:
+        cons.append(f"your star today is {tara['name']} ({tara['note'].split(' — ')[0]})")
+    if chandra and chandra["score"] < 0 and chandra["house"] != 8:
+        cons.append(f"the Moon is {muhurat._ordinal(chandra['house'])} from your Moon")
+    if p.tithi_number == 30:
+        cons.append("it is Shani Amavasya, a traditional day for Saturn upay" if p.weekday == "Saturday"
+                    else "it is Amavasya (new moon)")
+    if p.karana == "Vishti":
+        cons.append("Bhadra (Vishti karana) slows new work")
+    if p.tithi_paksha_index in muhurat.RIKTA and p.tithi_number != 30:
+        cons.append(f"{p.paksha} {muhurat._ordinal(p.tithi_paksha_index)} is a Rikta (empty) tithi")
+    if p.yoga_number in muhurat.BAD_YOGAS:
+        cons.append(f"{p.yoga} yoga is inauspicious")
+    if p.nakshatra_index in muhurat.UGRA | muhurat.TIKSHNA:
+        cons.append(f"{p.nakshatra} is a harsh nakshatra for new beginnings")
+    if not cons and overall[0] in ("fair", "avoid") and wd in (muhurat.TUE, muhurat.SAT):
+        cons.append(f"{p.weekday} is traditionally avoided for most new starts")
+    pros = ([f"your star is {tara['name']}"] if tara and tara["score"] > 0 else []) + (
+        ["the Moon is well placed from your Moon"] if chandra and chandra["score"] > 0 else [])
+    two = lambda xs: " and ".join(xs[:2])
+    if overall[0] in ("fair", "avoid") and cons:
+        why = two(cons) + (" — keep to routine work today" if overall[0] == "avoid"
+                           else " — start anything important only in the best time")
+    elif pros:
+        why = two(pros) + (f", but {cons[0]}" if cons else "")
+    elif cons:
+        why = two(cons)
     else:
-        why = (f"{tara['name']} star" if tara else p.nakshatra) + (
-            f", but {chandra['note']}" if chandra and chandra["score"] < 0 else f", and {chandra['note']}" if chandra and chandra["score"] else "")
+        why = f"{p.nakshatra} nakshatra — an ordinary day; routine work goes fine"
 
     dos, avoid = personal_lists(p, f, acts, lord, lagna_sign, antar, antar_sign)
 
@@ -246,7 +261,7 @@ def today(day: date, lat: float, lon: float, tz_name: str, lagna_sign: int, birt
                  else " — use today's best time for anything important.")
     return {
         "date": day.isoformat(), "tz": tz_name, "weekday": p.weekday, "tithi": p.tithi_number, "nakshatra": p.nakshatra,
-        "rating": {"verdict": overall[0], "label": overall[1], "why": why},
+        "rating": {"verdict": overall[0], "label": START_LABEL[overall[0]], "why": why},
         "tara": tara, "chandra": chandra, "sukh": line, "do": dos[:3], "avoid": avoid,
         "best_times": best_times(w, hs, good), "rahu_kalam": w["rahu_kalam"], "yamaganda": w["yamaganda"],
         "colour": colour, "number": {"value": NUMBER[wear], "planet": wear},

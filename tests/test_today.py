@@ -1,5 +1,5 @@
 """Today for one person."""
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -84,3 +84,17 @@ def test_moon_in_the_8th_from_lagna_goes_to_avoid():
     moon = T.compute_panchang(day, **DELHI).moon_sign_index
     d = T.today(day, **DELHI, lagna_sign=(moon - 7) % 12, birth_nakshatra=0, birth_moon_sign=(moon + 1) % 12)
     assert any("8th house" in x["why"] for x in d["avoid"]) and not any("8th house" in x["why"] for x in d["do"])
+
+
+def test_rating_says_what_it_is_about_and_why():
+    labels = set()
+    for i in range(30):
+        d = T.today(date(2026, 10, 1) + timedelta(days=i), **DELHI, lagna_sign=8, birth_nakshatra=17, birth_moon_sign=7)
+        r = d["rating"]
+        labels.add(r["label"])
+        assert r["label"] in T.START_LABEL.values() and r["why"]
+        if r["verdict"] in ("fair", "avoid"):  # a cautious rating always names a cause, never only a positive
+            assert not r["why"].startswith("your star is ") or ", but " in r["why"]
+    assert "Avoid new starts" in labels and "Good for new starts" in labels
+    sat_amavasya = T.today(date(2026, 10, 10), **DELHI, lagna_sign=8, birth_nakshatra=17, birth_moon_sign=7)
+    assert "Shani Amavasya" in sat_amavasya["rating"]["why"]
