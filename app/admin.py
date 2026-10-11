@@ -291,3 +291,33 @@ async def compare(request: Request) -> dict:
     with ThreadPoolExecutor(max_workers=len(models)) as pool:
         results = list(pool.map(run, models))
     return {"question": question, "profile": {"id": profile["id"], "name": profile["name"]}, "results": results}
+
+
+# ----- backups -----
+@router.get("/admin/api/backups")
+def backups(request: Request) -> dict:
+    from app import backup
+    _require_admin(request)
+    return {"backups": backup.listing(), "keep_days": backup.KEEP_DAYS, "folder": str(backup.folder())}
+
+
+@router.post("/admin/api/backups")
+def backup_now(request: Request) -> dict:
+    """Make (or refresh) today's copy now."""
+    from app import backup
+    _require_admin(request)
+    backup.daily(force=True)
+    return {"backups": backup.listing(), "keep_days": backup.KEEP_DAYS, "folder": str(backup.folder())}
+
+
+@router.get("/admin/api/backups/download")
+def backup_download(request: Request):
+    """A fresh, consistent copy of the whole database to keep somewhere else."""
+    from datetime import datetime, timezone
+    from starlette.background import BackgroundTask
+    from app import backup
+    _require_admin(request)
+    path = backup.download_copy()
+    name = f"simplejyotish-{datetime.now(timezone.utc).strftime('%Y-%m-%d-%H%M')}.db"
+    return FileResponse(path, filename=name, media_type="application/vnd.sqlite3",
+                        background=BackgroundTask(path.unlink, missing_ok=True))

@@ -62,6 +62,7 @@
   .help{color:var(--mut);font-size:.78rem;margin-top:5px}
   .actions{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin-top:2px}
   .btn{border:0;border-radius:10px;padding:10px 18px;font:600 .95rem var(--sans);cursor:pointer;color:#1a1322;background:linear-gradient(140deg,var(--g1),var(--g2))}
+  a.btn{display:inline-block;text-decoration:none}
   .btn:disabled{opacity:.55;cursor:default}
   .btn.ghost{background:var(--bg2);color:var(--ink);border:1px solid var(--line)}
   .status{font-size:.88rem;color:var(--mut)} .status.ok{color:var(--ok)} .status.err{color:var(--bad)}
@@ -230,6 +231,16 @@
     </div>
     <span class="status" id="rl-st" role="status"></span>
     <div id="rl-list" class="rllist"><p class="empty">Loading…</p></div>
+  </section>
+
+  <section class="card" id="bk">
+    <h2>Backups</h2>
+    <p class="sub">The app keeps a copy of everything (charts, chats, mood logs, the remedy library, settings and codes) once a day for <span id="bk-days">14</span> days. Those copies sit on the same server disk, so <b>download a copy each week</b> and keep it somewhere safe, like Google Drive.</p>
+    <div class="rlrow"><a class="btn" id="bk-dl" href="/admin/api/backups/download" download>Download a backup now</a><button class="sbtn" type="button" id="bk-run">Make today's copy now</button><span class="status" id="bk-st" role="status"></span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Daily copy</th><th class="num">Size</th><th>Made</th></tr></thead>
+      <tbody id="bk-list"><tr><td colspan="3" class="empty">Loading…</td></tr></tbody>
+    </table></div>
   </section>
 
   <section class="card">
@@ -632,8 +643,25 @@ $('cmp-run').addEventListener('click', async () => {
   btn.disabled = false;
 });
 
+function renderBackups(d) {
+  $('bk-days').textContent = d.keep_days;
+  const mb = n => n >= 1e6 ? (n / 1e6).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1e3)) + ' KB';
+  $('bk-list').innerHTML = d.backups.length ? d.backups.map(b => `<tr><td class="mono">${esc(b.name)}</td><td class="num">${mb(b.bytes)}</td><td>${esc(new Date(b.made).toLocaleString())}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="empty">No daily copy yet. The first one is made within an hour of the app starting.</td></tr>';
+  const last = d.backups[0], st = $('bk-st');
+  const stale = !last || Date.now() - new Date(last.made) > 36 * 3600e3;
+  st.className = 'status ' + (stale ? 'err' : 'ok');
+  st.textContent = last ? (stale ? 'The last copy is over a day old — check the server logs.' : 'Last copy: ' + new Date(last.made).toLocaleString()) : '';
+}
+async function loadBackups() { try { renderBackups(await api('/admin/api/backups')); } catch (e) { $('bk-list').innerHTML = `<tr><td colspan="3" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; } }
+$('bk-run').addEventListener('click', async e => {
+  e.target.disabled = true; $('bk-st').className = 'status'; $('bk-st').textContent = 'Copying…';
+  try { renderBackups(await api('/admin/api/backups', {method: 'POST'})); } catch (err) { $('bk-st').className = 'status err'; $('bk-st').textContent = err.message; }
+  e.target.disabled = false;
+});
+
 async function loadAll() {
-  try { renderOverview(await api('/admin/api/overview')); await loadCodes(); await loadRL(); await loadQueries(true); }
+  try { renderOverview(await api('/admin/api/overview')); await loadCodes(); await loadRL(); await loadBackups(); await loadQueries(true); }
   catch (e) { $('queries').innerHTML = `<tr><td colspan="7" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
 }
 $('refresh').addEventListener('click', loadAll);

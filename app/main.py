@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import access, admin
+from app import access, admin, backup
 from app.astro import router as astro_router
 from app.profiles import router as profiles_router
 from app.profiles import usage_router
@@ -43,6 +43,7 @@ async def lifespan(app: FastAPI):
     # If Swiss Ephemeris data files are provided, use them; else Moshier fallback.
     ephemeris.configure_ephe_path(os.environ.get("SE_EPHE_PATH"))
     register_webhook()
+    backup.start()
     yield
 
 
