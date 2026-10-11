@@ -663,6 +663,34 @@
   .ask .btn{padding:9px 16px;border-radius:11px}
   #asknote{padding:0 18px 12px;margin:0}
 
+  /* ---------- state of mind (mood.js) ---------- */
+  #gmood h5{margin:16px 0 8px;font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
+  .mdscope{max-width:280px;margin-bottom:14px}
+  .mdscale{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"o v" "r r" "e e";align-items:center;gap:6px 12px}
+  .mdscale .mdorb{grid-area:o} .mdval{grid-area:v;font:600 1.2rem var(--serif)} .mdends{grid-area:e;display:flex;justify-content:space-between;font-size:.74rem;color:var(--mut)}
+  .mdorb{width:40px;height:40px;border-radius:50%;flex:none;box-shadow:inset 0 -4px 10px rgba(0,0,0,.12),0 4px 14px rgba(0,0,0,.08);transition:background .2s}
+  #mdv{grid-area:r;width:100%;max-width:none;accent-color:var(--acc);height:28px;margin:4px 0 0}
+  .mdchips{display:flex;flex-wrap:wrap;gap:7px}
+  .mdchip{border:1px solid var(--line);background:var(--bg2);border-radius:999px;padding:7px 13px;font-size:.85rem;cursor:pointer;color:var(--ink);transition:.15s}
+  .mdchip:hover{border-color:var(--acc)} .mdchip.on{background:var(--acc);border-color:var(--acc);color:var(--solid);font-weight:600}
+  .mdnote{margin-top:14px} .mdnote summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:.88rem}
+  .mdnote textarea{width:100%;margin-top:8px;resize:vertical}
+  .mdgo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+  .mdreply{display:flex;flex-direction:column;gap:10px} .mdreply p{margin:0}
+  .mdhead{display:flex;gap:12px;align-items:center} .mdhead b{display:block;font:600 1.2rem var(--serif)} .mdhead small{color:var(--mut)}
+  .mdcare{border:1px solid var(--line);border-left:3px solid var(--acc2);border-radius:12px;padding:12px 14px;background:var(--bg2)}
+  .mdcare ul{margin:6px 0 0;padding-left:18px} .mdcare .num{font-variant-numeric:tabular-nums;user-select:all}
+  .mdstrip{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+  .mdstrip span{display:flex;flex-direction:column;align-items:center;gap:3px} .mdstrip small{font-size:.62rem;color:var(--mut)}
+  .mdstrip i{width:14px;height:14px;border-radius:50%} .mdstrip i.none{border:1.5px dashed var(--line)}
+  .mdfoot{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .mdfoot>.linkbtn{align-self:flex-start;font-weight:600;text-decoration:none}
+  .mdpat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:.9rem}
+  .mdpat ul{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:8px} .mdpat p{margin:0 0 6px} .mdpat .hint{margin:8px 0 0}
+  .mdcheck{margin-top:10px!important}
+  .mdprog{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:6px 0} .mdprog i{display:block;height:100%;background:var(--g2)}
+  .mdshare{display:flex;gap:8px;align-items:center;font:400 .88rem var(--sans);text-transform:none;letter-spacing:0;color:var(--ink);margin:0;cursor:pointer} .mdshare input{width:auto;margin:0}
+
   /* ---------- screens: bottom bar on phones, a pill row under the header on wider screens ---------- */
   .sjbar{position:sticky;top:72px;z-index:25;display:flex;gap:4px;width:max-content;max-width:100%;margin:-12px auto 24px;padding:5px;
     border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(14px)}
@@ -828,6 +856,7 @@
     <!-- Today: the daily card, good days, planning tools -->
     <div class="scr" id="s-today" data-scr="today">
       <section class="card gcard" id="gtoday"><h3>Today for you</h3><div class="hint">Checking today’s panchang…</div></section>
+      <section class="card gcard" id="gmood"></section>
       <h3 class="gh">Good days &amp; muhurat</h3>
       <div class="card gcard" id="t-muhurat"><div id="mbody"><div class="hint">Loading…</div></div>
         <div class="hint">Traditional panchang rules (tithi, weekday, nakshatra, yoga, karana) plus your own Tara and Chandra bala. For weddings and other major events, confirm the final muhurat with an astrologer.</div></div>
@@ -922,6 +951,7 @@
 <script src="/static/muhurat.js?v=3"></script>
 <script src="/static/strength.js?v=1"></script>
 <script src="/static/guide.js?v=10"></script>
+<script src="/static/mood.js?v=1"></script>
 <script src="/static/tools.js?v=2"></script>
 <script src="/static/kptiming.js?v=6"></script>
 <script src="/static/transit.js?v=10"></script>
@@ -1499,7 +1529,7 @@ function render(c,req){
   $('luckytiles').innerHTML=lk.tiles.map(([a,b,n])=>'<div class="stat"><small>'+a+'</small><b>'+esc(b)+'</b>'+(n?'<em>'+esc(n)+'</em>':'')+'</div>').join('');
   $('luckybody').innerHTML=secs(lk.sections,true);
   window.renderExchange($('xbody'),c);window.renderAshtakavarga($('akvbody'),c);
-  window.renderGuide($('guide'),window.guideReading(c),(req&&req.name)||m.name,$('gremedies'));loadToday();
+  window.renderGuide($('guide'),window.guideReading(c),(req&&req.name)||m.name,$('gremedies'));loadToday();window.renderMood($('gmood'),currentId);
   if(req)window.renderTools($('gtools'),{req,chart:c});
 
   const now=Date.now(),fd=s=>new Date(s).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});

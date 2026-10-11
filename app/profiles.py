@@ -211,3 +211,94 @@ def chat_clear(profile_id: int, request: Request) -> dict:
     _require(profile_id, request)
     storage.clear_messages(profile_id)
     return {"cleared": profile_id}
+
+
+# ----- state of mind: private mood logs linked to the day's astrology (app/mood.py) -----
+class MoodRequest(BaseModel):
+    valence: int = Field(ge=-3, le=3)
+    feelings: list[str] = Field(default_factory=list, max_length=5)
+    causes: list[str] = Field(default_factory=list, max_length=5)
+    note: str | None = Field(default=None, max_length=500)
+    scope: str = Field(default="now", pattern="^(now|day)$")
+    here: Here | None = None
+
+    @field_validator("feelings")
+    @classmethod
+    def _known_feelings(cls, v: list[str]) -> list[str]:
+        from app import mood
+        bad = [x for x in v if x not in mood.ALL_FEELINGS]
+        if bad:
+            raise ValueError(f"unknown feeling: {', '.join(bad)}")
+        return list(dict.fromkeys(v))
+
+    @field_validator("causes")
+    @classmethod
+    def _known_causes(cls, v: list[str]) -> list[str]:
+        from app import mood
+        bad = [x for x in v if x not in mood.CAUSES]
+        if bad:
+            raise ValueError(f"unknown cause: {', '.join(bad)}")
+        return list(dict.fromkeys(v))
+
+
+class MoodShare(BaseModel):
+    share: bool
+
+
+MOOD_PER_DAY = 30
+
+
+@router.get("/{profile_id}/mood")
+def mood_log(profile_id: int, request: Request, limit: int = 60) -> dict:
+    from app import mood
+    _require(profile_id, request)
+    return {"logs": [mood.public(x) for x in storage.mood_list(profile_id, max(1, min(limit, 500)))],
+            "share": storage.mood_shared(profile_id),
+            "options": {"feelings": mood.FEELINGS, "causes": mood.CAUSES, "valence": mood.VALENCE}}
+
+
+@router.post("/{profile_id}/mood")
+def mood_add(profile_id: int, req: MoodRequest, request: Request) -> dict:
+    """Save how the person feels with this moment's astrology, and reply with something useful for that mood."""
+    from datetime import datetime, timezone
+    from app import mood
+    profile = _require(profile_id, request)
+    w = chat.where({**profile, "viewer": req.here.model_dump()} if req.here else profile)
+    now = datetime.now(timezone.utc)
+    snap = mood.snapshot(profile, w, now)
+    if storage.mood_count_on(profile_id, snap["date"]) >= MOOD_PER_DAY:
+        raise HTTPException(status_code=429, detail="That's a lot of logs for one day — try again tomorrow.")
+    note = (req.note or "").strip() or None
+    care = mood.care_needed(req.valence, note, [{"local_date": snap["date"], "valence": req.valence}]
+                            + storage.mood_list(profile_id, 30))
+    log = storage.mood_add(profile_id, snap["date"], req.valence, req.feelings, req.causes, note, req.scope, snap)
+    return {"log": mood.public(log), "reply": mood.reply(profile, w, log, care)}
+
+
+@router.get("/{profile_id}/mood/patterns")
+def mood_patterns(profile_id: int, request: Request) -> dict:
+    from app import mood
+    _require(profile_id, request)
+    return mood.patterns(storage.mood_list(profile_id))
+
+
+@router.put("/{profile_id}/mood/share")
+def mood_share(profile_id: int, req: MoodShare, request: Request) -> dict:
+    """Whether Sukh may use the mood log in chat."""
+    _require(profile_id, request)
+    storage.set_mood_shared(profile_id, req.share)
+    return {"share": req.share}
+
+
+@router.delete("/{profile_id}/mood/{log_id}")
+def mood_delete_one(profile_id: int, log_id: int, request: Request) -> dict:
+    _require(profile_id, request)
+    if not storage.mood_delete(profile_id, log_id):
+        raise HTTPException(status_code=404, detail="Log not found")
+    return {"deleted": log_id}
+
+
+@router.delete("/{profile_id}/mood")
+def mood_delete_all(profile_id: int, request: Request) -> dict:
+    _require(profile_id, request)
+    return {"deleted": storage.mood_delete(profile_id)}

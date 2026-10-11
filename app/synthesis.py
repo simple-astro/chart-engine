@@ -223,4 +223,16 @@ def build(profile: dict, now: datetime | None = None) -> dict:
                "significators": {p: v["houses"] for p, v in c.get("significators", {}).get("by_planet", {}).items()},
                "note": "KP uses Placidus cusps; houses elsewhere are whole-sign."},
     }
+    mind = _state_of_mind(profile)
+    if mind:
+        out["state_of_mind"] = mind
     return out
+
+
+def _state_of_mind(profile: dict) -> dict | None:
+    """The person's recent mood logs and patterns — only when they agreed to share them with Sukh."""
+    from app import mood, storage
+    pid = profile.get("id")
+    if pid is None or not storage.mood_shared(pid):
+        return None
+    return mood.summary_for_sukh(storage.mood_list(pid, 60))

@@ -296,7 +296,7 @@ def today(day: date, lat: float, lon: float, tz_name: str, lagna_sign: int, birt
     return {
         "date": day.isoformat(), "tz": tz_name, "weekday": p.weekday, "tithi": p.tithi_number, "nakshatra": p.nakshatra,
         "rating": {"verdict": overall[0], "label": START_LABEL[overall[0]], "why": why},
-        "tara": tara, "chandra": chandra, "sukh": line, "do": dos[:3], "avoid": avoid,
+        "tara": tara, "chandra": chandra, "moon_house": (p.moon_sign_index - lagna_sign) % 12 + 1, "sukh": line, "do": dos[:3], "avoid": avoid,
         "best_times": best_times(w, hs, good), "rahu_kalam": w["rahu_kalam"], "yamaganda": w["yamaganda"],
         "colour": colour, "number": {"value": NUMBER[wear], "planet": wear},
         "direction": {"avoid": muhurat.DISHA_SHOOL[wd], "fix": SHOOL_FIX[wd]},

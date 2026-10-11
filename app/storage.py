@@ -78,6 +78,13 @@ def _connect() -> sqlite3.Connection:
     if "daily_limit" not in {r["name"] for r in conn.execute("PRAGMA table_info(access_codes)")}:
         # Questions per day for each tester on this code; NULL = the default from Settings.
         conn.execute("ALTER TABLE access_codes ADD COLUMN daily_limit INTEGER")
+    # State of mind: private mood logs, each with that moment's astrology (app/mood.py), for finding patterns.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS mood_logs ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER NOT NULL, ts TEXT NOT NULL, local_date TEXT NOT NULL,"
+        " valence INTEGER NOT NULL, feelings TEXT NOT NULL, causes TEXT NOT NULL, note TEXT, scope TEXT NOT NULL,"
+        " snapshot TEXT NOT NULL)"
+    )
     return conn
 
 
@@ -161,6 +168,8 @@ def delete(profile_id: int, owner: str | None = None) -> bool:
             return False
         conn.execute("DELETE FROM chat_messages WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM answer_cache WHERE profile_id = ?", (profile_id,))
+        conn.execute("DELETE FROM mood_logs WHERE profile_id = ?", (profile_id,))
+        conn.execute("DELETE FROM settings WHERE key = ?", (f"mood_share:{profile_id}",))
         return conn.execute("DELETE FROM profiles WHERE id = ?", (profile_id,)).rowcount > 0
 
 
@@ -433,3 +442,58 @@ def tg_claim_send(chat_id: int, day: str) -> bool:
         cur = conn.execute("UPDATE tg_users SET last_sent = ? WHERE chat_id = ? AND (last_sent IS NULL OR last_sent <> ?)",
                            (day, chat_id, day))
         return cur.rowcount == 1
+
+
+# ----- state of mind (mood logs); callers check the profile belongs to the person first -----
+def _mood(r: sqlite3.Row) -> dict:
+    d = dict(r)
+    for k in ("feelings", "causes", "snapshot"):
+        d[k] = json.loads(d[k])
+    return d
+
+
+def mood_add(profile_id: int, local_date: str, valence: int, feelings: list[str], causes: list[str],
+             note: str | None, scope: str, snapshot: dict) -> dict:
+    with _lock, _connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO mood_logs (profile_id, ts, local_date, valence, feelings, causes, note, scope, snapshot)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (profile_id, _now(), local_date, valence, json.dumps(feelings), json.dumps(causes), note, scope,
+             json.dumps(snapshot)))
+        r = conn.execute("SELECT * FROM mood_logs WHERE id = ?", (cur.lastrowid,)).fetchone()
+    return _mood(r)
+
+
+def mood_list(profile_id: int, limit: int | None = None) -> list[dict]:
+    """Newest first."""
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT * FROM mood_logs WHERE profile_id = ? ORDER BY id DESC" + (" LIMIT ?" if limit else ""),
+                            (profile_id, limit) if limit else (profile_id,)).fetchall()
+    return [_mood(r) for r in rows]
+
+
+def mood_count_on(profile_id: int, local_date: str) -> int:
+    with _lock, _connect() as conn:
+        return conn.execute("SELECT COUNT(*) FROM mood_logs WHERE profile_id = ? AND local_date = ?",
+                            (profile_id, local_date)).fetchone()[0]
+
+
+def mood_delete(profile_id: int, log_id: int | None = None) -> int:
+    """Delete one log, or all of this profile's logs when log_id is None. Returns how many went."""
+    with _lock, _connect() as conn:
+        if log_id is None:
+            return conn.execute("DELETE FROM mood_logs WHERE profile_id = ?", (profile_id,)).rowcount
+        return conn.execute("DELETE FROM mood_logs WHERE profile_id = ? AND id = ?", (profile_id, log_id)).rowcount
+
+
+def mood_shared(profile_id: int) -> bool:
+    """Whether the person agreed to let Sukh see their mood log in chat."""
+    return get_setting(f"mood_share:{profile_id}") == "1"
+
+
+def set_mood_shared(profile_id: int, share: bool) -> None:
+    with _lock, _connect() as conn:
+        if share:
+            conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, '1')", (f"mood_share:{profile_id}",))
+        else:
+            conn.execute("DELETE FROM settings WHERE key = ?", (f"mood_share:{profile_id}",))
