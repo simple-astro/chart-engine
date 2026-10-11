@@ -85,6 +85,12 @@ def _connect() -> sqlite3.Connection:
         " valence INTEGER NOT NULL, feelings TEXT NOT NULL, causes TEXT NOT NULL, note TEXT, scope TEXT NOT NULL,"
         " snapshot TEXT NOT NULL)"
     )
+    # Life events the person entered (app/life_events.py): checked against their chart, and the real-life backtest.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS life_events ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER NOT NULL, kind TEXT NOT NULL, date TEXT NOT NULL,"
+        " precision TEXT NOT NULL, created_at TEXT NOT NULL)"
+    )
     return conn
 
 
@@ -169,6 +175,7 @@ def delete(profile_id: int, owner: str | None = None) -> bool:
         conn.execute("DELETE FROM chat_messages WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM answer_cache WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM mood_logs WHERE profile_id = ?", (profile_id,))
+        conn.execute("DELETE FROM life_events WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM settings WHERE key = ?", (f"mood_share:{profile_id}",))
         return conn.execute("DELETE FROM profiles WHERE id = ?", (profile_id,)).rowcount > 0
 
@@ -497,3 +504,30 @@ def set_mood_shared(profile_id: int, share: bool) -> None:
             conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, '1')", (f"mood_share:{profile_id}",))
         else:
             conn.execute("DELETE FROM settings WHERE key = ?", (f"mood_share:{profile_id}",))
+
+
+# ----- life events; callers check the profile belongs to the person first -----
+def event_add(profile_id: int, kind: str, date: str, precision: str) -> dict:
+    with _lock, _connect() as conn:
+        cur = conn.execute("INSERT INTO life_events (profile_id, kind, date, precision, created_at) VALUES (?, ?, ?, ?, ?)",
+                           (profile_id, kind, date, precision, _now()))
+        return dict(conn.execute("SELECT * FROM life_events WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def event_list(profile_id: int) -> list[dict]:
+    """Oldest first, as a life story reads."""
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT * FROM life_events WHERE profile_id = ? ORDER BY date, id", (profile_id,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def event_delete(profile_id: int, event_id: int) -> bool:
+    with _lock, _connect() as conn:
+        return conn.execute("DELETE FROM life_events WHERE profile_id = ? AND id = ?", (profile_id, event_id)).rowcount > 0
+
+
+def all_events() -> list[dict]:
+    """Every person's events with their chart (admin's real-life backtest; no names leave this module)."""
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT e.*, p.chart, p.request FROM life_events e JOIN profiles p ON p.id = e.profile_id").fetchall()
+    return [{**dict(r), "chart": json.loads(r["chart"]), "request": json.loads(r["request"])} for r in rows]

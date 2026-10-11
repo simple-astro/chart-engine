@@ -221,6 +221,53 @@ def lord_verdict(chart: dict, topic: str, p: str) -> dict:
     return j
 
 
+def dba_verdict(js: dict, required: bool, kar, karakas) -> tuple[str, str | None]:
+    """A period's verdict from its three lords' verdicts (maha / antar / praty), and what held it back, if anything.
+    The book's timing sequence: the Dasa must allow, the Bhukti pinpoints, the Antar times the event."""
+    ok = lambda j: j["verdict"] in ("supports", "leans good")
+    neg = lambda j: j["verdict"] in ("against", "blocks")
+    if js["maha"]["verdict"] == "blocks":
+        verdict = "challenging" if neg(js["antar"]) else "mixed"
+    elif ok(js["antar"]) and ok(js["praty"]):
+        verdict = "strong"
+    elif ok(js["antar"]) or (ok(js["maha"]) and ok(js["praty"])):
+        verdict = "favourable"
+    elif neg(js["antar"]) and neg(js["praty"]):
+        verdict = "challenging"
+    else:
+        verdict = "mixed"
+    # The Dasa lord must allow the event, then the Bhukti; a required karaka must be involved.
+    cap = None
+    if js["maha"]["verdict"] == "blocks":
+        cap = "the Dasa lord does not allow it"
+    elif js["antar"]["verdict"] == "blocks":
+        cap = "the Bhukti lord does not allow it"
+    elif required and not kar:
+        cap = f"no significator ({', '.join(sorted(karakas))}) is involved"
+    if cap and verdict in ("strong", "favourable"):
+        return "mixed", cap
+    return verdict, None
+
+
+def verdict_spans(chart: dict, topic: str, start: date, end: date) -> list[dict]:
+    """Each period's verdict for a life matter between two dates, without the transit notes (fast enough for
+    decades: used to check past events against the chart and against chance)."""
+    _, _, _, _, karakas, required, _ = TOPICS[topic]
+    cache: dict[str, dict] = {}
+
+    def lord(p):
+        if p not in cache:
+            cache[p] = lord_verdict(chart, topic, p)
+        return cache[p]
+    out = []
+    for per in periods_in(chart, start, end):
+        js = {lvl: lord(per[lvl]) for lvl in ("maha", "antar", "praty")}
+        kar = karaka_present(chart, [per[l] for l in js], karakas)
+        verdict, _ = dba_verdict(js, required, kar, karakas)
+        out.append({**per, "verdict": verdict, "lords": js})
+    return out
+
+
 def predict(chart: dict, topic: str, start: date | None = None, months: int = 24) -> dict:
     if topic not in TOPICS:
         raise ValueError(f"unknown topic: {topic}")
@@ -248,29 +295,8 @@ def predict(chart: dict, topic: str, start: date | None = None, months: int = 24
         if kar:
             score += 0.5
             notes.append(f"Significator: {kar}")
-        # The book's timing sequence: the Dasa must allow, the Bhukti pinpoints, the Antar times the event.
-        ok = lambda j: j["verdict"] in ("supports", "leans good")
-        neg = lambda j: j["verdict"] in ("against", "blocks")
-        if js["maha"]["verdict"] == "blocks":
-            verdict = "challenging" if neg(js["antar"]) else "mixed"
-        elif ok(js["antar"]) and ok(js["praty"]):
-            verdict = "strong"
-        elif ok(js["antar"]) or (ok(js["maha"]) and ok(js["praty"])):
-            verdict = "favourable"
-        elif neg(js["antar"]) and neg(js["praty"]):
-            verdict = "challenging"
-        else:
-            verdict = "mixed"
-        # The Dasa lord must allow the event, then the Bhukti; a required karaka must be involved.
-        cap = None
-        if js["maha"]["verdict"] == "blocks":
-            cap = "the Dasa lord does not allow it"
-        elif js["antar"]["verdict"] == "blocks":
-            cap = "the Bhukti lord does not allow it"
-        elif required and not kar:
-            cap = f"no significator ({', '.join(sorted(karakas))}) is involved"
-        if cap and verdict in ("strong", "favourable"):
-            verdict = "mixed"
+        verdict, cap = dba_verdict(js, required, kar, karakas)
+        if cap:
             notes.append(f"Held back: {cap}")
         reasons = []
         for name, j in (("Dasa", js["maha"]), ("Bhukti", js["antar"]), ("Antar", js["praty"])):

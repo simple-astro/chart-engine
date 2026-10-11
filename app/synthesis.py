@@ -223,6 +223,12 @@ def build(profile: dict, now: datetime | None = None) -> dict:
                "significators": {p: v["houses"] for p, v in c.get("significators", {}).get("by_planet", {}).items()},
                "note": "KP uses Placidus cusps; houses elsewhere are whole-sign."},
     }
+    if profile.get("id") is not None:
+        from app import life_events, storage
+        past = storage.event_list(profile["id"])
+        if past:
+            out["life_events"] = {"entered_by_the_person": life_events.for_sukh(past),
+                                  "rule": "Real events from their life: refer to them naturally when relevant."}
     mind = _state_of_mind(profile)
     if mind:
         out["state_of_mind"] = mind

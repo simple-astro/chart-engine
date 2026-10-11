@@ -63,6 +63,7 @@
   .actions{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin-top:2px}
   .btn{border:0;border-radius:10px;padding:10px 18px;font:600 .95rem var(--sans);cursor:pointer;color:#1a1322;background:linear-gradient(140deg,var(--g1),var(--g2))}
   a.btn{display:inline-block;text-decoration:none}
+  .evkpi{margin:4px 0 12px;font-size:.95rem} .evkpi b{color:var(--acc)}
   .btn:disabled{opacity:.55;cursor:default}
   .btn.ghost{background:var(--bg2);color:var(--ink);border:1px solid var(--line)}
   .status{font-size:.88rem;color:var(--mut)} .status.ok{color:var(--ok)} .status.err{color:var(--bad)}
@@ -231,6 +232,16 @@
     </div>
     <span class="status" id="rl-st" role="status"></span>
     <div id="rl-list" class="rllist"><p class="empty">Loading…</p></div>
+  </section>
+
+  <section class="card" id="ev">
+    <h2>Real-life accuracy</h2>
+    <p class="sub">Life events people added (“Your life so far”), checked against their charts. <b>Fits</b> = the event fell in a period the engine supports; <b>by chance</b> = how many would fit if the dates were random. Year-only dates are left out. No names are shown.</p>
+    <div class="evkpi" id="ev-kpi"></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Life matter</th><th class="num">Events</th><th class="num">Fit</th><th class="num">By chance</th></tr></thead>
+      <tbody id="ev-list"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+    </table></div>
   </section>
 
   <section class="card" id="bk">
@@ -653,6 +664,15 @@ function renderBackups(d) {
   st.className = 'status ' + (stale ? 'err' : 'ok');
   st.textContent = last ? (stale ? 'The last copy is over a day old — check the server logs.' : 'Last copy: ' + new Date(last.made).toLocaleString()) : '';
 }
+async function loadEvents() {
+  try {
+    const d = await api('/admin/api/events');
+    $('ev-kpi').innerHTML = d.events ? `<b>${d.fits} of ${d.events}</b> events fit, against about <b>${d.expected}</b> by chance` +
+      (d.lift ? ` — <b>${d.lift}×</b> chance` : '') + ` · ${d.charts} chart${d.charts === 1 ? '' : 's'}` : '';
+    $('ev-list').innerHTML = d.by_topic.length ? d.by_topic.map(r => `<tr><td>${esc(r.title)}</td><td class="num">${r.events}</td><td class="num">${r.fits}</td><td class="num">${r.expected}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="empty">No dated events yet. They appear as people add them on My Life → Your life so far.</td></tr>';
+  } catch (e) { $('ev-list').innerHTML = `<tr><td colspan="4" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
+}
 async function loadBackups() { try { renderBackups(await api('/admin/api/backups')); } catch (e) { $('bk-list').innerHTML = `<tr><td colspan="3" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; } }
 $('bk-run').addEventListener('click', async e => {
   e.target.disabled = true; $('bk-st').className = 'status'; $('bk-st').textContent = 'Copying…';
@@ -661,7 +681,7 @@ $('bk-run').addEventListener('click', async e => {
 });
 
 async function loadAll() {
-  try { renderOverview(await api('/admin/api/overview')); await loadCodes(); await loadRL(); await loadBackups(); await loadQueries(true); }
+  try { renderOverview(await api('/admin/api/overview')); await loadCodes(); await loadRL(); await loadEvents(); await loadBackups(); await loadQueries(true); }
   catch (e) { $('queries').innerHTML = `<tr><td colspan="7" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
 }
 $('refresh').addEventListener('click', loadAll);

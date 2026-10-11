@@ -321,3 +321,34 @@ def backup_download(request: Request):
     name = f"simplejyotish-{datetime.now(timezone.utc).strftime('%Y-%m-%d-%H%M')}.db"
     return FileResponse(path, filename=name, media_type="application/vnd.sqlite3",
                         background=BackgroundTask(path.unlink, missing_ok=True))
+
+
+# ----- real-life backtest: everyone's entered events against chance (no names) -----
+@router.get("/admin/api/events")
+def events_backtest(request: Request) -> dict:
+    """How often real events fall in periods the engine supports, against how often chance would (exact-day and
+    month dates only; year-only dates are too rough to test)."""
+    from datetime import date, datetime, timezone
+    from app import life_events as L
+    from app.routes import with_extras
+    _require_admin(request)
+    today = datetime.now(timezone.utc).date()
+    by: dict[str, dict] = {}
+    people: set[int] = set()
+    for e in storage.all_events():
+        if e["precision"] == "year":
+            continue
+        chart = with_extras(e["chart"])
+        c = L.check(chart, e["kind"], date.fromisoformat(e["date"]), e["precision"])
+        base = L._base_rate(chart, c["topic"], date.fromisoformat(e["request"]["dob"]), today)
+        t = by.setdefault(c["topic"], {"topic": c["topic"], "title": L.K.TOPICS[c["topic"]][0], "events": 0, "fits": 0, "expected": 0.0})
+        t["events"] += 1
+        t["fits"] += c["fit"] == "fits"
+        t["expected"] += base
+        people.add(e["profile_id"])
+    rows = sorted(by.values(), key=lambda r: -r["events"])
+    for r in rows:
+        r["expected"] = round(r["expected"], 1)
+    n, fits, exp = sum(r["events"] for r in rows), sum(r["fits"] for r in rows), sum(r["expected"] for r in rows)
+    return {"charts": len(people), "events": n, "fits": fits, "expected": round(exp, 1),
+            "lift": round(fits / exp, 2) if exp else None, "by_topic": rows}

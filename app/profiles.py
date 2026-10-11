@@ -302,3 +302,63 @@ def mood_delete_one(profile_id: int, log_id: int, request: Request) -> dict:
 def mood_delete_all(profile_id: int, request: Request) -> dict:
     _require(profile_id, request)
     return {"deleted": storage.mood_delete(profile_id)}
+
+
+# ----- life events: what really happened, checked against the chart (app/life_events.py) -----
+class EventRequest(BaseModel):
+    kind: str
+    year: int = Field(ge=1900, le=2100)
+    month: int | None = Field(default=None, ge=1, le=12)
+    day: int | None = Field(default=None, ge=1, le=31)
+
+    @field_validator("kind")
+    @classmethod
+    def _known_kind(cls, v: str) -> str:
+        from app import life_events
+        if v not in life_events.KINDS:
+            raise ValueError("unknown kind of event")
+        return v
+
+
+def _events_view(p: dict) -> dict:
+    from datetime import date
+    from app import life_events as L
+    chart = with_extras(p["chart"])
+    birth, today = date.fromisoformat(p["request"]["dob"]), chat.local_today(p)
+    events = [{**e, "label": L.KINDS[e["kind"]][0],
+               "check": L.check(chart, e["kind"], date.fromisoformat(e["date"]), e["precision"])}
+              for e in storage.event_list(p["id"])]
+    return {"kinds": [{"key": k, "label": v[0]} for k, v in L.KINDS.items()], "events": events,
+            "summary": L.summary(chart, events, birth, today)}
+
+
+@router.get("/{profile_id}/events")
+def events_list(profile_id: int, request: Request) -> dict:
+    return _events_view(_require(profile_id, request))
+
+
+@router.post("/{profile_id}/events")
+def events_add(profile_id: int, req: EventRequest, request: Request) -> dict:
+    from datetime import date
+    p = _require(profile_id, request)
+    if req.day is not None and req.month is None:
+        raise HTTPException(status_code=422, detail="Add the month too, or leave the day out.")
+    try:
+        d = date(req.year, req.month or 1, req.day or 1)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="That date doesn't exist.") from exc
+    birth = date.fromisoformat(p["request"]["dob"])
+    if d < date(birth.year, birth.month if req.month else 1, 1) or d > chat.local_today(p):
+        raise HTTPException(status_code=422, detail="The date must be between your birth and today.")
+    if len(storage.event_list(profile_id)) >= 50:
+        raise HTTPException(status_code=422, detail="You can keep up to 50 events.")
+    storage.event_add(profile_id, req.kind, d.isoformat(), "day" if req.day else "month" if req.month else "year")
+    return _events_view(p)
+
+
+@router.delete("/{profile_id}/events/{event_id}")
+def events_delete(profile_id: int, event_id: int, request: Request) -> dict:
+    p = _require(profile_id, request)
+    if not storage.event_delete(profile_id, event_id):
+        raise HTTPException(status_code=404, detail="Event not found")
+    return _events_view(p)
