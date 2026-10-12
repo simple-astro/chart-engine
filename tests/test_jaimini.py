@@ -123,3 +123,33 @@ def test_arudha_lagna_only_falls_in_houses_3_4_5_9_10_11():
             assert (a["in_house"] - a["house"]) % 12 not in (0, 6)
         assert c["jaimini"]["arudhas"][0]["in_house"] in (3, 4, 5, 9, 10, 11)
     assert len(seen) >= 8
+
+
+def test_rashi_drishti_matches_the_published_table():
+    from core import chara
+    A = lambda *names: {["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius",
+                         "Capricorn", "Aquarius", "Pisces"].index(n) for n in names}
+    assert chara.rashi_aspects(0) == A("Leo", "Scorpio", "Aquarius")          # Aries, not Taurus
+    assert chara.rashi_aspects(3) == A("Scorpio", "Aquarius", "Taurus")       # Cancer, not Leo
+    assert chara.rashi_aspects(6) == A("Aquarius", "Taurus", "Leo")           # Libra, not Scorpio
+    assert chara.rashi_aspects(9) == A("Taurus", "Leo", "Scorpio")            # Capricorn, not Aquarius
+    assert chara.rashi_aspects(1) == A("Cancer", "Libra", "Capricorn")        # Taurus, not Aries
+    assert chara.rashi_aspects(4) == A("Libra", "Capricorn", "Aries")         # Leo, not Cancer
+    assert chara.rashi_aspects(7) == A("Capricorn", "Aries", "Cancer")        # Scorpio, not Libra
+    assert chara.rashi_aspects(10) == A("Aries", "Cancer", "Libra")           # Aquarius, not Capricorn
+    for s in (2, 5, 8, 11):
+        assert chara.rashi_aspects(s) == A("Gemini", "Virgo", "Sagittarius", "Pisces") - {s}
+
+
+def test_chara_dasha_reading_explains_the_sign_as_a_temporary_lagna():
+    from datetime import datetime, timezone
+    from core import chara
+    c = client.post("/chart", json=OWNER_LIKE).json()
+    r = chara.summary(c, datetime(2026, 10, 12, tzinfo=timezone.utc))["reading"]
+    assert r["now"]["sign"] == "Cancer" and "temporary Lagna" in r["now"]["headline"] and r["now"]["house"] == 8
+    pts = " ".join(r["now"]["points"])
+    assert "Saturn (your AmK)" in pts and "look at Cancer" in pts   # Moon and Saturn sit in Scorpio, which aspects Cancer
+    assert "12th from your Arudha Lagna" in pts
+    assert "Upapada sign" in " ".join(r["sub"]["points"])            # Aquarius is the Upapada (from the earlier test)
+    bad = ("death", "ruin", "disaster", "danger", "doom")
+    assert not any(w in " ".join(" ".join(x["points"]) for x in r.values() if x).lower() for w in bad)

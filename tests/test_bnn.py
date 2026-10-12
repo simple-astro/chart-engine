@@ -27,6 +27,10 @@ def test_circuits_name_partners_ahead_behind_and_exchanges():
     v = k["Venus"]  # Venus in Leo with Sun, Mars, Mercury; Jupiter in the fire trine; Ketu in Virgo ahead
     assert {"Sun", "Mars", "Mercury", "Jupiter"} <= set(v["joined"]) and v["ahead"] == ["Ketu"]
     assert "in the same sign by" in v["text"][0] and "through the fire trine by Jupiter" in v["text"][0]
+    assert any("What comes next: Ketu is in the next sign, so for your relationships, wealth and comforts the direction "
+               "of travel is toward research, detachment and letting go" in x for x in v["text"])
+    assert any(x.startswith("What stands behind it: Rahu") and "foreign influence" in x for x in k["Jupiter"]["text"])
+    assert not any("Ahead of it" in x or "Behind it" in x for c_ in c["bnn"]["circuits"] for x in c_["text"])
     assert "man's chart" in k["Jupiter"]["role"] and "woman's chart" in k["Jupiter"]["role"]  # no gender guessed
     # an exchange: Mars in Leo and Sun in Aries swap signs
     c2 = {"grahas": {**{p: {"sign_index": 6, "degrees_in_sign": 10.0} for p in bnn.ORDER},

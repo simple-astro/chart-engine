@@ -774,6 +774,8 @@
   .bnnx{display:inline-flex;align-items:center;gap:6px;font-style:normal;white-space:nowrap}
   .bnnc{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px} .bnnc .jai p+p{margin-top:6px}
   .bnns{font:500 .82rem var(--sans);color:var(--mut)}
+  .chrd{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-bottom:8px}
+  .chrd .jai ul{margin:6px 0 0;padding-left:18px;font-size:.88rem} .chrd .jai li{margin:4px 0} .chh{font-weight:600;font-size:.9rem;color:var(--ink)}
 
   /* ---------- Jaimini pane ---------- */
   .gjai{margin:6px 0 0;font-size:.86rem;color:var(--mut);border-left:2px solid var(--acc2);padding-left:10px}
@@ -1699,6 +1701,10 @@ function render(c,req){
     '<div class="yogcur"><div><small>Now</small><b>'+esc(Y.current.sign)+' <span>· '+Y.current.years+' years</span></b><em>'+ym(Y.current.start)+' – '+ym(Y.current.end)+'</em><p>'+esc(why(Y.current))+'</p></div>'+
       (Y.sub?'<div><small>Sub-period</small><b>'+esc(Y.sub.sign)+'</b><em>'+ym(Y.sub.start)+' – '+ym(Y.sub.end)+'</em><p>'+esc('Your '+ordn((Y.sub.sign_index-c.lagna.sign_index+12)%12+1)+' house: '+HT[(Y.sub.sign_index-c.lagna.sign_index+12)%12+1]+' is in focus now.')+'</p></div>':'')+
       (Y.next?'<div><small>Next</small><b>'+esc(Y.next.sign)+' <span>· '+Y.next.years+' years</span></b><em>from '+ym(Y.next.start)+'</em><p>'+esc(why(Y.next))+'</p></div>':'')+'</div>'+
+    '<h4 class="jaih" style="font-size:1rem">What this means</h4><div class="chrd">'+
+      [['Now · '+Y.current.sign,Y.reading.now],Y.reading.sub&&['Sub-period · '+Y.sub.sign,Y.reading.sub],Y.reading.next&&['Next · '+Y.next.sign,Y.reading.next]].filter(Boolean).map(([t,r])=>
+        '<div class="jai"><small>'+esc(t)+'</small><p><b class="chh">'+esc(r.headline)+'</b></p><ul>'+r.points.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>').join('')+'</div>'+
+    '<h4 class="jaih" style="font-size:1rem">All periods</h4>'+
     '<div class="scroll"><table id="yogtable"></table></div>'+
     '<h4 class="jaih" style="font-size:1rem">Sub-periods of '+esc(Y.current.sign)+'</h4><div class="scroll"><table id="yogsub"></table></div>'+
     '<div class="hint">Chara Dasha is sign-based: each period treats its sign as a temporary Lagna, and the sub-periods run month by month. Shown for reflection beside Vimshottari; your timing verdicts still come from Vimshottari.</div>';

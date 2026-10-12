@@ -33,6 +33,23 @@ ADDS = {"Sun": "authority and recognition", "Moon": "feeling, public contact and
         "Saturn": "hard work, structure and service", "Rahu": "ambition, foreign links and the unusual",
         "Ketu": "detachment, research and inner depth"}
 ORDER = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]
+# What each karaka's area of life is called in a sentence.
+AREA = {"Jupiter": "your path, children and guidance", "Venus": "your relationships, wealth and comforts",
+        "Saturn": "your career and work", "Mercury": "your studies and thinking",
+        "Mars": "your energy, property and siblings", "Moon": "your mind and home life",
+        "Sun": "your standing and your bond with your father"}
+# The 2nd sign shows where the energy flows next: what the planet standing there leads toward.
+NEXT = {"Sun": "recognition, leadership and standing on your own", "Moon": "feeling, care and contact with people",
+        "Mars": "action, drive and taking on challenges", "Mercury": "learning, trade and communication",
+        "Jupiter": "wisdom, growth and guidance", "Venus": "comfort, partnership and enjoyment",
+        "Saturn": "discipline, responsibility and slow, solid results", "Rahu": "ambition, new experiences and the unusual",
+        "Ketu": "research, detachment and letting go of what is finished"}
+# The 12th sign shows the background: what the planet standing there has already given.
+BEHIND = {"Sun": "confidence and authority from your family and upbringing", "Moon": "emotional support and care from early life",
+          "Mars": "energy and courage built through earlier struggles", "Mercury": "learning and skills gathered earlier",
+          "Jupiter": "blessings, good advice and protection from the past", "Venus": "comforts and good relationships from the past",
+          "Saturn": "hard lessons and discipline from earlier years", "Rahu": "unusual experiences or foreign influence earlier on",
+          "Ketu": "inner depth and learning carried over from earlier"}
 
 
 def _list(xs: list[str]) -> str:
@@ -78,11 +95,16 @@ def analyse(chart: dict) -> dict:
         else:
             text.append(f"{k} ({SHORT[k]}) stands alone in its trine: it works through its own sign, {SIGNS[s]}.")
         if ahead:
-            text.append(f"Ahead of it (2nd sign): {_list(ahead)} — where this area is heading.")
+            text.append(f"What comes next: {_list(ahead)} {'are' if len(ahead) > 1 else 'is'} in the next sign, so for {AREA[k]} "
+                        "the direction of travel is toward "
+                        + "; and ".join(f"{NEXT[p]}{f' (via {p})' if len(ahead) > 1 else ''}" for p in ahead) + ".")
         if behind:
-            text.append(f"Behind it (12th sign): {_list(behind)} — the background that supports it.")
+            text.append(f"What stands behind it: {_list(behind)} {'are' if len(behind) > 1 else 'is'} in the sign just before, "
+                        f"so for {AREA[k]} the background support is "
+                        + "; and ".join(f"{BEHIND[p]}{f' (from {p})' if len(behind) > 1 else ''}" for p in behind) + ".")
         if opposite:
-            text.append(f"Opposite it (7th sign): {_list(opposite)} — a partner or counterweight.")
+            text.append(f"What balances it: {_list(opposite)} {'sit' if len(opposite) > 1 else 'sits'} opposite, so partners and "
+                        f"other people bring " + "; and ".join(f"{ADDS[p]}" for p in opposite) + " into the picture.")
         if exchange:
             text.append(f"{k} and {exchange} exchange signs: their themes are bound together.")
         circuits.append({"karaka": k, "role": role, "sign": SIGNS[s], "joined": joined, "ahead": ahead,
