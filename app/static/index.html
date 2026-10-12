@@ -210,11 +210,12 @@
   .stat small{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
   .stat b{font-size:1rem;color:var(--acc);font-weight:600}
   .grid{display:flex;flex-direction:column;gap:22px}
-  .chartcard{display:grid;grid-template-columns:minmax(280px,420px) 1fr;grid-template-areas:"h h" "c k" "c l" "c n";column-gap:32px;align-content:start}
+  .chartcard{display:grid;grid-template-columns:minmax(280px,420px) 1fr;grid-template-areas:"h h" "c k" "c l" "c n" "r r";column-gap:32px;align-content:start}
   .chartcard>.chhead{grid-area:h;display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:14px}
   .chhead h3{font:600 1.15rem var(--serif);margin:0;text-align:center} .chseg{width:min(280px,100%)} .chartcard>#chart{grid-area:c} .chartcard>.ckey{grid-area:k;margin-top:0;align-self:start}
   .chartcard>.clegend{grid-area:l;justify-content:flex-start} .chartcard>.hint{grid-area:n;text-align:left!important}
-  @media (max-width:900px){.chartcard{grid-template-columns:1fr;grid-template-areas:"h" "c" "k" "l" "n"}
+  .chartcard>.hread{grid-area:r}
+  @media (max-width:900px){.chartcard{grid-template-columns:1fr;grid-template-areas:"h" "c" "r" "k" "l" "n"}
     .chartcard>.ckey{margin-top:16px} .chartcard>.clegend{justify-content:center} .chartcard>.hint{text-align:center!important}}
   .chartcard{padding:22px;position:relative}
   .chartcard h3{font:600 1.15rem var(--serif);margin-bottom:14px;text-align:center}
@@ -745,6 +746,25 @@
   .updays{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px} .updays span{display:flex;flex-direction:column;background:var(--soft);border-radius:10px;padding:6px 10px;font-size:.76rem;color:var(--mut)}
   .updays b{color:var(--ink);font-size:.86rem}
 
+  /* ---------- tap a house (houses.js) ---------- */
+  .chart .hz{fill:transparent;stroke:none;pointer-events:none}
+  .chart.htap .hz{pointer-events:auto;cursor:pointer} .chart.htap .hz:hover{fill:var(--soft)}
+  .chart .hz.sel{fill:color-mix(in srgb,var(--acc2) 22%,transparent)}
+  .chart svg text{pointer-events:none} .chart svg .pg{pointer-events:auto}
+  .harrow{fill:none;stroke-width:2.2;stroke-dasharray:7 5;stroke-linecap:round} .harrow.good{stroke:var(--ok)} .harrow.bad{stroke:var(--bad)}
+  .ahead.good{fill:var(--ok)} .ahead.bad{fill:var(--bad)}
+  @media (prefers-reduced-motion:no-preference){.harrow{animation:hdash 1.2s linear infinite}@keyframes hdash{to{stroke-dashoffset:-24}}}
+  .hread{margin-top:16px;border:1px solid var(--line);border-left:3px solid var(--acc2);border-radius:14px;padding:14px 16px;background:var(--bg2)}
+  .hrhead{display:flex;align-items:flex-start;gap:10px} .hrhead>div{flex:1;min-width:0}
+  .hrhead small{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--acc2);font-weight:600}
+  .hrhead h3{margin:2px 0 0!important;text-align:left!important;font:600 1.15rem/1.3 var(--serif)} .hrhead .badge{margin:2px 0 0;flex:none}
+  .hrclose{border:0;background:var(--soft);width:28px;height:28px;border-radius:50%;cursor:pointer;color:var(--ink);font-size:1rem;flex:none}
+  .hrlist{margin:10px 0;padding-left:18px;font-size:.9rem} .hrlist li{margin:5px 0}
+  .hrq{margin-top:12px} .hrq label{display:block;margin:0 0 6px;font:500 .82rem var(--sans);text-transform:none;letter-spacing:0;color:var(--mut)}
+  .hrq>div{display:flex;gap:8px} .hrq input{flex:1;min-width:0;max-width:none} .hrq .btn{padding:9px 16px;flex:none}
+  .hrkey{display:flex;gap:14px;font-size:.76rem;color:var(--mut);margin-bottom:10px} .hrkey i{display:inline-block;width:16px;height:0;border-top:2px dashed;vertical-align:middle;margin-right:5px}
+  .hrkey i.good{border-color:var(--ok)} .hrkey i.bad{border-color:var(--bad)}
+
   /* ---------- Jaimini pane ---------- */
   .gjai{margin:6px 0 0;font-size:.86rem;color:var(--mut);border-left:2px solid var(--acc2);padding-left:10px}
   .gpurpose{margin-top:18px} .gpurpose p{margin:0 0 8px}
@@ -877,7 +897,7 @@
         <ul class="feat">
           <li><span>◈</span><div><b>Full kundli</b> — North Indian chart, houses, KP sub-lords and 16 divisional charts</div></li>
           <li><span>⏳</span><div><b>Vimshottari dasha</b> with your current mahadasha and antardasha highlighted</div></li>
-          <li><span>☍</span><div><b>Lal Kitab &amp; guna milan</b> — chart-specific upay and 36-point compatibility</div></li>
+          <li><span>☍</span><div><b>Lal Kitab &amp; guna milan</b> — chart-specific upaya and 36-point compatibility</div></li>
           <li><span>✦</span><div><b>Ask anything</b> — an assistant grounded in your chart and live transits</div></li>
         </ul>
       </div>
@@ -997,7 +1017,8 @@
         <div id="chart" class="chart"></div>
         <div id="chartkey" class="ckey" aria-label="Planets"></div>
         <div class="clegend"><span><i class="bd ex">▲</i>Exalted</span><span><i class="bd db">▼</i>Debilitated</span><span><i class="bd own">⌂</i>Own sign</span><span><i class="bd rt">R</i>Retrograde</span><span><i class="bd cb">C</i>Combust</span><span><i class="sw"></i>Lagna</span></div>
-        <div class="hint" id="charthint">Numbers are signs (1 = Aries). Tap any planet to ask Sukh what it means for you.</div></aside>
+        <div class="hint" id="charthint">Numbers are signs (1 = Aries). Tap any planet to ask Sukh what it means for you.</div>
+        <div class="hread" id="hread" hidden></div></aside>
       <div class="card panel">
         <div class="cpick"><label for="csel">Show</label>
           <select id="csel" autocomplete="off">
@@ -1034,6 +1055,7 @@
 <script src="/static/mood.js?v=1"></script>
 <script src="/static/events.js?v=2"></script>
 <script src="/static/upcoming.js?v=2"></script>
+<script src="/static/houses.js?v=4"></script>
 <script src="/static/tools.js?v=2"></script>
 <script src="/static/kptiming.js?v=6"></script>
 <script src="/static/transit.js?v=10"></script>
@@ -1332,6 +1354,10 @@ $('f').addEventListener('submit',async e=>{
 // North Indian diamond: houses fixed, signs rotate from the lagna. byH: {0..11: ['Su','Mo',...]}
 const BD={ex:['▲','ex','Exalted'],db:['▼','db','Debilitated'],own:['⌂','own','Own sign'],R:['R','rt','Retrograde'],C:['C','cb','Combust']};
 let drawN=0;
+// The 12 house shapes of the North Indian chart (house 1 is the top diamond, counting anti-clockwise).
+const HOUSE_POLY=['200,0 300,100 200,200 100,100','0,0 200,0 100,100','0,0 100,100 0,200','0,200 100,100 200,200 100,300',
+  '0,200 100,300 0,400','0,400 100,300 200,400','200,400 100,300 200,200 300,300','200,400 300,300 400,400',
+  '400,400 300,300 400,200','400,200 300,300 200,200 300,100','400,200 300,100 400,0','400,0 300,100 200,0'];
 function drawNorth(el,lagnaIdx,byH,houseSigns){
   const P=[[200,95],[100,45],[45,100],[95,200],[45,300],[100,355],[200,305],[300,355],[355,300],[305,200],[355,100],[300,45]];
   const gid='ag'+(++drawN);
@@ -1341,7 +1367,8 @@ function drawNorth(el,lagnaIdx,byH,houseSigns){
     '<polygon class="kd" points="400,200 300,100 200,200 300,300"/><polygon class="kd" points="200,400 300,300 200,200 100,300"/><polygon class="kd" points="0,200 100,100 200,200 100,300"/>'+
     '<polygon fill="url(#'+gid+')" points="200,0 300,100 200,200 100,100"/>'+
     '<path class="ln" d="M0 0L400 400M400 0L0 400M200 0L400 200L200 400L0 200Z"/>'+
-    '<text class="asclbl" x="200" y="32" text-anchor="middle">LAGNA</text>';
+    '<text class="asclbl" x="200" y="32" text-anchor="middle">LAGNA</text>'+
+    HOUSE_POLY.map((pts,i)=>'<polygon class="hz" data-h="'+(i+1)+'" points="'+pts+'"><title>House '+(i+1)+'</title></polygon>').join('');
   // byH entries are 'Su' strings, or {t:'Su', d:'15°', p:'Sun', b:['ex','R'], cls} for the main chart.
   const lab=p=>typeof p==='string'?p:p.jp?'<tspan class="jp">'+p.t+'</tspan>':'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
     (p.d?'<tspan class="dg" dx="1.5">'+p.d+'</tspan>':'')+(p.b||[]).map(k=>'<tspan class="bd '+BD[k][1]+'" dx="1">'+BD[k][0]+'</tspan>').join('')+'</tspan>';
@@ -1356,6 +1383,12 @@ function drawNorth(el,lagnaIdx,byH,houseSigns){
 }
 // ----- main chart: planet tooltip + key highlight -----
 let CHART_TIP=null,PLANET_Q=null,HOUSE_OF={},tipPinned=false,CHART_VIEW='lagna',RERENDER=null;
+let SEL_H=null;
+// Tap a house (Lagna view): highlight it, draw the aspect arrows and show its reading (houses.js).
+window.selectHouse=h=>{SEL_H=h;if(!lastChart)return;window.drawHouseFocus($('chart').querySelector('svg'),lastChart,h);
+  window.renderHouseReading($('hread'),lastChart,h);if(h&&!canHover())$('hread').scrollIntoView({behavior:'smooth',block:'nearest'})};
+$('chart').addEventListener('click',e=>{if(e.target.closest('.pg')||CHART_VIEW!=='lagna')return;const z=e.target.closest('.hz');
+  if(z)window.selectHouse(+z.dataset.h===SEL_H?null:+z.dataset.h)});
 let JPTS=false;try{JPTS=localStorage.getItem('sj_jpts')==='1'}catch(e){}
 $('jpt').setAttribute('aria-pressed',String(JPTS));
 $('jpt').addEventListener('click',()=>{JPTS=!JPTS;$('jpt').setAttribute('aria-pressed',String(JPTS));try{localStorage.setItem('sj_jpts',JPTS?'1':'0')}catch(e){};if(RERENDER)RERENDER()});
@@ -1555,6 +1588,7 @@ const kp=k=>k?[k.star_lord,k.sub_lord].join(' / '):'';
 
 function render(c,req){
   const m=c.meta,l=c.lagna,now0=Date.now();
+  if(c!==lastChart)SEL_H=null;
   const md0=(c.dasha||[]).find(d=>now0>=new Date(d.start)&&now0<new Date(d.end));
   const ad0=md0&&(md0.children||[]).find(d=>now0>=new Date(d.start)&&now0<new Date(d.end));
   $('bname').textContent=(req&&req.name)||m.name||'Birth chart';
@@ -1578,11 +1612,14 @@ function render(c,req){
     [['AL',J.arudha_lagna.house],['UL',J.upapada.house]].forEach(([t,h])=>(byH[h-1]=byH[h-1]||[]).push({t,jp:true}))}
   $('jpt').hidden=chalit;
   drawNorth($('chart'),l.sign_index,byH,chalit?c.houses.map(x=>x.sign_index):null);
+  if(chalit)SEL_H=null;
+  $('chart').classList.toggle('htap',!chalit);
+  window.drawHouseFocus($('chart').querySelector('svg'),c,SEL_H);window.renderHouseReading($('hread'),c,SEL_H);
   HOUSE_OF=Object.fromEntries(Object.entries(c.grahas).map(e=>[e[0],houseOf(e)]));
   $('chartkey').querySelectorAll('.gk').forEach(k=>{const x=k.querySelector('.gkx b');if(x)x.textContent='House '+(HOUSE_OF[k.dataset.p]+1)});  // follows the view
   $('charttitle').textContent=chalit?'Nirayana Bhava Chalit · North Indian':'Rasi chart (D1) · North Indian';
   $('charthint').textContent=chalit?'Each house starts at its cusp (numbers are the cusp signs). Nadi predictions read every planet’s position and lordship from this chart.'
-    :'Numbers are signs (1 = Aries). Tap any planet to ask Sukh what it means for you.';
+    :'Numbers are signs (1 = Aries). Tap a house to read it and see which planets aspect it; tap a planet to ask Sukh.';
   };
   drawMain();RERENDER=drawMain;
   const nbOf=n=>(((c.strength||{}).neecha_bhanga||{})[n]||{}).cancelled;
