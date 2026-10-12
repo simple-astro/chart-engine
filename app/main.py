@@ -5,13 +5,15 @@ this internal HTTP API (FR-3.9).
 """
 from __future__ import annotations
 
+import hashlib
 import os
+import re
 from contextlib import asynccontextmanager
 
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import access, admin, backup
@@ -68,8 +70,20 @@ _STATIC = Path(__file__).parent / "static"
 _INDEX = _STATIC / "index.html"
 
 
+_ASSET = re.compile(r"(/static/[\w.-]+\.(?:js|css))\?v=\w+")
+
+
+def stamped(page: Path) -> str:
+    """The page with each /static script's ?v= set to a fingerprint of the file's content, so a changed script always
+    gets a new address and no browser keeps running an old cached copy (no hand-bumped version numbers)."""
+    def fingerprint(m: re.Match) -> str:
+        f = _STATIC / m.group(1).removeprefix("/static/")
+        return f"{m.group(1)}?v={hashlib.sha1(f.read_bytes()).hexdigest()[:10]}" if f.is_file() else m.group(0)
+    return _ASSET.sub(fingerprint, page.read_text())
+
+
 @app.get("/", include_in_schema=False)
-async def index() -> FileResponse:
-    return FileResponse(_INDEX, headers={"Cache-Control": "no-cache"})
+async def index() -> HTMLResponse:
+    return HTMLResponse(stamped(_INDEX), headers={"Cache-Control": "no-cache"})
 
 app.mount("/static", StaticFiles(directory=_STATIC), name="static")

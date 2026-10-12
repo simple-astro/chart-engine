@@ -1109,7 +1109,7 @@
 <script src="/static/mood.js?v=1"></script>
 <script src="/static/events.js?v=2"></script>
 <script src="/static/upcoming.js?v=2"></script>
-<script src="/static/houses.js?v=4"></script>
+<script src="/static/houses.js?v=5"></script>
 <script src="/static/tools.js?v=2"></script>
 <script src="/static/kptiming.js?v=6"></script>
 <script src="/static/transit.js?v=10"></script>
@@ -1441,7 +1441,7 @@ let SEL_H=null;
 // Tap a house (Lagna view): highlight it, draw the aspect arrows and show its reading (houses.js).
 // Planet links (houses.js): one kind at a time; a house tap and the links never draw at once.
 const LNK={mode:null,focus:null,nodes:'579'};
-function renderLinks(c){c=c||lastChart;if(!c)return;
+function renderLinks(c){c=c||lastChart;if(!c||!window.drawLinks)return;  // an old cached houses.js must not block the chart
   const on=CHART_VIEW==='lagna'?LNK.mode:null;
   $('lnkbar').hidden=CHART_VIEW!=='lagna';$('lnknodes').hidden=on!=='asp';$('lnkpanel').hidden=!on;
   document.querySelectorAll('#lnkseg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===on)));
