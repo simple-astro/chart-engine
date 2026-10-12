@@ -745,6 +745,12 @@
   .updays{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px} .updays span{display:flex;flex-direction:column;background:var(--soft);border-radius:10px;padding:6px 10px;font-size:.76rem;color:var(--mut)}
   .updays b{color:var(--ink);font-size:.86rem}
 
+  /* ---------- Jaimini pane ---------- */
+  .jaicards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .jai{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+  .jai small{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
+  .jai b{display:block;font:600 1.2rem var(--serif);color:var(--acc);margin:2px 0 4px} .jai p{margin:0;font-size:.88rem}
+
   /* ---------- screens: bottom bar on phones, a pill row under the header on wider screens ---------- */
   .sjbar{position:sticky;top:72px;z-index:25;display:flex;gap:4px;width:max-content;max-width:100%;margin:-12px auto 24px;padding:5px;
     border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(14px)}
@@ -877,7 +883,7 @@
         <div class="full"><label for="tz">Timezone (IANA)</label><input id="tz" placeholder="Asia/Kolkata" required></div>
         <details class="adv full"><summary>Advanced options</summary>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
-            <div><label for="ayan">Ayanamsha</label><select id="ayan"><option value="krishnamurti">Krishnamurti (KP)</option><option value="lahiri">Lahiri</option></select></div>
+            <div><label for="ayan">Ayanamsha</label><select id="ayan"><option value="krishnamurti">Krishnamurti (KP)</option><option value="lahiri">Lahiri</option><option value="pushya">Pushya Paksha</option></select></div>
             <div><label for="node">Rahu/Ketu</label><select id="node"><option value="mean">Mean node</option><option value="true">True node</option></select></div>
           </div></details>
         <div class="full chk"><input id="save" type="checkbox" checked><label for="save">Save this profile so I can chat about it later</label></div>
@@ -984,7 +990,7 @@
           <select id="csel" autocomplete="off">
             <option value="planets">Planets</option><option value="houses">Houses &amp; cusps</option><option value="dasha">Dasha periods</option>
             <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option><option value="nadi">Nadi amsha</option>
-            <option value="xchg">Lord exchange</option><option value="lal">Lal Kitab</option>
+            <option value="xchg">Lord exchange</option><option value="jaimini">Jaimini</option><option value="lal">Lal Kitab</option>
           </select></div>
         <div class="pane" id="t-planets"><div class="scroll"><table id="grahas"></table></div></div>
         <div class="pane" id="t-houses" hidden><div class="scroll"><table id="houses"></table></div>
@@ -995,6 +1001,8 @@
         <div class="pane" id="t-nadi" hidden><div class="scroll"><table id="nadi"></table></div>
           <div class="hint">Each sign is split into 150 nadi amshas of 0°12′. “Nadi #” is the amsha within the sign (1–150).</div></div>
         <div class="pane" id="t-xchg" hidden><div id="xbody"></div></div>
+        <div class="pane" id="t-jaimini" hidden><div id="jaibody"></div>
+          <div class="hint">Jaimini’s 7 chara karakas rank the planets by their degree in their sign. Used here to describe you — your soul lesson, work style, partner and image — not for timing.</div></div>
         <div class="pane" id="t-lal" hidden><div id="lalbody"><div class="hint">Loading…</div></div></div>
       </div>
     </div>
@@ -1598,6 +1606,17 @@ function render(c,req){
   const lk=window.luckyReading(c);
   $('luckytiles').innerHTML=lk.tiles.map(([a,b,n])=>'<div class="stat"><small>'+a+'</small><b>'+esc(b)+'</b>'+(n?'<em>'+esc(n)+'</em>':'')+'</div>').join('');
   $('luckybody').innerHTML=secs(lk.sections,true);
+  const J=c.jaimini;
+  $('jaibody').innerHTML=!J?'<div class="hint">Not available for this chart.</div>':
+    '<div class="jaicards">'+
+      '<div class="jai"><small>Atmakaraka · soul</small><b>'+esc(J.atmakaraka.planet)+'</b><p>'+esc(J.atmakaraka.lesson[0].toUpperCase()+J.atmakaraka.lesson.slice(1))+'.</p></div>'+
+      '<div class="jai"><small>Amatyakaraka · career</small><b>'+esc(J.amatyakaraka.planet)+'</b><p>Suits '+esc(J.amatyakaraka.career)+'.</p></div>'+
+      '<div class="jai"><small>Darakaraka · partner</small><b>'+esc(J.darakaraka.planet)+'</b><p>A partner who is '+esc(J.darakaraka.spouse)+'.</p></div>'+
+      (J.karakamsa?'<div class="jai"><small>Karakamsa · life path</small><b>'+esc(J.karakamsa.sign)+'</b><p>'+esc(J.karakamsa.note)+'</p></div>':'')+
+      '<div class="jai"><small>Arudha Lagna · image</small><b>'+esc(J.arudha_lagna.sign)+'</b><p>'+esc(J.arudha_lagna.note)+'</p></div>'+
+      '<div class="jai"><small>Upapada · marriage</small><b>'+esc(J.upapada.sign)+'</b><p>'+esc(J.upapada.note)+'</p></div>'+
+    '</div><h3 style="margin-top:18px">Chara karakas</h3><div class="scroll"><table id="jaitable"></table></div>';
+  if(J)table($('jaitable'),['Karaka','Planet','Degree in sign','Shows'],J.karakas.map(k=>['<b>'+k.short+'</b> '+k.karaka,k.planet,dms(k.degree),esc(k.role)]));
   window.renderExchange($('xbody'),c);window.renderAshtakavarga($('akvbody'),c);
   window.renderGuide($('guide'),window.guideReading(c),(req&&req.name)||m.name,$('gremedies'));loadToday();window.renderMood($('gmood'),currentId);window.renderEvents($('gevents'),currentId);window.renderUpcoming($('gupcoming'),currentId);
   if(req)window.renderTools($('gtools'),{req,chart:c});

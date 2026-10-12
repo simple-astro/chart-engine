@@ -223,6 +223,17 @@ def build(profile: dict, now: datetime | None = None) -> dict:
                "significators": {p: v["houses"] for p, v in c.get("significators", {}).get("by_planet", {}).items()},
                "note": "KP uses Placidus cusps; houses elsewhere are whole-sign."},
     }
+    from core import jaimini
+    j = jaimini.analyse(c)
+    up = j["upapada"]
+    out["jaimini"] = {
+        "karakas": " ".join(f"{k['short']}={k['planet']}" for k in j["karakas"]),
+        "karakamsa": j["karakamsa"] and j["karakamsa"]["sign"],
+        "AL": f"{j['arudha_lagna']['sign']} H{j['arudha_lagna']['house']}",
+        "UL": f"{up['sign']} H{up['house']}" + (f"; 2nd from UL: {', '.join(up['second_from']['planets'])}"
+                                                if up["second_from"]["planets"] else ""),
+        "rule": "Describes the person (AK soul lesson, AmK work, DK spouse, AL image, UL marriage); never for timing.",
+    }
     if profile.get("id") is not None:
         from app import life_events, storage
         past = storage.event_list(profile["id"])

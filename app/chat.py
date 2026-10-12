@@ -68,7 +68,7 @@ SYSTEM = (
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "kp-6"
+CONTEXT_VERSION = "kp-7"
 
 TOOLS = [
     {"name": "get_transits",
