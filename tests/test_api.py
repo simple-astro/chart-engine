@@ -77,3 +77,17 @@ def test_transit_scan_days_out_of_range_422():
     assert client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 99}).status_code == 422
     assert client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 32}).status_code == 422
     assert client.post("/transit-scan", json={"start": "2026-01-01T00:00:00Z", "days": 31}).status_code == 200
+
+
+def test_chart_with_pushya_paksha_ayanamsha():
+    """Pushya Paksha shifts every position by about 1.13 deg against Lahiri, keeps Placidus cusps for KP/Nadi."""
+    body = {"dob": "1990-05-15", "tob": "14:30:00", "lat": 28.6139, "lon": 77.209, "tz_name": "Asia/Kolkata"}
+    p = client.post("/chart", json={**body, "ayanamsha": "pushya"})
+    assert p.status_code == 200, p.text
+    l = client.post("/chart", json={**body, "ayanamsha": "lahiri"}).json()
+    p = p.json()
+    assert p["meta"]["ayanamsha"] == "pushya"
+    shift = (p["grahas"]["Sun"]["longitude"] - l["grahas"]["Sun"]["longitude"]) % 360
+    assert abs(shift - 1.13) < 0.02
+    assert len({round(h["longitude"] % 30, 3) for h in p["houses"]}) > 1  # Placidus cusps, not whole-sign
+    assert client.post("/chart", json={**body, "ayanamsha": "fagan"}).status_code == 422

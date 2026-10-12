@@ -21,6 +21,14 @@ def test_lahiri_ayanamsha_at_j2000():
     assert abs(get_ayanamsha(jd, "lahiri") - 23.857092) < 1e-4
 
 
+def test_pushya_paksha_ayanamsha_at_j2000():
+    # Pushya-paksha (PVR Narasimha Rao): delta Cancri (tropical 128.727 deg at J2000) sits at 16 deg Cancer = 106 deg.
+    jd = julian_day(datetime(2000, 1, 1, 12, 0, tzinfo=timezone.utc))
+    ay = get_ayanamsha(jd, "pushya")
+    assert abs(ay - 22.7271) < 1e-3
+    assert abs((128.727 - ay) - 106.0) < 0.01
+
+
 def test_julian_day_j2000():
     jd = julian_day(datetime(2000, 1, 1, 12, 0, tzinfo=timezone.utc))
     assert abs(jd - 2451545.0) < 1e-6

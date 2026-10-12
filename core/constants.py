@@ -7,6 +7,8 @@ import swisseph as swe
 AYANAMSHA_MODES = {
     "krishnamurti": swe.SIDM_KRISHNAMURTI,  # KP (default)
     "lahiri": swe.SIDM_LAHIRI,
+    # Pushya-paksha (PVR Narasimha Rao): the star Pushya (delta Cancri) fixed at 16 deg Cancer. Swiss Ephemeris "True Pushya".
+    "pushya": swe.SIDM_TRUE_PUSHYA,
 }
 DEFAULT_AYANAMSHA = "krishnamurti"
 
@@ -14,6 +16,7 @@ DEFAULT_AYANAMSHA = "krishnamurti"
 HOUSE_SYSTEM_FOR_AYANAMSHA = {
     "krishnamurti": "placidus",   # KP mode
     "lahiri": "whole_sign",       # classical mode
+    "pushya": "placidus",         # Placidus cusps, so the KP / Nadi sub-lord predictions still work
 }
 
 # --- Rashis (signs), 0-indexed from Aries ---
