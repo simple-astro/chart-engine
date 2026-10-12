@@ -10,7 +10,7 @@ from core import ephemeris
 from core.ashtakavarga import ashtakavarga
 from core.chart import ENGINE_VERSION, BirthData, compute_natal_chart
 from core.grahas import Graha
-from core import jaimini, yogas, yogini
+from core import bnn, chara, jaimini, yogas
 from core.parivartana import exchanges, lord_placements
 from core.panchang import compute_panchang
 from core.transit_scan import scan_events
@@ -87,7 +87,8 @@ def with_extras(c: dict) -> dict:
         c["exchanges"]["D9"] = exchanges(d9, c["varga_lagna"]["D9"])
     c["strength"] = yogas.analyse(signs, lagna, d9, {p: g["combust"] for p, g in c["grahas"].items()})
     c["jaimini"] = jaimini.analyse(c)
-    c["yogini"] = yogini.summary(c)
+    c["chara"] = chara.summary(c)
+    c["bnn"] = bnn.analyse(c)
     return c
 
 

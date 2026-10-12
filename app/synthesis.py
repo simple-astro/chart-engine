@@ -234,12 +234,16 @@ def build(profile: dict, now: datetime | None = None) -> dict:
                                                 if up["second_from"]["planets"] else ""),
         "rule": "Describes the person (AK soul lesson, AmK work, DK spouse, AL image, UL marriage); never for timing.",
     }
-    from core import yogini
-    y = yogini.summary(c, now)
+    from core import bnn
+    trines = bnn.analyse(c)["trines"]
+    out["bnn_trines"] = {t["element"]: " < ".join(p["planet"] for p in t["planets"]) for t in trines if len(t["planets"]) > 1}
+    out["bnn_rule"] = "BNN: planets in one element trine work together, lower degree first; for readings, never timing."
+    from core import chara
+    y = chara.summary(c, now)
     if y["current"]:
-        out["yogini"] = (f"{y['current']['yogini']} ({y['current']['planet']}) until {y['current']['end'][:7]}"
-                         + (f", sub {y['sub']['yogini']} until {y['sub']['end'][:7]}" if y["sub"] else "")
-                         + "; a second opinion beside Vimshottari, never the verdict")
+        out["chara_dasha"] = (f"{y['current']['sign']} (house {y['current']['house']}) until {y['current']['end'][:7]}"
+                              + (f", sub {y['sub']['sign']} until {y['sub']['end'][:7]}" if y["sub"] else "")
+                              + "; Jaimini sign-based timing, a second opinion beside Vimshottari, never the verdict")
     if profile.get("id") is not None:
         from app import life_events, storage
         past = storage.event_list(profile["id"])

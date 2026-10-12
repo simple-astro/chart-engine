@@ -73,22 +73,39 @@ def test_all_twelve_arudhas_and_the_al_reading():
     assert set(j["areas"]) == {"career", "love", "money"} and j["purpose"].startswith("Your Atmakaraka is")
 
 
-def test_yogini_dasha_starts_from_the_birth_nakshatra():
+def test_chara_dasha_counts_years_and_orders_the_signs():
+    """Sagittarius lagna, 9th sign Leo (Samapada) so the signs run in reverse from the Lagna; years by K.N. Rao."""
     from datetime import datetime, timezone
-    from core import yogini
+    from core import chara
     c = client.post("/chart", json=OWNER_LIKE).json()
-    assert c["grahas"]["Moon"]["nakshatra"] == "Jyeshtha"  # 18 + 3 = 21 -> 5th yogini, Bhadrika
-    ps = yogini.yogini_dasha(c["grahas"]["Moon"]["longitude"], datetime(1987, 9, 1, 8, 50, tzinfo=timezone.utc))
-    assert ps[0]["yogini"] == "Bhadrika" and ps[0]["start"] < "1987-09-01"
-    assert [p["yogini"] for p in ps[:8]] == ["Bhadrika", "Ulka", "Siddha", "Sankata", "Mangala", "Pingala",
-                                             "Dhanya", "Bhramari"]
-    assert ps[8]["yogini"] == "Bhadrika"  # the 36-year cycle repeats
-    assert abs(sum(s["years"] for s in ps[1]["sub"]) - ps[1]["years"]) < 1e-9 and ps[1]["sub"][0]["yogini"] == "Ulka"
-    y = yogini.summary(c, datetime(2026, 10, 12, tzinfo=timezone.utc))
-    assert y["current"]["yogini"] == "Bhadrika" and y["next"]["yogini"] == "Ulka"
-    assert all(w not in p["text"].lower() for p in ps for w in ("death", "ruin", "disaster"))  # gentle wording
+    ps = chara.chara_dasha(c)
+    assert [p["sign"] for p in ps[:12]] == ["Sagittarius", "Scorpio", "Libra", "Virgo", "Leo", "Cancer", "Gemini",
+                                            "Taurus", "Aries", "Pisces", "Aquarius", "Capricorn"]
+    # Jupiter in Aries 5th from Sagittarius -> 4; Mars (with Sun, Mercury, Venus in Leo) beats Ketu for Scorpio -> 10th, 9;
+    # Venus in Leo 11th from Libra -> 10; Mercury in Leo 2nd back from Virgo -> 1; Sun in its own Leo -> 12;
+    # Moon in Scorpio 9th back from Cancer -> 8.
+    assert [p["years"] for p in ps[:6]] == [4, 9, 10, 1, 12, 8]
+    assert ps[0]["start"][:10] == "1987-09-01" and ps[5]["start"][:10] == "2023-09-01"
+    # each main period is divided into 12 equal sub-periods, the main sign last; Cancer is Samapada so they run
+    # backward from its 12th sign (Gemini)
+    subs = ps[5]["sub"]
+    assert [x["sign"] for x in subs][:3] == ["Gemini", "Taurus", "Aries"] and subs[-1]["sign"] == "Cancer"
+    assert abs(sum(1 for _ in subs) - 12) == 0 and subs[0]["start"] == ps[5]["start"] and subs[-1]["end"] == ps[5]["end"]
+    y = chara.summary(c, datetime(2026, 10, 12, tzinfo=timezone.utc))
+    assert y["current"]["sign"] == "Cancer" and y["sub"]["sign"] == "Aquarius" and y["next"]["sign"] == "Gemini"
+    assert c["chara"]["current"]["sign"] in {"Cancer", "Gemini"}  # the chart carries it, as of today
 
 
+def test_chara_dasha_lord_of_scorpio_and_aquarius():
+    from core import chara
+    signs = {"Mars": 4, "Ketu": 5, "Saturn": 3, "Rahu": 3, "Sun": 4, "Moon": 4}
+    degs = {p: 10.0 for p in signs}
+    assert chara.lord_for_count(7, signs, degs) == "Mars"      # both outside: Mars has two planets with it
+    signs["Ketu"] = 7
+    assert chara.lord_for_count(7, signs, degs) == "Mars"      # Ketu is in Scorpio itself, so count to Mars
+    signs["Saturn"] = 10
+    assert chara.lord_for_count(10, signs, degs) == "Rahu"     # Saturn in Aquarius itself, so count to Rahu
+    assert chara.sign_years(1, {**signs, "Venus": 1}, {**degs, "Venus": 5.0}) == 12  # a lord in its own sign
 def test_arudha_lagna_only_falls_in_houses_3_4_5_9_10_11():
     """Satya Peetha: an arudha never sits in its own house or the 7th from it, so the AL is always 3/4/5/9/10/11."""
     import random

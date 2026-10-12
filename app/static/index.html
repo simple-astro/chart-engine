@@ -765,6 +765,16 @@
   .hrkey{display:flex;gap:14px;font-size:.76rem;color:var(--mut);margin-bottom:10px} .hrkey i{display:inline-block;width:16px;height:0;border-top:2px dashed;vertical-align:middle;margin-right:5px}
   .hrkey i.good{border-color:var(--ok)} .hrkey i.bad{border-color:var(--bad)}
 
+  /* ---------- BNN pane ---------- */
+  .bnntri{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+  .bnnt{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+  .bnnt small{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin-bottom:6px}
+  .bnnp{display:flex;flex-wrap:wrap;align-items:center;gap:6px} .bnnp span{background:var(--soft);border-radius:8px;padding:4px 8px;font-size:.84rem}
+  .bnnp b{color:var(--acc)} .bnnp i{font-style:normal;color:var(--mut);font-size:.8rem}
+  .bnnx{display:inline-flex;align-items:center;gap:6px;font-style:normal;white-space:nowrap}
+  .bnnc{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px} .bnnc .jai p+p{margin-top:6px}
+  .bnns{font:500 .82rem var(--sans);color:var(--mut)}
+
   /* ---------- Jaimini pane ---------- */
   .gjai{margin:6px 0 0;font-size:.86rem;color:var(--mut);border-left:2px solid var(--acc2);padding-left:10px}
   .gpurpose{margin-top:18px} .gpurpose p{margin:0 0 8px}
@@ -1024,7 +1034,7 @@
           <select id="csel" autocomplete="off">
             <option value="planets">Planets</option><option value="houses">Houses &amp; cusps</option><option value="dasha">Dasha periods</option>
             <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option><option value="nadi">Nadi amsha</option>
-            <option value="xchg">Lord exchange</option><option value="jaimini">Jaimini &amp; Yogini</option><option value="lal">Lal Kitab</option>
+            <option value="xchg">Lord exchange</option><option value="jaimini">Jaimini &amp; Chara Dasha</option><option value="bnn">BNN (Nadi trines)</option><option value="lal">Lal Kitab</option>
           </select></div>
         <div class="pane" id="t-planets"><div class="scroll"><table id="grahas"></table></div></div>
         <div class="pane" id="t-houses" hidden><div class="scroll"><table id="houses"></table></div>
@@ -1037,6 +1047,8 @@
         <div class="pane" id="t-xchg" hidden><div id="xbody"></div></div>
         <div class="pane" id="t-jaimini" hidden><div id="jaibody"></div>
           <div class="hint">Jaimini’s 8 chara karakas rank the planets (with Rahu, counted backwards) by their degree in their sign. Used here to describe you — your soul lesson, work style, partner and image — not for timing.</div></div>
+        <div class="pane" id="t-bnn" hidden><div id="bnnbody"></div>
+          <div class="hint">Bhrigu Nandi Nadi reads planets as living karakas joined through their signs: planets in the 1st, 5th and 9th signs from each other (the same element) work together, and the lower degree gives its results first. For readings only — timing still comes from your Dasha.</div></div>
         <div class="pane" id="t-lal" hidden><div id="lalbody"><div class="hint">Loading…</div></div></div>
       </div>
     </div>
@@ -1677,16 +1689,30 @@ function render(c,req){
     '<div id="yogbody"></div>';
   if(J){table($('jaitable'),['Karaka','Planet','Degree in sign','Shows'],J.karakas.map(k=>['<b>'+k.short+'</b> '+k.karaka,k.planet,dms(k.degree),esc(k.role)]));
     table($('jaiar'),['Arudha','Sign','House','Planets there','Shows'],J.arudhas.map(a=>['<b>'+a.short+'</b>',a.sign,'H'+a.in_house,a.planets.join(', ')||'—',esc(a.shows)]))}
-  // Yogini Dasha, under Jaimini: the traditional names with gentle descriptions; a second opinion beside Vimshottari.
-  const Y=c.yogini,ym=d=>new Date(d).toLocaleDateString(undefined,{month:'short',year:'numeric'});
+  // Chara Dasha, under Jaimini: each period treats its sign as a temporary Lagna (K.N. Rao's counting).
+  const Y=c.chara,ym=d=>new Date(d).toLocaleDateString(undefined,{month:'short',year:'numeric'}),
+    HT={1:'yourself and your health',2:'money and family',3:'effort and siblings',4:'home and mother',5:'children and studies',6:'work and health routines',7:'marriage and partners',8:'sudden changes and research',9:'luck and father',10:'career and status',11:'gains and friends',12:'expenses and foreign lands'},
+    ordn=n=>n+(n%100>=11&&n%100<=13?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th')),
+    why=p=>'Your '+ordn(p.house)+' house: '+HT[p.house]+(p.planets.length?'. '+p.planets.join(', ')+' '+(p.planets.length>1?'sit':'sits')+' here.':'.');
   if($('yogbody'))$('yogbody').innerHTML=!Y||!Y.current?'':
-    '<h3 class="jaih">Yogini Dasha <small>a second opinion beside Vimshottari</small></h3>'+
-    '<div class="yogcur"><div><small>Now</small><b>'+esc(Y.current.yogini)+' <span>· '+esc(Y.current.planet)+'</span></b><em>'+ym(Y.current.start)+' – '+ym(Y.current.end)+'</em><p>'+esc(Y.current.text)+'</p></div>'+
-      (Y.sub?'<div><small>Sub-period</small><b>'+esc(Y.sub.yogini)+' <span>· '+esc(Y.sub.planet)+'</span></b><em>until '+ym(Y.sub.end)+'</em><p>'+esc(Y.sub.text)+'</p></div>':'')+
-      (Y.next?'<div><small>Next</small><b>'+esc(Y.next.yogini)+' <span>· '+esc(Y.next.planet)+'</span></b><em>from '+ym(Y.next.start)+'</em><p>'+esc(Y.next.text)+'</p></div>':'')+'</div>'+
+    '<h3 class="jaih">Chara Dasha <small>Jaimini timing, beside Vimshottari</small></h3>'+
+    '<div class="yogcur"><div><small>Now</small><b>'+esc(Y.current.sign)+' <span>· '+Y.current.years+' years</span></b><em>'+ym(Y.current.start)+' – '+ym(Y.current.end)+'</em><p>'+esc(why(Y.current))+'</p></div>'+
+      (Y.sub?'<div><small>Sub-period</small><b>'+esc(Y.sub.sign)+'</b><em>'+ym(Y.sub.start)+' – '+ym(Y.sub.end)+'</em><p>'+esc('Your '+ordn((Y.sub.sign_index-c.lagna.sign_index+12)%12+1)+' house: '+HT[(Y.sub.sign_index-c.lagna.sign_index+12)%12+1]+' is in focus now.')+'</p></div>':'')+
+      (Y.next?'<div><small>Next</small><b>'+esc(Y.next.sign)+' <span>· '+Y.next.years+' years</span></b><em>from '+ym(Y.next.start)+'</em><p>'+esc(why(Y.next))+'</p></div>':'')+'</div>'+
     '<div class="scroll"><table id="yogtable"></table></div>'+
-    '<div class="hint">Yogini Dasha runs in a 36-year cycle of 8 periods from your birth nakshatra. Shown for reflection; your timing verdicts still come from Vimshottari.</div>';
-  if(Y&&Y.current)table($('yogtable'),['Yogini','Planet','From','To','Nature'],Y.timeline.map(p=>[(p.start===Y.current.start?'<b>'+esc(p.yogini)+' ◀ now</b>':esc(p.yogini)),p.planet,ym(p.start),ym(p.end),'<span class="badge '+({good:'good',care:'warn',mixed:''})[p.tone]+'">'+({good:'Supportive',care:'Go gently',mixed:'Mixed'})[p.tone]+'</span>']));
+    '<h4 class="jaih" style="font-size:1rem">Sub-periods of '+esc(Y.current.sign)+'</h4><div class="scroll"><table id="yogsub"></table></div>'+
+    '<div class="hint">Chara Dasha is sign-based: each period treats its sign as a temporary Lagna, and the sub-periods run month by month. Shown for reflection beside Vimshottari; your timing verdicts still come from Vimshottari.</div>';
+  if(Y&&Y.current){table($('yogtable'),['Sign','Years','From','To','Your house'],Y.timeline.map(p=>[(p.start===Y.current.start?'<b>'+esc(p.sign)+' ◀ now</b>':esc(p.sign)),p.years,ym(p.start),ym(p.end),'H'+p.house]));
+    table($('yogsub'),['Sub-period','From','To'],Y.current_subs.map(x=>[(Y.sub&&x.start===Y.sub.start?'<b>'+esc(x.sign)+' ◀ now</b>':esc(x.sign)),ym(x.start),ym(x.end)]))}
+  // BNN: the four element trines (planets in degree order) and each karaka's circuit.
+  const B=c.bnn,EL={Fire:'🔥',Earth:'⛰',Air:'🌬',Water:'💧'};
+  $('bnnbody').innerHTML=!B?'<div class="hint">Not available for this chart.</div>':
+    '<div class="bnntri">'+B.trines.map(t=>'<div class="bnnt"><small>'+EL[t.element]+' '+t.element+' trine · '+t.signs.join(', ')+'</small>'+
+      (t.planets.length?'<div class="bnnp">'+t.planets.map((p,i)=>'<em class="bnnx">'+(i?'<i>→</i>':'')+'<span><b>'+esc(p.planet)+'</b> '+esc(p.sign.slice(0,3))+' '+Math.floor(p.degree)+'°</span></em>').join('')+'</div>'
+        :'<p class="hint" style="margin:4px 0 0">No planets here.</p>')+'</div>').join('')+'</div>'+
+    '<h3 class="jaih">Karaka circuits <small>what each planet stands for, and who it works with</small></h3>'+
+    '<div class="bnnc">'+B.circuits.map(k=>'<div class="jai"><small>'+esc(k.role)+'</small><b>'+esc(k.karaka)+' <span class="bnns">in '+esc(k.sign)+'</span></b>'+
+      k.text.map(x=>'<p>'+esc(x)+'</p>').join('')+'</div>').join('')+'</div>';
   window.renderExchange($('xbody'),c);window.renderAshtakavarga($('akvbody'),c);
   const gr=window.guideReading(c);gr.jaimini=c.jaimini;window.renderGuide($('guide'),gr,(req&&req.name)||m.name,$('gremedies'));loadToday();window.renderMood($('gmood'),currentId);window.renderEvents($('gevents'),currentId);window.renderUpcoming($('gupcoming'),currentId);
   if(req)window.renderTools($('gtools'),{req,chart:c});
