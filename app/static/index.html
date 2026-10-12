@@ -210,12 +210,12 @@
   .stat small{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
   .stat b{font-size:1rem;color:var(--acc);font-weight:600}
   .grid{display:flex;flex-direction:column;gap:22px}
-  .chartcard{display:grid;grid-template-columns:minmax(280px,420px) 1fr;grid-template-areas:"h h" "c k" "c l" "c n" "r r";column-gap:32px;align-content:start}
+  .chartcard{display:grid;grid-template-columns:minmax(280px,420px) 1fr;grid-template-areas:"h h" "c k" "c l" "c n" "x x" "r r";column-gap:32px;align-content:start}
   .chartcard>.chhead{grid-area:h;display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:14px}
   .chhead h3{font:600 1.15rem var(--serif);margin:0;text-align:center} .chseg{width:min(280px,100%)} .chartcard>#chart{grid-area:c} .chartcard>.ckey{grid-area:k;margin-top:0;align-self:start}
   .chartcard>.clegend{grid-area:l;justify-content:flex-start} .chartcard>.hint{grid-area:n;text-align:left!important}
-  .chartcard>.hread{grid-area:r}
-  @media (max-width:900px){.chartcard{grid-template-columns:1fr;grid-template-areas:"h" "c" "r" "k" "l" "n"}
+  .chartcard>.hread{grid-area:r} .chartcard>.lnkpanel{grid-area:x}
+  @media (max-width:900px){.chartcard{grid-template-columns:1fr;grid-template-areas:"h" "c" "x" "r" "k" "l" "n"}
     .chartcard>.ckey{margin-top:16px} .chartcard>.clegend{justify-content:center} .chartcard>.hint{text-align:center!important}}
   .chartcard{padding:22px;position:relative}
   .chartcard h3{font:600 1.15rem var(--serif);margin-bottom:14px;text-align:center}
@@ -788,6 +788,29 @@
   /* ---------- Jaimini pane ---------- */
   .gjai{margin:6px 0 0;font-size:.86rem;color:var(--mut);border-left:2px solid var(--acc2);padding-left:10px}
   .gpurpose{margin-top:18px} .gpurpose p{margin:0 0 8px}
+  /* Planet links (Placement / Aspects / Conjunctions) */
+  .lnkbar{display:grid;gap:6px;width:min(340px,100%)} .lnknodes button{font-size:.72rem;padding:5px 4px}
+  .lnkseg button[aria-pressed="true"],.lnknodes button[aria-pressed="true"]{background:var(--solid);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+  .lkarr{fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none;transition:opacity .2s} .lkarr.dash{stroke-dasharray:5 4}
+  .lkarr.good{stroke:var(--acc)} .lkarr.bad{stroke:var(--bad)} .lkarr.mix{stroke:var(--acc2)} .lkarr.faint{opacity:.45;stroke-width:1.5}
+  .lkhead.good{fill:var(--acc)} .lkhead.bad{fill:var(--bad)} .lkhead.mix{fill:var(--acc2)}
+  .lkbond{pointer-events:none;stroke-linecap:round} .lkbond.close{stroke:var(--acc);stroke-width:15;opacity:.28}
+  .lkbond.wide{stroke:var(--mut);stroke-width:1.5;stroke-dasharray:2 3} .lkown{fill:none;stroke:var(--acc);stroke-width:1.4;pointer-events:none}
+  .chart svg.lkfocus .pg:not(.lkon){opacity:.35}
+  .lnkpanel{margin-top:14px;display:grid;gap:10px}
+  .lnkkey{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;font-size:.76rem;color:var(--mut)}
+  .lnkkey span{display:inline-flex;align-items:center;gap:6px} .lnkkey i{width:16px;border-top:2px solid}
+  .lnkkey i.good{border-color:var(--acc)} .lnkkey i.bad{border-color:var(--bad)} .lnkkey i.mix{border-color:var(--acc2)}
+  .lnkchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .lnkchips button{font:600 .78rem var(--sans);color:var(--ink);background:none;border:1px solid var(--line);border-radius:99px;padding:5px 11px;cursor:pointer}
+  .lnkchips button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--solid)}
+  .lnkreads{list-style:none;margin:0;padding:0;display:grid}
+  .lnkreads li{padding:9px 2px;border-top:1px solid var(--line);font-size:.9rem;line-height:1.5;display:grid;grid-template-columns:10px 1fr;gap:10px;min-width:0}
+  .lnkreads li::before{content:"";width:8px;height:8px;border-radius:50%;margin-top:7px;background:var(--dot,var(--mut))}
+  .lnkreads li.good{--dot:var(--acc)} .lnkreads li.bad{--dot:var(--bad)} .lnkreads li.mix{--dot:var(--acc2)}
+  .lnkreads li.key{background:var(--soft);border:0;border-radius:12px;padding:10px;margin-bottom:4px} .lnkreads li.key::before{background:var(--acc)}
+  .lnkyoga{border:0;background:none;padding:0;color:var(--acc2);font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+  @media (prefers-reduced-motion:reduce){.lkarr{transition:none}}
   .jpt{border:1px solid var(--line);background:var(--bg2);color:var(--mut);border-radius:99px;padding:4px 12px;font:600 .74rem var(--sans);cursor:pointer;letter-spacing:.5px}
   .jpt[aria-pressed="true"]{background:var(--soft);border-color:var(--acc2);color:var(--acc2)}
   .chart .jp{fill:var(--acc2);font-weight:700;font-size:.82em}
@@ -1033,8 +1056,15 @@
     <div class="grid">
       <aside class="card chartcard"><div class="chhead"><h3 id="charttitle">Rasi chart (D1) · North Indian</h3>
         <div class="seg chseg" role="radiogroup" aria-label="Chart view"><button type="button" role="radio" aria-checked="true" class="on" data-v="lagna">Lagna</button><button type="button" role="radio" aria-checked="false" data-v="chalit">Bhava Chalit</button></div>
-          <button type="button" class="jpt" id="jpt" aria-pressed="false" title="Show the Jaimini Arudha Lagna (AL) and Upapada (UL) on the chart">AL · UL</button></div>
+          <button type="button" class="jpt" id="jpt" aria-pressed="false" title="Show the Jaimini Arudha Lagna (AL) and Upapada (UL) on the chart">AL · UL</button>
+          <div class="lnkbar" id="lnkbar"><div class="seg lnkseg" id="lnkseg" role="group" aria-label="Draw planet links on the chart">
+            <button type="button" data-m="place" aria-pressed="false">Placement</button><button type="button" data-m="asp" aria-pressed="false">Aspects</button><button type="button" data-m="conj" aria-pressed="false">Conjunctions</button></div>
+            <div class="seg lnknodes" id="lnknodes" role="group" aria-label="Rahu and Ketu aspects" hidden><button type="button" data-n="579" aria-pressed="true">Rahu &amp; Ketu: 5 · 7 · 9</button><button type="button" data-n="7" aria-pressed="false">7th only</button></div></div></div>
         <div id="chart" class="chart"></div>
+        <div class="lnkpanel" id="lnkpanel" hidden>
+          <div class="lnkkey"><span><i class="good"></i>Helpful for you</span><span><i class="bad"></i>Needs care</span><span><i class="mix"></i>Mixed</span></div>
+          <div class="lnkchips" id="lnkchips" role="group" aria-label="Focus on one planet"></div>
+          <ul class="lnkreads" id="lnkreads"></ul></div>
         <div id="chartkey" class="ckey" aria-label="Planets"></div>
         <div class="clegend"><span><i class="bd ex">▲</i>Exalted</span><span><i class="bd db">▼</i>Debilitated</span><span><i class="bd own">⌂</i>Own sign</span><span><i class="bd rt">R</i>Retrograde</span><span><i class="bd cb">C</i>Combust</span><span><i class="sw"></i>Lagna</span></div>
         <div class="hint" id="charthint">Numbers are signs (1 = Aries). Tap any planet to ask Sukh what it means for you.</div>
@@ -1409,7 +1439,25 @@ function drawNorth(el,lagnaIdx,byH,houseSigns){
 let CHART_TIP=null,PLANET_Q=null,HOUSE_OF={},tipPinned=false,CHART_VIEW='lagna',RERENDER=null;
 let SEL_H=null;
 // Tap a house (Lagna view): highlight it, draw the aspect arrows and show its reading (houses.js).
-window.selectHouse=h=>{SEL_H=h;if(!lastChart)return;window.drawHouseFocus($('chart').querySelector('svg'),lastChart,h);
+// Planet links (houses.js): one kind at a time; a house tap and the links never draw at once.
+const LNK={mode:null,focus:null,nodes:'579'};
+function renderLinks(c){c=c||lastChart;if(!c)return;
+  const on=CHART_VIEW==='lagna'?LNK.mode:null;
+  $('lnkbar').hidden=CHART_VIEW!=='lagna';$('lnknodes').hidden=on!=='asp';$('lnkpanel').hidden=!on;
+  document.querySelectorAll('#lnkseg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===on)));
+  document.querySelectorAll('#lnknodes button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.n===LNK.nodes)));
+  window.drawLinks($('chart').querySelector('svg'),c,on,LNK.focus,LNK.nodes);
+  if(!on)return;
+  $('lnkchips').innerHTML=[null].concat(Object.keys(c.grahas)).map(p=>'<button type="button" data-f="'+(p||'')+'" aria-pressed="'+(p===LNK.focus)+'">'+(p||'All planets')+'</button>').join('');
+  const r=window.linkReading(c,on,LNK.focus,LNK.nodes);
+  $('lnkreads').innerHTML=(r.key?'<li class="key"><span>'+r.key+'</span></li>':'')+r.rows.map(x=>'<li class="'+x.cls+'"><span>'+x.html+'</span></li>').join('');
+}
+$('lnkseg').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;
+  LNK.mode=LNK.mode===b.dataset.m?null:b.dataset.m;LNK.focus=null;if(LNK.mode&&SEL_H!=null)window.selectHouse(null);renderLinks()});
+$('lnknodes').addEventListener('click',e=>{const b=e.target.closest('[data-n]');if(b){LNK.nodes=b.dataset.n;renderLinks()}});
+$('lnkchips').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(b){LNK.focus=b.dataset.f||null;renderLinks()}});
+$('lnkreads').addEventListener('click',e=>{if(e.target.closest('.lnkyoga'))go('chart','yogas')});
+window.selectHouse=h=>{SEL_H=h;if(h!=null&&LNK.mode){LNK.mode=null;renderLinks()}if(!lastChart)return;window.drawHouseFocus($('chart').querySelector('svg'),lastChart,h);
   window.renderHouseReading($('hread'),lastChart,h);if(h&&!canHover())$('hread').scrollIntoView({behavior:'smooth',block:'nearest'})};
 $('chart').addEventListener('click',e=>{if(e.target.closest('.pg')||CHART_VIEW!=='lagna')return;const z=e.target.closest('.hz');
   if(z)window.selectHouse(+z.dataset.h===SEL_H?null:+z.dataset.h)});
@@ -1639,11 +1687,12 @@ function render(c,req){
   if(chalit)SEL_H=null;
   $('chart').classList.toggle('htap',!chalit);
   window.drawHouseFocus($('chart').querySelector('svg'),c,SEL_H);window.renderHouseReading($('hread'),c,SEL_H);
+  renderLinks(c);
   HOUSE_OF=Object.fromEntries(Object.entries(c.grahas).map(e=>[e[0],houseOf(e)]));
   $('chartkey').querySelectorAll('.gk').forEach(k=>{const x=k.querySelector('.gkx b');if(x)x.textContent='House '+(HOUSE_OF[k.dataset.p]+1)});  // follows the view
   $('charttitle').textContent=chalit?'Nirayana Bhava Chalit · North Indian':'Rasi chart (D1) · North Indian';
   $('charthint').textContent=chalit?'Each house starts at its cusp (numbers are the cusp signs). Nadi predictions read every planet’s position and lordship from this chart.'
-    :'Numbers are signs (1 = Aries). Tap a house to read it and see which planets aspect it; tap a planet to ask Sukh.';
+    :'Numbers are signs (1 = Aries). Tap a house to read it, or use Placement, Aspects and Conjunctions to draw the planet links; tap a planet to ask Sukh.';
   };
   drawMain();RERENDER=drawMain;
   const nbOf=n=>(((c.strength||{}).neecha_bhanga||{})[n]||{}).cancelled;
