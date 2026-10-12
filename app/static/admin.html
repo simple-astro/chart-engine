@@ -225,7 +225,7 @@
       <div class="rlrow"><button class="btn" type="button" id="rl-import">Import</button><span class="status" id="rl-imst" role="status"></span></div>
     </details>
     <div class="rlfilters">
-      <div><label for="rl-kind">Show</label><select id="rl-kind"><option value="">Everything</option><option value="remedy">Remedies</option><option value="graha">Planet correspondences</option><option value="rule">Prohibition rules</option><option value="rin">Rin (debts)</option><option value="home_audit">Home audit</option></select></div>
+      <div><label for="rl-kind">Show</label><select id="rl-kind"><option value="">Everything</option><option value="remedy">Remedies</option><option value="graha">Planet correspondences</option><option value="rule">Prohibition rules</option><option value="rin">Rin (debts)</option><option value="home_audit">Home audit</option><option value="prep">Get-ready checklists</option></select></div>
       <div><label for="rl-status">Status</label><select id="rl-status"><option value="pending_astrologer">Waiting for review</option><option value="approved">Approved</option><option value="retired">Retired</option><option value="">All</option></select></div>
       <div><label for="rl-planet">Planet</label><select id="rl-planet"><option value="">All planets</option></select></div>
       <div class="rlbtns"><button class="sbtn" type="button" id="rl-export">Export</button><button class="sbtn" type="button" id="rl-approve-all" hidden>Approve all shown</button></div>
@@ -500,7 +500,7 @@ $('codes').addEventListener('click', async e => {
 
 // ----- remedy library -----
 const RL = {items: [], open: null, editing: null};
-const KIND = {remedy: 'Remedy', graha: 'Planet', rule: 'Rule', rin: 'Rin', home_audit: 'Home audit'};
+const KIND = {remedy: 'Remedy', graha: 'Planet', rule: 'Rule', rin: 'Rin', home_audit: 'Home audit', prep: 'Get ready'};
 const STATUS_TAG = {pending_astrologer: ['Waiting for review', 'pend'], approved: ['Approved', 'on'], retired: ['Retired', 'retired']};
 const PLANETS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
 $('rl-planet').insertAdjacentHTML('beforeend', PLANETS.map(p => `<option>${p}</option>`).join(''));
@@ -510,6 +510,7 @@ function rlTitle(i) {
   if (i.kind === 'graha') return [`${i.planet} correspondences`, `${i.weekday || ''} · ${(i.colors || []).join(', ')} · japa ${i.japa_count}`];
   if (i.kind === 'rule') return [i.reason, `${i.planet} · when ${Object.entries(i.when).map(([k, v]) => k + ' ' + v).join(', ')}`];
   if (i.kind === 'rin') return [i.name, i.when.any_of.map(c => `${c.planet} in ${c.houses.join('/')}`).join(' · ')];
+  if (i.kind === 'prep') return [i.title, `For: ${i.situation.replace(/_/g, ' ')} · ${i.before.length} steps before${(i.during || []).length ? ` · ${i.during.length} during` : ''}`];
   return [i.prompt, `${i.zone} · ${i.planet} · ${i.suggested_action}`];
 }
 function rlBody(i) {
@@ -526,6 +527,8 @@ function rlBody(i) {
     add('Remedy', li(i.remedy_steps)); add('Why (template)', esc(i.why_template));
   } else if (i.kind === 'home_audit') {
     add('Explanation', esc(i.explanation));
+  } else if (i.kind === 'prep') {
+    add('Before it starts', li(i.before)); add('On the day', esc(i.on_the_day)); add('During', li(i.during));
   } else {
     add('Colours / metals', esc([...(i.colors || []), ...(i.metals || [])].join(', '))); add('Gem', esc(`${i.gem || ''} (substitutes: ${(i.gem_substitutes || []).join(', ')})`));
     add('Foods', esc((i.foods || []).join(', '))); add('Relationships', esc((i.relationships || []).join(', '))); add('Beej mantra', esc(`${i.beej_mantra} · ${i.japa_count}`));

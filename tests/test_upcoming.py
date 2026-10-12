@@ -84,3 +84,49 @@ def test_upcoming_is_private(gated):
     assert a.get(f"/profiles/{pid}/upcoming").status_code == 200
     assert b.get(f"/profiles/{pid}/upcoming").status_code == 404
     assert a.get(f"/profiles/{pid}/upcoming?tz=Mars/Base").status_code == 422
+
+
+# ----- get-ready checklists (the curated content is private; this is a neutral fixture) -----
+PREP = [{"kind": "prep", "slug": "prep-career", "situation": "career", "title": "Get ready",
+         "before": ["Update your CV", "Make a list"], "on_the_day": "Start in the best time", "during": ["Speak up"]},
+        {"kind": "prep", "slug": "prep-new-chapter", "situation": "new_chapter", "title": "A new chapter",
+         "before": ["Write your goals"]}]
+
+
+def test_prep_items_are_validated():
+    from app.remedies.schema import Invalid, validate
+    validate("prep", PREP[0])
+    for bad in ({**PREP[0], "situation": "lottery"}, {**PREP[0], "before": []}, {**PREP[0], "before": ["x"] * 7},
+                {**PREP[0], "during": ["Or you will face ruin"]}):
+        with pytest.raises(Invalid):
+            validate("prep", bad)
+
+
+def test_checklists_attach_tick_and_only_approved_are_served_when_gated(gated, monkeypatch):
+    from app.remedies import library
+    library.import_items(PREP)
+    t = _tester()
+    pid = t.post("/profiles", json=H1).json()["id"]
+    assert all(i["checklists"] == [] for i in t.get(f"/profiles/{pid}/upcoming").json()["items"])  # pending: hidden
+    for it in PREP:
+        library.update_item("prep", it["slug"], review_status="approved")
+    items = t.get(f"/profiles/{pid}/upcoming").json()["items"]
+    withc = [i for i in items if i["checklists"]]
+    assert withc and all("situations" not in i for i in items)
+    c = withc[0]["checklists"][0]
+    step = c["before"][0]
+    assert step["id"].startswith(withc[0]["date"] + "|") and step["done"] is False
+    assert t.put(f"/profiles/{pid}/prep", json={"step": step["id"], "done": True}).status_code == 200
+    again = next(i for i in t.get(f"/profiles/{pid}/upcoming").json()["items"] if i["date"] == withc[0]["date"])
+    assert next(x for x in again["checklists"][0]["before"] if x["id"] == step["id"])["done"] is True
+    assert t.put(f"/profiles/{pid}/prep", json={"step": "drop table", "done": True}).status_code == 422
+    assert _tester().put(f"/profiles/{pid}/prep", json={"step": step["id"], "done": True}).status_code == 404
+
+
+def test_good_days_inside_a_window(client):
+    pid = client.post("/profiles", json=H1).json()["id"]
+    r = client.get(f"/profiles/{pid}/upcoming/days?activity=meeting&start=2026-11-01&days=21&tz=Asia/Kolkata"
+                   "&lat=28.6&lon=77.2")
+    assert r.status_code == 200 and len(r.json()["dates"]) <= 3
+    assert all(d["verdict"] in ("excellent", "good") for d in r.json()["dates"])
+    assert client.get(f"/profiles/{pid}/upcoming/days?activity=lottery&start=2026-11-01").status_code == 422

@@ -6,7 +6,7 @@
   let S = {}, EL = null;
 
   window.renderUpcoming = async function (el, pid) {
-    EL = el; S = { pid, data: null, all: false };
+    EL = el; S = { pid, data: null, all: false, open: new Set(), days: {} };
     if (pid == null) { el.hidden = true; return; }
     el.hidden = false;
     el.innerHTML = '<h3>Coming up for you</h3><div class="hint">Looking ahead…</div>';
@@ -32,9 +32,44 @@
         <b class="uptitle">${esc(it.title)}</b>
         <p>${esc(it.meaning)}</p>
         <p class="upprep"><span>Prepare</span>${esc(it.prepare)}</p>
+        ${ready(it, i)}
         <div class="upact"><button type="button" class="linkbtn" data-ask="${i}">Ask Sukh →</button>
           <button type="button" class="linkbtn" data-ics="${i}">Add to calendar</button></div>
       </div></li>`;
+  }
+
+  // The "get ready" checklist: practical, no-regret steps before it starts, on the day, and during it.
+  function ready(it, i) {
+    const lists = it.checklists || [];
+    if (!lists.length) return '';
+    const steps = lists.flatMap(l => [...l.before, ...l.during]), done = steps.filter(x => x.done).length;
+    const open = S.open.has(i);
+    const box = x => `<label class="upstep"><input type="checkbox" data-step="${esc(x.id)}" data-i="${i}"${x.done ? ' checked' : ''}><span>${esc(x.text)}</span></label>`;
+    const days = S.days[i];
+    const dayList = !days ? '' : days.loading ? '<p class="hint">Finding the best days…</p>' : days.err ? `<p class="hint err">${esc(days.err)}</p>`
+      : days.dates.length ? `<div class="updays">${days.dates.map(d => { const w = day(d.date); return `<span><b>${d.weekday.slice(0, 3)} ${w.d} ${w.m}</b>${esc(d.label)}</span>`; }).join('')}</div>`
+      : '<p class="hint">No especially good day in the first three weeks — any ordinary day outside Rahu Kaal is fine.</p>';
+    return `<div class="upready">
+      <button type="button" class="upreadybtn" data-ready="${i}" aria-expanded="${open}"><span>Get ready</span><small>${done} of ${steps.length} done</small><i class="chev" aria-hidden="true"></i></button>
+      ${open ? lists.map((l, k) => `<div class="uplistc">${lists.length > 1 || k ? `<b>${esc(l.title)}</b>` : ''}
+          <h6>Before it starts</h6>${l.before.map(box).join('')}
+          ${l.on_the_day ? `<h6>On the day</h6><p class="upday">${esc(l.on_the_day)}.</p>
+            ${k === 0 && it.activity ? (days ? dayList : `<button type="button" class="linkbtn" data-days="${i}">Find the best days to act →</button>`) : ''}` : ''}
+          ${l.during.length ? `<h6>During</h6>${l.during.map(box).join('')}` : ''}</div>`).join('') : ''}
+    </div>`;
+  }
+
+  async function findDays(i) {
+    const it = S.data.items[i], loc = window.SJ_LOC && window.SJ_LOC.get();
+    S.days[i] = { loading: true }; paint();
+    const q = new URLSearchParams({ activity: it.activity, start: it.date, days: '21' });
+    if (loc) { q.set('lat', loc.lat); q.set('lon', loc.lon); q.set('tz', loc.tz_name); }
+    try {
+      const r = await fetch(`/profiles/${S.pid}/upcoming/days?` + q), d = await r.json();
+      if (!r.ok) throw new Error(d.detail || r.statusText);
+      S.days[i] = { dates: d.dates };
+    } catch (e) { S.days[i] = { err: 'Couldn’t find days: ' + e.message }; }
+    paint();
   }
 
   function paint() {
@@ -68,8 +103,21 @@
     const t = e.target.closest('button');
     if (!t) return;
     if (t.id === 'upmore') { S.all = !S.all; paint(); }
+    else if (t.dataset.ready !== undefined) { const i = +t.dataset.ready; S.open.has(i) ? S.open.delete(i) : S.open.add(i); paint(); }
+    else if (t.dataset.days !== undefined) { findDays(+t.dataset.days); }
     else if (t.dataset.ask !== undefined) { window.askSukh && window.askSukh(S.data.items[+t.dataset.ask].ask); }
     else if (t.dataset.ics !== undefined) { ics(S.data.items[+t.dataset.ics]); }
+  });
+  document.addEventListener('change', async e => {
+    const b = e.target;
+    if (!EL || !EL.contains(b) || !b.dataset.step) return;
+    const it = S.data.items[+b.dataset.i], step = it.checklists.flatMap(l => [...l.before, ...l.during]).find(x => x.id === b.dataset.step);
+    try {
+      const r = await fetch(`/profiles/${S.pid}/prep`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ step: step.id, done: b.checked }) });
+      if (!r.ok) throw new Error();
+      step.done = b.checked;
+    } catch (err) { b.checked = !b.checked; }
+    paint();
   });
   // Dates follow where the person is (the shared location setting).
   window.addEventListener('sj-loc', () => { if (S.pid != null) window.renderUpcoming(EL, S.pid); });

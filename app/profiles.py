@@ -370,4 +370,42 @@ def upcoming_changes(profile_id: int, request: Request, tz: str | None = None) -
     from app import upcoming
     p = _require(profile_id, request)
     tz_name = _transit_tz(p, tz)
-    return upcoming.upcoming({**p, "chart": with_extras(p["chart"])}, _transit_day(p, None, tz_name), tz_name)
+    out = upcoming.upcoming({**p, "chart": with_extras(p["chart"])}, _transit_day(p, None, tz_name), tz_name)
+    upcoming.attach_checklists(out["items"], storage.prep_done(profile_id))
+    return out
+
+
+class PrepTick(BaseModel):
+    step: str = Field(min_length=3, max_length=120, pattern=r"^\d{4}-\d{2}-\d{2}\|[a-z_]+\|[bd]\d{1,2}$")
+    done: bool
+
+
+@router.put("/{profile_id}/prep")
+def prep_tick(profile_id: int, req: PrepTick, request: Request) -> dict:
+    """Tick or untick one "get ready" step."""
+    _require(profile_id, request)
+    storage.prep_tick(profile_id, req.step, req.done)
+    return {"step": req.step, "done": req.done}
+
+
+@router.get("/{profile_id}/upcoming/days")
+def upcoming_good_days(profile_id: int, request: Request, activity: str, start: str, days: int = 21,
+                       tz: str | None = None, lat: float | None = None, lon: float | None = None) -> dict:
+    """The best days to act inside an upcoming window (the muhurat finder for that activity), for where the
+    person is (lat/lon/tz from the app's location setting), else the birthplace."""
+    from datetime import date
+    from app import muhurat
+    p = _require(profile_id, request)
+    here = lat is not None and lon is not None and tz and -90 <= lat <= 90 and -180 <= lon <= 180
+    w = {"lat": lat, "lon": lon} if here else chat.where(p)
+    tz_name = _transit_tz(p, tz if here or tz else None)
+    try:
+        s = date.fromisoformat(start)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="start must be YYYY-MM-DD") from exc
+    moon = p["chart"]["grahas"]["Moon"]
+    try:
+        return muhurat.find_dates(activity, max(s, chat.local_today(p)), max(1, min(days, 45)), w["lat"], w["lon"],
+                                  tz_name, moon["nakshatra_index"], moon["sign_index"], limit=3)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

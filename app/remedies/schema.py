@@ -2,14 +2,16 @@
 
 Kinds: ``graha`` (the 9-planet correspondence table), ``remedy``, ``rule`` (a prohibition or contraindication:
 when a planet sits in a house / sign / dignity, some remedy types or materials are blocked for that person),
-``rin`` (Lal Kitab karmic debts) and ``home_audit``. Items are validated on import and on every edit.
+``rin`` (Lal Kitab karmic debts), ``home_audit`` and ``prep`` (a "get ready" checklist for an upcoming change:
+practical, no-regret steps before it starts, on the day, and during it). Items are validated on import and on
+every edit.
 """
 from __future__ import annotations
 
 import re
 
 GRAHAS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]
-KINDS = ("graha", "remedy", "rule", "rin", "home_audit")
+KINDS = ("graha", "remedy", "rule", "rin", "home_audit", "prep")
 TYPES = ("aacharan", "seva", "daan", "jal_pravah", "ahar", "vastra_rang", "vanaspati", "griha", "mantra", "vrat",
          "yantra_puja", "ratna")
 SOURCES = ("parashari", "lal_kitab", "vastu", "folk")
@@ -18,6 +20,11 @@ COST = ("free", "low", "medium", "high")
 STATUSES = ("pending_astrologer", "approved", "retired")
 AUDIT_ACTIONS = ("keep", "clean", "donate", "throw", "respectful_disposal")
 DURATIONS = (1, 7, 21, 35, 40, 43)  # 35 = five consecutive weeks
+# What a "prep" checklist can be for (app/upcoming.py names the situation of each upcoming change).
+PREP_SITUATIONS = ("career", "money", "marriage", "love", "job_change", "business", "property", "vehicle", "foreign",
+                   "education", "exams", "children", "health", "awards", "residence", "illness", "accident",
+                   "new_chapter", "sade_sati_begins", "sade_sati_middle", "sade_sati_last", "ashtama_shani",
+                   "jupiter_over_moon", "jupiter_moves", "lord_moves")
 SLUG = re.compile(r"^[a-z0-9][a-z0-9_-]{1,79}$")
 
 # Never seeded or served: animal parts, wildlife products, anything illegal to own or trade.
@@ -145,7 +152,18 @@ def _home(item: dict) -> None:
     _one_of(item, "suggested_action", AUDIT_ACTIONS)
 
 
-CHECK = {"graha": _graha, "remedy": _remedy, "rule": _rule, "rin": _rin, "home_audit": _home}
+def _prep(item: dict) -> None:
+    _need(item, "situation", "title", "before")
+    _one_of(item, "situation", PREP_SITUATIONS)
+    _list_of_str(item, "before", required=True)
+    _list_of_str(item, "during")
+    if item.get("on_the_day") is not None and not (isinstance(item["on_the_day"], str) and item["on_the_day"].strip()):
+        raise Invalid("on_the_day must be text")
+    if len(item["before"]) > 6 or len(item.get("during") or []) > 4:
+        raise Invalid("keep it short: at most 6 steps before and 4 during")
+
+
+CHECK = {"graha": _graha, "remedy": _remedy, "rule": _rule, "rin": _rin, "home_audit": _home, "prep": _prep}
 
 
 def validate(kind: str, item: dict) -> dict:

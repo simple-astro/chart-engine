@@ -35,6 +35,10 @@ GOOD_FOR = {  # life matter -> (how people say it, what to do in a good stretch)
     "residence": ("moving house", "moving house goes smoothly"),
 }
 TAKE_CARE = {"illness": "health", "accident": "driving and risky activities"}
+# The muhurat activity whose good days suit acting on each life matter (Today -> Good days).
+ACTIVITY = {"career": "meeting", "job_change": "start", "business": "start", "money": "start", "marriage": "marriage",
+            "love": "meeting", "property": "property", "vehicle": "vehicle", "foreign": "travel", "education": "study",
+            "exams": "meeting", "residence": "griha", "awards": "meeting"}
 ORDER = list(GOOD_FOR)
 HOUSE = {1: "self and health", 2: "money and family", 3: "effort, courage and siblings", 4: "home, mother and peace",
          5: "children, studies and romance", 6: "work, debts and health", 7: "marriage and partners",
@@ -100,7 +104,8 @@ def period_items(chart: dict, today: date, horizon_days: int = 90, chapter_days:
         good = [t for t in ORDER if v[t] in ("strong", "favourable") and _fits_age(t, age)]
         good.sort(key=lambda t: v[t] != "strong")
         new = [t for t in good if before[t] not in ("strong", "favourable")]
-        care = [TAKE_CARE[t] for t in TAKE_CARE if v[t] == "strong" and before[t] != "strong"]  # only a new risk
+        care_t = [t for t in TAKE_CARE if v[t] == "strong" and before[t] != "strong"]  # only a new risk
+        care = [TAKE_CARE[t] for t in care_t]
         names = {"maha": p["maha"], "antar": f"{p['maha']}–{p['antar']}", "praty": f"{p['maha']}–{p['antar']}–{p['praty']}"}[level]
         title = {"maha": f"A new life chapter: your {p['maha']} Mahadasha begins",
                  "antar": f"A new chapter: your {p['maha']}–{p['antar']} period begins",
@@ -124,6 +129,8 @@ def period_items(chart: dict, today: date, horizon_days: int = 90, chapter_days:
             "prepare": (GOOD_FOR[tip][1][0].upper() + GOOD_FOR[tip][1][1:] + ".") if tip else
                        "Finish pending work before it starts.",
             "new_strengths": [GOOD_FOR[t][0] for t in new], "good_for": [GOOD_FOR[t][0] for t in good],
+            "situations": ([tip] if tip else []) + (["new_chapter"] if level != "praty" else []) + care_t,
+            "activity": ACTIVITY.get(tip),
             "ask": f"My {names} period begins on {p['starts'].strftime('%-d %B %Y')}. What will it bring for me, and how should I prepare?",
         })
     return items
@@ -146,32 +153,39 @@ def sky_items(chart: dict, today: date, lords: dict, tz: ZoneInfo, days: int = 9
             continue
         p, mine = e.planet, role.get(e.planet)
         lord_of = f"{p}, your {mine} lord," if mine else p
+        area = None
         if e.type == "station":
             if not mine or e.detail["direction"] != "direct":
                 continue  # a retrograde Jupiter or Saturn carries no transit meaning (Taneja); its return does
             title = f"{p}, your {mine} lord, turns direct"
-            meaning = f"Its pause ends and its effects in your life move forward again."
+            meaning = "Its pause ends and its effects in your life move forward again."
+            situation = "lord_moves"
         else:
             to = e.detail["to_sign_index"]
             h, hm = (to - L) % 12 + 1, (to - moon) % 12 + 1
+            area = HOUSE[h]
             if p == "Saturn" and hm in SATURN_MOON:
                 title, meaning = SATURN_MOON[hm]
                 meaning = meaning[0].upper() + meaning[1:] + "."
+                situation = {12: "sade_sati_begins", 1: "sade_sati_middle", 2: "sade_sati_last", 8: "ashtama_shani"}.get(hm)
             elif p == "Jupiter" and (mine or hm == 1 or hm in JUPITER_GOOD):
                 title = f"{lord_of} moves into your {_ord(h)} house"
                 meaning = (f"{HOUSE[h][0].upper() + HOUSE[h][1:]} get Jupiter's {'protection' if h in (6, 8, 12) else 'support'}"
                            + (" — and it is a good position from your Moon." if hm in JUPITER_GOOD else
                               " — Jupiter passes over your Moon: a year of growth, keep your weight and spending in check." if hm == 1
                               else "."))
+                situation = "jupiter_over_moon" if hm == 1 else "jupiter_moves"
             elif mine:
                 title = f"{lord_of} moves into your {_ord(h)} house"
                 meaning = f"Your {mine.lower()} lord now works through {HOUSE[h]}."
+                situation = "lord_moves"
             else:
                 continue
             if e.detail.get("direction") == "retrograde" and p not in ("Rahu", "Ketu"):  # the nodes always move backwards
                 meaning += " It is moving backwards, so this settles when it turns direct."
         items.append({"kind": "sky", "confidence": "hint", "date": when.isoformat(), "planet": p, "title": title,
                       "meaning": meaning, "prepare": SKY_DO[p][0].upper() + SKY_DO[p][1:] + ".",
+                      "situations": [situation] if situation else [], "activity": None, "area": area,
                       "ask": f"{title} on {when.strftime('%-d %B %Y')}. What does it mean for me, and what should I do?"})
     # A planet can cross back and forth: keep its first crossing into each sign only.
     seen, out = set(), []
@@ -181,6 +195,27 @@ def sky_items(chart: dict, today: date, lords: dict, tz: ZoneInfo, days: int = 9
             seen.add(k)
             out.append(it)
     return out
+
+
+def attach_checklists(items: list[dict], done: set[str]) -> None:
+    """Give each item the approved "get ready" checklists for its situations (at most two: the main one and a
+    care one), with the person's ticks. Step ids carry the item's date, so each occurrence is ticked on its own."""
+    from app.remedies import library
+    content = {}
+    for c in library.served("prep"):
+        content.setdefault(c["situation"], c)
+    for it in items:
+        lists = []
+        fill = lambda t: t.replace("{area}", f"your {it['area']}" if it.get("area") else "this part of your life")
+        for sit in it.pop("situations", []):
+            c = content.get(sit)
+            if not c or len(lists) == 2:
+                continue
+            sid = lambda part, i: f"{it['date']}|{sit}|{part}{i}"
+            lists.append({"situation": sit, "title": fill(c["title"]), "on_the_day": c.get("on_the_day") and fill(c["on_the_day"]),
+                          "before": [{"id": sid("b", i), "text": fill(t), "done": sid("b", i) in done} for i, t in enumerate(c["before"])],
+                          "during": [{"id": sid("d", i), "text": fill(t), "done": sid("d", i) in done} for i, t in enumerate(c.get("during") or [])]})
+        it["checklists"] = lists
 
 
 def upcoming(profile: dict, today: date, tz_name: str) -> dict:

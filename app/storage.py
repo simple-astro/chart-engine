@@ -91,6 +91,9 @@ def _connect() -> sqlite3.Connection:
         " id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER NOT NULL, kind TEXT NOT NULL, date TEXT NOT NULL,"
         " precision TEXT NOT NULL, created_at TEXT NOT NULL)"
     )
+    # Ticked "get ready" steps for upcoming changes (app/upcoming.py): one row per ticked step.
+    conn.execute("CREATE TABLE IF NOT EXISTS prep_done (profile_id INTEGER NOT NULL, step TEXT NOT NULL,"
+                 " done_at TEXT NOT NULL, PRIMARY KEY (profile_id, step))")
     return conn
 
 
@@ -176,6 +179,7 @@ def delete(profile_id: int, owner: str | None = None) -> bool:
         conn.execute("DELETE FROM answer_cache WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM mood_logs WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM life_events WHERE profile_id = ?", (profile_id,))
+        conn.execute("DELETE FROM prep_done WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM settings WHERE key = ?", (f"mood_share:{profile_id}",))
         return conn.execute("DELETE FROM profiles WHERE id = ?", (profile_id,)).rowcount > 0
 
@@ -531,3 +535,17 @@ def all_events() -> list[dict]:
     with _lock, _connect() as conn:
         rows = conn.execute("SELECT e.*, p.chart, p.request FROM life_events e JOIN profiles p ON p.id = e.profile_id").fetchall()
     return [{**dict(r), "chart": json.loads(r["chart"]), "request": json.loads(r["request"])} for r in rows]
+
+
+# ----- ticked preparation steps; callers check the profile belongs to the person first -----
+def prep_done(profile_id: int) -> set[str]:
+    with _lock, _connect() as conn:
+        return {r[0] for r in conn.execute("SELECT step FROM prep_done WHERE profile_id = ?", (profile_id,))}
+
+
+def prep_tick(profile_id: int, step: str, done: bool) -> None:
+    with _lock, _connect() as conn:
+        if done:
+            conn.execute("INSERT OR IGNORE INTO prep_done (profile_id, step, done_at) VALUES (?, ?, ?)", (profile_id, step, _now()))
+        else:
+            conn.execute("DELETE FROM prep_done WHERE profile_id = ? AND step = ?", (profile_id, step))
