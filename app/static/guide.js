@@ -17,7 +17,7 @@
   };
   const ic = k => `<svg class="gico" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 
-  // el: the My Life screen (Sukh's summary + life areas); remEl: the Remedies screen.
+  // el: Kundli › About you (Sukh's summary + life areas); remEl: the Remedies screen.
   window.renderGuide = function (el, g, who, remEl) {
     const first = esc((who || '').trim().split(' ')[0] || 'friend');
     const p = g.period;

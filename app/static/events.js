@@ -1,4 +1,4 @@
-// Life events: "Your life so far" on My Life. People add what happened and when; we check each against the chart.
+// Life events: "Your life so far" on Kundli › About you. People add what happened and when; we check each against the chart.
 (function () {
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const COMMON = ['married', 'child', 'job', 'promotion', 'job_change', 'home', 'abroad', 'degree'];
