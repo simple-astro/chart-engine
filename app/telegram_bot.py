@@ -24,10 +24,10 @@ from app import chat, config, guidance, storage
 router = APIRouter(tags=["telegram"])
 
 WEBHOOK_PATH = "/telegram/webhook"
-COMMANDS = [("today", "Today’s guide"), ("week", "Good and bad days this week"), ("remedies", "Your upay"),
+COMMANDS = [("today", "Today’s guide"), ("week", "Good and bad days this week"), ("remedies", "Your upaya"),
             ("settings", "Morning time, location, birth details"), ("help", "What I can do")]
 HELP = ("Ask me anything about your life — for example <i>When is a good time to change jobs?</i>\n\n"
-        "/today — today’s guide\n/week — good and bad days this week\n/remedies — your upay\n"
+        "/today — today’s guide\n/week — good and bad days this week\n/remedies — your upaya\n"
         "/settings — morning time, where you live, birth details")
 
 
@@ -156,7 +156,7 @@ def geocode(query: str) -> list[dict]:
 def _intro(name: str) -> str:
     return (f"Namaste{', ' + name if name else ''} 🙏 I’m **Sukh**, the AI Jyotishi of SimpleJyotish.\n"
             "I’ll read your kundli once, then send you a short guide every morning at 8:00 — what the day is good for, "
-            "what to avoid, and a simple upay.\n\nThree quick questions (you can change them later in /settings).\n\n"
+            "what to avoid, and a simple upaya.\n\nThree quick questions (you can change them later in /settings).\n\n"
             "**1 of 3 — your date of birth?**\nFor example: 1990-05-17 · 17.05.1990 · 17 May 1990")
 
 

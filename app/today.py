@@ -1,4 +1,4 @@
-"""Today for one person: the day's rating, Do's and Don'ts, best times, colour, number, direction and upay.
+"""Today for one person: the day's rating, Do's and Don'ts, best times, colour, number, direction and upaya.
 
 Everything is traditional and personalised only through the native's own chart:
 - Tara bala and Chandra bala (birth star and natal Moon against today's Moon), from app.muhurat;
@@ -23,7 +23,7 @@ COLOUR = {"Sun": ("orange or saffron", "#e8892b"), "Moon": ("white or silver", "
           "Mercury": ("green", "#2f9e5b"), "Jupiter": ("yellow", "#e7b928"), "Venus": ("white or light pink", "#f4c6d0"),
           "Saturn": ("dark blue or black", "#22325c")}
 NUMBER = {"Sun": 1, "Moon": 2, "Jupiter": 3, "Mercury": 5, "Venus": 6, "Saturn": 8, "Mars": 9}
-# Today's upay is a habit people actually keep (the product leads with conduct and service, not mantra japa).
+# Today's upaya is a habit people actually keep (the product leads with conduct and service, not mantra japa).
 HABIT = {"Sun": "Offer water to the rising Sun and seek your father's or a senior's blessing",
          "Moon": "Call or help your mother, and keep the evening calm and screen-free",
          "Mars": "Move your body for 20 minutes, hold your temper, and help a brother or sibling",
@@ -252,7 +252,7 @@ def today(day: date, lat: float, lon: float, tz_name: str, lagna_sign: int, birt
     if chandra and chandra["score"] < 0 and chandra["house"] != 8:
         cons.append(f"the Moon is {muhurat._ordinal(chandra['house'])} from your Moon")
     if p.tithi_number == 30:
-        cons.append("it is Shani Amavasya, a traditional day for Saturn upay" if p.weekday == "Saturday"
+        cons.append("it is Shani Amavasya, a traditional day for Saturn upaya" if p.weekday == "Saturday"
                     else "it is Amavasya (new moon)")
     if p.karana == "Vishti":
         cons.append("Bhadra (Vishti karana) slows new work")

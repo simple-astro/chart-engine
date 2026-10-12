@@ -144,3 +144,17 @@ def test_gate_off_without_codes(tmp_path, monkeypatch):
     c = TestClient(app)
     assert "SimpleJyotish" in c.get("/").text and c.get("/profiles").status_code == 200
     assert c.get("/usage").status_code == 200
+
+
+def test_login_page_lets_you_straight_in_when_there_are_no_codes(tmp_path, monkeypatch):
+    """Local use has no access codes: the login page must not reject every code."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    monkeypatch.setenv("CHART_DB_PATH", str(tmp_path / "p.db"))
+    for var in ("TESTER_ACCESS_CODES", "ADMIN_ACCESS_CODE"):
+        monkeypatch.delenv(var, raising=False)
+    c = TestClient(app)
+    r = c.post("/login", data={"code": "my-live-code", "next": "/admin"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/admin"
+    r = c.get("/login", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/"

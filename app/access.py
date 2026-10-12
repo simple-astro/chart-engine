@@ -128,6 +128,9 @@ def favicon():
 
 @router.get("/login")
 def login_form(request: Request):
+    if not enabled():  # no access codes here (local use): nothing to log in to
+        nxt = request.query_params.get("next", "/")
+        return RedirectResponse(nxt if nxt in NEXT_PAGES else "/", status_code=303)
     if read_session(request.cookies.get(COOKIE, "")):
         return RedirectResponse("/", status_code=303)
     return HTMLResponse(login_page())
@@ -135,6 +138,10 @@ def login_form(request: Request):
 
 @router.post("/login")
 async def login(request: Request):
+    if not enabled():  # local use: no codes exist, so go straight in instead of rejecting every code
+        form = parse_qs((await request.body()).decode("utf-8", "replace"))
+        nxt = (form.get("next") or ["/"])[0]
+        return RedirectResponse(nxt if nxt in NEXT_PAGES else "/", status_code=303)
     ip = _client_ip(request)
     if _too_many_failures(ip):
         return HTMLResponse(login_page("Too many attempts. Please wait 15 minutes and try again."), status_code=429)

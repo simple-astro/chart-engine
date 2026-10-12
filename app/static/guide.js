@@ -33,7 +33,7 @@
           <button type="button" class="btn ghost" data-goto="muhurat">Good days this week</button></div>
       </section>`;
 
-    const rem = `<section class="card gcard"><h3>Your remedies <small>upay</small></h3>
+    const rem = `<section class="card gcard"><h3>Your remedies <small>upaya</small></h3>
         <ol class="grem">${g.remedies.map(r => `<li><b>${esc(r.title)}</b><p>${esc(r.text)}</p><small>${esc(r.why)}</small></li>`).join('')}</ol>
       </section>`;
 
@@ -42,11 +42,11 @@
           ${a.focus ? '<span class="fnow">Active in your current period</span>' : ''}
           <p class="gout">${esc(a.outlook)}</p>
           ${g.jaimini && g.jaimini.areas[a.key] ? `<p class="gjai">${esc(g.jaimini.areas[a.key])}</p>` : ''}
-          <button type="button" class="gmore" aria-expanded="${!i}"><span class="op">Hide</span><span class="cl">See Do’s, Don’ts &amp; upay</span></button>
+          <button type="button" class="gmore" aria-expanded="${!i}"><span class="op">Hide</span><span class="cl">See Do’s, Don’ts &amp; upaya</span></button>
           <button type="button" class="linkbtn" data-ask="${esc(ASK[a.key])}">Ask Sukh about this →</button></div>
         <div class="gdo"><h5 class="ok">Do</h5><ul>${a.dos.map(d => `<li>${esc(d)}</li>`).join('')}</ul></div>
         <div class="gdont"><h5 class="bad">Avoid</h5><ul>${a.donts.map(d => `<li>${esc(d)}</li>`).join('')}</ul></div>
-        <div class="gup"><b>Upay</b><p>${esc(a.remedy.text)}</p><small>Why: ${esc(a.remedy.why)}.</small></div>
+        <div class="gup"><b>Upaya</b><p>${esc(a.remedy.text)}</p><small>Why: ${esc(a.remedy.why)}.</small></div>
       </article>`).join('');
 
     const purpose = g.jaimini ? `<section class="card gcard gpurpose"><h3>Your life’s lesson <small>Jaimini</small></h3>
@@ -75,7 +75,7 @@
           <div title="Traditional number of ${esc(d.number.planet)}"><small>Number</small><b>${d.number.value}</b><em>${esc(d.number.planet)}</em></div>
           <div><small>Travel</small><b>Not ${esc(d.direction.avoid)}</b><em>if you must: ${esc(d.direction.fix)}</em></div>
         </div>
-        <div class="tup"><small>Today’s upay</small><p><b>${esc(u.habit)}.</b> If you can, also give ${esc(u.daan)}.</p><em>${esc(u.why)}.</em></div>
+        <div class="tup"><small>Today’s upaya</small><p><b>${esc(u.habit)}.</b> If you can, also give ${esc(u.daan)}.</p><em>${esc(u.why)}.</em></div>
       </div></div>
       <div class="tfoot"><small class="hint">Times for ${esc(opt.place)}. Colour, number and direction are traditional associations, not promises.</small>
         <button type="button" class="linkbtn" id="tloc">${opt.here ? 'Use birthplace times' : 'Use my current location'}</button></div>

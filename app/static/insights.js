@@ -372,7 +372,7 @@
     return { current: md.lord + (ad ? ' / ' + ad.lord : ''), sections };
   };
 
-  // ----- guidance-first summary: what to do, what to avoid, which upay -----
+  // ----- guidance-first summary: what to do, what to avoid, which upaya -----
   const AREA = [
     { key: 'career', name: 'Career & work', houses: [10], key_planet: x => x.lordOf(10),
       good: { dos: ['Take on visible responsibility — your chart supports recognition and leadership.', 'Go ahead with the promotion, launch or new role you have been planning; pick a shubh day for the first step.'],
@@ -387,7 +387,7 @@
     { key: 'love', name: 'Love & marriage', houses: [7], key_planet: x => ['debilitated', 'enemy'].includes(x.dignity('Venus')) ? 'Venus' : x.lordOf(7),
       good: { dos: ['Express care openly — small gestures keep the bond strong.', 'A good time to move forward on engagement or marriage; choose a shubh muhurat.'],
         donts: ['Don’t take a supportive partner for granted.'] },
-      care: { dos: ['Listen more than you argue; patience is your best upay here.', 'Match kundlis carefully before marriage.'],
+      care: { dos: ['Listen more than you argue; patience is your best upaya here.', 'Match kundlis carefully before marriage.'],
         donts: ['Don’t make big relationship decisions in anger or in a hurry.', 'Keep work and family stress out of the relationship.'] } },
     { key: 'health', name: 'Health & energy', houses: [1, 6], key_planet: x => x.lordOf(1),
       good: { dos: ['Keep a regular routine — your body recovers well when you rest.', 'Stay active; vitality is one of your strengths.'],
@@ -448,7 +448,7 @@
     if (weak && weak !== (md && md.lord)) {
       const nb = ((c.strength || {}).neecha_bhanga || {})[weak];
       const why = x.dignity(weak) === 'debilitated' ? (nb && nb.cancelled
-        ? `${weak} is debilitated, but the debilitation is cancelled (Neecha Bhanga): early struggles in its areas turn into strength. This upay speeds that up.`
+        ? `${weak} is debilitated, but the debilitation is cancelled (Neecha Bhanga): early struggles in its areas turn into strength. This upaya speeds that up.`
         : `${weak} is weak in your chart (debilitated), so it needs support.`)
         : x.g[weak].combust ? `${weak} is too close to the Sun (combust) in your chart, so its gifts stay hidden without support.`
           : `${weak} rules an area of your life that needs care right now.`;

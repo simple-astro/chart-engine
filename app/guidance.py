@@ -69,7 +69,7 @@ def weak_planet(chart: dict) -> tuple[str, str] | None:
     for p, ex in EXALT.items():
         if g[p]["sign_index"] == (ex + 6) % 12:
             nb = neecha_bhanga({q: x["sign_index"] for q, x in g.items()}, chart["lagna"]["sign_index"]).get(p, {})
-            return p, (f"{p} is debilitated, but the debilitation is cancelled (Neecha Bhanga): early struggles in its areas turn into strength. This upay speeds that up." if nb.get("cancelled")
+            return p, (f"{p} is debilitated, but the debilitation is cancelled (Neecha Bhanga): early struggles in its areas turn into strength. This upaya speeds that up." if nb.get("cancelled")
                        else f"{p} is weak in your chart (debilitated), so it needs support.")
     for p in EXALT:
         if g[p].get("combust"):
@@ -89,7 +89,7 @@ def first_reading(profile: dict, now: datetime) -> str:
     if md:
         lines.append(f"🪐 **{md['lord']} period** until {_md(md['end'])} — {PERIOD[md['lord']]}"
                      + (f" Right now {ad['lord']} adds {GIFT[ad['lord']]} until {_md(ad['end'])}." if ad else ""))
-    lines += ["", "🙏 **Your top remedies (upay)**"]
+    lines += ["", "🙏 **Your top remedies (upaya)**"]
     n = 1
     if md:
         lines.append(f"{n}. For your current period: {REMEDY[md['lord']]}")
@@ -141,7 +141,7 @@ def day_guide(profile: dict, day: date, lat: float, lon: float, tz_name: str, pl
         dont = f"Beginning new work during Rahu kalam ({rahu})."
     lines.append("🚫 **Avoid:** " + dont)
     day_lord = DAY_LORD[(day.weekday() + 1) % 7]
-    lines.append(f"🙏 **Today’s upay ({d['weekday']}, {day_lord}’s day):** {REMEDY[day_lord]}")
+    lines.append(f"🙏 **Today’s upaya ({d['weekday']}, {day_lord}’s day):** {REMEDY[day_lord]}")
     md, _ = current_period(c, now or datetime.now(ZoneInfo(tz_name)))
     if md:
         lines.append(f"\n_{md['lord']} period tip: lean into {GIFT[md['lord']]}; watch for {RISK[md['lord']]}._")

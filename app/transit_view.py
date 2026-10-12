@@ -83,7 +83,7 @@ def overlay(profile: dict, day: date, hour: int = 12, tz_name: str | None = None
     sm = by["Saturn"]["h_moon"]
     if sm in (12, 1, 2):
         notes.append({"kind": "care", "text": f"Sade Sati — {'rising' if sm == 12 else 'peak' if sm == 1 else 'setting'} phase: "
-                      "Saturn is passing over your Moon sign area. Steady effort, patience and Saturday upay help."})
+                      "Saturn is passing over your Moon sign area. Steady effort, patience and Saturday upaya help."})
     elif sm == 8:
         notes.append({"kind": "care", "text": "Ashtama Shani — Saturn 8th from your Moon: go carefully with health and big risks."})
     elif sm == 4:
