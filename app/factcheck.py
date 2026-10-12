@@ -24,7 +24,13 @@ YOGAS = {"raja yoga": "Raja yoga", "dhana yoga": "Dhana yoga", "gaja kesari": "G
          "chandra-mangala": "Chandra-Mangala", "chandra mangala": "Chandra-Mangala", "ruchaka": "Ruchaka",
          "bhadra yoga": "Bhadra", "hamsa": "Hamsa", "malavya": "Malavya", "sasa yoga": "Sasa", "shasha": "Sasa",
          "kemadruma": "Kemadruma", "kaal sarp": "Kaal Sarp", "kalsarp": "Kaal Sarp", "kala sarpa": "Kaal Sarp",
-         "viparita": "Viparita", "harsha": "Harsha", "sarala": "Sarala", "vimala": "Vimala", "yogakaraka": "Yogakaraka"}
+         "viparita": "Viparita", "harsha": "Harsha", "sarala": "Sarala", "vimala": "Vimala", "yogakaraka": "Yogakaraka",
+         "amala yoga": "Amala", "sunapha": "Sunapha", "anapha": "Anapha", "durudhara": "Durudhara", "durdhara": "Durudhara",
+         "lakshmi yoga": "Lakshmi", "saraswati yoga": "Saraswati", "vasumati": "Vasumati", "kahala": "Kahala",
+         "chamara": "Chamara", "shakata": "Shakata", "vesi yoga": "Vesi", "vosi yoga": "Vosi", "ubhayachari": "Ubhayachari",
+         "pravrajya": "Pravrajya", "guru chandal": "Guru-Chandal", "guru-chandal": "Guru-Chandal", "grahan yoga": "Grahan",
+         "angarak": "Angarak", "punarphoo": "Punarphoo", "daridra": "Daridra", "dharma-karmadhipati": "Dharma-Karmadhipati",
+         "dharma karmadhipati": "Dharma-Karmadhipati", "lagnadhi": "Lagnadhi", "tapaswi": "Tapaswi"}
 NEG = re.compile(r"\b(not|no|isn't|aren't|wasn't|never|neither|nor|without|unless|if|whether|lacks?|absence)\b|n't\b", re.I)
 PLANET_RE = re.compile(r"\b(" + "|".join(ALIAS) + r")\b", re.I)
 ORD_RE = re.compile(r"\b(1[0-2]|[1-9])(?:st|nd|rd|th)\b(?:\s+house)?", re.I)

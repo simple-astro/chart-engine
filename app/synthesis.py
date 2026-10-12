@@ -15,7 +15,7 @@ from core.constants import SIGN_LORDS, SIGNS
 from core.dignity import dignity
 from core.parivartana import exchanges
 from core.transits import transit_positions
-from core.yogas import aspects, neecha_bhanga, yogas
+from core.yogas import aspects, neecha_bhanga, yogas  # noqa: F401  (yogas kept for callers)
 
 NINE = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]
 KENDRA, TRIKONA, DUSTHANA, UPACHAYA = {1, 4, 7, 10}, {1, 5, 9}, {6, 8, 12}, {3, 6, 10, 11}
@@ -68,6 +68,20 @@ def _local(profile: dict, now: datetime) -> datetime:
         return now.astimezone(ZoneInfo(_place(profile)["time_zone"]))
     except Exception:  # an unknown zone name: fall back to UTC rather than fail the chat
         return now
+
+
+def _yogas(c: dict, now: datetime) -> list[str]:
+    """Every yoga with the three checks (core.yoga_eval): strength, whether its dasha runs now, and cancellation."""
+    from core import yoga_eval
+    out = []
+    for y in yoga_eval.evaluate(c, now)["yogas"]:
+        tags = [y["kind"], y["status"].lower()] + (["active now"] if y["active"] else [])
+        line = f"{y['name']} [{', '.join(tags)}]"
+        if y["active"]:  # Sukh explains the active ones (effect only); the rest are named so it can mention them
+            effect = y["meaning"].rsplit(": ", 1)[-1].split(" — ")[0].rstrip(".")
+            line += f": {effect}" + (f" ({y['notes'][0].replace(' (a 6th/8th/12th lord)', '')})" if y["notes"] else "")
+        out.append(line)
+    return out
 
 
 def build(profile: dict, now: datetime | None = None) -> dict:
@@ -211,7 +225,7 @@ def build(profile: dict, now: datetime | None = None) -> dict:
                  "paksha": "waxing" if waxing else "waning"},
         "planets": planets,
         "houses": houses,
-        "yogas": [f"{y['name']} [{y['kind']}]: {y['meaning']}" for y in yogas(signs, L)],
+        "yogas": _yogas(c, now),
         "exchanges": [f"{a}⇄{b} (H{ha}/H{hb}, {k})" for a, b, ha, hb, k in
                       ((x["planets"][0], x["planets"][1], x["houses"][0], x["houses"][1], x["type"]) for x in exchanges(signs, L))],
         "dasha": dasha,

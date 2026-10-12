@@ -70,4 +70,6 @@ def test_chat_context_is_synthesised():
     d = json.loads(ctx)
     assert d["planets"]["Moon"]["dignity"] == "debilitated" and d["planets"]["Moon"]["neecha_bhanga"].startswith("cancelled")
     assert set(d["houses"]) == {str(h) for h in range(1, 13)} and d["dasha"]["maha"]["lord"]
-    assert len(ctx) < 9000  # compressed: well under the old ~15k-character raw dump
+    # Compressed: well under the old ~15k-character raw dump. Raised from 9,000 to 10,000 on 2026-10-12 when the
+    # Jaimini, BNN, Chara Dasha and checked-yoga blocks were added (~150 tokens a question, mostly prompt-cached).
+    assert len(ctx) < 10000

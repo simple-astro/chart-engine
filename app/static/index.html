@@ -765,6 +765,14 @@
   .hrkey{display:flex;gap:14px;font-size:.76rem;color:var(--mut);margin-bottom:10px} .hrkey i{display:inline-block;width:16px;height:0;border-top:2px dashed;vertical-align:middle;margin-right:5px}
   .hrkey i.good{border-color:var(--ok)} .hrkey i.bad{border-color:var(--bad)}
 
+  /* ---------- Yogas pane ---------- */
+  .ysum{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px} .ysum span{background:var(--soft);border-radius:10px;padding:6px 12px;font-size:.88rem} .ysum b{color:var(--acc)}
+  .yseg{max-width:320px;margin:0 0 6px}
+  .ygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+  .ycard p{margin:6px 0 0;font-size:.88rem} .yhead{display:flex;flex-wrap:wrap;align-items:center;gap:6px} .yhead b{font:600 1.08rem var(--serif);color:var(--acc);margin:0 4px 0 0}
+  .yhead .badge{margin:0} .yact{border-color:var(--acc2)!important}
+  .ywhen{color:var(--ink)} .yact .ywhen{color:var(--acc2);font-weight:600} .ynote{color:var(--mut);font-size:.82rem!important} .yplan{color:var(--mut);font-size:.78rem!important}
+
   /* ---------- BNN pane ---------- */
   .bnntri{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
   .bnnt{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
@@ -1034,11 +1042,13 @@
       <div class="card panel">
         <div class="cpick"><label for="csel">Show</label>
           <select id="csel" autocomplete="off">
-            <option value="planets">Planets</option><option value="houses">Houses &amp; cusps</option><option value="dasha">Dasha periods</option>
+            <option value="planets">Planets</option><option value="yogas">Yogas</option><option value="houses">Houses &amp; cusps</option><option value="dasha">Dasha periods</option>
             <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option><option value="nadi">Nadi amsha</option>
             <option value="xchg">Lord exchange</option><option value="jaimini">Jaimini &amp; Chara Dasha</option><option value="bnn">BNN (Nadi trines)</option><option value="lal">Lal Kitab</option>
           </select></div>
         <div class="pane" id="t-planets"><div class="scroll"><table id="grahas"></table></div></div>
+        <div class="pane" id="t-yogas" hidden><div id="yogabody"></div>
+          <div class="hint">Each yoga is checked three ways: is it <b>strong</b> (its planets not combust, weakly placed or joined by a pure 6th/8th/12th lord), is it <b>active</b> (it gives results mainly in the Dasha of its planets), and is it <b>cancelled</b> by the classical rules. Traditional guidance, not certainty.</div></div>
         <div class="pane" id="t-houses" hidden><div class="scroll"><table id="houses"></table></div>
           <div class="hint">KP (Placidus) cusps. “→ H#” is the house that lord currently sits in.</div></div>
         <div class="pane" id="t-dasha" hidden><div id="dasha"></div></div>
@@ -1710,6 +1720,25 @@ function render(c,req){
     '<div class="hint">Chara Dasha is sign-based: each period treats its sign as a temporary Lagna, and the sub-periods run month by month. Shown for reflection beside Vimshottari; your timing verdicts still come from Vimshottari.</div>';
   if(Y&&Y.current){table($('yogtable'),['Sign','Years','From','To','Your house'],Y.timeline.map(p=>[(p.start===Y.current.start?'<b>'+esc(p.sign)+' ◀ now</b>':esc(p.sign)),p.years,ym(p.start),ym(p.end),'H'+p.house]));
     table($('yogsub'),['Sub-period','From','To'],Y.current_subs.map(x=>[(Y.sub&&x.start===Y.sub.start?'<b>'+esc(x.sign)+' ◀ now</b>':esc(x.sign)),ym(x.start),ym(x.end)]))}
+  // Yogas with the three checks (core/yoga_eval.py): strength, dasha activation, cancellation.
+  const YG=c.yoga_check, YK={good:['good','Helpful'],challenging:['warn','To handle'],neutral:['','Neutral']},
+    YS={Strong:'good',Mixed:'',Weak:'warn',Cancelled:'warn',Eased:'',Present:''};
+  const ym2=d=>new Date(d+'T00:00').toLocaleDateString(undefined,{month:'short',year:'numeric'});
+  const yogaCard=y=>'<div class="jai ycard'+(y.active?' yact':'')+'"><div class="yhead"><b>'+esc(y.name)+'</b><span class="badge '+YK[y.kind][0]+'">'+YK[y.kind][1]+'</span>'+
+      (y.kind==='good'||y.status==='Eased'?'<span class="badge '+YS[y.status]+'">'+esc(y.status)+'</span>':'')+'</div>'+
+    '<p>'+esc(y.meaning)+'</p>'+
+    '<p class="ywhen">'+(y.lifelong?'A lifelong pattern in your chart.':y.active?'● Active now — '+esc(y.active_by)+'.':y.next?'Next active: '+esc(y.next.period)+' from '+ym2(y.next.date)+'.':'Its planets have no Dasha left in this lifetime\'s timeline.')+'</p>'+
+    (y.cancelled_by.length?'<p class="ynote">Cancelled because '+esc(y.cancelled_by.join('; '))+'.</p>':y.notes.length?'<p class="ynote">'+(y.kind==='good'?'Why it is weaker: ':'Note: ')+esc(y.notes.join('; '))+'.</p>':'')+
+    '<p class="yplan">'+esc(y.planets.join(' · '))+'</p></div>';
+  if($('yogabody'))$('yogabody').innerHTML=!YG?'<div class="hint">Not available for this chart.</div>':
+    '<div class="ysum"><span><b>'+YG.counts.good+'</b> helpful</span><span><b>'+YG.counts.challenging+'</b> to handle</span><span><b>'+YG.counts.active+'</b> active now'+(YG.running.Mahadasha?' ('+esc(YG.running.Mahadasha)+(YG.running.Antardasha?'–'+esc(YG.running.Antardasha):'')+')':'')+'</span></div>'+
+    (YG.bhanga.length?'<p class="ynote">Classical cancellation in this chart: '+esc(YG.bhanga.join('; '))+'. Raja and wealth yogas are read as cancelled.</p>':'')+
+    '<div class="seg yseg" id="yseg"><button type="button" class="on" data-yf="all">All yogas</button><button type="button" data-yf="active">Active now</button></div>'+
+    [...new Set(YG.yogas.map(y=>y.category))].map(cat=>'<div class="ygrp" data-cat="'+esc(cat)+'"><h4 class="jaih" style="font-size:1rem">'+esc(cat==='Pancha Mahapurusha'?'Pancha Mahapurusha (great person)':cat==='Pattern'?'Planet patterns (Nabhasa)':cat==='Challenge'?'Challenges to handle':cat+' yogas')+'</h4><div class="ygrid">'+
+      YG.yogas.filter(y=>y.category===cat).map(yogaCard).join('')+'</div></div>').join('');
+  if($('yseg'))$('yseg').onclick=e=>{const b=e.target.closest('[data-yf]');if(!b)return;[...$('yseg').children].forEach(x=>x.classList.toggle('on',x===b));
+    const only=b.dataset.yf==='active';document.querySelectorAll('#yogabody .ycard').forEach(cd=>cd.hidden=only&&!cd.classList.contains('yact'));
+    document.querySelectorAll('#yogabody .ygrp').forEach(g=>g.hidden=![...g.querySelectorAll('.ycard')].some(cd=>!cd.hidden))};
   // BNN: the four element trines (planets in degree order) and each karaka's circuit.
   const B=c.bnn,EL={Fire:'🔥',Earth:'⛰',Air:'🌬',Water:'💧'};
   $('bnnbody').innerHTML=!B?'<div class="hint">Not available for this chart.</div>':
