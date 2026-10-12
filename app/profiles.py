@@ -362,3 +362,12 @@ def events_delete(profile_id: int, event_id: int, request: Request) -> dict:
     if not storage.event_delete(profile_id, event_id):
         raise HTTPException(status_code=404, detail="Event not found")
     return _events_view(p)
+
+
+@router.get("/{profile_id}/upcoming")
+def upcoming_changes(profile_id: int, request: Request, tz: str | None = None) -> dict:
+    """Coming up for you: the next Dasha period changes and the sky changes that matter to this chart."""
+    from app import upcoming
+    p = _require(profile_id, request)
+    tz_name = _transit_tz(p, tz)
+    return upcoming.upcoming({**p, "chart": with_extras(p["chart"])}, _transit_day(p, None, tz_name), tz_name)
