@@ -782,6 +782,7 @@
   .bnnx{display:inline-flex;align-items:center;gap:6px;font-style:normal;white-space:nowrap}
   .bnnc{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px} .bnnc .jai p+p{margin-top:6px}
   .bnns{font:500 .82rem var(--sans);color:var(--mut)}
+  .dhd{margin:4px 0 6px 18px;font-size:.84rem;color:var(--mut)}
   .chrd{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-bottom:8px}
   .chrd .jai ul{margin:6px 0 0;padding-left:18px;font-size:.88rem} .chrd .jai li{margin:4px 0} .chh{font-weight:600;font-size:.9rem;color:var(--ink)}
 
@@ -1802,11 +1803,22 @@ function render(c,req){
   if(req)window.renderTools($('gtools'),{req,chart:c});
 
   const now=Date.now(),fd=s=>new Date(s).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+  // Vimshottari readings (app/dasha_read.py): the running periods and what comes next, then the full period tree
+  // with a one-line meaning under each Mahadasha.
+  const DR=c.dasha_read||{now:[],next:[],headlines:{}},ymd=s=>new Date(s).toLocaleDateString(undefined,{month:'short',year:'numeric'});
   const node=(d,open)=>{const cur=now>=new Date(d.start)&&now<new Date(d.end);
     const label='<span class="'+(cur?'cur':'')+'">'+d.lord+'</span> <small>'+fd(d.start)+' – '+fd(d.end)+(cur?' ◀ now':'')+'</small>';
     if(!d.children||!d.children.length||d.level>=2)return '<li>'+label+'</li>';
-    return '<li><details'+(cur?' open':'')+'><summary>'+label+'</summary><ul class="tree">'+d.children.map(x=>node(x)).join('')+'</ul></details></li>'};
-  $('dasha').innerHTML='<ul class="tree">'+c.dasha.map(d=>node(d)).join('')+'</ul>';
+    const hd=d.level===1&&DR.headlines[d.lord]?'<p class="dhd">'+esc(DR.headlines[d.lord])+'</p>':'';
+    return '<li><details'+(cur?' open':'')+'><summary>'+label+'</summary>'+hd+'<ul class="tree">'+d.children.map(x=>node(x)).join('')+'</ul></details></li>'};
+  const dcard=x=>'<div class="jai"><small>'+esc(x.level)+' · '+ymd(x.start)+' – '+ymd(x.end)+'</small><b>'+esc(x.lord)+'</b>'+
+    '<p><b class="chh">'+esc(x.reading.headline)+'</b></p><ul>'+x.reading.points.map(p=>'<li>'+esc(p)+'</li>').join('')+'</ul></div>';
+  $('dasha').innerHTML=(DR.now.length?'<h3 class="jaih">Your periods now <small>Vimshottari, read from your Rasi chart</small></h3><div class="chrd">'+DR.now.map(dcard).join('')+'</div>':'')+
+    (DR.next.length?'<h4 class="jaih" style="font-size:1rem">Coming next</h4><div class="chrd">'+DR.next.map(dcard).join('')+'</div>':'')+
+    '<h4 class="jaih" style="font-size:1rem">All periods</h4><ul class="tree">'+c.dasha.map(d=>node(d)).join('')+'</ul>'+
+    '<div class="hint">A period gives the results of the houses its planet rules and the house it sits in (counted from your Lagna sign), shaped by its strength, the planets with it and the yogas it forms. '+
+    'For timing matter by matter (marriage, career, money…) see <button type="button" class="lnkyoga" data-go-life="dasha">My Life → Dasha</button>.</div>';
+  $('dasha').querySelector('[data-go-life]').onclick=()=>go('life','dasha');
 
   const vt=$('vtabs');vt.innerHTML='';
   Object.keys(c.vargas).forEach((k,i)=>{const b=document.createElement('button');b.type='button';b.textContent=k;

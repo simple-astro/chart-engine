@@ -11,6 +11,7 @@ from core.ashtakavarga import ashtakavarga
 from core.chart import ENGINE_VERSION, BirthData, compute_natal_chart
 from core.grahas import Graha
 from core import bnn, chara, jaimini, yoga_eval, yogas
+from app import dasha_read
 from core.parivartana import exchanges, lord_placements
 from core.panchang import compute_panchang
 from core.transit_scan import scan_events
@@ -89,6 +90,7 @@ def with_extras(c: dict) -> dict:
     c["jaimini"] = jaimini.analyse(c)
     c["chara"] = chara.summary(c)
     c["yoga_check"] = yoga_eval.evaluate(c)
+    c["dasha_read"] = dasha_read.summary(c)
     c["bnn"] = bnn.analyse(c)
     return c
 
