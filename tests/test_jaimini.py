@@ -15,10 +15,15 @@ SS = {"dob": "1986-12-23", "tob": "07:50:21", "lat": 30.7, "lon": 76.8, "tz_name
 
 
 def test_karakas_match_the_printout():
-    j = client.post("/chart", json=SS).json()["jaimini"]
-    assert [(k["short"], k["planet"]) for k in j["karakas"]] == [
+    g = client.post("/chart", json=SS).json()["grahas"]
+    assert [(k["short"], k["planet"]) for k in jaimini.chara_karakas(g, scheme=7)] == [
         ("AK", "Mercury"), ("AmK", "Mars"), ("BK", "Venus"), ("MK", "Jupiter"), ("PK", "Moon"), ("GK", "Saturn"),
         ("DK", "Sun")]
+    # The app uses 8 karakas (the owner's practice): Rahu at 30 - 23 deg 54' = 6 deg 06' is lowest, so it is DK.
+    j = client.post("/chart", json=SS).json()["jaimini"]
+    assert j["scheme"] == 8 and [(k["short"], k["planet"]) for k in j["karakas"]] == [
+        ("AK", "Mercury"), ("AmK", "Mars"), ("BK", "Venus"), ("MK", "Jupiter"), ("PiK", "Moon"), ("PK", "Saturn"),
+        ("GK", "Sun"), ("DK", "Rahu")]
     assert j["karakamsa"]["sign"] == "Aquarius" and "Rahu" in j["karakamsa"]["planets"]
 
 

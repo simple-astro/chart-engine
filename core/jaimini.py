@@ -53,7 +53,7 @@ def _ord(n: int) -> str:
     return f"{n}{'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')}"
 
 
-def chara_karakas(grahas: dict, scheme: int = 7) -> list[dict]:
+def chara_karakas(grahas: dict, scheme: int = 8) -> list[dict]:
     """[{karaka, short, planet, degree, role}] from highest to lowest degree within the sign."""
     deg = {p: grahas[p]["degrees_in_sign"] for p in ("Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn")}
     if scheme == 8:
@@ -84,7 +84,7 @@ def arudha(house_sign: int, signs: dict) -> int:
     return a
 
 
-def analyse(chart: dict, scheme: int = 7) -> dict:
+def analyse(chart: dict, scheme: int = 8) -> dict:
     g, L = chart["grahas"], chart["lagna"]["sign_index"]
     signs = {p: v["sign_index"] for p, v in g.items()}
     signs["_deg"] = {p: v["degrees_in_sign"] for p, v in g.items()}
