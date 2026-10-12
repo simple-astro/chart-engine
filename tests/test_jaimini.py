@@ -87,3 +87,22 @@ def test_yogini_dasha_starts_from_the_birth_nakshatra():
     y = yogini.summary(c, datetime(2026, 10, 12, tzinfo=timezone.utc))
     assert y["current"]["yogini"] == "Bhadrika" and y["next"]["yogini"] == "Ulka"
     assert all(w not in p["text"].lower() for p in ps for w in ("death", "ruin", "disaster"))  # gentle wording
+
+
+def test_arudha_lagna_only_falls_in_houses_3_4_5_9_10_11():
+    """Satya Peetha: an arudha never sits in its own house or the 7th from it, so the AL is always 3/4/5/9/10/11."""
+    import random
+    from datetime import date, time, timedelta
+    from app.routes import with_extras
+    from core.chart import BirthData, compute_natal_chart
+    rng, seen = random.Random(7), set()
+    for _ in range(60):
+        d = date(1940, 1, 1) + timedelta(days=rng.randint(0, 30000))
+        c = with_extras(compute_natal_chart(BirthData(dob=d, tob=time(rng.randint(0, 23), rng.randint(0, 59)),
+                                                      lat=rng.uniform(8, 35), lon=rng.uniform(68, 95),
+                                                      tz_name="Asia/Kolkata", name="")))
+        seen.add(c["lagna"]["sign"])
+        for a in c["jaimini"]["arudhas"]:
+            assert (a["in_house"] - a["house"]) % 12 not in (0, 6)
+        assert c["jaimini"]["arudhas"][0]["in_house"] in (3, 4, 5, 9, 10, 11)
+    assert len(seen) >= 8
