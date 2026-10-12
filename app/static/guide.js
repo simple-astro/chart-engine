@@ -41,6 +41,7 @@
         <div class="gmain"><header>${ic(a.key)}<h4>${esc(a.name)}</h4><span class="badge ${a.level.cls}">${a.level.label}</span></header>
           ${a.focus ? '<span class="fnow">Active in your current period</span>' : ''}
           <p class="gout">${esc(a.outlook)}</p>
+          ${g.jaimini && g.jaimini.areas[a.key] ? `<p class="gjai">${esc(g.jaimini.areas[a.key])}</p>` : ''}
           <button type="button" class="gmore" aria-expanded="${!i}"><span class="op">Hide</span><span class="cl">See Do’s, Don’ts &amp; upay</span></button>
           <button type="button" class="linkbtn" data-ask="${esc(ASK[a.key])}">Ask Sukh about this →</button></div>
         <div class="gdo"><h5 class="ok">Do</h5><ul>${a.dos.map(d => `<li>${esc(d)}</li>`).join('')}</ul></div>
@@ -48,7 +49,9 @@
         <div class="gup"><b>Upay</b><p>${esc(a.remedy.text)}</p><small>Why: ${esc(a.remedy.why)}.</small></div>
       </article>`).join('');
 
-    el.innerHTML = hero + `<h3 class="gh">Your life areas</h3><div class="ggrid">${areas}</div>`;
+    const purpose = g.jaimini ? `<section class="card gcard gpurpose"><h3>Your life’s lesson <small>Jaimini</small></h3>
+        <p>${esc(g.jaimini.purpose)}</p><button type="button" class="linkbtn" data-goto="jaimini">See your Jaimini chart →</button></section>` : '';
+    el.innerHTML = hero + purpose + `<h3 class="gh">Your life areas</h3><div class="ggrid">${areas}</div>`;
     if (remEl) remEl.innerHTML = rem;
   };
 

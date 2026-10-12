@@ -746,10 +746,22 @@
   .updays b{color:var(--ink);font-size:.86rem}
 
   /* ---------- Jaimini pane ---------- */
+  .gjai{margin:6px 0 0;font-size:.86rem;color:var(--mut);border-left:2px solid var(--acc2);padding-left:10px}
+  .gpurpose{margin-top:18px} .gpurpose p{margin:0 0 8px}
+  .jpt{border:1px solid var(--line);background:var(--bg2);color:var(--mut);border-radius:99px;padding:4px 12px;font:600 .74rem var(--sans);cursor:pointer;letter-spacing:.5px}
+  .jpt[aria-pressed="true"]{background:var(--soft);border-color:var(--acc2);color:var(--acc2)}
+  .chart .jp{fill:var(--acc2);font-weight:700;font-size:.82em}
   .jaicards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
   .jai{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
   .jai small{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
   .jai b{display:block;font:600 1.2rem var(--serif);color:var(--acc);margin:2px 0 4px} .jai p{margin:0;font-size:.88rem}
+  .jaih{margin-top:20px!important} .jaih small{font:500 .78rem var(--sans);color:var(--mut);margin-left:6px}
+  .jaial{margin:0 0 4px;padding-left:18px} .jaial li{margin:4px 0}
+  .yogcur{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:12px}
+  .yogcur>div{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .yogcur small{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
+  .yogcur b{display:block;font:600 1.2rem var(--serif);color:var(--acc)} .yogcur b span{font:500 .82rem var(--sans);color:var(--mut)}
+  .yogcur em{display:block;font-style:normal;font-size:.78rem;color:var(--mut);margin-bottom:4px} .yogcur p{margin:0;font-size:.88rem}
 
   /* ---------- screens: bottom bar on phones, a pill row under the header on wider screens ---------- */
   .sjbar{position:sticky;top:72px;z-index:25;display:flex;gap:4px;width:max-content;max-width:100%;margin:-12px auto 24px;padding:5px;
@@ -980,7 +992,8 @@
     </div>
     <div class="grid">
       <aside class="card chartcard"><div class="chhead"><h3 id="charttitle">Rasi chart (D1) · North Indian</h3>
-        <div class="seg chseg" role="radiogroup" aria-label="Chart view"><button type="button" role="radio" aria-checked="true" class="on" data-v="lagna">Lagna</button><button type="button" role="radio" aria-checked="false" data-v="chalit">Bhava Chalit</button></div></div>
+        <div class="seg chseg" role="radiogroup" aria-label="Chart view"><button type="button" role="radio" aria-checked="true" class="on" data-v="lagna">Lagna</button><button type="button" role="radio" aria-checked="false" data-v="chalit">Bhava Chalit</button></div>
+          <button type="button" class="jpt" id="jpt" aria-pressed="false" title="Show the Jaimini Arudha Lagna (AL) and Upapada (UL) on the chart">AL · UL</button></div>
         <div id="chart" class="chart"></div>
         <div id="chartkey" class="ckey" aria-label="Planets"></div>
         <div class="clegend"><span><i class="bd ex">▲</i>Exalted</span><span><i class="bd db">▼</i>Debilitated</span><span><i class="bd own">⌂</i>Own sign</span><span><i class="bd rt">R</i>Retrograde</span><span><i class="bd cb">C</i>Combust</span><span><i class="sw"></i>Lagna</span></div>
@@ -990,7 +1003,7 @@
           <select id="csel" autocomplete="off">
             <option value="planets">Planets</option><option value="houses">Houses &amp; cusps</option><option value="dasha">Dasha periods</option>
             <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option><option value="nadi">Nadi amsha</option>
-            <option value="xchg">Lord exchange</option><option value="jaimini">Jaimini</option><option value="lal">Lal Kitab</option>
+            <option value="xchg">Lord exchange</option><option value="jaimini">Jaimini &amp; Yogini</option><option value="lal">Lal Kitab</option>
           </select></div>
         <div class="pane" id="t-planets"><div class="scroll"><table id="grahas"></table></div></div>
         <div class="pane" id="t-houses" hidden><div class="scroll"><table id="houses"></table></div>
@@ -1017,7 +1030,7 @@
 <script src="/static/insights.js?v=5"></script>
 <script src="/static/muhurat.js?v=3"></script>
 <script src="/static/strength.js?v=1"></script>
-<script src="/static/guide.js?v=10"></script>
+<script src="/static/guide.js?v=11"></script>
 <script src="/static/mood.js?v=1"></script>
 <script src="/static/events.js?v=2"></script>
 <script src="/static/upcoming.js?v=2"></script>
@@ -1330,7 +1343,7 @@ function drawNorth(el,lagnaIdx,byH,houseSigns){
     '<path class="ln" d="M0 0L400 400M400 0L0 400M200 0L400 200L200 400L0 200Z"/>'+
     '<text class="asclbl" x="200" y="32" text-anchor="middle">LAGNA</text>';
   // byH entries are 'Su' strings, or {t:'Su', d:'15°', p:'Sun', b:['ex','R'], cls} for the main chart.
-  const lab=p=>typeof p==='string'?p:'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
+  const lab=p=>typeof p==='string'?p:p.jp?'<tspan class="jp">'+p.t+'</tspan>':'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
     (p.d?'<tspan class="dg" dx="1.5">'+p.d+'</tspan>':'')+(p.b||[]).map(k=>'<tspan class="bd '+BD[k][1]+'" dx="1">'+BD[k][0]+'</tspan>').join('')+'</tspan>';
   P.forEach(([x,y],h)=>{
     const sg=houseSigns?houseSigns[h]:(lagnaIdx+h)%12, pls=byH[h]||[], deg=pls.some(p=>typeof p!=='string');
@@ -1343,6 +1356,9 @@ function drawNorth(el,lagnaIdx,byH,houseSigns){
 }
 // ----- main chart: planet tooltip + key highlight -----
 let CHART_TIP=null,PLANET_Q=null,HOUSE_OF={},tipPinned=false,CHART_VIEW='lagna',RERENDER=null;
+let JPTS=false;try{JPTS=localStorage.getItem('sj_jpts')==='1'}catch(e){}
+$('jpt').setAttribute('aria-pressed',String(JPTS));
+$('jpt').addEventListener('click',()=>{JPTS=!JPTS;$('jpt').setAttribute('aria-pressed',String(JPTS));try{localStorage.setItem('sj_jpts',JPTS?'1':'0')}catch(e){};if(RERENDER)RERENDER()});
 document.querySelector('.chseg').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b||b.dataset.v===CHART_VIEW)return;
   CHART_VIEW=b.dataset.v;document.querySelectorAll('.chseg button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-checked',String(x===b))});
   focusPlanet(null);if(RERENDER)RERENDER()});
@@ -1558,6 +1574,9 @@ function render(c,req){
   const houseOf=([n,g])=>chalit?(g.house-1):(g.sign_index-l.sign_index+12)%12;
   Object.entries(c.grahas).forEach(([n,g])=>{const h=houseOf([n,g]),b=status(n);
     (byH[h]=byH[h]||[]).push({t:ABBR[n],d:Math.floor(g.degrees_in_sign)+'°',p:n,b,cls:b.find(k=>k==='ex'||k==='db')})});
+  if(JPTS&&!chalit&&c.jaimini){const J=c.jaimini;  // Jaimini points sit in whole-sign houses, so only on the Lagna view
+    [['AL',J.arudha_lagna.house],['UL',J.upapada.house]].forEach(([t,h])=>(byH[h-1]=byH[h-1]||[]).push({t,jp:true}))}
+  $('jpt').hidden=chalit;
   drawNorth($('chart'),l.sign_index,byH,chalit?c.houses.map(x=>x.sign_index):null);
   HOUSE_OF=Object.fromEntries(Object.entries(c.grahas).map(e=>[e[0],houseOf(e)]));
   $('chartkey').querySelectorAll('.gk').forEach(k=>{const x=k.querySelector('.gkx b');if(x)x.textContent='House '+(HOUSE_OF[k.dataset.p]+1)});  // follows the view
@@ -1615,10 +1634,24 @@ function render(c,req){
       (J.karakamsa?'<div class="jai"><small>Karakamsa · life path</small><b>'+esc(J.karakamsa.sign)+'</b><p>'+esc(J.karakamsa.note)+'</p></div>':'')+
       '<div class="jai"><small>Arudha Lagna · image</small><b>'+esc(J.arudha_lagna.sign)+'</b><p>'+esc(J.arudha_lagna.note)+'</p></div>'+
       '<div class="jai"><small>Upapada · marriage</small><b>'+esc(J.upapada.sign)+'</b><p>'+esc(J.upapada.note)+'</p></div>'+
-    '</div><h3 style="margin-top:18px">Chara karakas</h3><div class="scroll"><table id="jaitable"></table></div>';
-  if(J)table($('jaitable'),['Karaka','Planet','Degree in sign','Shows'],J.karakas.map(k=>['<b>'+k.short+'</b> '+k.karaka,k.planet,dms(k.degree),esc(k.role)]));
+    '</div><h3 class="jaih">Your Arudha Lagna</h3><ul class="jaial">'+J.al_reading.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+
+    '<h3 class="jaih">Chara karakas</h3><div class="scroll"><table id="jaitable"></table></div>'+
+    '<h3 class="jaih">Arudhas <small>how the world sees each part of your life</small></h3><div class="scroll"><table id="jaiar"></table></div>'+
+    '<div id="yogbody"></div>';
+  if(J){table($('jaitable'),['Karaka','Planet','Degree in sign','Shows'],J.karakas.map(k=>['<b>'+k.short+'</b> '+k.karaka,k.planet,dms(k.degree),esc(k.role)]));
+    table($('jaiar'),['Arudha','Sign','House','Planets there','Shows'],J.arudhas.map(a=>['<b>'+a.short+'</b>',a.sign,'H'+a.in_house,a.planets.join(', ')||'—',esc(a.shows)]))}
+  // Yogini Dasha, under Jaimini: the traditional names with gentle descriptions; a second opinion beside Vimshottari.
+  const Y=c.yogini,ym=d=>new Date(d).toLocaleDateString(undefined,{month:'short',year:'numeric'});
+  if($('yogbody'))$('yogbody').innerHTML=!Y||!Y.current?'':
+    '<h3 class="jaih">Yogini Dasha <small>a second opinion beside Vimshottari</small></h3>'+
+    '<div class="yogcur"><div><small>Now</small><b>'+esc(Y.current.yogini)+' <span>· '+esc(Y.current.planet)+'</span></b><em>'+ym(Y.current.start)+' – '+ym(Y.current.end)+'</em><p>'+esc(Y.current.text)+'</p></div>'+
+      (Y.sub?'<div><small>Sub-period</small><b>'+esc(Y.sub.yogini)+' <span>· '+esc(Y.sub.planet)+'</span></b><em>until '+ym(Y.sub.end)+'</em><p>'+esc(Y.sub.text)+'</p></div>':'')+
+      (Y.next?'<div><small>Next</small><b>'+esc(Y.next.yogini)+' <span>· '+esc(Y.next.planet)+'</span></b><em>from '+ym(Y.next.start)+'</em><p>'+esc(Y.next.text)+'</p></div>':'')+'</div>'+
+    '<div class="scroll"><table id="yogtable"></table></div>'+
+    '<div class="hint">Yogini Dasha runs in a 36-year cycle of 8 periods from your birth nakshatra. Shown for reflection; your timing verdicts still come from Vimshottari.</div>';
+  if(Y&&Y.current)table($('yogtable'),['Yogini','Planet','From','To','Nature'],Y.timeline.map(p=>[(p.start===Y.current.start?'<b>'+esc(p.yogini)+' ◀ now</b>':esc(p.yogini)),p.planet,ym(p.start),ym(p.end),'<span class="badge '+({good:'good',care:'warn',mixed:''})[p.tone]+'">'+({good:'Supportive',care:'Go gently',mixed:'Mixed'})[p.tone]+'</span>']));
   window.renderExchange($('xbody'),c);window.renderAshtakavarga($('akvbody'),c);
-  window.renderGuide($('guide'),window.guideReading(c),(req&&req.name)||m.name,$('gremedies'));loadToday();window.renderMood($('gmood'),currentId);window.renderEvents($('gevents'),currentId);window.renderUpcoming($('gupcoming'),currentId);
+  const gr=window.guideReading(c);gr.jaimini=c.jaimini;window.renderGuide($('guide'),gr,(req&&req.name)||m.name,$('gremedies'));loadToday();window.renderMood($('gmood'),currentId);window.renderEvents($('gevents'),currentId);window.renderUpcoming($('gupcoming'),currentId);
   if(req)window.renderTools($('gtools'),{req,chart:c});
 
   const now=Date.now(),fd=s=>new Date(s).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});

@@ -84,6 +84,48 @@ def arudha(house_sign: int, signs: dict) -> int:
     return a
 
 
+ARUDHA = {1: ("AL", "you as a whole — status and image"), 2: ("A2", "your wealth — what people think you have"),
+          3: ("A3", "your courage, efforts and siblings"), 4: ("A4", "your home, property and vehicles"),
+          5: ("A5", "your intelligence, children and followers"), 6: ("A6", "your rivals, service and health"),
+          7: ("A7", "your spouse and business partners (Darapada)"), 8: ("A8", "hidden matters and inheritance"),
+          9: ("A9", "your fortune, father and teachers"), 10: ("A10", "your career and reputation at work"),
+          11: ("A11", "your gains and network"), 12: ("A12", "your expenses and time abroad")}
+MALEFICS = {"Sun", "Mars", "Saturn", "Rahu", "Ketu"}
+NATURE = {"Sun": "proud, official", "Moon": "caring", "Mars": "bold, driven", "Mercury": "clever, business-minded",
+          "Jupiter": "wise, respected", "Venus": "charming, artistic", "Saturn": "serious, hard-working",
+          "Rahu": "ambitious, unconventional", "Ketu": "detached, spiritual"}
+
+
+def al_reading(al: int, in_sign) -> list[str]:
+    """The classic Jaimini reading of the Arudha Lagna, in plain words (no fear wording)."""
+    at = lambda n: in_sign((al + n - 1) % 12)
+    ben = lambda ps: [p for p in ps if p in BENEFICS]
+    mal = lambda ps: [p for p in ps if p in MALEFICS]
+    j = lambda ps: " and ".join(ps)
+    out = []
+    if at(1):
+        out.append(f"{j(at(1))} in your Arudha itself: people see you as {', '.join(NATURE[p] for p in at(1))}.")
+    g = ben(at(2) + at(11))
+    if g:
+        out.append(f"{j(g)} in the 2nd or 11th from your Arudha: money comes in and people see you as prosperous.")
+    elif mal(at(11)):
+        out.append(f"{j(mal(at(11)))} in the 11th from your Arudha: gains come through hard-fought effort.")
+    if ben(at(12)):
+        out.append(f"{j(ben(at(12)))} in the 12th from your Arudha: you spend on good causes and people you love.")
+    elif mal(at(12)):
+        out.append(f"{j(mal(at(12)))} in the 12th from your Arudha: watch for money leaks and needless spending.")
+    if mal(at(3) + at(6)):
+        out.append(f"{j(mal(at(3) + at(6)))} in the 3rd or 6th from your Arudha: a fighter — you beat competition with drive.")
+    elif ben(at(3) + at(6)):
+        out.append(f"{j(ben(at(3) + at(6)))} in the 3rd or 6th from your Arudha: you prefer peace to a fight.")
+    if at(7):
+        out.append(f"{j(at(7))} in the 7th from your Arudha: you attract partners and associates who are "
+                   f"{' and '.join(NATURE[p] for p in at(7))}.")
+    if not out:
+        out.append("No planets sit in the key houses from your Arudha — your image grows steadily through your own work.")
+    return out
+
+
 def analyse(chart: dict, scheme: int = 8) -> dict:
     g, L = chart["grahas"], chart["lagna"]["sign_index"]
     signs = {p: v["sign_index"] for p, v in g.items()}
@@ -102,10 +144,32 @@ def analyse(chart: dict, scheme: int = 8) -> dict:
     ul = arudha((L + 11) % 12, signs)
     second = (ul + 1) % 12
     ul_planets, second_planets = in_sign(ul), in_sign(second)
+    arudhas = []
+    for h in range(1, 13):
+        a = arudha((L + h - 1) % 12, signs)
+        arudhas.append({"house": h, "short": ARUDHA[h][0], "shows": ARUDHA[h][1], "sign": SIGNS[a],
+                        "in_house": house(a), "planets": in_sign(a)})
+    A = {x["short"]: x for x in arudhas}
+    a10, a7, a2, a11 = A["A10"], A["A7"], A["A2"], A["A11"]
     mal_2 = [p for p in second_planets if p not in BENEFICS]
     ben_2 = [p for p in second_planets if p in BENEFICS]
+    amk, dk = by["AmK"], by["DK"]
+    areas = {
+        "career": f"Jaimini: your Amatyakaraka {amk} suits {CAREER[amk]}; your career image (A10) sits in your "
+                  f"{_ord(a10['in_house'])} house — reputation grows through {HOUSE_THEME[a10['in_house']]}.",
+        "love": f"Jaimini: your Darakaraka {dk} points to a partner who is {SPOUSE[dk]}; the Upapada in {SIGNS[ul]} "
+                f"gives the marriage a flavour of {SIGN_THEME[ul]}, and A7 in your {_ord(a7['in_house'])} house shows "
+                f"partners linked to {HOUSE_THEME[a7['in_house']]}.",
+        "money": f"Jaimini: your wealth image (A2) sits in your {_ord(a2['in_house'])} house and your gains (A11) in your "
+                 f"{_ord(a11['in_house'])} — money links to {HOUSE_THEME[a2['in_house']]} and {HOUSE_THEME[a11['in_house']]}.",
+    }
     return {
         "scheme": scheme,
+        "arudhas": arudhas,
+        "al_reading": al_reading(al, in_sign),
+        "areas": areas,
+        "purpose": f"Your Atmakaraka is {ak}: your life's main lesson is {SOUL[ak]}."
+                   + (f" Your Karakamsa in {SIGNS[kk]} points to a path of {SIGN_THEME[kk]}." if kk is not None else ""),
         "karakas": ks,
         "atmakaraka": {"planet": ak, "lesson": SOUL[ak]},
         "amatyakaraka": {"planet": by["AmK"], "career": CAREER[by["AmK"]]},

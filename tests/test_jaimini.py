@@ -52,3 +52,38 @@ def test_sukh_gets_jaimini_for_description_not_timing():
     out = synthesis.build({"chart": c, "request": {**SS, "place": "Chandigarh"}})
     assert "AK=Mercury" in out["jaimini"]["karakas"] and "never for timing" in out["jaimini"]["rule"]
     assert out["jaimini"]["UL"].startswith("Aquarius H3")
+
+
+OWNER_LIKE = {"dob": "1987-09-01", "tob": "14:20:00", "lat": 30.7333, "lon": 76.7794, "tz_name": "Asia/Kolkata"}
+
+
+def test_all_twelve_arudhas_and_the_al_reading():
+    c = client.post("/chart", json=OWNER_LIKE).json()
+    j = c["jaimini"]
+    assert [a["short"] for a in j["arudhas"]][:2] == ["AL", "A2"] and len(j["arudhas"]) == 12
+    al = j["arudhas"][0]
+    assert al["sign"] == j["arudha_lagna"]["sign"] == "Leo"  # Jupiter 5th from a Sagittarius lagna -> 5th again
+    assert j["arudhas"][11]["sign"] == j["upapada"]["sign"]
+    for a in j["arudhas"]:  # an arudha never sits in its own house or the 7th from it
+        own = (c["lagna"]["sign_index"] + a["house"] - 1) % 12
+        sign = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius",
+                "Capricorn", "Aquarius", "Pisces"].index(a["sign"])
+        assert sign not in (own, (own + 6) % 12)
+    assert any("in your Arudha itself" in x for x in j["al_reading"])  # Sun, Mars, Mercury, Venus sit in Leo
+    assert set(j["areas"]) == {"career", "love", "money"} and j["purpose"].startswith("Your Atmakaraka is")
+
+
+def test_yogini_dasha_starts_from_the_birth_nakshatra():
+    from datetime import datetime, timezone
+    from core import yogini
+    c = client.post("/chart", json=OWNER_LIKE).json()
+    assert c["grahas"]["Moon"]["nakshatra"] == "Jyeshtha"  # 18 + 3 = 21 -> 5th yogini, Bhadrika
+    ps = yogini.yogini_dasha(c["grahas"]["Moon"]["longitude"], datetime(1987, 9, 1, 8, 50, tzinfo=timezone.utc))
+    assert ps[0]["yogini"] == "Bhadrika" and ps[0]["start"] < "1987-09-01"
+    assert [p["yogini"] for p in ps[:8]] == ["Bhadrika", "Ulka", "Siddha", "Sankata", "Mangala", "Pingala",
+                                             "Dhanya", "Bhramari"]
+    assert ps[8]["yogini"] == "Bhadrika"  # the 36-year cycle repeats
+    assert abs(sum(s["years"] for s in ps[1]["sub"]) - ps[1]["years"]) < 1e-9 and ps[1]["sub"][0]["yogini"] == "Ulka"
+    y = yogini.summary(c, datetime(2026, 10, 12, tzinfo=timezone.utc))
+    assert y["current"]["yogini"] == "Bhadrika" and y["next"]["yogini"] == "Ulka"
+    assert all(w not in p["text"].lower() for p in ps for w in ("death", "ruin", "disaster"))  # gentle wording

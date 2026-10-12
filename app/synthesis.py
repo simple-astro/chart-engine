@@ -234,6 +234,12 @@ def build(profile: dict, now: datetime | None = None) -> dict:
                                                 if up["second_from"]["planets"] else ""),
         "rule": "Describes the person (AK soul lesson, AmK work, DK spouse, AL image, UL marriage); never for timing.",
     }
+    from core import yogini
+    y = yogini.summary(c, now)
+    if y["current"]:
+        out["yogini"] = (f"{y['current']['yogini']} ({y['current']['planet']}) until {y['current']['end'][:7]}"
+                         + (f", sub {y['sub']['yogini']} until {y['sub']['end'][:7]}" if y["sub"] else "")
+                         + "; a second opinion beside Vimshottari, never the verdict")
     if profile.get("id") is not None:
         from app import life_events, storage
         past = storage.event_list(profile["id"])
