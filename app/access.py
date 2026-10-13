@@ -182,18 +182,18 @@ def login_page(error: str = "", admin: bool = False) -> str:
         foot = ("<small>The charts you save are private to this browser, so come back on the same browser to "
                 "see them. The SimpleJyotish team may review questions and answers to improve the service.</small>")
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>SimpleJyotish — {label}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#fbf7ef" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0a0907" media="(prefers-color-scheme: dark)"><title>SimpleJyotish — {label}</title>
 <link rel="icon" type="image/svg+xml" href="/static/sun.svg">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <style>
 :root{{--bg:#fbf7ef;--card:#fffdf9;--ink:#241e31;--mut:#6d6682;--acc:#8a5e14;--line:rgba(36,30,49,.12);--bad:#c0392b}}
-@media (prefers-color-scheme:dark){{:root{{--bg:#0a0812;--card:#1b162b;--ink:#f1ecf7;--mut:#9f98b8;--acc:#e5bb72;--line:rgba(255,255,255,.1);--bad:#ff8a80}}}}
+@media (prefers-color-scheme:dark){{:root{{--bg:#0a0907;--card:#14120f;--ink:#f3eee4;--mut:#a29a8b;--acc:#e5bb72;--line:rgba(238,224,196,.11);--bad:#ff8a80}}}}
 *{{box-sizing:border-box}}body{{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}}
 .card{{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px}}
 h1{{font:600 1.7rem Georgia,serif;margin:0 0 6px}}h1 em{{font-style:normal;color:var(--acc)}}p{{color:var(--mut);margin:0 0 18px}}
 label{{display:block;font-size:.78rem;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:7px}}
-input{{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}}
-button{{width:100%;margin-top:14px;padding:13px;border:0;border-radius:12px;font:600 1rem system-ui,sans-serif;cursor:pointer;color:#1a1322;background:linear-gradient(140deg,#e0b05f,#c98f2e)}}
+input{{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:16px}}
+button{{width:100%;margin-top:14px;padding:13px;border:0;border-radius:12px;font:600 1rem system-ui,sans-serif;cursor:pointer;color:#241903;background:linear-gradient(140deg,#e0b05f,#c98f2e)}}
 .logo{{display:block;width:72px;height:72px;margin:0 0 12px}}.err{{color:var(--bad);font-size:.9rem;margin:0 0 14px}}small{{display:block;margin-top:16px;color:var(--mut);font-size:.8rem}}a{{color:var(--acc)}}
 </style></head><body><form class="card" method="post" action="/login">
 <img class="logo" src="/static/sun.svg" alt=""><h1>Simple<em>Jyotish</em></h1><p>{intro}</p>{err}{hidden}
