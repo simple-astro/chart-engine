@@ -318,11 +318,14 @@ def verdict_checks(sent: str, facts: dict, flag) -> None:
                  f"the KP engine rates it {main} ({rated})")
 
 
-def correction_note(issues: list[dict]) -> str:
+def correction_note(issues: list[dict], words: int | None = None) -> str:
     lines = "\n".join(f"- You wrote \"{i['claim']}\" but {i['truth']}." for i in issues)
+    limit = f"Stay within {words} words in total. " if words else ""
     return ("Your draft contradicts the computed chart data:\n" + lines +
             "\nRewrite the whole answer, fixing only these points and keeping everything else. Do not add any new "
-            "astrological facts, dates or yogas that are not in the chart data.")
+            "astrological facts, dates or yogas that are not in the chart data. Start directly with the corrected "
+            "answer: no apology and no 'here is the corrected answer'. Keep every section, including the Do and "
+            "Don't lists. " + limit + "If it runs long, shorten the explanation, never the Do and Don't lists.")
 
 
 def strip(text: str, issues: list[dict]) -> str:

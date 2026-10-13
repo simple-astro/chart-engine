@@ -383,7 +383,7 @@ def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs
     if issues:
         yield {"type": "status", "text": "Double-checking against your chart…"}
         try:
-            fixed, use = revise(profile, history, message, text, factcheck.correction_note(issues), model)
+            fixed, use = revise(profile, history, message, text, factcheck.correction_note(issues, config.word_limit()), model)
         except Exception:  # if the correction call fails, fall back to removing the wrong sentences
             fixed = ""
         if fixed:
@@ -400,10 +400,17 @@ def _json(obj) -> str:
     return json.dumps(obj, separators=(",", ":"))
 
 
-def limit_words(text: str, limit: int) -> str:
-    """Backstop for the prompt's length rule: cut at the last whole line/sentence within `limit` words."""
-    if len(text.split()) <= limit:
-        return text
+_HEADING = re.compile(r"^\s*(?:#{1,4}\s+\S|\*\*[^*]+\*\*:?\s*$)")
+_BULLET = re.compile(r"^\s*(?:[-*\u2022]|\d+[.)])\s+")
+_KEEP = re.compile(r"\b(do|don'?t|dont|upaya|remed\w*|avoid)\b", re.I)  # sections that must survive a trim
+
+
+def _words(lines: list[str]) -> int:
+    return len(" ".join(lines).split())
+
+
+def _cut(text: str, limit: int) -> str:
+    """Keep whole lines (or, for one huge paragraph, whole sentences) within `limit` words."""
     out, count = [], 0
     for line in text.split("\n"):
         n = len(line.split())
@@ -420,6 +427,37 @@ def limit_words(text: str, limit: int) -> str:
                 count += k
         break
     return "\n".join(out).strip()
+
+
+def _drop_trailing_headings(text: str) -> str:
+    """Never end on a heading with nothing under it."""
+    lines = text.split("\n")
+    while lines and (not lines[-1].strip() or _HEADING.match(lines[-1])):
+        lines.pop()
+    return "\n".join(lines).strip()
+
+
+def limit_words(text: str, limit: int) -> str:
+    """Backstop for the prompt's length rule. Over the limit, shorten the bullets of the sections that explain
+    (e.g. "What the chart shows") first, so the actionable sections (Do, Don't, upaya) stay whole; if that is not
+    enough, cut at the last whole line or sentence. The result never ends on a bare heading."""
+    if len(text.split()) <= limit:
+        return text
+    lines = text.split("\n")
+    while _words(lines) > limit:
+        sections: dict[int, list[int]] = {}
+        sec, keep = None, False
+        for i, line in enumerate(lines):
+            if _HEADING.match(line):
+                sec, keep = i, bool(_KEEP.search(line))
+            elif sec is not None and not keep and _BULLET.match(line):
+                sections.setdefault(sec, []).append(i)
+        trimmable = {k: v for k, v in sections.items() if len(v) >= 2}   # keep at least one bullet per section
+        if not trimmable:
+            break
+        lines.pop(max(trimmable.values(), key=len)[-1])                  # last bullet of the longest section
+    text = "\n".join(lines)
+    return _drop_trailing_headings(text if _words(lines) <= limit else _cut(text, limit))
 
 
 _FOLLOWUP = re.compile(r"\b(it|that|this|those|these|them|more|why|elaborate|explain|continue|again|also|"

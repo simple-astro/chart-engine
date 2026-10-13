@@ -161,3 +161,48 @@ def test_answer_reuse_and_usage_log(client, monkeypatch):
     assert n[0]["model"] == "claude-haiku-4-5" and n[0]["max_tokens"] == 1500
     u = client.get("/usage").json()
     assert u["by_kind"]["llm"]["input_tokens"] == 100 and u["by_kind"]["cache"]["requests"] == 1
+
+
+PR_ANSWER = """You're right, Inderjeet ji. The Mercury stretch is a pratyantar (a sub-period inside the antardasha), not the antardasha. Your running antardasha is Saturn. Here is the corrected answer.
+
+The chart does not clearly promise settling abroad, and the next two years look slow for it. This is a tendency, not a final verdict. Many people with this kind of chart still get PR through patient paperwork.
+
+**What the chart shows**
+- Settling abroad is "not clearly promised". Your 12th house (foreign lands) has Sun, Mercury and Jupiter in it, which helps. But the planet that decides delivery, Mercury, works against it.
+- Your present Jupiter–Saturn period is mostly challenging for this. Inside Saturn's antardasha, the best stretch is the Mercury pratyantar, running to 12 Dec 2026, and it is only mixed. Later pratyantars are harder: Ketu from 12 Dec 2026 and Venus from 4 Feb 2027 to 8 July 2027. The Rahu pratyantar runs from 1 Jan to 19 May 2028.
+- The mixed windows return from 20 Sept 2028, in your Jupiter–Mercury antardasha.
+- Moving home is also a challenging reading throughout, because your 4th house (home) is blocked.
+
+**Do**
+- Keep documents complete and consistent and file on time. Saturn, your current antardasha lord, rewards patience and accuracy.
+- Prefer routes that rely on steady work history, because your 11th house of gains is strong.
+- Get a second opinion on important filing dates. A review with the founding astrologer is worth it.
+
+**Don't**
+- Don't rush filings or sign anything you have not read, because Saturn's period punishes haste.
+- Don't rely on one route only; keep a back-up plan in case the first application is slow.
+- Don't take agent promises about dates at face value."""
+
+
+def test_limit_words_keeps_do_and_dont_whole():
+    from app.chat import limit_words
+    out = limit_words(PR_ANSWER, 250)
+    assert len(out.split()) <= 250
+    assert "**Do**" in out and "**Don't**" in out and out.splitlines()[-1].startswith("- Don't take agent promises")
+    assert out.count("- Don't") == 3 and out.count("- Keep documents") == 1      # actionable sections untouched
+    assert out.count("\n- ") < PR_ANSWER.count("\n- ")                            # the explanation bullets were shortened
+    assert limit_words(PR_ANSWER, 400) == PR_ANSWER
+
+
+def test_limit_words_never_ends_on_a_bare_heading():
+    from app.chat import limit_words
+    text = "Short direct answer first.\n\n**Do**\n- " + "careful steady words " * 20 + "\n\n**Don't**\n- " + "rushing words " * 20
+    out = limit_words(text, 45)
+    last = out.splitlines()[-1]
+    assert last and not last.startswith("**") and len(out.split()) <= 45
+
+
+def test_rewrite_request_repeats_the_limit_and_sections():
+    from app import factcheck
+    note = factcheck.correction_note([{"claim": "Mercury antardasha", "truth": "the running antardasha is Saturn"}], 300)
+    assert "300 words" in note and "no apology" in note and "Don't" in note
