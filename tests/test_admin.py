@@ -295,3 +295,25 @@ def test_questions_per_day_can_be_raised_for_one_code(gated, fake_llm):
     for bad in (-1, 1001, 2.5, "10", True):
         assert a.patch(f"/admin/api/codes/{vip['id']}", json={"daily_limit": bad}).status_code == 422
     assert t.patch(f"/admin/api/codes/{vip['id']}", json={"daily_limit": 99}).status_code == 403
+
+
+def test_questions_export_as_csv(gated, fake_llm):
+    import csv
+    import io
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    t.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"})
+    t.post(f"/profiles/{pid}/chat", json={"message": "When should I travel?"})
+    a = _admin()
+    [q, _] = a.get("/admin/api/queries").json()
+    a.put(f"/admin/api/queries/{q['id']}/remarks", json={"remarks": "Good, cites the 9th lord"})
+    r = a.get("/admin/api/queries/export")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv")
+    assert "attachment" in r.headers["content-disposition"] and ".csv" in r.headers["content-disposition"]
+    rows = list(csv.reader(io.StringIO(r.content.decode("utf-8-sig"))))
+    assert rows[0][:5] == ["When (UTC)", "Tester", "Chart", "Question", "Answer"]
+    assert [x[3] for x in rows[1:]] == ["When should I travel?", "How is my career outlook?"]
+    assert rows[1][2] == "Asha" and rows[1][-1] == "Good, cites the 9th lord" and rows[1][4] == "Your career looks steady."
+    only = list(csv.reader(io.StringIO(a.get("/admin/api/queries/export?q=travel").content.decode("utf-8-sig"))))
+    assert [x[3] for x in only[1:]] == ["When should I travel?"]
+    assert _tester().get("/admin/api/queries/export").status_code == 403

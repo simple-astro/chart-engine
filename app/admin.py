@@ -85,6 +85,38 @@ def queries(request: Request, limit: int = 50, before_id: int | None = None) -> 
     return rows
 
 
+@router.get("/admin/api/queries/export")
+def export_queries(request: Request, q: str = ""):
+    """Every question as a CSV file (or only those matching the page's filter), for a spreadsheet."""
+    import csv
+    import io
+    from datetime import datetime, timezone
+    from fastapi.responses import Response
+    _require_admin(request)
+    rows = queries(request, limit=200)
+    while len(rows) % 200 == 0 and rows:            # page back through the whole log
+        older = queries(request, limit=200, before_id=rows[-1]["id"])
+        if not older:
+            break
+        rows += older
+    words = q.strip().lower()
+    if words:
+        rows = [r for r in rows if any(words in str(r.get(k) or "").lower() for k in ("tester", "profile_name", "question", "answer"))]
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["When (UTC)", "Tester", "Chart", "Question", "Answer", "Answered by", "Input tokens", "Output tokens",
+                "Est. cost (USD)", "Fact check: caught", "Fact check: removed", "Your note"])
+    for r in rows:
+        fc = r.get("factcheck") or {}
+        w.writerow([r["ts"], r["tester"], r.get("profile_name") or "", r.get("question") or "", r.get("answer") or "",
+                    r["model_label"] if r["kind"] == "llm" else r["kind"], r["input_tokens"], r["output_tokens"],
+                    f"{r['cost']:.4f}", " | ".join(fc.get("found") or []), " | ".join(fc.get("removed") or []),
+                    r.get("admin_remarks") or ""])
+    name = f"simplejyotish-questions-{datetime.now(timezone.utc).strftime('%Y-%m-%d')}.csv"
+    return Response("\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",   # BOM so Excel reads Hindi/Punjabi text
+                    headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
+
+
 @router.put("/admin/api/queries/{query_id}/remarks")
 async def save_remarks(request: Request, query_id: int) -> dict:
     _require_admin(request)

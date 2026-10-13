@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" id="tc" content="#fbf7ef">
+<script>(function(){var L="#fbf7ef",D="#0a0907",q=matchMedia("(prefers-color-scheme:dark)");function f(){var t=document.documentElement.getAttribute("data-theme"),d=t==="dark"||(t!=="light"&&q.matches),m=document.getElementById("tc");if(m)m.content=d?D:L}f();new MutationObserver(f).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});if(q.addEventListener)q.addEventListener("change",f)})();</script>
 <title>SimpleJyotish Admin</title>
 <link rel="icon" type="image/svg+xml" href="/static/sun.svg">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
@@ -18,17 +20,17 @@
   }
   @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
     color-scheme:dark;
-    --bg:#0a0812; --bg2:#120e1f; --card:#1b162b; --ink:#f1ecf7; --ink2:#cfc8e0; --mut:#9f98b8;
-    --acc:#e5bb72; --g1:#e8c178; --g2:#c79440; --soft:rgba(229,187,114,.11); --track:#2c2440;
-    --line:rgba(255,255,255,.1); --ok:#6ee7a0; --warn:#f0a35a; --bad:#ff8a80;
-    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.4);
+    --bg:#0a0907; --bg2:#1a1713; --card:#14120f; --ink:#f3eee4; --ink2:#d6cdbb; --mut:#a29a8b;
+    --acc:#e5bb72; --g1:#e8c178; --g2:#c79440; --soft:rgba(229,187,114,.11); --track:#2a261e;
+    --line:rgba(238,224,196,.11); --ok:#7fdca0; --warn:#ffb25e; --bad:#ff8a80;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 30px rgba(0,0,0,.5);
   }}
   :root[data-theme="dark"]{
     color-scheme:dark;
-    --bg:#0a0812; --bg2:#120e1f; --card:#1b162b; --ink:#f1ecf7; --ink2:#cfc8e0; --mut:#9f98b8;
-    --acc:#e5bb72; --g1:#e8c178; --g2:#c79440; --soft:rgba(229,187,114,.11); --track:#2c2440;
-    --line:rgba(255,255,255,.1); --ok:#6ee7a0; --warn:#f0a35a; --bad:#ff8a80;
-    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.4);
+    --bg:#0a0907; --bg2:#1a1713; --card:#14120f; --ink:#f3eee4; --ink2:#d6cdbb; --mut:#a29a8b;
+    --acc:#e5bb72; --g1:#e8c178; --g2:#c79440; --soft:rgba(229,187,114,.11); --track:#2a261e;
+    --line:rgba(238,224,196,.11); --ok:#7fdca0; --warn:#ffb25e; --bad:#ff8a80;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 30px rgba(0,0,0,.5);
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
@@ -61,7 +63,7 @@
   input:focus,select:focus{outline:2px solid var(--g2);outline-offset:1px}
   .help{color:var(--mut);font-size:.78rem;margin-top:5px}
   .actions{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin-top:2px}
-  .btn{border:0;border-radius:10px;padding:10px 18px;font:600 .95rem var(--sans);cursor:pointer;color:#1a1322;background:linear-gradient(140deg,var(--g1),var(--g2))}
+  .btn{border:0;border-radius:10px;padding:10px 18px;font:600 .95rem var(--sans);cursor:pointer;color:#241903;background:linear-gradient(140deg,var(--g1),var(--g2))}
   a.btn{display:inline-block;text-decoration:none}
   .evkpi{margin:4px 0 12px;font-size:.95rem} .evkpi b{color:var(--acc)}
   .btn:disabled{opacity:.55;cursor:default}
@@ -83,12 +85,16 @@
   .qa{display:grid;gap:10px;padding:4px 2px;position:sticky;left:10px;max-width:min(900px,calc(100vw - 90px))}
   .qa b{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin-bottom:3px}
   .qa div{white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+  .qa .ans{white-space:normal} .ans p,.ans h4{margin:0 0 .5em} .ans h4{font-size:.95rem} .ans ul{margin:0 0 .6em;padding-left:1.2em} .ans li{margin:.2em 0}
   .tag{display:inline-block;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);white-space:nowrap}
   .tag.ai{border-color:var(--g2);color:var(--acc)}
   .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
   .toolbar input{max-width:320px}
   .empty{color:var(--mut);padding:18px 4px;text-align:center}
   .more{display:flex;justify-content:center;margin-top:12px}
+  .qhead{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap}
+  .qbtns{display:flex;gap:8px} .qbtns a.sbtn{text-decoration:none;display:inline-flex;align-items:center}
+  #qs.shut .qhead h2{margin:0}
 
   /* access codes */
   form.newcode{display:grid;grid-template-columns:1.2fr 1.2fr auto;gap:12px;align-items:end;margin-bottom:16px}
@@ -263,8 +269,11 @@
     </table></div>
   </section>
 
-  <section class="card">
-    <h2>Questions</h2>
+  <section class="card" id="qs">
+    <div class="qhead"><h2>Questions</h2>
+      <div class="qbtns"><a class="sbtn" id="q-export" href="/admin/api/queries/export" download>Export CSV</a>
+        <button class="sbtn" type="button" id="q-toggle" aria-expanded="true" aria-controls="q-body">Collapse</button></div></div>
+    <div id="q-body">
     <p class="sub">Every question testers asked, newest first. Select a row to read the full answer.</p>
     <div class="toolbar"><input id="filter" type="search" placeholder="Filter by tester, chart or words" aria-label="Filter questions"></div>
     <div class="scroll"><table>
@@ -272,6 +281,7 @@
       <tbody id="queries"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
     </table></div>
     <div class="more"><button class="btn ghost" id="more" type="button" hidden>Load older questions</button></div>
+    </div>
   </section>
 </main>
 
@@ -367,7 +377,7 @@ function toggle(tr) {
   const d = document.createElement('tr'); d.className = 'detail';
   d.innerHTML = `<td colspan="8"><div class="qa">
     <div><b>Question</b><div>${esc(r.question)}</div></div>
-    <div><b>Answer</b><div>${r.answer ? esc(r.answer) : '<span style="color:var(--mut)">Not recorded (asked before answer logging was added).</span>'}</div></div>
+    <div><b>Answer</b><div class="ans">${r.answer ? md(r.answer) : '<span style="color:var(--mut)">Not recorded (asked before answer logging was added).</span>'}</div></div>
     ${r.factcheck && r.factcheck.found.length ? `<div><b>Fact check</b><div style="font-size:.88rem">Caught in the draft and ${r.factcheck.revised ? 'corrected by a rewrite' : 'removed'}:<ul style="margin:4px 0">${r.factcheck.found.map(x => `<li>${esc(x)}</li>`).join('')}</ul>${r.factcheck.removed.length ? `<div style="color:var(--bad)">Still wrong after the rewrite, so removed: ${r.factcheck.removed.map(esc).join(' | ')}</div>` : ''}</div></div>` : ''}
     <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><b>Admin notes</b>
     <div style="display:flex;gap:8px;align-items:flex-start">
@@ -397,6 +407,33 @@ async function saveRemark(btn) {
   } finally {
     btn.disabled = false;
   }
+}
+// Questions: collapse (remembered on this device) and export as CSV (following the filter, when one is typed).
+function setQOpen(open) {
+  $('q-body').hidden = !open; $('qs').classList.toggle('shut', !open);
+  $('q-toggle').textContent = open ? 'Collapse' : 'Expand'; $('q-toggle').setAttribute('aria-expanded', String(open));
+  try { localStorage.setItem('sj-admin-q', open ? 'open' : 'shut'); } catch (e) {}
+}
+$('q-toggle').addEventListener('click', () => setQOpen($('q-body').hidden));
+try { if (localStorage.getItem('sj-admin-q') === 'shut') setQOpen(false); } catch (e) {}
+$('filter').addEventListener('input', () => {
+  const f = $('filter').value.trim();
+  $('q-export').href = '/admin/api/queries/export' + (f ? '?q=' + encodeURIComponent(f) : '');
+  $('q-export').textContent = f ? 'Export matches' : 'Export CSV';
+});
+// The answer as the tester sees it: headings, **bold**, bullets and paragraphs.
+function md(t) {
+  const inl = x => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`(.+?)`/g, '<code>$1</code>');
+  let html = '', inList = false;
+  String(t).split('\n').forEach(line => {
+    const m = line.match(/^\s*(?:[-*•]|\d+[.)])\s+(.*)/), h = line.match(/^#{1,4}\s+(.*)/);
+    if (m) { if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + inl(m[1]) + '</li>'; return; }
+    if (inList) { html += '</ul>'; inList = false; }
+    if (h) html += '<h4>' + inl(h[1]) + '</h4>';
+    else if (/^\s*\*\*[^*]+\*\*:?\s*$/.test(line)) html += '<h4>' + inl(line.trim()) + '</h4>';
+    else if (line.trim()) html += '<p>' + inl(line) + '</p>';
+  });
+  return html + (inList ? '</ul>' : '');
 }
 $('queries').addEventListener('click', e => { const tr = e.target.closest('tr.row'); if (tr) toggle(tr); });
 $('queries').addEventListener('keydown', e => { const tr = e.target.closest('tr.row'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(tr); } });
