@@ -21,8 +21,9 @@ SYSTEM = (
     "Jyotishi at any hour, with no appointment and no judgment. You are an AI, not a human — if asked, say so "
     "plainly and never claim to be Sukhdeep.\n"
     "Voice: a caring family Jyotishi — warm, calm and reassuring, in simple English. Use familiar Hindi words "
-    "(dasha, upaya, shubh, muhurat) with a short meaning the first time. Say 'Namaste' only when opening a new "
-    "conversation.\n"
+    "(dasha, upaya, shubh, muhurat) with a short meaning the first time. Never greet: no 'Namaste' and no 'Hello'. Begin "
+    "by calling the person by their first name from native.name with 'ji', then go straight to the answer in the same "
+    "sentence, e.g. 'Inderjeet ji, right now you are in…'. Use the name this once, at the start of the reply.\n"
     "People come with a worry or a decision, not to study their chart. Give them clarity and something to do: "
     "lead with the plain answer, then practical guidance — what to do, what to avoid, and one or two simple upaya "
     "(remedies) that fit their chart. CITE THE CHART FACT behind every claim — each prediction, Do, Don't and upaya — "
@@ -70,7 +71,7 @@ SYSTEM = (
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "kp-10"
+CONTEXT_VERSION = "kp-11"
 
 TOOLS = [
     {"name": "get_transits",
@@ -437,6 +438,16 @@ def _drop_trailing_headings(text: str) -> str:
     return "\n".join(lines).strip()
 
 
+_GREETING = re.compile(r"^\s*(?:namaste|namaskar|sat sri akal|hello|hi|hey)\b[\s,!.:\U0001F64F]*", re.I)
+
+
+def drop_greeting(text: str) -> str:
+    """Backstop for the no-greeting rule: remove an opening 'Namaste' / 'Hello' but keep the name that follows it,
+    so 'Namaste, Inderjeet ji. Right now…' starts with 'Inderjeet ji.' and the words go to the answer."""
+    rest = _GREETING.sub("", text, count=1).lstrip()
+    return rest[:1].upper() + rest[1:] if rest else text
+
+
 def limit_words(text: str, limit: int) -> str:
     """Backstop for the prompt's length rule. Over the limit, shorten the bullets of the sections that explain
     (e.g. "What the chart shows") first, so the actionable sections (Do, Don't, upaya) stay whole; if that is not
@@ -539,7 +550,7 @@ def chat_events(profile: dict, message: str):
                 use["rounds"] += 1
                 for k in ("input", "output", "cache_read", "cache_write"):
                     use[k] += ev["usage"][k]
-        text = limit_words(text, config.word_limit())
+        text = limit_words(drop_greeting(text), config.word_limit())
     if not text:  # never store or show a blank answer
         raise RuntimeError("The assistant didn't produce an answer. Please try again.")
     yield {"type": "delta", "text": text}
@@ -680,7 +691,7 @@ def answer_once(profile: dict, message: str, model: str) -> dict:
                     use["rounds"] += 1
                     for k in ("input", "output", "cache_read", "cache_write"):
                         use[k] += ev["usage"][k]
-        text = limit_words(text, config.word_limit())
+        text = limit_words(drop_greeting(text), config.word_limit())
     return {"model": model, "label": config.label(model), "text": text, "draft": draft, "factcheck": report,
             "tools": [t["name"] for t in tool_outs], "usage": use, "seconds": round(time.monotonic() - t0, 1),
             "cost": config.cost(model, use["input"], use["output"], use["cache_read"], use["cache_write"])}

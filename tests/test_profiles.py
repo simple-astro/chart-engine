@@ -206,3 +206,15 @@ def test_rewrite_request_repeats_the_limit_and_sections():
     from app import factcheck
     note = factcheck.correction_note([{"claim": "Mercury antardasha", "truth": "the running antardasha is Saturn"}], 300)
     assert "300 words" in note and "no apology" in note and "Don't" in note
+
+
+def test_no_greeting_but_the_name_stays():
+    from app import chat
+    assert "Never greet" in chat.SYSTEM and "native.name" in chat.SYSTEM and "Say 'Namaste'" not in chat.SYSTEM
+    d = chat.drop_greeting
+    assert d("Namaste, Inderjeet ji. Right now you are in the Jupiter–Saturn period.") == "Inderjeet ji. Right now you are in the Jupiter–Saturn period."
+    assert d("Namaste 🙏\n\nYour Saturn period rewards patience.") == "Your Saturn period rewards patience."
+    assert d("Hello Asha! Your career looks steady.") == "Asha! Your career looks steady."
+    assert d("Inderjeet ji, right now you are in Saturn's period.") == "Inderjeet ji, right now you are in Saturn's period."
+    assert d("Namaste.") == "Namaste."                                   # never leave an empty answer
+    assert d("Himalayan salt is not a remedy here.") == "Himalayan salt is not a remedy here."
