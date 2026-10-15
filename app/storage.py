@@ -6,7 +6,7 @@ import os
 import secrets
 import sqlite3
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 _lock = threading.Lock()
@@ -94,6 +94,10 @@ def _connect() -> sqlite3.Connection:
     # Ticked "get ready" steps for upcoming changes (app/upcoming.py): one row per ticked step.
     conn.execute("CREATE TABLE IF NOT EXISTS prep_done (profile_id INTEGER NOT NULL, step TEXT NOT NULL,"
                  " done_at TEXT NOT NULL, PRIMARY KEY (profile_id, step))")
+    # Which sections testers open (app/usage.py): a short name per event, no chart data. Kept for 90 days.
+    conn.execute("CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL,"
+                 " owner TEXT, name TEXT NOT NULL, detail TEXT)")
+    conn.execute("CREATE INDEX IF NOT EXISTS events_ts ON events (ts)")
     return conn
 
 
@@ -549,3 +553,34 @@ def prep_tick(profile_id: int, step: str, done: bool) -> None:
             conn.execute("INSERT OR IGNORE INTO prep_done (profile_id, step, done_at) VALUES (?, ?, ?)", (profile_id, step, _now()))
         else:
             conn.execute("DELETE FROM prep_done WHERE profile_id = ? AND step = ?", (profile_id, step))
+
+
+# ----- usage: section events and the activity already stored (app/usage.py) -----
+EVENT_DAYS = 90
+
+
+def log_events(owner: str | None, rows: list[tuple[str, str | None]]) -> None:
+    now = _now()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=EVENT_DAYS)).isoformat(timespec="seconds")
+    with _lock, _connect() as conn:
+        conn.executemany("INSERT INTO events (ts, owner, name, detail) VALUES (?, ?, ?, ?)",
+                         [(now, owner, n, d) for n, d in rows])
+        conn.execute("DELETE FROM events WHERE ts < ?", (cutoff,))
+
+
+def usage_sources(since: str) -> dict:
+    """Everything the usage report counts, from `since` (ISO time): section events, questions, mood logs,
+    life events, Get-ready ticks and new charts, each with its owner."""
+    with _lock, _connect() as conn:
+        q = lambda sql: [dict(r) for r in conn.execute(sql, (since,)).fetchall()]
+        first = conn.execute("SELECT MIN(ts) FROM events").fetchone()[0]
+        return {
+            "events": q("SELECT ts, owner, name, detail FROM events WHERE ts >= ?"),
+            "questions": q("SELECT ts, owner, question FROM usage_log WHERE ts >= ? AND kind != 'compare'"),
+            "mood": q("SELECT m.ts AS ts, p.owner AS owner FROM mood_logs m JOIN profiles p ON p.id = m.profile_id WHERE m.ts >= ?"),
+            "lifeevents": q("SELECT e.created_at AS ts, p.owner AS owner FROM life_events e JOIN profiles p ON p.id = e.profile_id WHERE e.created_at >= ?"),
+            "getready": q("SELECT d.done_at AS ts, p.owner AS owner FROM prep_done d JOIN profiles p ON p.id = d.profile_id WHERE d.done_at >= ?"),
+            "charts": q("SELECT created_at AS ts, owner FROM profiles WHERE created_at >= ?"),
+            "chart_owners": [r[0] for r in conn.execute("SELECT DISTINCT owner FROM profiles").fetchall()],
+            "tracking_since": first,
+        }

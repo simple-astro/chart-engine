@@ -180,7 +180,8 @@ def login_page(error: str = "", admin: bool = False) -> str:
         intro = "This is a private test version. Enter the access code you were given."
         label, hidden = "Access code", ""
         foot = ("<small>The charts you save are private to this browser, so come back on the same browser to "
-                "see them. The SimpleJyotish team may review questions and answers to improve the service.</small>")
+                "see them. The SimpleJyotish team may review questions and answers, and which sections people open, to "
+                "improve the service.</small>")
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#fbf7ef" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0a0907" media="(prefers-color-scheme: dark)"><title>SimpleJyotish — {label}</title>
 <link rel="icon" type="image/svg+xml" href="/static/sun.svg">

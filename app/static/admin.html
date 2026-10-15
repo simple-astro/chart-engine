@@ -93,7 +93,10 @@
   .empty{color:var(--mut);padding:18px 4px;text-align:center}
   .more{display:flex;justify-content:center;margin-top:12px}
   .qhead{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap}
-  .qbtns{display:flex;gap:8px} .qbtns a.sbtn{text-decoration:none;display:inline-flex;align-items:center}
+  .qbtns{display:flex;gap:8px}
+  .usgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:4px 20px}
+  .ush{font:600 .92rem var(--sans);margin:18px 0 6px} .ush small{color:var(--mut);font-weight:500;margin-left:4px}
+  .uschips{display:flex;flex-wrap:wrap;gap:6px} tr.dim td{color:var(--mut)} td.pair{white-space:nowrap;font-variant-numeric:tabular-nums} .qbtns a.sbtn{text-decoration:none;display:inline-flex;align-items:center}
   #qs.shut .qhead h2{margin:0}
 
   /* access codes */
@@ -267,6 +270,31 @@
       <thead><tr><th>Tester</th><th>Charts</th><th class="num">Today</th><th class="num">All questions</th><th>Last active</th></tr></thead>
       <tbody id="testers"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
     </table></div>
+  </section>
+
+  <section class="card" id="us">
+    <div class="qhead"><h2>Usage</h2>
+      <div class="qbtns"><button class="sbtn" type="button" id="us-toggle" aria-expanded="true" aria-controls="us-body">Collapse</button></div></div>
+    <div id="us-body">
+    <p class="sub" id="us-sub">Which sections testers open, and which they leave untouched. Your own visits are not counted.</p>
+    <div class="usgrid">
+      <div><h3 class="ush">Journey <small>last 30 days</small></h3>
+        <div class="scroll"><table><thead><tr><th>Step</th><th class="num">Testers</th><th class="num">Share</th></tr></thead><tbody id="us-journey"></tbody></table></div></div>
+      <div><h3 class="ush">What people ask Sukh</h3>
+        <div class="scroll"><table><thead><tr><th>Topic</th><th class="num">7 days</th><th class="num">30 days</th></tr></thead><tbody id="us-topics"></tbody></table></div></div>
+    </div>
+    <h3 class="ush">Untouched <small>no opens in 30 days</small></h3><div class="uschips" id="us-untouched"></div>
+    <h3 class="ush">Every section <small>opens · testers</small></h3>
+    <div class="scroll"><table><thead><tr><th>Area</th><th>Section</th><th class="num">7 days</th><th class="num">30 days</th></tr></thead><tbody id="us-features"></tbody></table></div>
+    <div class="usgrid">
+      <div><h3 class="ush">Searches that found nothing</h3>
+        <div class="scroll"><table><thead><tr><th>Typed</th><th class="num">Times</th></tr></thead><tbody id="us-empty"></tbody></table></div></div>
+      <div><h3 class="ush">Searches and what they opened</h3>
+        <div class="scroll"><table><thead><tr><th>Typed → opened</th><th class="num">Times</th></tr></thead><tbody id="us-picked"></tbody></table></div></div>
+    </div>
+    <h3 class="ush">Per tester <small>last 30 days</small></h3>
+    <div class="scroll"><table><thead><tr><th>Tester</th><th>Last seen</th><th class="num">Days active</th><th class="num">Questions</th><th>Most used</th></tr></thead><tbody id="us-testers"></tbody></table></div>
+    </div>
   </section>
 
   <section class="card" id="qs">
@@ -720,8 +748,32 @@ $('bk-run').addEventListener('click', async e => {
   e.target.disabled = false;
 });
 
+// Usage (app/usage.py): sections opened, untouched, searches, question topics, journey, per tester.
+function renderUsage(u) {
+  const none = (n, msg) => `<tr><td colspan="${n}" class="empty">${msg}</td></tr>`;
+  const pair = x => x.opens ? `${x.opens.toLocaleString()} · ${x.testers}` : '–';
+  $('us-sub').textContent = u.tracking_since
+    ? `Section tracking since ${when(u.tracking_since)}. ${u.active.week} testers active in the last 7 days, ${u.active.month} in 30. Your own visits are not counted.`
+    : 'Section tracking starts with the next tester visit. Question topics and actions below already use stored data. Your own visits are not counted.';
+  const base = u.journey[0].testers || 0;
+  $('us-journey').innerHTML = base ? u.journey.map(j => `<tr><td>${esc(j.step)}</td><td class="num">${j.testers}</td><td class="num">${Math.round(100 * j.testers / base)}%</td></tr>`).join('') : none(3, 'No tester activity yet.');
+  $('us-topics').innerHTML = u.topics.some(t => t.month) ? u.topics.filter(t => t.month).map(t => `<tr><td>${esc(t.topic)}</td><td class="num">${t.week}</td><td class="num">${t.month}</td></tr>`).join('') : none(3, 'No questions in the last 30 days.');
+  $('us-untouched').innerHTML = u.untouched.length ? u.untouched.map(x => `<span class="tag">${esc(x)}</span>`).join('') : '<span class="sub">Every section was used.</span>';
+  $('us-features').innerHTML = u.features.map((f, i) => `<tr class="${f.month.opens ? '' : 'dim'}"><td>${i && u.features[i - 1].area === f.area ? '' : esc(f.area)}</td><td>${esc(f.label)}</td><td class="num pair">${pair(f.week)}</td><td class="num pair">${pair(f.month)}</td></tr>`).join('');
+  $('us-empty').innerHTML = u.searches.empty.length ? u.searches.empty.map(x => `<tr><td>${esc(x.query)}</td><td class="num">${x.count}</td></tr>`).join('') : none(2, 'None yet.');
+  $('us-picked').innerHTML = u.searches.picked.length ? u.searches.picked.map(x => `<tr><td>${esc(x.search)}</td><td class="num">${x.count}</td></tr>`).join('') : none(2, 'None yet.');
+  $('us-testers').innerHTML = u.testers.length ? u.testers.map(t => `<tr><td>${esc(t.tester)}</td><td class="nowrap">${when(t.last_seen)}</td><td class="num">${t.days_active}</td><td class="num">${t.questions}</td><td>${esc(t.top.join(', ') || '–')}</td></tr>`).join('') : none(5, 'No tester activity yet.');
+}
+async function loadUsage() { try { renderUsage(await api('/admin/api/usage')); } catch (e) { $('us-features').innerHTML = `<tr><td colspan="4" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; } }
+function setUsOpen(open) {
+  $('us-body').hidden = !open; $('us-toggle').textContent = open ? 'Collapse' : 'Expand'; $('us-toggle').setAttribute('aria-expanded', String(open));
+  try { localStorage.setItem('sj-admin-us', open ? 'open' : 'shut'); } catch (e) {}
+}
+$('us-toggle').addEventListener('click', () => setUsOpen($('us-body').hidden));
+try { if (localStorage.getItem('sj-admin-us') === 'shut') setUsOpen(false); } catch (e) {}
+
 async function loadAll() {
-  try { renderOverview(await api('/admin/api/overview')); await loadCodes(); await loadRL(); await loadEvents(); await loadBackups(); await loadQueries(true); }
+  try { renderOverview(await api('/admin/api/overview')); await loadUsage(); await loadCodes(); await loadRL(); await loadEvents(); await loadBackups(); await loadQueries(true); }
   catch (e) { $('queries').innerHTML = `<tr><td colspan="7" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
 }
 $('refresh').addEventListener('click', loadAll);

@@ -21,6 +21,7 @@ from app.astro import router as astro_router
 from app.profiles import router as profiles_router
 from app.profiles import usage_router
 from app.routes import router
+from app.usage import router as events_router
 from app.telegram_bot import register_webhook
 from app.telegram_bot import router as telegram_router
 from core import ephemeris
@@ -60,6 +61,7 @@ app = FastAPI(
 app.middleware("http")(access.gate)
 app.include_router(access.router)
 app.include_router(admin.router)
+app.include_router(events_router)
 app.include_router(router)
 app.include_router(profiles_router)
 app.include_router(astro_router)

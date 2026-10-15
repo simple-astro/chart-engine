@@ -85,6 +85,18 @@ def queries(request: Request, limit: int = 50, before_id: int | None = None) -> 
     return rows
 
 
+@router.get("/admin/api/usage")
+def usage_report(request: Request) -> dict:
+    """Which sections testers open and which they leave untouched (app/usage.py), with tester labels."""
+    from app import usage
+    _require_admin(request)
+    r = usage.report()
+    labels = storage.owner_code_labels()
+    for t in r["testers"]:
+        t["tester"] = _tester(t.pop("owner"), labels)
+    return r
+
+
 @router.get("/admin/api/queries/export")
 def export_queries(request: Request, q: str = ""):
     """Every question as a CSV file (or only those matching the page's filter), for a spreadsheet."""

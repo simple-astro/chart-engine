@@ -1205,6 +1205,21 @@ $('cancel').onclick=()=>{editId=null;$('go').textContent='Generate chart';showRe
 // ----- screens: Today · Timing · Ask Sukh · Remedies · Kundli (bottom bar on phones, top on desktop) -----
 // One tab per question: how is today, when do things happen, ask, what can I do, what does my chart say.
 // The Kundli screen keeps its old id "chart" so saved links keep working; old "#life" links are mapped below.
+// Usage (app/usage.py): which sections testers open, sent in small batches as short names (no chart data).
+// The server ignores admin visits and unknown names.
+const TRACK={q:[],t:null,last:null,seen:new Set()};
+function track(name,detail){TRACK.q.push(detail?{name,detail}:{name});clearTimeout(TRACK.t);
+  if(TRACK.q.length>=20)flushTrack();else TRACK.t=setTimeout(flushTrack,4000)}
+function flushTrack(){if(!TRACK.q.length)return;const body=JSON.stringify({events:TRACK.q.splice(0)});
+  try{if(navigator.sendBeacon&&navigator.sendBeacon('/events',new Blob([body],{type:'application/json'})))return}catch(e){}
+  fetch('/events',{method:'POST',headers:{'content-type':'application/json'},body,keepalive:true}).catch(()=>{})}
+addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushTrack()});
+addEventListener('pagehide',flushTrack);
+// Sections lower down a screen count as used once they are actually on screen.
+const SEEN={'t-muhurat':'today/muhurat','gupcoming':'timing/comingup','t-chara':'timing/chara','kabout':'kundli/about'};
+if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.forEach(e=>{const k=SEEN[e.target.id];
+  if(e.isIntersecting&&!TRACK.seen.has(k)&&!$('out').hidden){TRACK.seen.add(k);track(k)}}),{threshold:.25});
+  Object.keys(SEEN).forEach(id=>{const el=$(id);if(el)io.observe(el)})}
 const SCREENS=['today','timing','ask','remedies','chart'];
 let SCREEN=null,TM='now';
 const OLD_LIFE={dasha:['timing','matter'],transits:['timing','transits']};
@@ -1219,6 +1234,8 @@ function go(name,sub){
   document.body.classList.toggle('on-ask',name==='ask');
   if(name==='timing')timingTab(sub||TM);
   if(name==='chart'&&sub)showPane(sub);
+  const tkey=name==='timing'?'timing/'+TM:name==='chart'?(sub&&$('ctiles').querySelector('[data-pane="'+sub+'"]')?'kundli/'+sub:'kundli'):name;
+  if(tkey!==TRACK.last){TRACK.last=tkey;track(tkey)}
   try{history.replaceState(null,'','#'+name+(name==='timing'&&TM!=='now'?'/'+TM:name==='chart'&&$('csel').value!=='planets'?'/'+$('csel').value:''))}catch(e){}
   loadVisible();
   if(name==='ask')setTimeout(()=>{if(!$('q').disabled&&canHover())$('q').focus();toBottom()},60);
@@ -1300,10 +1317,11 @@ function findList(){
     to.map(t=>FIND_NAME[t]||esc(($('ctiles').querySelector('[data-pane="'+t+'"] b')||{}).textContent||t)).join(' › ')+'</small></button>').join('')||
     '<p class="hint" style="padding:10px 4px">Nothing found. Try “dasha”, “transit” or “muhurat”.</p>';
 }
-function openFind(){if($('out').hidden)return;$('srch').hidden=false;$('srq').value='';findList();setTimeout(()=>$('srq').focus(),30)}
-function closeFind(){$('srch').hidden=true;$('srbtn').focus()}
+function openFind(){if($('out').hidden)return;track('find/open');$('srch').hidden=false;$('srq').value='';findList();setTimeout(()=>$('srq').focus(),30)}
+function closeFind(){const q=$('srq').value.trim();if(q&&!$('srres').querySelector('[data-i]'))track('find/empty',q);
+  $('srch').hidden=true;$('srbtn').focus()}
 function findGo(i){
-  const [,,[s,sub]]=FIND[i];closeFind();
+  const [,,[s,sub]]=FIND[i],q=$('srq').value.trim();if(q)track('find/pick',q+' → '+FIND[i][0]);closeFind();
   const at={muhurat:'t-muhurat',about:'kabout',events:'gevents',reading:'kabout',links:'lnkbar'}[sub];
   go(s,at?null:sub);
   const el=at?$(at):s==='chart'&&sub?$('t-'+sub):null;
@@ -1573,19 +1591,19 @@ function renderLinks(c){c=c||lastChart;if(!c||!window.drawLinks)return;  // an o
   $('lnkreads').innerHTML=(r.key?'<li class="key"><span>'+r.key+'</span></li>':'')+r.rows.map(x=>'<li class="'+x.cls+'"><span>'+x.html+'</span></li>').join('');
 }
 $('lnkseg').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;
-  LNK.mode=LNK.mode===b.dataset.m?null:b.dataset.m;LNK.focus=null;if(LNK.mode&&SEL_H!=null)window.selectHouse(null);renderLinks()});
+  LNK.mode=LNK.mode===b.dataset.m?null:b.dataset.m;LNK.focus=null;if(LNK.mode)track('links/'+LNK.mode);if(LNK.mode&&SEL_H!=null)window.selectHouse(null);renderLinks()});
 $('lnknodes').addEventListener('click',e=>{const b=e.target.closest('[data-n]');if(b){LNK.nodes=b.dataset.n;renderLinks()}});
 $('lnkchips').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(b){LNK.focus=b.dataset.f||null;renderLinks()}});
 $('lnkreads').addEventListener('click',e=>{if(e.target.closest('.lnkyoga'))go('chart','yogas')});
-window.selectHouse=h=>{SEL_H=h;if(h!=null&&LNK.mode){LNK.mode=null;renderLinks()}if(!lastChart)return;window.drawHouseFocus($('chart').querySelector('svg'),lastChart,h);
+window.selectHouse=h=>{SEL_H=h;if(h!=null)track('house/tap');if(h!=null&&LNK.mode){LNK.mode=null;renderLinks()}if(!lastChart)return;window.drawHouseFocus($('chart').querySelector('svg'),lastChart,h);
   window.renderHouseReading($('hread'),lastChart,h);if(h&&!canHover())$('hread').scrollIntoView({behavior:'smooth',block:'nearest'})};
 $('chart').addEventListener('click',e=>{if(e.target.closest('.pg')||CHART_VIEW!=='lagna')return;const z=e.target.closest('.hz');
   if(z)window.selectHouse(+z.dataset.h===SEL_H?null:+z.dataset.h)});
 let JPTS=false;try{JPTS=localStorage.getItem('sj_jpts')==='1'}catch(e){}
 $('jpt').setAttribute('aria-pressed',String(JPTS));
-$('jpt').addEventListener('click',()=>{JPTS=!JPTS;$('jpt').setAttribute('aria-pressed',String(JPTS));try{localStorage.setItem('sj_jpts',JPTS?'1':'0')}catch(e){};if(RERENDER)RERENDER()});
+$('jpt').addEventListener('click',()=>{JPTS=!JPTS;if(JPTS)track('chart/alul');$('jpt').setAttribute('aria-pressed',String(JPTS));try{localStorage.setItem('sj_jpts',JPTS?'1':'0')}catch(e){};if(RERENDER)RERENDER()});
 document.querySelector('.chseg').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b||b.dataset.v===CHART_VIEW)return;
-  CHART_VIEW=b.dataset.v;document.querySelectorAll('.chseg button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-checked',String(x===b))});
+  CHART_VIEW=b.dataset.v;if(CHART_VIEW==='chalit')track('chart/chalit');document.querySelectorAll('.chseg button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-checked',String(x===b))});
   focusPlanet(null);if(RERENDER)RERENDER()});
 const ctip=document.createElement('div');ctip.className='ctip';ctip.hidden=true;
 function focusPlanet(n,anchor,pin){
