@@ -115,7 +115,9 @@
   .adm{padding:7px 14px;font-size:.85rem;border-radius:999px}
 
   /* chart switcher */
-  .who{position:relative}
+  .who{position:relative;min-width:0}
+  /* header: the round buttons keep their size; when space runs short the profile pill gives way (its text ends in …) */
+  .top .icon{flex:none} .top .pill{min-width:0;width:100%}
   .pill{display:flex;align-items:center;gap:10px;padding:5px 12px 5px 5px;border-radius:999px;border:1px solid var(--line);
     background:var(--card);color:var(--ink);cursor:pointer;max-width:280px;text-align:left;transition:border-color .18s,background .18s}
   .pill:hover,.pill[aria-expanded="true"]{border-color:var(--acc)}
@@ -395,7 +397,8 @@
   .gup b{font-size:.66rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--acc)} .gup p{margin:2px 0} .gup small{color:var(--mut)}
   .garea .linkbtn{align-self:flex-start;padding-top:2px;text-decoration:none;font-weight:600;font-size:.88rem}
   .garea .linkbtn:hover{text-decoration:underline}
-  .chev{width:11px;height:11px;border-right:2px solid var(--acc);border-bottom:2px solid var(--acc);transform:rotate(45deg);transition:transform .2s;margin:0 6px 4px 0}
+  /* the Get-ready button's chevron is drawn with borders; scoped so it doesn't restyle the header's SVG chevron */
+  .upreadybtn .chev{width:11px;height:11px;border-right:2px solid var(--acc);border-bottom:2px solid var(--acc);transform:rotate(45deg);transition:transform .2s;margin:0 6px 4px 0}
   .phav{flex:none}
   @media (max-width:760px){.g2,.dd{grid-template-columns:1fr} .sukh{padding:22px 18px} .sukh h2{font-size:1.7rem} .gcard,.garea{padding:18px}}
   /* transits */
