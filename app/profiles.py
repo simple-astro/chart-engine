@@ -58,13 +58,27 @@ def _require(profile_id: int, request: Request) -> dict:
     return p
 
 
+def _tester_limit(owner: str | None) -> int:
+    own = storage.owner_daily_limit(owner)  # set per access code in the admin page; else the default
+    return own if own is not None else config.get("daily_limit_per_tester")
+
+
+@usage_router.get("/quota")
+def quota(request: Request) -> dict:
+    """How many AI questions this tester has left today, for the Ask Sukh header."""
+    if not access.enabled() or request.state.admin:
+        return {"limited": False}
+    owner = _owner(request)
+    limit, used = _tester_limit(owner), storage.llm_requests_today(owner)
+    return {"limited": True, "limit": limit, "used": used, "left": max(0, limit - used)}
+
+
 def _check_quota(request: Request) -> None:
     """Daily caps on paid chat turns; active only when the tester gate is on."""
     if not access.enabled():
         return
     owner = _owner(request)
-    own = storage.owner_daily_limit(owner)  # set per access code in the admin page; else the default
-    per_tester = own if own is not None else config.get("daily_limit_per_tester")
+    per_tester = _tester_limit(owner)
     total = config.get("daily_limit_total")
     if storage.llm_requests_today(owner) >= per_tester or storage.llm_requests_today() >= total:
         raise HTTPException(status_code=429, detail="You've reached today's question limit for the test version. "

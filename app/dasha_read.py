@@ -14,13 +14,15 @@ stay in My Life → Dasha (app/period_view.py).
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.today import chart_planets, owned_houses
 from core import yoga_eval
 from core.bnn import ADDS
 from core.constants import SIGN_LORDS, SIGNS
 from core.dignity import dignity
+from core import dasha as vim
+from core.ephemeris import get_ayanamsha, set_sidereal_mode
 
 THEME = {1: "yourself, your health and how you come across", 2: "money, savings, family and speech",
          3: "courage, effort, siblings and skills", 4: "home, mother, property and peace of mind",
@@ -43,6 +45,18 @@ DIGNITY = {"exalted": "is exalted: it can give its best results.",
            "enemy": "sits in an unfriendly sign: its results come with some effort.",
            "debilitated": "is debilitated: its results need patience and steady effort."}
 LEVELS = ["Mahadasha", "Antardasha", "Pratyantar"]
+AYAN_LABEL = {"krishnamurti": "KP (Krishnamurti)", "lahiri": "Lahiri", "pushya": "Pushya Paksha"}
+# Tara Bala: the nine-star cycle counted from the birth star (the Moon's nakshatra) to the period lord's star.
+# Traditional names with gentle meanings; the 7th star is named by its number only.
+TARA = {1: ("Janma Tara", "the same star group as your Moon, so this period is personal and inward-looking"),
+        2: ("Sampat Tara", "a star of gains: it supports income and resources"),
+        3: ("Vipat Tara", "a star of obstacles: go step by step and keep a margin for delays"),
+        4: ("Kshema Tara", "a star of well-being: it supports comfort and steady progress"),
+        5: ("Pratyak Tara", "a star of opposition: expect some pushback and answer it with patience"),
+        6: ("Sadhana Tara", "a star of achievement: effort turns into results"),
+        7: ("the 7th star", "the most demanding of the nine: keep plans simple and steady"),
+        8: ("Mitra Tara", "a friendly star: help comes through other people"),
+        9: ("Parama Mitra Tara", "a very friendly star: strong support from others")}
 NODES = ("Rahu", "Ketu")
 
 
@@ -56,6 +70,18 @@ def _join(xs: list[str]) -> str:
 
 def _themes(hs: list[int]) -> str:
     return "; ".join(SHORT[x] for x in hs)
+
+
+def tara(chart: dict, lord: str) -> tuple[int, str, str]:
+    """(1-9, name, meaning) of the period lord's star counted from the birth star."""
+    g = chart["grahas"]
+    n = (g[lord]["nakshatra_index"] - g["Moon"]["nakshatra_index"]) % 27 % 9 + 1
+    return (n, *TARA[n])
+
+
+def _vargottama(chart: dict, p: str) -> bool:
+    d9 = (chart.get("vargas") or {}).get("D9") or {}
+    return p in d9 and d9[p]["sign_index"] == chart["grahas"][p]["sign_index"]
 
 
 def _house(chart: dict, p: str) -> int:
@@ -109,6 +135,14 @@ def interpret(chart: dict, lord: str, over: str | None = None) -> dict:
         if g[lord].get("retrograde"):
             pts.append("It is retrograde: matters from the past may come back for a second look.")
 
+    if _vargottama(chart, lord):
+        pts.append(f"It is Vargottama (in {SIGNS[sign]} in both the birth chart and the Navamsa), so it works with "
+                   f"the steadiness of its own sign.")
+    n, tname, tmean = tara(chart, lord)
+    pts.append(f"Tara Bala: {lord}'s star, {g[lord]['nakshatra']}, is {_ord(n)} in the nine-star cycle from your birth "
+               f"star, {g['Moon']['nakshatra']}. That is {tname}, {tmean}." if lord != "Moon" else
+               f"Tara Bala: the Moon is your birth star itself ({tname}), {tmean}.")
+
     with_ = [p for p, s in signs.items() if s == sign and p != lord]
     if with_:
         pts.append(f"It sits with {_join(with_)}, which add " + "; ".join(ADDS[p] for p in with_) + ".")
@@ -146,6 +180,30 @@ def interpret(chart: dict, lord: str, over: str | None = None) -> dict:
     return {"lord": lord, "headline": head, "points": pts}
 
 
+def _birth(chart: dict) -> datetime:
+    return datetime(2000, 1, 1, 12, tzinfo=timezone.utc) + timedelta(days=chart["meta"]["julian_day"] - 2451545.0)
+
+
+def ayanamsha_note(chart: dict, md: dict) -> dict:
+    """Which ayanamsha the dates use and, if it is not Lahiri (what most apps use), how far Lahiri moves the
+    running Mahadasha: the same Moon, measured with the Lahiri ayanamsha, run through the same Vimshottari engine."""
+    meta = chart["meta"]
+    name = meta.get("ayanamsha", "")
+    out = {"name": name, "label": AYAN_LABEL.get(name, name.title())}
+    if name == "lahiri" or "ayanamsha_value" not in meta:
+        return out
+    try:
+        lahiri = get_ayanamsha(meta["julian_day"], "lahiri")
+    finally:
+        set_sidereal_mode(name)                    # leave Swiss Ephemeris in the chart's own frame
+    moon = (chart["grahas"]["Moon"]["longitude"] + meta["ayanamsha_value"] - lahiri) % 360
+    same = next((p for p in vim.vimshottari_tree(moon, _birth(chart), max_level=1) if p.lord == md["lord"]), None)
+    if same:
+        out["lahiri"] = {"shift_days": round((same.start - datetime.fromisoformat(md["start"])).total_seconds() / 86400),
+                         "md_start": same.start.isoformat()}
+    return out
+
+
 def _at(periods: list[dict], now: datetime) -> dict | None:
     return next((p for p in periods if datetime.fromisoformat(p["start"]) <= now < datetime.fromisoformat(p["end"])), None)
 
@@ -174,4 +232,5 @@ def summary(chart: dict, now: datetime | None = None) -> dict:
     if i + 1 < len(chart["dasha"]):
         nxt.append(card("Next Mahadasha", chart["dasha"][i + 1]))
     return {"now": cur, "next": nxt,
-            "headlines": {p["lord"]: interpret(chart, p["lord"])["headline"] for p in chart["dasha"]}}
+            "headlines": {p["lord"]: interpret(chart, p["lord"])["headline"] for p in chart["dasha"]},
+            "birth": _birth(chart).isoformat(), "ayanamsha": ayanamsha_note(chart, md)}

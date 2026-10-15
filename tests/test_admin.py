@@ -317,3 +317,13 @@ def test_questions_export_as_csv(gated, fake_llm):
     only = list(csv.reader(io.StringIO(a.get("/admin/api/queries/export?q=travel").content.decode("utf-8-sig"))))
     assert [x[3] for x in only[1:]] == ["When should I travel?"]
     assert _tester().get("/admin/api/queries/export").status_code == 403
+
+
+def test_quota_shows_questions_left(gated, fake_llm):
+    t = _tester()
+    q = t.get("/quota").json()
+    assert q["limited"] and q["used"] == 0 and q["left"] == q["limit"] == 30
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    t.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"})
+    assert t.get("/quota").json()["left"] == 29
+    assert _admin().get("/quota").json() == {"limited": False}

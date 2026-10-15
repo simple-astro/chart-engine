@@ -28,8 +28,10 @@ def test_neecha_bhanga_cancelled_and_not():
     nb = Y.neecha_bhanga(SUKH, SAG)
     assert list(nb) == ["Moon"] and nb["Moon"]["cancelled"]
     assert any("Mars" in r for r in nb["Moon"]["reasons"]) and any("Venus" in r for r in nb["Moon"]["reasons"])
-    # Sun debilitated in Libra with Venus (lord) and Saturn (exalted there) out of kendras, no aspect: not cancelled
-    lone = {**BASE, "Sun": LIB, "Venus": TAU, "Saturn": LEO, "Mars": LEO, "Moon": ARI, "Jupiter": SAG}
+    # Sun debilitated in Libra with Venus (lord) and Saturn (exalted there) out of kendras, no aspect, and Venus and
+    # Mars (lord of its exaltation sign) not in kendras from each other: not cancelled
+    lone = {**BASE, "Sun": LIB, "Venus": TAU, "Saturn": LEO, "Mars": ARI, "Moon": GEM, "Jupiter": SAG}
+    assert Y.neecha_bhanga({**lone, "Mars": LEO}, GEM)["Sun"]["cancelled"]   # Venus and Mars mutual kendra (rule 4)
     assert Y.neecha_bhanga(lone, GEM)["Sun"]["cancelled"] is False
     assert Y.neecha_bhanga(lone, GEM, d9={"Sun": ARI})["Sun"]["cancelled"]  # exalted in Navamsa
 

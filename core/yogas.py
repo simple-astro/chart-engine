@@ -54,6 +54,9 @@ def neecha_bhanga(signs: dict[str, int], lagna: int, d9: dict[str, int] | None =
             why.append(f"{ex_lord}, lord of its exaltation sign, sits in {where(ex_lord)}")
         if exalted_here and exalted_here != p and kendra(exalted_here):
             why.append(f"{exalted_here}, which is exalted in this sign, sits in {where(exalted_here)}")
+        if ex_lord not in (p, lord) and _from(signs[ex_lord], signs[lord]) in KENDRA:
+            why.append(f"{lord} and {ex_lord}, lords of the sign it falls in and of its exaltation sign, "
+                       "sit in kendras from each other")
         if lord != p and (signs[lord] == s or _sees(asp, lord, p)):
             why.append(f"{lord}, lord of the sign, is {'with' if signs[lord] == s else 'aspecting'} it")
         if d9 and d9.get(p) == EXALT[p]:

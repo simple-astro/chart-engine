@@ -57,5 +57,36 @@ def test_every_lord_reads_gently(args):
 
 
 def test_chart_carries_the_readings(own):
-    assert set(own["dasha_read"]) == {"now", "next", "headlines"}
+    assert set(own["dasha_read"]) == {"now", "next", "headlines", "birth", "ayanamsha"}
     assert len(own["dasha_read"]["headlines"]) == len({d["lord"] for d in own["dasha"]})
+
+
+def test_tara_bala_counts_from_the_birth_star(own):
+    # Moon in Jyeshtha; Venus in Purva Phalguni: 3rd in the nine-star cycle (Vipat)
+    assert D.tara(own, "Venus")[:2] == (3, "Vipat Tara")
+    assert D.tara(own, "Moon")[:2] == (1, "Janma Tara")
+    text = " ".join(D.interpret(own, "Venus")["points"])
+    assert "Tara Bala" in text and "Vipat Tara" in text
+
+
+def test_vargottama_is_named_in_the_reading(own):
+    assert any(p.startswith("It is Vargottama") for p in D.interpret(own, "Sun")["points"])      # Leo in D1 and D9
+    assert not any(p.startswith("It is Vargottama") for p in D.interpret(own, "Venus")["points"])
+
+
+def test_seventh_tara_is_not_named_with_a_fear_word():
+    assert "the 7th star" == D.TARA[7][0] and "Naidhana" not in D.TARA[7][0] + D.TARA[7][1]
+
+
+def test_ayanamsha_note_gives_the_lahiri_dates(own):
+    r = D.summary(own, NOW)
+    assert r["birth"].startswith("1987-09-01T08:50")
+    ay = r["ayanamsha"]
+    assert ay["name"] == "krishnamurti" and ay["label"] == "KP (Krishnamurti)"
+    # Lahiri puts the Venus Mahadasha 45 days later: 21 Sep 2010 in India (what most apps show)
+    assert ay["lahiri"]["shift_days"] == 45 and ay["lahiri"]["md_start"].startswith("2010-09-20T23:45")
+    lah = TestClient(app).post("/chart", json={"dob": "1987-09-01", "tob": "14:20:00", "lat": 30.7333, "lon": 76.7794,
+                                                "tz_name": "Asia/Kolkata", "ayanamsha": "lahiri"}).json()
+    assert D.summary(lah, NOW)["ayanamsha"] == {"name": "lahiri", "label": "Lahiri"}
+    # computing the note must not leave Swiss Ephemeris in the Lahiri frame for the next chart
+    assert chart()["grahas"]["Moon"]["longitude"] == own["grahas"]["Moon"]["longitude"]

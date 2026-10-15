@@ -76,3 +76,14 @@ def test_real_chart_has_checked_yogas_on_the_chart():
         assert y["category"] in E.ORDER
     ba = next(y for y in yc["yogas"] if y["name"] == "Budha-Aditya")   # Mercury ~11 deg from the Sun: not weakened
     assert ba["status"] == "Strong"
+
+
+def test_neecha_bhanga_rule_4_mutual_kendra_of_the_two_lords():
+    from core import yogas as Y
+    # Sun debilitated in Libra. Venus (Libra's lord) in Gemini and Mars (lord of Aries, the Sun's exaltation)
+    # in Virgo are kendras from each other, but neither is a kendra from the Lagna (Aries) or the Moon (Taurus).
+    s = {"Sun": LIB, "Moon": TAU, "Mars": VIR, "Mercury": SAG, "Jupiter": LEO, "Venus": GEM, "Saturn": GEM,
+         "Rahu": PIS, "Ketu": VIR}
+    nb = Y.neecha_bhanga(s, ARI)["Sun"]
+    assert nb["cancelled"] and nb["reasons"] == ["Venus and Mars, lords of the sign it falls in and of its exaltation "
+                                                 "sign, sit in kendras from each other"]
