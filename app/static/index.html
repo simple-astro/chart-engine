@@ -1539,7 +1539,7 @@ async function setAsk(){
     h.forEach(m=>m.role==='user'?addUser(m.content):addBot(m.content));
     const lastQ=[...h].reverse().find(m=>m.role==='user');if(h.length&&h[h.length-1].role==='assistant'&&lastQ)deeper(lastQ.content);
     $('chips').hidden=h.length>0;
-    if(!h.length)$('log').innerHTML='<div class="empty"><span class="big">🙏</span><b>Namaste'+( $('name').value?', '+esc($('name').value.split(' ')[0]):'')+'. I’m Astropositivism.</b>I’m an AI Jyotishi built on Sukhdeep Singh’s Nadi method. Tell me what’s on your mind — career, marriage, money, health — and I’ll tell you what your chart says and what you can do about it.</div>';
+    if(!h.length)$('log').innerHTML='<div class="empty"><span class="big">🙏</span><b>Namaste'+( $('name').value?', '+esc($('name').value.split(' ')[0]):'')+'.</b>I am an AI Jyotishi built on Sukhdeep Singh’s Nadi method. Tell me what’s on your mind — career, marriage, money, health — and I’ll tell you what your chart says and what you can do about it.</div>';
     else toBottom();
   }catch(e){}
 }
