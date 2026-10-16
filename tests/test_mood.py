@@ -114,3 +114,13 @@ def test_delete_one_all_and_with_the_profile(client):
     client.put(f"/profiles/{pid}/mood/share", json={"share": True})
     client.delete(f"/profiles/{pid}")
     assert storage.mood_list(pid) == [] and not storage.mood_shared(pid)
+
+
+def test_every_difficult_feeling_has_a_calming_habit():
+    from app import mood
+    assert set(mood.FEELING_PLANET.values()) <= set(mood.CALM)
+    assert {"Homesick", "Restless", "Stuck", "Confused"} <= set(mood.FEELINGS["unpleasant"])
+    assert set(mood.CAUSE_AREA) <= set(mood.CAUSES) and "Visa and immigration" in mood.CAUSES
+    for group in mood.FEELINGS.values():
+        assert group == sorted(group) and len(group) == len(set(group))
+    assert mood.CAUSES == sorted(mood.CAUSES)

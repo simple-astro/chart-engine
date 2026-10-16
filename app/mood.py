@@ -18,24 +18,36 @@ from zoneinfo import ZoneInfo
 VALENCE = {-3: "Very unpleasant", -2: "Unpleasant", -1: "Slightly unpleasant", 0: "Neutral",
            1: "Slightly pleasant", 2: "Pleasant", 3: "Very pleasant"}
 FEELINGS = {
-    "pleasant": ["Amazed", "Amused", "Brave", "Calm", "Confident", "Content", "Excited", "Grateful", "Happy",
-                 "Hopeful", "Joyful", "Peaceful", "Proud", "Relieved", "Satisfied", "Surprised"],
-    "neutral": ["Calm", "Content", "Indifferent", "Okay", "Peaceful", "Tired", "Drained"],
-    "unpleasant": ["Angry", "Annoyed", "Anxious", "Disappointed", "Drained", "Frustrated", "Guilty", "Irritated",
-                   "Jealous", "Lonely", "Overwhelmed", "Sad", "Scared", "Stressed", "Worried"],
+    "pleasant": ["Amazed", "Amused", "Blessed", "Brave", "Calm", "Confident", "Connected", "Content", "Devoted",
+                 "Energetic", "Excited", "Focused", "Grateful", "Happy", "Hopeful", "Inspired", "Joyful", "Loved",
+                 "Motivated", "Peaceful", "Proud", "Relieved", "Satisfied", "Surprised"],
+    "neutral": ["Bored", "Calm", "Content", "Curious", "Distracted", "Drained", "Indifferent", "Okay", "Peaceful",
+                "Reflective", "Tired", "Unsure"],
+    "unpleasant": ["Angry", "Annoyed", "Anxious", "Confused", "Disappointed", "Drained", "Embarrassed", "Frustrated",
+                   "Guilty", "Heartbroken", "Homesick", "Hurt", "Impatient", "Insecure", "Irritated", "Jealous",
+                   "Lonely", "Misunderstood", "Overwhelmed", "Restless", "Sad", "Scared", "Stressed", "Stuck",
+                   "Worried"],
 }
 ALL_FEELINGS = sorted({f for xs in FEELINGS.values() for f in xs})
-CAUSES = ["Community", "Current events", "Education", "Family", "Fitness", "Friends", "Health", "Hobbies", "Money",
-          "Partner and marriage", "Self care", "Spirituality", "Travel", "Weather", "Work"]
+CAUSES = ["Business", "Children", "Community", "Current events", "Debt", "Education", "Family", "Fitness",
+          "Food and diet", "Friends", "Health", "Hobbies", "Home and property", "In-laws", "Job search",
+          "Legal matters", "Money", "Parents", "Partner and marriage", "Self care", "Sleep", "Social media",
+          "Spirituality", "Travel", "Visa and immigration", "Weather", "Work"]
 # Which life-area card (and Ask Sukh topic) a cause points to.
-CAUSE_AREA = {"Work": "career", "Education": "career", "Money": "money", "Partner and marriage": "love",
-              "Family": "home", "Health": "health", "Fitness": "health", "Self care": "health"}
+CAUSE_AREA = {"Work": "career", "Education": "career", "Job search": "career", "Business": "career",
+              "Money": "money", "Debt": "money", "Partner and marriage": "love", "In-laws": "love",
+              "Family": "home", "Parents": "home", "Children": "home", "Home and property": "home",
+              "Health": "health", "Fitness": "health", "Self care": "health", "Sleep": "health",
+              "Food and diet": "health"}
 
 # A difficult feeling's traditional planet, and a habit that helps right now (the product leads with habits).
 FEELING_PLANET = {"Anxious": "Moon", "Worried": "Moon", "Scared": "Moon", "Lonely": "Moon", "Sad": "Moon",
                   "Overwhelmed": "Rahu", "Angry": "Mars", "Annoyed": "Mars", "Irritated": "Mars", "Frustrated": "Mars",
                   "Jealous": "Venus", "Stressed": "Saturn", "Drained": "Saturn", "Tired": "Saturn",
-                  "Disappointed": "Jupiter", "Guilty": "Jupiter"}
+                  "Disappointed": "Jupiter", "Guilty": "Jupiter",
+                  "Insecure": "Moon", "Hurt": "Moon", "Homesick": "Moon", "Heartbroken": "Venus",
+                  "Restless": "Rahu", "Impatient": "Mars", "Stuck": "Saturn", "Embarrassed": "Sun",
+                  "Confused": "Mercury", "Misunderstood": "Mercury", "Distracted": "Mercury", "Unsure": "Mercury"}
 CALM = {
     "Moon": "Five minutes of Chandra Bhedana breathing (in through the left nostril, out through the right), "
             "and a glass of water before you reply to anyone",
@@ -45,6 +57,7 @@ CALM = {
     "Venus": "Do one small thing you enjoy — music, a tidy room or fresh clothes — and count what you already have",
     "Rahu": "Put the phone away for an hour: no news or scrolling, and take one thing at a time",
     "Sun": "Ten minutes in sunlight, and one small thing done for yourself first",
+    "Mercury": "Write it down in three short lines and choose one next step; talk it through once your thoughts settle",
 }
 HELPLINES = [{"region": "India", "name": "Tele-MANAS", "number": "14416"},
              {"region": "Canada and the US", "name": "Suicide and Crisis Lifeline", "number": "988"},
