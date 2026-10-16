@@ -23,7 +23,7 @@
     const p = g.period;
     const hero = `<section class="card sukh">
         <div class="sukh-id"><img src="/static/sun.svg" alt="" width="52" height="52"><div><b>Astropositivism</b><span class="ai">AI Jyotishi</span>
-          <small>Built on Sukhdeep Singh’s Nadi method</small></div></div>
+          <small>Built on the Nadi method</small></div></div>
         <h2>Namaste, ${first}.</h2>
         ${p ? `<p class="lead">You are in your <b>${p.md} period</b> until ${p.until} <span class="badge ${p.verdict.cls}">${p.verdict.label}</span></p>
           <p>${esc(p.text)} ${esc(p.now)}</p>
