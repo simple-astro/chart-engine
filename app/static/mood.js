@@ -1,7 +1,20 @@
 // State of mind: a quick mood log under the Today card, Sukh's reply, and the person's own patterns.
 (function () {
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const tone = v => `color-mix(in srgb, var(--g2) ${Math.round((v + 3) / 6 * 100)}%, var(--acc2))`;
+  // Mood colour: calm slate blue (unpleasant) → sand (neutral) → gold (pleasant); its own tokens, not the theme accents.
+  const tone = v => v <= 0 ? `color-mix(in srgb, var(--mood-mid) ${Math.round((v + 3) / 3 * 100)}%, var(--mood-low))`
+                           : `color-mix(in srgb, var(--mood-high) ${Math.round(v / 3 * 100)}%, var(--mood-mid))`;
+  // The scale is the Moon, from dark (very unpleasant) to full (very pleasant): in Jyotish the Moon is the mind.
+  // The lit part grows from the right, as a waxing Moon does. v may be a day's average (fractional).
+  function moon(v, size, cls) {
+    const f = Math.max(0, Math.min(1, (v + 3) / 6)), r = 10;
+    let lit = '';
+    if (f >= .999) lit = `<circle cx="12" cy="12" r="${r}" fill="${tone(v)}"/>`;
+    else if (f > .001) lit = `<path d="M12 2A10 10 0 0 1 12 22A${(Math.abs(1 - 2 * f) * r).toFixed(2)} 10 0 0 ${f < .5 ? 0 : 1} 12 2Z" fill="${tone(v)}"/>`;
+    return `<svg class="${cls || 'mdmoon'}" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="${r}" fill="var(--bg2)" stroke="var(--line)" stroke-width="1.2"/>${lit}</svg>`;
+  }
+  const SHORT = ['Very low', 'Low', 'A bit low', 'Okay', 'A bit good', 'Good', 'Very good'];
   const group = v => v < 0 ? 'unpleasant' : v > 0 ? 'pleasant' : 'neutral';
   const SCALE = ['Very unpleasant', 'Unpleasant', 'Slightly unpleasant', 'Neutral', 'Slightly pleasant', 'Pleasant', 'Very pleasant'];
   let S = {}, EL = null;
@@ -43,7 +56,7 @@
       const vs = by[k], a = vs && vs.reduce((x, y) => x + y, 0) / vs.length;
       const lab = new Date(k + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' });
       return `<span title="${esc(lab)}${vs ? ': ' + SCALE[Math.round(a) + 3] + ' (' + vs.length + ' log' + (vs.length > 1 ? 's' : '') + ')' : ': no log'}">
-        <i${vs ? ` style="background:${tone(a)}"` : ' class="none"'}></i><small>${lab.split(' ')[0].slice(0, 1)}</small></span>`;
+        ${vs ? moon(a, 16, 'mdday') : '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="3 3"/></svg>'}<small>${lab.split(' ')[0].slice(0, 1)}</small></span>`;
     }).join('')}</div>`;
   }
 
@@ -51,10 +64,12 @@
     const v = S.v, o = S.opts;
     return `<div class="seg mdscope" role="radiogroup" aria-label="When"><button type="button" role="radio" data-scope="now" class="${S.scope === 'now' ? 'on' : ''}" aria-checked="${S.scope === 'now'}">Right now</button><button type="button" role="radio" data-scope="day" class="${S.scope === 'day' ? 'on' : ''}" aria-checked="${S.scope === 'day'}">Today overall</button></div>
       <div class="mdscale">
-        <div class="mdorb" style="background:${v === null ? 'var(--line)' : tone(v)}"></div>
-        <b class="mdval">${v === null ? 'Slide to choose' : SCALE[v + 3]}</b>
-        <input type="range" id="mdv" min="-3" max="3" step="1" value="${v ?? 0}" aria-label="How you feel, from very unpleasant to very pleasant" aria-valuetext="${v === null ? 'Not chosen' : SCALE[v + 3]}">
+        <div class="mdnow">${moon(v === null ? 0 : v, 52)}<div><b class="mdval">${v === null ? 'Tap the Moon that matches' : SCALE[v + 3]}</b>
+          <small>${v === null ? 'From a dark Moon (very unpleasant) to a full Moon (very pleasant)' : 'Tap another Moon to change it'}</small></div></div>
+        <div class="mdmoons" role="radiogroup" aria-label="How you feel, from very unpleasant to very pleasant">${[-3, -2, -1, 0, 1, 2, 3].map(x =>
+          `<button type="button" role="radio" data-mv="${x}" aria-checked="${x === v}" aria-label="${SCALE[x + 3]}" tabindex="${(v === null ? x === 0 : x === v) ? 0 : -1}">${moon(x, 30)}<span>${SHORT[x + 3]}</span></button>`).join('')}</div>
         <div class="mdends"><span>Very unpleasant</span><span>Very pleasant</span></div>
+        ${S.logs.length < 3 ? '<p class="mdcap">Chandra, the Moon, rules the mind: the fuller the Moon, the lighter the mood.</p>' : ''}
       </div>
       ${v === null ? '' : `<h5>What describes this feeling?</h5>${chips(o.feelings[group(v)], S.feelings, 'f')}`}
       ${v === null || !S.feelings.length ? '' : `<h5>What’s having the biggest impact?</h5>${chips(o.causes, S.causes, 'c')}
@@ -65,7 +80,7 @@
   function replyView() {
     const r = S.reply, l = S.logs[0];
     return `<div class="mdreply">
-        <div class="mdhead"><div class="mdorb" style="background:${tone(l.valence)}"></div>
+        <div class="mdhead">${moon(l.valence, 44)}
           <div><b>${esc(r.headline)}</b><small>${esc([l.feelings.join(', '), l.causes.join(', ')].filter(Boolean).join(' · ') || 'Logged')}</small></div></div>
         ${r.care ? `<div class="mdcare"><p>${esc(r.care.text)}</p><ul>${r.care.helplines.map(h => `<li>${esc(h.region)}: <b>${esc(h.name)}</b>${h.number ? ' — <b class="num">' + esc(h.number) + '</b>' : ''}</li>`).join('')}</ul></div>` : ''}
         ${r.sky ? `<p class="tsukh"><img src="/static/sun.svg" alt="" width="22" height="22"><span>${esc(r.sky)}</span></p>` : ''}
@@ -109,32 +124,32 @@
     paint();
   }
 
-  document.addEventListener('input', e => {
-    if (e.target.id === 'mdv') {
-      const v = +e.target.value;
-      EL.querySelector('.mdval').textContent = SCALE[v + 3];
-      EL.querySelector('.mdscale .mdorb').style.background = tone(v);
-    } else if (e.target.id === 'mdnote') S.note = e.target.value;
+  function choose(v, focus) {
+    if (S.v === null || group(S.v) !== group(v)) S.feelings = [];
+    S.v = v; paint();
+    if (focus) { const b = EL.querySelector(`[data-mv="${v}"]`); if (b) b.focus(); }
+  }
+  document.addEventListener('input', e => { if (e.target.id === 'mdnote') S.note = e.target.value; });
+  // Arrow keys move between the Moons, as in any radio group.
+  document.addEventListener('keydown', e => {
+    const b = e.target.closest && e.target.closest('[data-mv]');
+    const d = b && { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1 }[e.key];
+    if (d) { e.preventDefault(); choose(Math.max(-3, Math.min(3, +b.dataset.mv + d)), true); }
   });
   document.addEventListener('change', async e => {
-    if (e.target.id === 'mdv') {
-      const v = +e.target.value;
-      if (S.v === null || group(S.v) !== group(v)) S.feelings = [];
-      S.v = v; paint('mdv');
-    } else if (e.target.id === 'mdshare') {
+    if (e.target.id === 'mdshare') {
       const share = e.target.checked;
       try { await fetch(`/profiles/${S.pid}/mood/share`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ share }) }); S.share = share; }
       catch (err) { e.target.checked = !share; }
     }
   });
-  // A tap on the slider at its starting point counts as a choice too (no "change" fires then).
-  document.addEventListener('pointerup', e => { if (e.target.id === 'mdv' && S.v === null) { S.v = +e.target.value; paint('mdv'); } });
 
   document.addEventListener('click', async e => {
     if (!EL || !EL.contains(e.target)) return;
     const t = e.target.closest('button');
     if (!t) return;
-    if (t.dataset.scope) { S.scope = t.dataset.scope; paint(); }
+    if (t.dataset.mv !== undefined) choose(+t.dataset.mv);
+    else if (t.dataset.scope) { S.scope = t.dataset.scope; paint(); }
     else if (t.dataset.f !== undefined) {
       const x = t.dataset.f;
       S.feelings = S.feelings.includes(x) ? S.feelings.filter(y => y !== x) : S.feelings.length < 5 ? [...S.feelings, x] : S.feelings;

@@ -20,6 +20,7 @@
     --acc:#8a5e14; --acc2:#6a3fc2; --g1:#e0b05f; --g2:#c98f2e;
     --soft:rgba(138,94,20,.09); --line:rgba(36,30,49,.12);
     --ok:#2e7d32; --bad:#c0392b; --cmb:#c46a12;
+    --mood-low:#5f70ab; --mood-mid:#9c8b66; --mood-high:#c98f2e;   /* mood: calm slate blue → sand → gold */
     --shadow:0 1px 2px rgba(36,30,49,.05),0 10px 30px rgba(36,30,49,.08);
     color-scheme:light;
     --glow:none; --r:18px;
@@ -34,6 +35,7 @@
     --acc:#e5bb72; --acc2:#8fc7a3; --g1:#e8c178; --g2:#c79440;
     --soft:rgba(229,187,114,.11); --line:rgba(238,224,196,.11); --haze:rgba(229,187,114,.045);
     --ok:#7fdca0; --bad:#ff8a80; --cmb:#ffb25e;
+    --mood-low:#7f93c9; --mood-mid:#b9ab8c; --mood-high:#e5bb72;
     --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 40px rgba(0,0,0,.55);
     --glow:0 0 22px rgba(229,187,114,.16);
   }}
@@ -44,6 +46,7 @@
     --acc:#e5bb72; --acc2:#8fc7a3; --g1:#e8c178; --g2:#c79440;
     --soft:rgba(229,187,114,.11); --line:rgba(238,224,196,.11); --haze:rgba(229,187,114,.045);
     --ok:#7fdca0; --bad:#ff8a80; --cmb:#ffb25e;
+    --mood-low:#7f93c9; --mood-mid:#b9ab8c; --mood-high:#e5bb72;
     --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 40px rgba(0,0,0,.55);
     --glow:0 0 22px rgba(229,187,114,.16);
   }
@@ -692,10 +695,20 @@
   /* ---------- state of mind (mood.js) ---------- */
   #gmood h5{margin:16px 0 8px;font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
   .mdscope{max-width:280px;margin-bottom:14px}
-  .mdscale{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"o v" "r r" "e e";align-items:center;gap:6px 12px}
-  .mdscale .mdorb{grid-area:o} .mdval{grid-area:v;font:600 1.2rem var(--serif)} .mdends{grid-area:e;display:flex;justify-content:space-between;font-size:.74rem;color:var(--mut)}
-  .mdorb{width:40px;height:40px;border-radius:50%;flex:none;box-shadow:inset 0 -4px 10px rgba(0,0,0,.12),0 4px 14px rgba(0,0,0,.08);transition:background .2s}
-  #mdv{grid-area:r;width:100%;max-width:none;accent-color:var(--acc);height:28px;margin:4px 0 0}
+  /* the mood scale: seven Moons from dark to full (the Moon is the mind) */
+  .mdscale{display:grid;gap:8px}
+  .mdnow{display:flex;align-items:center;gap:14px;min-height:56px} .mdval{font:600 1.3rem var(--serif)}
+  .mdnow small{display:block;font-size:.8rem;color:var(--mut)}
+  .mdmoons{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .mdmoons button{min-height:60px;border:0;background:none;border-radius:14px;cursor:pointer;display:grid;justify-items:center;align-content:center;gap:4px;
+    padding:6px 0;color:var(--mut);font:600 .66rem/1.15 var(--sans);text-align:center}
+  .mdmoons button svg{width:30px;height:30px;transition:transform .15s}
+  .mdmoons button[aria-checked="true"]{background:var(--bg2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+  .mdmoons button[aria-checked="true"] svg{transform:scale(1.22)}
+  .mdmoons button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+  .mdends{display:flex;justify-content:space-between;font-size:.74rem;color:var(--mut)}
+  .mdcap{margin:0;font-size:.8rem;color:var(--mut)}
+  .mdmoon{flex:none;display:block}
   .mdchips{display:flex;flex-wrap:wrap;gap:7px}
   .mdchip{border:1px solid var(--line);background:var(--bg2);border-radius:999px;padding:7px 13px;font-size:.85rem;cursor:pointer;color:var(--ink);transition:.15s}
   .mdchip:hover{border-color:var(--acc)} .mdchip.on{background:var(--acc);border-color:var(--acc);color:var(--solid);font-weight:600}
@@ -708,7 +721,7 @@
   .mdcare ul{margin:6px 0 0;padding-left:18px} .mdcare .num{font-variant-numeric:tabular-nums;user-select:all}
   .mdstrip{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
   .mdstrip span{display:flex;flex-direction:column;align-items:center;gap:3px} .mdstrip small{font-size:.62rem;color:var(--mut)}
-  .mdstrip i{width:14px;height:14px;border-radius:50%} .mdstrip i.none{border:1.5px dashed var(--line)}
+  .mdstrip svg{width:16px;height:16px;display:block}
   .mdfoot{display:flex;flex-direction:column;gap:10px;margin-top:14px}
   .mdfoot>.linkbtn{align-self:flex-start;font-weight:600;text-decoration:none}
   .mdpat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:.9rem}
