@@ -1,4 +1,4 @@
-"""State of mind: mood logs saved with the moment's astrology, replies, patterns, privacy and Sukh's consent."""
+"""State of mind: mood logs saved with the moment's astrology, replies, patterns, privacy and Astropositivism's consent."""
 import pytest
 from fastapi.testclient import TestClient
 

@@ -2,7 +2,7 @@
 
 - Section events come from the page (POST /events): a short name such as "timing/transits" or "kundli/yogas",
   sent in small batches. No chart data and no question text; Find searches keep the words typed (80 characters).
-- Actions come from what is already stored: questions to Sukh, mood logs, life events, Get-ready ticks, charts.
+- Actions come from what is already stored: questions to Astropositivism, mood logs, life events, Get-ready ticks, charts.
 - Admin visits (and local single-user mode) are never recorded. Events are kept for 90 days (storage.EVENT_DAYS).
 CATALOGUE is the full list of sections, so anything nobody opened shows up as untouched.
 """
@@ -22,7 +22,7 @@ CATALOGUE = [
     ("Timing", [("timing/now", "Now & next"), ("timing/comingup", "Coming up"), ("timing/chara", "Chara Dasha"),
                 ("getready", "Get-ready steps ticked"), ("timing/transits", "Transits"),
                 ("timing/matter", "By matter (KP timing)"), ("timing/dates", "Good dates")]),
-    ("Ask Sukh", [("ask", "Ask Sukh screen"), ("asked", "Questions asked")]),
+    ("Ask Astropositivism", [("ask", "Ask Astropositivism screen"), ("asked", "Questions asked")]),
     ("Remedies", [("remedies", "Remedies screen")]),
     ("Kundli", [("kundli", "Kundli screen"), ("links/place", "Placement arrows"), ("links/asp", "Aspect arrows"),
                 ("links/conj", "Conjunctions"), ("house/tap", "Tap a house"), ("chart/chalit", "Bhava Chalit view"),
@@ -135,7 +135,7 @@ def report(now: datetime | None = None) -> dict:
     with_chart = owners & set(src["chart_owners"])
     journey = [{"step": "Used the app", "testers": len(owners)},
                {"step": "Has a chart", "testers": len(with_chart)},
-               {"step": "Asked Sukh", "testers": len(with_chart & set(asked))},
+               {"step": "Asked Astropositivism", "testers": len(with_chart & set(asked))},
                {"step": "Came back on another day", "testers": len({o for o in with_chart & set(asked) if len(days[o]) > 1})}]
     testers = sorted(({"owner": o, "last_seen": last[o], "days_active": len(days[o]), "questions": asked[o],
                        "top": [LABEL[k] for k, _ in top[o].most_common(3)]} for o in owners),

@@ -33,7 +33,7 @@
         <p>${esc(it.meaning)}</p>
         <p class="upprep"><span>Prepare</span>${esc(it.prepare)}</p>
         ${ready(it, i)}
-        <div class="upact"><button type="button" class="linkbtn" data-ask="${i}">Ask Sukh →</button>
+        <div class="upact"><button type="button" class="linkbtn" data-ask="${i}">Ask Astropositivism →</button>
           <button type="button" class="linkbtn" data-ics="${i}">Add to calendar</button></div>
       </div></li>`;
   }

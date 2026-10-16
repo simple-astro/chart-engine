@@ -230,11 +230,11 @@
         <span class="badge ${r.verdict[0]}">${r.verdict[1]}</span><button type="button" class="hrclose" aria-label="Close">×</button></div>
       <ul class="hrlist">${r.lines.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
       ${r.aspects.length ? `<div class="hrkey"><span><i class="good"></i>supportive aspect</span><span><i class="bad"></i>challenging aspect</span></div>` : ''}
-      <button type="button" class="btn ghost" data-hask="1">Ask Sukh about this house →</button>
-      <form class="hrq" autocomplete="off"><label for="hrq-in">Or ask Sukh your own question about this house</label>
+      <button type="button" class="btn ghost" data-hask="1">Ask Astropositivism about this house →</button>
+      <form class="hrq" autocomplete="off"><label for="hrq-in">Or ask Astropositivism your own question about this house</label>
         <div><input id="hrq-in" maxlength="400" placeholder="e.g. Will I save more money this year?"><button type="submit" class="btn">Send</button></div></form>`;
     el.querySelector('[data-hask]').onclick = () => window.askSukh && window.askSukh(r.ask);
-    // A detailed question of the person's own, sent with this house's facts so Sukh answers about the right house.
+    // A detailed question of the person's own, sent with this house's facts so Astropositivism answers about the right house.
     el.querySelector('.hrq').onsubmit = e => {
       e.preventDefault();
       const q = el.querySelector('#hrq-in').value.trim();

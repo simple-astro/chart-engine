@@ -64,7 +64,7 @@ def test_webhook_rejects_wrong_secret(bot):
 def test_onboarding_creates_chart_and_sends_guides(bot):
     _, say, tap, calls, _ = bot
     say("/start")
-    assert "Sukh" in texts(calls)[-1] and "1 of 3" in texts(calls)[-1]
+    assert "Astropositivism" in texts(calls)[-1] and "1 of 3" in texts(calls)[-1]
     say("31 Feb 1990")
     assert "couldn’t read that date" in texts(calls)[-1]
     say("17 May 1990")

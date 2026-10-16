@@ -1,4 +1,4 @@
-"""Telegram bot: Sukh onboards people in-chat, sends a free morning guide, and answers questions
+"""Telegram bot: Astropositivism onboards people in-chat, sends a free morning guide, and answers questions
 (capped per day). People who already use the website can link their saved chart with the ✈️ button."""
 from __future__ import annotations
 
@@ -154,7 +154,7 @@ def geocode(query: str) -> list[dict]:
 # ----- onboarding -----
 
 def _intro(name: str) -> str:
-    return (f"Namaste{', ' + name if name else ''} 🙏 I’m **Sukh**, the AI Jyotishi of SimpleJyotish.\n"
+    return (f"Namaste{', ' + name if name else ''} 🙏 I’m **Astropositivism**, the AI Jyotishi of SimpleJyotish.\n"
             "I’ll read your kundli once, then send you a short guide every morning at 8:00 — what the day is good for, "
             "what to avoid, and a simple upaya.\n\nThree quick questions (you can change them later in /settings).\n\n"
             "**1 of 3 — your date of birth?**\nFor example: 1990-05-17 · 17.05.1990 · 17 May 1990")

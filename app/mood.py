@@ -33,7 +33,7 @@ CAUSES = ["Business", "Children", "Community", "Current events", "Debt", "Educat
           "Food and diet", "Friends", "Health", "Hobbies", "Home and property", "In-laws", "Job search",
           "Legal matters", "Money", "Parents", "Partner and marriage", "Self care", "Sleep", "Social media",
           "Spirituality", "Travel", "Visa and immigration", "Weather", "Work"]
-# Which life-area card (and Ask Sukh topic) a cause points to.
+# Which life-area card (and Ask Astropositivism topic) a cause points to.
 CAUSE_AREA = {"Work": "career", "Education": "career", "Job search": "career", "Business": "career",
               "Money": "money", "Debt": "money", "Partner and marriage": "love", "In-laws": "love",
               "Family": "home", "Parents": "home", "Children": "home", "Home and property": "home",
@@ -128,7 +128,7 @@ def care_needed(valence: int, note: str | None, recent: list[dict]) -> bool:
 
 
 def reply(profile: dict, where: dict, log: dict, care: bool) -> dict:
-    """What Sukh says straight after a log: why today may feel this way, when to act, and one thing to do."""
+    """What Astropositivism says straight after a log: why today may feel this way, when to act, and one thing to do."""
     s, v, feelings = log["snapshot"], log["valence"], log["feelings"]
     unpleasant = v < 0
     sky = None

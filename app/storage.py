@@ -502,7 +502,7 @@ def mood_delete(profile_id: int, log_id: int | None = None) -> int:
 
 
 def mood_shared(profile_id: int) -> bool:
-    """Whether the person agreed to let Sukh see their mood log in chat."""
+    """Whether the person agreed to let Astropositivism see their mood log in chat."""
     return get_setting(f"mood_share:{profile_id}") == "1"
 
 

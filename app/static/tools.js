@@ -61,7 +61,7 @@
         const t = iso => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: req.tz_name });
         const d = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
         out.innerHTML = !r.dates.length
-          ? `<p class="hint">No strong day for ${esc(r.activity.name.toLowerCase())} in the next ${days} days. Try a longer range, or ask Sukh what to do meanwhile.</p>`
+          ? `<p class="hint">No strong day for ${esc(r.activity.name.toLowerCase())} in the next ${days} days. Try a longer range, or ask Astropositivism what to do meanwhile.</p>`
           : `<p class="ffsum">${r.matches} good ${r.matches === 1 ? 'day' : 'days'} in the next ${days} — the best:</p><ol class="ffl">${r.dates.map(x => `<li>
               <div class="ffh"><b>${d(x.date)}</b><span class="badge ${x.verdict === 'excellent' ? 'good' : ''}">${esc(x.label)}</span></div>
               ${x.windows.length ? `<div class="fft">Best time: ${[...x.windows].sort((a, b) => b.best - a.best).slice(0, 2).sort((a, b) => a.start < b.start ? -1 : 1).map(w => `${t(w.start)}–${t(w.end)}${w.name === 'Abhijit' || w.name === 'Amrit' ? ` (${w.name})` : ''}`).join(' · ')}</div>` : ''}
@@ -91,7 +91,7 @@
           `The result was "${r.label}". The reasons: ${r.reasons.join(' ')} Please explain simply what this means for me and what I should do.`;
         out.innerHTML = `<div class="hqv ${VERDICT[r.verdict]}"><span>Answer</span><b>${esc(r.label)}</b></div>
           <ul class="hqr">${r.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-          <button type="button" class="btn ghost" id="hq-ask">Ask Sukh to explain</button>
+          <button type="button" class="btn ghost" id="hq-ask">Ask Astropositivism to explain</button>
           <p class="hint">Prashna answers the question as you hold it right now. Ask each question once — repeating it with new numbers weakens the answer.</p>`;
         $('hq-ask').onclick = () => window.askSukh && window.askSukh(ask);
       } catch (e) { out.innerHTML = `<p class="hint err">Couldn’t cast the chart: ${esc(e.message)}</p>`; }

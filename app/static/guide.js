@@ -1,4 +1,4 @@
-// Guidance-first results page: Sukh's summary, today, remedies and life areas.
+// Guidance-first results page: Astropositivism's summary, today, remedies and life areas.
 (function () {
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const ICON = {
@@ -17,19 +17,19 @@
   };
   const ic = k => `<svg class="gico" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 
-  // el: Kundli › About you (Sukh's summary + life areas); remEl: the Remedies screen.
+  // el: Kundli › About you (Astropositivism's summary + life areas); remEl: the Remedies screen.
   window.renderGuide = function (el, g, who, remEl) {
     const first = esc((who || '').trim().split(' ')[0] || 'friend');
     const p = g.period;
     const hero = `<section class="card sukh">
-        <div class="sukh-id"><img src="/static/sun.svg" alt="" width="52" height="52"><div><b>Sukh</b><span class="ai">AI Jyotishi</span>
+        <div class="sukh-id"><img src="/static/sun.svg" alt="" width="52" height="52"><div><b>Astropositivism</b><span class="ai">AI Jyotishi</span>
           <small>Built on Sukhdeep Singh’s Nadi method</small></div></div>
         <h2>Namaste, ${first}.</h2>
         ${p ? `<p class="lead">You are in your <b>${p.md} period</b> until ${p.until} <span class="badge ${p.verdict.cls}">${p.verdict.label}</span></p>
           <p>${esc(p.text)} ${esc(p.now)}</p>
           ${p.focus.length ? `<div class="focusrow"><span>In focus now</span>${p.focus.map(f => `<span class="fchip">${esc(f)}</span>`).join('')}</div>` : ''}`
         : '<p class="lead">Here is what your chart says, and what you can do about it.</p>'}
-        <div class="cta"><button type="button" class="btn" data-ask="">Ask Sukh anything</button>
+        <div class="cta"><button type="button" class="btn" data-ask="">Ask Astropositivism anything</button>
           <button type="button" class="btn ghost" data-goto="muhurat">Good days this week</button></div>
       </section>`;
 
@@ -43,7 +43,7 @@
           <p class="gout">${esc(a.outlook)}</p>
           ${g.jaimini && g.jaimini.areas[a.key] ? `<p class="gjai">${esc(g.jaimini.areas[a.key])}</p>` : ''}
           <button type="button" class="gmore" aria-expanded="${!i}"><span class="op">Hide</span><span class="cl">See Do’s, Don’ts &amp; upaya</span></button>
-          <button type="button" class="linkbtn" data-ask="${esc(ASK[a.key])}">Ask Sukh about this →</button></div>
+          <button type="button" class="linkbtn" data-ask="${esc(ASK[a.key])}">Ask Astropositivism about this →</button></div>
         <div class="gdo"><h5 class="ok">Do</h5><ul>${a.dos.map(d => `<li>${esc(d)}</li>`).join('')}</ul></div>
         <div class="gdont"><h5 class="bad">Avoid</h5><ul>${a.donts.map(d => `<li>${esc(d)}</li>`).join('')}</ul></div>
         <div class="gup"><b>Upaya</b><p>${esc(a.remedy.text)}</p><small>Why: ${esc(a.remedy.why)}.</small></div>

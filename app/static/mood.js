@@ -1,4 +1,4 @@
-// State of mind: a quick mood log under the Today card, Sukh's reply, and the person's own patterns.
+// State of mind: a quick mood log under the Today card, Astropositivism's reply, and the person's own patterns.
 (function () {
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // Mood colour: calm slate blue (unpleasant) → sand (neutral) → gold (pleasant); its own tokens, not the theme accents.
@@ -86,7 +86,7 @@
         ${r.sky ? `<p class="tsukh"><img src="/static/sun.svg" alt="" width="22" height="22"><span>${esc(r.sky)}</span></p>` : ''}
         <p>${esc(r.timing)}</p>
         <div class="tup"><small>Try this now · ${esc(r.do.planet)}</small><p>${esc(r.do.text)}.</p></div>
-        <div class="mdgo"><button type="button" class="btn" id="mdask">Ask Sukh about this</button><button type="button" class="btn ghost" id="mdagain">Log again</button></div>
+        <div class="mdgo"><button type="button" class="btn" id="mdask">Ask Astropositivism about this</button><button type="button" class="btn ghost" id="mdagain">Log again</button></div>
       </div>`;
   }
 
@@ -112,7 +112,7 @@
       <div class="mdfoot">
         <button type="button" class="linkbtn" id="mdpat" aria-expanded="${S.showPat}">${S.showPat ? 'Hide my patterns' : 'See my patterns'}</button>
         ${patView()}
-        <label class="mdshare"><input type="checkbox" id="mdshare"${S.share ? ' checked' : ''}> Let Sukh use my mood log in chat</label>
+        <label class="mdshare"><input type="checkbox" id="mdshare"${S.share ? ' checked' : ''}> Let Astropositivism use my mood log in chat</label>
         <small class="hint">Your mood log is private to you.${S.logs.length ? ' <button type="button" class="linkbtn" id="mddel">Delete my mood log</button>' : ''}</small>
       </div>`;
     if (keepFocus) { const f = EL.querySelector('#' + keepFocus); if (f) f.focus(); }

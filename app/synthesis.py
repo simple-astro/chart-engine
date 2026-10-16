@@ -77,7 +77,7 @@ def _yogas(c: dict, now: datetime) -> list[str]:
     for y in yoga_eval.evaluate(c, now)["yogas"]:
         tags = [y["kind"], y["status"].lower()] + (["active now"] if y["active"] else [])
         line = f"{y['name']} [{', '.join(tags)}]"
-        if y["active"]:  # Sukh explains the active ones (effect only); the rest are named so it can mention them
+        if y["active"]:  # Astropositivism explains the active ones (effect only); the rest are named so it can mention them
             effect = y["meaning"].rsplit(": ", 1)[-1].split(" — ")[0].rstrip(".")
             line += f": {effect}" + (f" ({y['notes'][0].replace(' (a 6th/8th/12th lord)', '')})" if y["notes"] else "")
         out.append(line)
@@ -271,7 +271,7 @@ def build(profile: dict, now: datetime | None = None) -> dict:
 
 
 def _state_of_mind(profile: dict) -> dict | None:
-    """The person's recent mood logs and patterns — only when they agreed to share them with Sukh."""
+    """The person's recent mood logs and patterns — only when they agreed to share them with Astropositivism."""
     from app import mood, storage
     pid = profile.get("id")
     if pid is None or not storage.mood_shared(pid):

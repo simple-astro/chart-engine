@@ -65,7 +65,7 @@ def _tester_limit(owner: str | None) -> int:
 
 @usage_router.get("/quota")
 def quota(request: Request) -> dict:
-    """How many AI questions this tester has left today, for the Ask Sukh header."""
+    """How many AI questions this tester has left today, for the Ask Astropositivism header."""
     if not access.enabled() or request.state.admin:
         return {"limited": False}
     owner = _owner(request)
@@ -298,7 +298,7 @@ def mood_patterns(profile_id: int, request: Request) -> dict:
 
 @router.put("/{profile_id}/mood/share")
 def mood_share(profile_id: int, req: MoodShare, request: Request) -> dict:
-    """Whether Sukh may use the mood log in chat."""
+    """Whether Astropositivism may use the mood log in chat."""
     _require(profile_id, request)
     storage.set_mood_shared(profile_id, req.share)
     return {"share": req.share}
