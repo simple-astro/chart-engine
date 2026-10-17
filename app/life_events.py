@@ -64,6 +64,29 @@ def _base_rate(chart: dict, topic: str, birth: date, today: date) -> float:
     return _share(K.verdict_spans(chart, topic, lo, today), lo, today)
 
 
+def _held_back(at: dict) -> str:
+    """Lord by lord: the houses each links to for the matter, and what its sub lord brings against it."""
+    out = []
+    for lvl in ("maha", "antar", "praty"):
+        j = at["lords"][lvl]
+        if j["lord"] in (x.split(" ")[0] for x in out):
+            continue
+        lv = j["levels"]
+        pro = sorted(set(lv["planet"]["for"]) | set(lv["nakshatra"]["for"]))
+        con = lv["sub"]["against"]
+        hs = lambda h: ", ".join(map(str, h))
+        word = lambda h: "house" if len(h) == 1 else "houses"
+        if pro and con:
+            out.append(f"{j['lord']} links to {word(pro)} {hs(pro)}, but its sub lord {lv['sub']['lord']} brings {hs(con)}")
+        elif pro:
+            out.append(f"{j['lord']} links to {word(pro)} {hs(pro)}, not enough on its own")
+        elif con:
+            out.append(f"{j['lord']}'s sub lord {lv['sub']['lord']} brings {hs(con)}, against it")
+        else:
+            out.append(f"{j['lord']} has no link to it")
+    return ". " + "; ".join(out) if out else ""
+
+
 def check(chart: dict, kind: str, d: date, precision: str) -> dict:
     """Did the chart's periods support this event when it happened?"""
     label, topic = KINDS[kind]
@@ -82,7 +105,7 @@ def check(chart: dict, kind: str, d: date, precision: str) -> dict:
         what = K.TOPICS[topic][0].lower()
         verb = "point" if len(helpers) > 1 else "points"
         if not helpers:
-            why = f"{period} period: none of these lords points to {what}"
+            why = f"{period} period: none of these lords is strong enough for {what}" + _held_back(at)
         elif at["verdict"] in GOOD:
             why = f"{period} period: {', '.join(helpers)} {verb} to {what}" + (
                 " — your chart showed a time to take care" if risk else "")

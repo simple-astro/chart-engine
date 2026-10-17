@@ -118,7 +118,9 @@ def house_significators(grahas: dict, houses) -> dict:
 
 
 def kp_lords(longitude: float) -> KPLords:
-    longitude = longitude % 360.0
+    # A hair forward so a point exactly on a boundary (whole-sign cusps sit at 0° of a sign, and 0° Aries, Leo and
+    # Sagittarius are also nakshatra starts) counts in the star it begins, not the one it ends.
+    longitude = (longitude + 1e-9) % 360.0
 
     sign_index = int(longitude // 30)
     sign_lord = C.SIGN_LORDS[sign_index]
