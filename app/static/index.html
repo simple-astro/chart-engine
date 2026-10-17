@@ -143,6 +143,7 @@
   .prow .av{width:30px;height:30px;font-size:.82rem}
   .prow .pt{flex:1} .prow .ck{width:16px;height:16px;fill:none;stroke:var(--acc);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
   .prow:not(.cur) .ck{visibility:hidden}
+  .prow .dflt{flex:none;font-size:.7rem;font-weight:600;color:var(--acc);border:1px solid currentColor;border-radius:999px;padding:1px 8px}
   a.mi{color:var(--ink);text-decoration:none}
   .mi{font-size:.92rem;padding:10px} .mi svg{color:var(--mut)} .mi span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .mi.danger,.mi.danger svg{color:var(--bad)}
@@ -973,6 +974,7 @@
   <button type="button" role="menuitem" class="mi" id="mnew"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New chart</button>
   <button type="button" role="menuitem" class="mi" id="matchbtn"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>Match making</button>
   <a role="menuitem" class="mi" id="madmin" href="/admin" hidden><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/></svg><span>Admin</span></a>
+  <button type="button" role="menuitem" class="mi" id="mdefault"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg><span>Make this my default chart</span></button>
   <button type="button" role="menuitem" class="mi" id="medit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg><span>Edit details</span></button>
   <button type="button" role="menuitem" class="mi danger" id="mdel"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg><span>Delete chart</span></button>
 </div>
@@ -1390,6 +1392,10 @@ $('place').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault()
 
 // ----- saved profiles -----
 let currentId=null,editId=null,saved=[];
+// The chart the app opens with on this device (otherwise the newest one).
+const getDefault=()=>{try{return localStorage.getItem('sj-default-chart')}catch(e){return null}};
+const setDefault=id=>{try{id==null?localStorage.removeItem('sj-default-chart'):localStorage.setItem('sj-default-chart',String(id))}catch(e){}};
+const startChart=list=>list.find(p=>String(p.id)===getDefault())||list[0];
 const initial=n=>(String(n||'?').trim()[0]||'?').toUpperCase();
 const niceDate=d=>{try{return new Date(d+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}catch(e){return d}};
 const subLine=q=>[niceDate(q.dob),(q.place||'').split(',')[0]].filter(Boolean).join(' · ');
@@ -1401,12 +1407,15 @@ function paintPill(){
   const first=esc(p.name.split(' ')[0]);
   $('medit').querySelector('span').innerHTML='Edit '+first+'’s details';
   $('mdel').querySelector('span').innerHTML='Delete '+first+'’s chart';
+  const isDef=String(p.id)===getDefault();
+  $('mdefault').querySelector('span').innerHTML=isDef?first+' is your default chart · tap to undo':'Make '+first+' my default chart';
+  $('mdefault').setAttribute('aria-pressed',String(isDef));
 }
 function paintList(){
   const f=$('psearch').value.trim().toLowerCase();
   const list=f?saved.filter(p=>(p.name+' '+(p.request.place||'')+' '+p.request.dob).toLowerCase().includes(f)):saved;
   $('plist').innerHTML=list.length?list.map(p=>'<button type="button" role="menuitemradio" aria-checked="'+(String(p.id)===String(currentId))+'" class="prow'+(String(p.id)===String(currentId)?' cur':'')+'" data-id="'+p.id+'">'+
-    '<span class="av">'+esc(initial(p.name))+'</span><span class="pt"><b>'+esc(p.name)+'</b><small>'+esc(subLine(p.request))+'</small></span>'+CHECK+'</button>').join('')
+    '<span class="av">'+esc(initial(p.name))+'</span><span class="pt"><b>'+esc(p.name)+'</b><small>'+esc(subLine(p.request))+'</small></span>'+(String(p.id)===getDefault()?'<span class="dflt">Default</span>':'')+CHECK+'</button>').join('')
     :'<div class="empty-s">No charts match “'+esc(f)+'”.</div>';
 }
 async function loadList(select){
@@ -1446,6 +1455,7 @@ $('pmenu').addEventListener('keydown',e=>{
 $('psearch').addEventListener('input',paintList);
 $('plist').addEventListener('click',e=>{const b=e.target.closest('.prow');if(!b)return;closeMenu();loadProfile(b.dataset.id)});
 $('mnew').onclick=()=>{closeMenu();$('newbtn').click()};
+$('mdefault').onclick=()=>{closeMenu();if(currentId==null)return;setDefault(String(currentId)===getDefault()?null:currentId);paintPill();paintList()};
 $('medit').onclick=()=>{closeMenu();const p=saved.find(x=>String(x.id)===String(currentId));if(!p)return;
   fillForm(p.request);editId=p.id;$('save').checked=true;showForm();$('go').textContent='Save changes'};
 $('mdel').onclick=()=>{closeMenu();
@@ -1457,8 +1467,9 @@ $('confirm').addEventListener('keydown',e=>{if(e.key==='Escape')closeConfirm()})
 $('cfyes').onclick=async()=>{
   const id=String(currentId);closeConfirm();
   await fetch('/profiles/'+id,{method:'DELETE'});
+  if(id===getDefault())setDefault(null);
   currentId=null;hasChart=false;
-  const list=await loadList(); if(list.length)loadProfile(list[0].id); else {$('out').hidden=true;showForm()}
+  const list=await loadList(); if(list.length)loadProfile(startChart(list).id); else {$('out').hidden=true;showForm()}
 };
 function fillForm(q){
   $('name').value=q.name;$('dob').value=q.dob;$('tob').value=q.tob.slice(0,5);$('lat').value=q.lat;$('lon').value=q.lon;
@@ -2030,7 +2041,7 @@ function render(c,req){
       table($('vtable'),['Planet','Sign','House'],Object.entries(c.vargas[k]).map(([p,v])=>[p,v.sign||SIGNS[v.sign_index],vl==null?'—':'H'+((v.sign_index-vl+12)%12+1)]))};
     vt.appendChild(b); if(i===0)b.click()});
 }
-loadList().then(l=>{if(l.length)loadProfile(l[0].id)});
+loadList().then(l=>{if(l.length)loadProfile(startChart(l).id)});
 // Admins reach the admin page from the chart menu (kept out of the header to leave room for the name).
 fetch('/me').then(r=>r.ok?r.json():null).then(m=>{if(m&&m.gated&&(m.admin||m.role==='mentor'||m.role==='astrologer'))$('madmin').hidden=false}).catch(()=>{});
 </script>
