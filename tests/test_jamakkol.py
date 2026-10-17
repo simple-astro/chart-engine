@@ -147,9 +147,11 @@ def test_ask_once_and_did_it_happen(tmp_path, monkeypatch):
     c = TestClient(app)
     pid = c.post("/profiles", json={"name": "Asha", "dob": "1990-05-15", "tob": "14:30:00", "lat": 28.6139,
                                     "lon": 77.209, "tz_name": "Asia/Kolkata"}).json()["id"]
-    body = {"kind": "career", "question": "Will I get the bank job?", "lat": 49.9, "lon": -97.1, "tz_name": "America/Winnipeg"}
+    body = {"kind": "career", "question": "Will I get the bank job?", "lat": 49.9, "lon": -97.1, "tz_name": "America/Winnipeg",
+            "place": "Winnipeg, Manitoba, Canada"}
     first = c.post(f"/profiles/{pid}/jamakkol", json=body)
     assert first.status_code == 200 and first.json()["ask"]["due"] is False
+    assert first.json()["ask"]["place"] == "Winnipeg, Manitoba, Canada"
     ask = first.json()["ask"]
     again = c.post(f"/profiles/{pid}/jamakkol", json=body)
     assert again.status_code == 409 and again.json()["detail"]["ask"]["id"] == ask["id"]

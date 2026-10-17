@@ -134,6 +134,8 @@ def _connect() -> sqlite3.Connection:
     conn.execute("CREATE TABLE IF NOT EXISTS jamakkol_asks (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER"
                  " NOT NULL, kind TEXT NOT NULL, question TEXT, asked_at TEXT NOT NULL, lat REAL NOT NULL, lon REAL NOT"
                  " NULL, tz_name TEXT NOT NULL, verdict TEXT NOT NULL, label TEXT NOT NULL, outcome TEXT, outcome_at TEXT)")
+    if "place" not in {r["name"] for r in conn.execute("PRAGMA table_info(jamakkol_asks)")}:
+        conn.execute("ALTER TABLE jamakkol_asks ADD COLUMN place TEXT")  # the place name the asker picked
     # Life events the person entered (app/life_events.py): checked against their chart, and the real-life backtest.
     conn.execute(
         "CREATE TABLE IF NOT EXISTS life_events ("
@@ -932,11 +934,11 @@ def factcheck_rate(days: int = 30) -> dict:
 
 # ----- Jamakkol questions; callers check the profile belongs to the person first -----
 def jk_add(profile_id: int, kind: str, question: str | None, asked_at: str, lat: float, lon: float, tz_name: str,
-           verdict: str, label: str) -> dict:
+           verdict: str, label: str, place: str | None = None) -> dict:
     with _lock, _connect() as conn:
         cur = conn.execute("INSERT INTO jamakkol_asks (profile_id, kind, question, asked_at, lat, lon, tz_name, verdict,"
-                           " label) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                           (profile_id, kind, question, asked_at, lat, lon, tz_name, verdict, label))
+                           " label, place) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                           (profile_id, kind, question, asked_at, lat, lon, tz_name, verdict, label, place))
         return dict(conn.execute("SELECT * FROM jamakkol_asks WHERE id = ?", (cur.lastrowid,)).fetchone())
 
 

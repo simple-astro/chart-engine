@@ -388,6 +388,7 @@ class JamakkolAsk(BaseModel):
     lat: float = Field(ge=-90, le=90)
     lon: float = Field(ge=-180, le=180)
     tz_name: str = Field(min_length=1, max_length=64)
+    place: str | None = Field(default=None, max_length=120)  # the place name the asker picked, shown with the answer
     again: bool = False  # "it's a different question": cast even though this kind was asked lately
 
 
@@ -426,7 +427,7 @@ def jamakkol_ask(profile_id: int, req: JamakkolAsk, request: Request) -> dict:
     r = jamakkol.jamakkol(req.kind, when, req.lat, req.lon, req.tz_name)
     q = (req.question or "").strip() or None
     a = storage.jk_add(profile_id, req.kind, q, when.isoformat(), req.lat, req.lon, req.tz_name,
-                       r["reading"]["verdict"], r["reading"]["label"])
+                       r["reading"]["verdict"], r["reading"]["label"], (req.place or "").strip() or None)
     return {**r, "ask": _jk_view(a)}
 
 

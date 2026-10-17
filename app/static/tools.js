@@ -91,7 +91,10 @@
     let here = null;  // current location for Prashna, if the user shares it
     if (!kinds) { try { kinds = await (await fetch('/horary/kinds')).json(); } catch (e) { kinds = []; } }
     if (!jkinds) { try { jkinds = await (await fetch('/jamakkol/kinds')).json(); } catch (e) { jkinds = []; } }
-    let jkHere = herePlace();  // Jamakkol is cast where the asker is now (the app's "where you are" setting)
+    // Jamakkol is cast where the asker is now: the place typed here (remembered), else the app's "where you are"
+    // setting, else the birthplace.
+    const jkSaved = () => { try { const h = JSON.parse(localStorage.getItem('sj_jk_place') || 'null'); return h && isFinite(h.lat) && h.tz_name ? h : null; } catch (e) { return null; } };
+    let jkHere = jkSaved() || herePlace();
 
     el.innerHTML = `<section class="card gcard tool">
         <h3>Find a good date</h3>
@@ -122,8 +125,12 @@
         <select id="jk-kind">${jkinds.map(k => `<option value="${k.kind}">${esc(k.title)}</option>`).join('')}</select>
         <label class="tl-lab" for="jk-text">In my words <small>(optional)</small></label>
         <input id="jk-text" maxlength="160" placeholder="e.g. Will the new job offer come through?">
+        <label class="tl-lab" for="jk-place">Place <small>(where you are asking from)</small></label>
+        <div class="hq-row"><input id="jk-place" maxlength="80" autocomplete="off" placeholder="Type a city, e.g. Bhopal" value="${esc(jkHere ? (jkHere.name || '') : (req.place || ''))}">
+          <button type="button" class="btn ghost" id="jk-find">Search</button></div>
+        <div class="sugg" id="jk-sugg" hidden></div>
+        <div class="hq-place"><span id="jk-where">${esc(jkHere ? (jkHere.name ? 'Cast for ' + jkHere.name : 'Cast for where you are') : 'Cast for ' + place + ' (birthplace)')}</span> · <button type="button" class="linkbtn" id="jk-loc">Use where I am now</button></div>
         <button type="button" class="btn" id="jk-go">Cast now</button>
-        <div class="hq-place">Cast for <b id="jk-where">${esc(jkHere ? (jkHere.name || 'where you are') : place)}</b> · <button type="button" class="linkbtn" id="jk-loc">Use where I am now</button></div>
         <div id="jk-out" aria-live="polite"></div>
         <div id="jk-asks"></div>
       </section>`;
@@ -162,14 +169,39 @@
         () => { $('hq-where').textContent = place + ' (location blocked)'; }, { timeout: 10000 });
     };
 
-    $('jk-loc').onclick = () => {
-      if (!navigator.geolocation) { $('jk-where').textContent = 'your birthplace (location not available)'; return; }
-      $('jk-where').textContent = 'finding you…';
-      navigator.geolocation.getCurrentPosition(p => {
-        jkHere = { lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), tz_name: Intl.DateTimeFormat().resolvedOptions().timeZone };
-        $('jk-where').textContent = 'where you are now';
-      }, () => { $('jk-where').textContent = place + ' (location blocked)'; }, { timeout: 10000 });
+    const jkSet = (h, label) => {
+      jkHere = h; $('jk-where').textContent = label;
+      try { localStorage.setItem('sj_jk_place', JSON.stringify(h)); } catch (e) {}
     };
+    $('jk-loc').onclick = () => {
+      if (!navigator.geolocation) { $('jk-where').textContent = 'Location not available here: type your city above'; return; }
+      $('jk-where').textContent = 'Finding you…';
+      navigator.geolocation.getCurrentPosition(p => {
+        jkSet({ lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), tz_name: Intl.DateTimeFormat().resolvedOptions().timeZone, name: 'where you are now' }, 'Cast for where you are now');
+        $('jk-place').value = '';
+      }, () => { $('jk-where').textContent = 'Location blocked: type your city above'; }, { timeout: 10000 });
+    };
+    // Place search (Open-Meteo geocoding, as for the birth details): pick a result to cast for that place.
+    async function jkFind() {
+      const q = $('jk-place').value.trim(), box = $('jk-sugg'); if (q.length < 2) return;
+      $('jk-where').textContent = 'Searching…';
+      try {
+        const j = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=en&name=' + encodeURIComponent(q))).json();
+        const list = (j.results || []).filter(p => p.timezone);
+        box.innerHTML = ''; box.hidden = !list.length;
+        if (!list.length) { $('jk-where').textContent = 'No match. Try the nearest big city.'; return; }
+        list.forEach(p => {
+          const name = [p.name, p.admin1, p.country].filter(Boolean).join(', '), d = document.createElement('div');
+          d.textContent = name; d.setAttribute('role', 'button'); d.tabIndex = 0;
+          const pick = () => { $('jk-place').value = name; box.hidden = true; jkSet({ lat: +p.latitude.toFixed(4), lon: +p.longitude.toFixed(4), tz_name: p.timezone, name }, 'Cast for ' + name); };
+          d.onclick = pick; d.onkeydown = e => { if (e.key === 'Enter') pick(); };
+          box.appendChild(d);
+        });
+        $('jk-where').textContent = 'Pick your place:';
+      } catch (e) { $('jk-where').textContent = 'Place search unavailable right now.'; }
+    }
+    $('jk-find').onclick = jkFind;
+    $('jk-place').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); jkFind(); } });
     const pid = ctx.id;  // a saved chart: each question is kept (ask once for 81 days, then "did it happen?")
     const jkTitle = k => (jkinds.find(x => x.kind === k) || {}).title || k;
     const dmy = iso => new Date(iso.length > 10 ? iso : iso + 'T12:00:00Z').toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
@@ -184,7 +216,9 @@
       const ask = `I asked a Jamakkol Prashna about ${g.question.title.toLowerCase()}${q ? `: "${q}"` : ''}. ` +
         `The Arudam is ${g.arudam_house} from the Udayam and the Kavippu is ${g.kavippu_house} from the Udayam. The result was "${g.label}". ` +
         `${[...g.obstacles, ...g.for, ...g.against].join(' ')} Please explain simply what this means for me and what I should do.`;
-      out.innerHTML = `<div class="hqv ${VERDICT[g.verdict]}"><span>Answer${r.ask && r.ask.asked_at ? ` · asked ${esc(dmy(r.ask.asked_at))}` : ''}</span><b>${esc(g.label)}</b></div>
+      const where = (r.ask && r.ask.place) || (jkHere && jkHere.name) || req.place || place;
+      out.innerHTML = `<div class="hqv ${VERDICT[g.verdict]}"><span>Answer</span><b>${esc(g.label)}</b></div>
+        <p class="jkn">Cast for ${esc(where)} · ${esc(new Date(r.asked_at).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: r.place.tz_name }))} (${esc(r.place.tz_name)})</p>
         <div id="jk-chart">${jkChart(r, jkStyle())}</div>
         ${jkTables(r)}
         <p class="jkh">Reading</p>
@@ -230,8 +264,12 @@
     async function jkCast(again) {
       const out = $('jk-out'), btn = $('jk-go');
       btn.disabled = true; out.innerHTML = '<p class="hint">Casting the Jamakkol chart for this minute…</p>';
-      const at = jkHere || { lat: req.lat, lon: req.lon, tz_name: req.tz_name };
-      const q = $('jk-text').value.trim(), body = { kind: $('jk-kind').value, lat: at.lat, lon: at.lon, tz_name: at.tz_name };
+      const typed = $('jk-place').value.trim();
+      if (typed && typed !== (jkHere ? jkHere.name : (req.place || ''))) {  // typed a new place but didn't pick it yet
+        btn.disabled = false; out.innerHTML = ''; return jkFind();
+      }
+      const at = jkHere || { lat: req.lat, lon: req.lon, tz_name: req.tz_name, name: req.place || place };
+      const q = $('jk-text').value.trim(), body = { kind: $('jk-kind').value, lat: at.lat, lon: at.lon, tz_name: at.tz_name, place: at.name || null };
       try {
         if (!pid) { jkShow(await post('/jamakkol', body), q); }
         else {
