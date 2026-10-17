@@ -103,3 +103,19 @@ def test_sky_planets_with_the_kavippu_count():
     jama = {p: {**x, "sign_index": (k + 1) % 12} for p, x in c["jama"]["planets"].items()}   # no jama planet there
     r = J.read({**c, "transit": sky, "jama": {**c["jama"], "planets": jama}}, "career")
     assert "Saturn" in r["in_kavippu"] and r["verdict"] == "no"
+
+
+def test_book_rules_and_the_working():
+    r = J.jamakkol("career", at(2026, 10, 17, 11, 35, 52), *WPG)
+    g = r["reading"]
+    assert g["confirm"][0].startswith("The 10th lord ") and "from the Udayam" in g["confirm"][0]
+    assert g["kavippu_notes"][0].startswith(f"The Kavippu is in house {g['kavippu_house']}")
+    assert all(p.split(" ")[0] in g["in_kavippu"] for p in g["kavippu_notes"][1:])
+    assert any("head first" in x for x in g["for"])                      # Jupiter and Rahu in the Udayam
+    assert any(x.startswith("Jupiter is exalted") for x in g["strengths"])
+    k = r["kavippu"]
+    assert (k["tamil_month"], k["veedhi"]) == ("Aippasi", "Taurus")
+    assert (r["udayam"]["sign_index"] + k["count"] - 1) % 12 == k["sign_index"]
+    tl = r["jama"]["timeline"]
+    assert len(tl) == 16 and tl[0] == {"n": 1, "ruler": "Saturn", "start": "06:00", "end": "07:30"}
+    assert tl[3]["ruler"] == "Jupiter" and tl[8]["ruler"] == "Saturn"     # jamam 4 and night's first

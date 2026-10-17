@@ -38,6 +38,22 @@
   }
   const today = tz => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 
+  // "Show the working": how each point was found, and the 16 jamams of the day.
+  function jkWorking(r) {
+    const tz = r.place.tz_name, hm = iso => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: tz });
+    const k = r.kavippu, m = new Intl.DateTimeFormat('en-US', { minute: 'numeric', timeZone: tz }).format(new Date(r.asked_at));
+    const row = j => `<li class="${j.n === r.jama.number ? 'on' : ''}"><b>${j.n}</b> ${j.start}–${j.end} <span>${esc(j.ruler)}</span></li>`;
+    return `<details class="jkw"><summary>Show the working</summary>
+      <ul class="hqr">
+        <li><b>Udayam</b> ${esc(r.udayam.sign)} ${r.udayam.deg.toFixed(1)}°: ${r.period === 'day' ? 'daytime' : 'night'} chart (${hm(r.period_start)}–${hm(r.period_end)}). It starts at the Sun's degree at ${r.period === 'day' ? 'sunrise' : 'sunset'} and runs all 12 signs by ${r.period === 'day' ? 'sunset' : 'sunrise'}.</li>
+        <li><b>Arudam</b> ${esc(r.arudam.sign)}: from the minute hand (minute ${esc(m)}), 5 minutes per sign from Aries.</li>
+        <li><b>Kavippu</b> ${esc(k.sign)}: the Sun is in ${esc(k.sun_sign)} (Tamil month ${esc(k.tamil_month)}), so the veedhi is ${esc(k.veedhi)}. From the Arudam to the veedhi is ${k.count}; the same ${k.count} from the Udayam gives ${esc(k.sign)}.</li>
+        <li><b>Jama planets</b>: ${esc(r.jama.weekday)}'s lord ${esc(r.jama.lord)} stands at the end of Pisces at 6:00; all eight turn back 45° every 1½ hours.</li>
+      </ul>
+      <div class="jkt"><div><p>Day</p><ol>${r.jama.timeline.slice(0, 8).map(row).join('')}</ol></div><div><p>Night</p><ol>${r.jama.timeline.slice(8).map(row).join('')}</ol></div></div>
+    </details>`;
+  }
+
   window.renderTools = async function (el, ctx) {
     const req = ctx.req, moon = ctx.chart.grahas.Moon;
     const place = (req.place || '').split(',')[0] || 'your birthplace';
@@ -135,11 +151,13 @@
           `${[...g.obstacles, ...g.for, ...g.against].join(' ')} Please explain simply what this means for me and what I should do.`;
         out.innerHTML = `<div class="hqv ${VERDICT[g.verdict]}"><span>Answer</span><b>${esc(g.label)}</b></div>
           ${jkGrid(r)}
-          <ul class="hqr">${li([g.about, ...g.focus, `Next to reach the Udayam: ${g.approaching.planet} (${g.approaching.about}).`])}</ul>
-          ${g.obstacles.length ? `<p class="jkh warn">Hidden obstacle (Kavippu)</p><ul class="hqr">${li(g.obstacles)}</ul>` : ''}
+          <ul class="hqr">${li([g.about, ...g.focus, `Next to reach the Udayam: ${g.approaching.planet} (${g.approaching.about}).`, ...g.confirm])}</ul>
+          <p class="jkh warn">Hidden obstacle (Kavippu)</p><ul class="hqr">${li([...g.obstacles, ...g.kavippu_notes])}</ul>
           ${g.for.length ? `<p class="jkh good">In favour</p><ul class="hqr">${li(g.for)}</ul>` : ''}
           ${g.against.length ? `<p class="jkh">Against</p><ul class="hqr">${li(g.against)}</ul>` : ''}
+          ${g.strengths.length ? `<p class="jkh">Planet strengths now</p><ul class="hqr">${li(g.strengths)}</ul>` : ''}
           ${g.timing ? `<p class="hint">${esc(g.timing.text)}</p>` : ''}
+          ${jkWorking(r)}
           <button type="button" class="btn ghost" id="jk-ask">Ask Astropositivism to explain</button>
           <p class="hint">Jamakkol answers the question as you hold it right now, for about 81 days. Ask each question once.</p>`;
         $('jk-ask').onclick = () => window.askSukh && window.askSukh(ask);

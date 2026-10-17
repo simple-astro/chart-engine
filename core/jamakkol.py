@@ -35,6 +35,11 @@ VEEDHI = {11: 1, 0: 1, 5: 1, 6: 1, 1: 0, 2: 0, 3: 0, 4: 0, 7: 2, 8: 2, 9: 2, 10:
 SIRSHODAYA, PRISHTODAYA = {2, 4, 5, 6, 7, 10}, {0, 1, 3, 8, 9}  # Pisces rises both ways
 SUBHA_UDAYAM = {4, 5, 6, 7, 8, 9}        # Leo to Capricorn: the Sun's half
 SUBHA_ARUDAM = {10, 11, 0, 1, 2, 3}      # Aquarius to Cancer: the Moon's half
+# Planets in the Udayam by how they rise: head first (success), back first (failure), both ways (delay).
+PLANET_RISE = {"Mercury": "head", "Jupiter": "head", "Venus": "head", "Rahu": "head", "Paambu": "head",
+               "Sun": "back", "Mars": "back", "Saturn": "back", "Moon": "both", "Ketu": "both"}
+TAMIL_MONTH = ["Chithirai", "Vaikasi", "Aani", "Aadi", "Aavani", "Purattasi", "Aippasi", "Karthigai", "Margazhi",
+               "Thai", "Maasi", "Panguni"]  # by the Sun's sidereal sign, Aries first
 
 # What a planet near the Udayam points the question to (gentle, everyday significations).
 ABOUT = {
@@ -108,7 +113,11 @@ def jama_positions(when: datetime, tz: str) -> dict:
     planets = {p: _point(360 - minutes * 45 / JAMAM_MINUTES + (li - i) * 45) for i, p in enumerate(JAMA)}
     n = int(minutes // JAMAM_MINUTES) + 1
     start = six + timedelta(minutes=(n - 1) * JAMAM_MINUTES)
+    timeline = [{"n": k + 1, "ruler": JAMA[(li - k) % 8],
+                 "start": (six + timedelta(minutes=k * JAMAM_MINUTES)).strftime("%H:%M"),
+                 "end": (six + timedelta(minutes=(k + 1) * JAMAM_MINUTES)).strftime("%H:%M")} for k in range(16)]
     return {"weekday": day.strftime("%A"), "lord": lord, "number": n, "ruler": JAMA[(li - (n - 1)) % 8],
+            "timeline": timeline,
             "start": start.isoformat(), "end": (start + timedelta(minutes=JAMAM_MINUTES)).isoformat(),
             "planets": planets}
 
@@ -127,7 +136,9 @@ def cast(when: datetime, lat: float, lon: float, tz: str) -> dict:
     sun_sign = grahas["Sun"].sign_index
     veedhi = VEEDHI[sun_sign]
     kav_sign = (udayam["sign_index"] + (veedhi - arudam["sign_index"]) % 12) % 12
-    kavippu = {"sign_index": kav_sign, "sign": C.SIGNS[kav_sign], "veedhi": C.SIGNS[veedhi]}
+    count = (veedhi - arudam["sign_index"]) % 12 + 1
+    kavippu = {"sign_index": kav_sign, "sign": C.SIGNS[kav_sign], "veedhi": C.SIGNS[veedhi], "count": count,
+               "sun_sign": C.SIGNS[sun_sign], "tamil_month": TAMIL_MONTH[sun_sign]}
     transit = {n: {**_point(g.longitude), "retrograde": g.retrograde, "dignity": dignity(n, g.sign_index)}
                for n, g in grahas.items()}
     return {"asked_at": when.isoformat(), "place": {"lat": lat, "lon": lon, "tz_name": tz}, "period": period,
@@ -199,6 +210,16 @@ def read(chart: dict, kind: str) -> dict:
     if approaching in ("Saturn", "Paambu"):
         neg.append(f"{'Saturn' if approaching == 'Saturn' else 'Paambu'} is approaching the Udayam: it will take time.")
 
+    rise = {PLANET_RISE[p] for p in in_udayam}  # planets in the Udayam: how they rise decides
+    names = lambda kind_: ", ".join(dict.fromkeys(p for p in in_udayam if PLANET_RISE[p] == kind_))
+    if "head" in rise:
+        pos.append(f"{names('head')} in the Udayam rise{'s' if ',' not in names('head') else ''} head first: success.")
+    if "back" in rise:
+        neg.append(f"{names('back')} in the Udayam rise{'s' if ',' not in names('back') else ''} back first: hard going.")
+    if "both" in rise:
+        neg.append(f"{names('both')} in the Udayam rise{'s' if ',' not in names('both') else ''} both ways: "
+                   "success after a delay.")
+
     if not in_udayam:  # these signs count only when the Udayam is empty
         if U in SIRSHODAYA:
             pos.append("The Udayam rises head first (sirshodaya): success.")
@@ -236,8 +257,28 @@ def read(chart: dict, kind: str) -> dict:
         count = (moon - U) % 12 + 1
         timing = {"days": rays * count, "text": f"Roughly {rays * count} days: the Moon's rays ({rays}) × {count} signs "
                                                  "from the jama Moon to the Udayam. Treat it as a window, not a date."}
+    # The 10th from the Udayam (ucchiyal sindanai): where its lord sits confirms what the question is about.
+    tenth = (U + 9) % 12
+    tlord = C.SIGN_LORDS[tenth]
+    th = _house(U, transit[tlord]["sign_index"])
+    in_tenth = list(dict.fromkeys([p for p, x in jama.items() if x["sign_index"] == tenth] +
+                                  [p for p, x in transit.items() if x["sign_index"] == tenth]))
+    confirm = [f"The 10th lord {tlord} sits in house {th} from the Udayam: the question is tied to {HOUSE_ABOUT[th]}."]
+    if in_tenth:
+        confirm.append(f"In the 10th from the Udayam: {', '.join(in_tenth)}, which confirms the topic.")
+    # The Kavippu in general: the area of life it holds back, and the planets whose matters it blocks.
+    kav_notes = [f"The Kavippu is in house {k_house} from the Udayam: {HOUSE_ABOUT[k_house]} may meet hidden obstacles."]
+    kav_notes += [f"{p} is with the Kavippu: its matters ({ABOUT[p]}) are held back for now." for p in in_kavippu]
+    # Exalted and weak planets in the sky: their matters prosper or struggle (the Kavippu still has the last word).
+    strengths = []
+    for p, x in transit.items():
+        if x["dignity"] in ("exalted", "debilitated"):
+            good = x["dignity"] == "exalted"
+            strengths.append(f"{p} is {'exalted' if good else 'weak (debilitated)'}: {ABOUT[p]} "
+                             f"{'prosper' if good else 'struggle'}" + (" (but it is with the Kavippu)" if good and p in in_kavippu else "") + ".")
     return {
         "question": {"kind": kind, "title": title, "houses": houses, "karakas": karakas},
+        "confirm": confirm, "kavippu_notes": kav_notes, "strengths": strengths,
         "verdict": verdict, "label": label, "about": about,
         "focus": [f"{p} is in the Udayam: the question touches {ABOUT[p]}." for p in dict.fromkeys(in_udayam)][:3]
                  or [f"The Udayam is empty: no urgency; the Udayam lord {lord} shows the matter."],
