@@ -84,6 +84,11 @@ def _connect() -> sqlite3.Connection:
         # daily experiment budget. created_by: the code id of the mentor who made it (NULL = the owner).
         conn.execute("ALTER TABLE access_codes ADD COLUMN role TEXT NOT NULL DEFAULT 'tester'")
         conn.execute("ALTER TABLE access_codes ADD COLUMN created_by INTEGER")
+    # Studio drafts (STUDIO_PLAN.md): ideal answers and short lessons, saved from the Playground. Publishing and
+    # using them in answers comes with the Teach step; until then they are drafts only.
+    conn.execute("CREATE TABLE IF NOT EXISTS studio_drafts (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL,"
+                 " topic TEXT NOT NULL, text TEXT NOT NULL, question TEXT, answer TEXT, profile_id INTEGER,"
+                 " status TEXT NOT NULL DEFAULT 'draft', author TEXT NOT NULL, created_at TEXT NOT NULL)")
     # Who did what in Admin and the Studio (codes, publishes, rollbacks), for the owner and the mentor.
     conn.execute("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL,"
                  " actor TEXT NOT NULL, actor_role TEXT NOT NULL, action TEXT NOT NULL, object TEXT, detail TEXT)")
@@ -280,7 +285,9 @@ def _today() -> str:
 
 def recent_queries(limit: int = 50, before_id: int | None = None) -> list[dict]:
     """Newest-first chat log with the chart name and admin remarks, for the admin page."""
-    where, args = ("WHERE u.id < ?", (before_id,)) if before_id else ("", ())
+    # Studio Playground runs are experiments, not testers' questions: they stay out of this log.
+    where, args = ("WHERE u.kind != 'playground' AND u.id < ?", (before_id,)) if before_id else \
+        ("WHERE u.kind != 'playground'", ())
     with _lock, _connect() as conn:
         rows = conn.execute(
             "SELECT u.id, u.ts, u.kind, u.model, u.input_tokens, u.output_tokens, u.cache_read_tokens,"
@@ -314,7 +321,7 @@ def tester_summary() -> list[dict]:
             " FROM profiles GROUP BY owner").fetchall()
         q = conn.execute(
             "SELECT owner, COUNT(*) total, SUM(substr(ts, 1, 10) = ?) today, SUM(kind = 'llm') paid,"
-            " MAX(ts) last_seen FROM usage_log GROUP BY owner", (_today(),)).fetchall()
+            " MAX(ts) last_seen FROM usage_log WHERE kind != 'playground' GROUP BY owner", (_today(),)).fetchall()
     rows = {r["owner"]: {"owner": r["owner"], "charts": r["charts"], "chart_names": r["names"],
                          "first_seen": r["first_seen"], "questions": 0, "questions_today": 0,
                          "paid_questions": 0, "last_seen": None} for r in prof}
@@ -625,7 +632,7 @@ def usage_sources(since: str) -> dict:
         first = conn.execute("SELECT MIN(ts) FROM events").fetchone()[0]
         return {
             "events": q("SELECT ts, owner, name, detail FROM events WHERE ts >= ?"),
-            "questions": q("SELECT ts, owner, question FROM usage_log WHERE ts >= ? AND kind != 'compare'"),
+            "questions": q("SELECT ts, owner, question FROM usage_log WHERE ts >= ? AND kind NOT IN ('compare', 'playground')"),
             "mood": q("SELECT m.ts AS ts, p.owner AS owner FROM mood_logs m JOIN profiles p ON p.id = m.profile_id WHERE m.ts >= ?"),
             "lifeevents": q("SELECT e.created_at AS ts, p.owner AS owner FROM life_events e JOIN profiles p ON p.id = e.profile_id WHERE e.created_at >= ?"),
             "getready": q("SELECT d.done_at AS ts, p.owner AS owner FROM prep_done d JOIN profiles p ON p.id = d.profile_id WHERE d.done_at >= ?"),
@@ -633,3 +640,25 @@ def usage_sources(since: str) -> dict:
             "chart_owners": [r[0] for r in conn.execute("SELECT DISTINCT owner FROM profiles").fetchall()],
             "tracking_since": first,
         }
+
+
+# ----- Studio Playground -----
+def playground_used_today(code_id: int) -> int:
+    """Playground answers made today by the people signed in with this code."""
+    with _lock, _connect() as conn:
+        return conn.execute("SELECT COUNT(*) FROM usage_log u JOIN owner_codes o ON o.owner = u.owner"
+                            " WHERE o.code_id = ? AND u.kind = 'playground' AND substr(u.ts, 1, 10) = ?",
+                            (code_id, _today())).fetchone()[0]
+
+
+def add_draft(kind: str, topic: str, text: str, author: str, question: str | None = None,
+              answer: str | None = None, profile_id: int | None = None) -> dict:
+    with _lock, _connect() as conn:
+        cur = conn.execute("INSERT INTO studio_drafts (kind, topic, text, question, answer, profile_id, author, created_at)"
+                           " VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (kind, topic, text, question, answer, profile_id, author, _now()))
+        return dict(conn.execute("SELECT * FROM studio_drafts WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def drafts(limit: int = 100) -> list[dict]:
+    with _lock, _connect() as conn:
+        return [dict(r) for r in conn.execute("SELECT * FROM studio_drafts ORDER BY id DESC LIMIT ?", (limit,))]

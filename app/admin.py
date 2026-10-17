@@ -408,7 +408,7 @@ def remedy_export(request: Request) -> dict:
 # ----- compare two models on one chart and question (nothing is saved to the user's chat) -----
 @router.get("/admin/api/profiles")
 def all_profiles(request: Request) -> list[dict]:
-    _require_admin(request)
+    _require_role(request, "mentor", "astrologer")  # the Playground's chart picker
     labels = storage.owner_code_labels()
     return [{"id": p["id"], "name": p["name"], "dob": p["request"].get("dob"),
              "tester": _tester(p.get("owner"), labels) if p.get("owner") else "local"} for p in storage.list_all(None)]
@@ -456,6 +456,148 @@ async def compare(request: Request) -> dict:
     with ThreadPoolExecutor(max_workers=len(models)) as pool:
         results = list(pool.map(run, models))
     return {"question": question, "profile": {"id": profile["id"], "name": profile["name"]}, "results": results}
+
+
+# ----- Studio Playground: try any question on any chart with test settings; nothing reaches users -----
+LIMIT_KEYS = ("word_limit", "daily_limit_per_tester", "daily_limit_total", "telegram_daily_limit")
+LIMIT_NAMES = {"word_limit": "word limit", "daily_limit_per_tester": "questions per tester per day",
+               "daily_limit_total": "questions per day, all testers", "telegram_daily_limit": "Telegram questions per day"}
+
+
+def _budget_left(request: Request) -> dict:
+    """Today's Playground budget for whoever is signed in (the owner has none)."""
+    if request.state.admin:
+        return {"limited": False}
+    code = storage.get_code(request.state.code_id or 0) or {}
+    limit = code.get("daily_limit") if code.get("daily_limit") is not None else STUDIO_BUDGET
+    used = storage.playground_used_today(request.state.code_id or 0)
+    return {"limited": True, "limit": limit, "used": used, "left": max(0, limit - used)}
+
+
+def _ready_models() -> list[dict]:
+    return [{"id": m, "label": config.label(m)} for m in config.MODELS if config.provider_ready(config.provider_of(m))]
+
+
+@router.get("/admin/api/playground")
+def playground_status(request: Request) -> dict:
+    from app.usage import TOPICS
+    _require_role(request, "mentor", "astrologer")
+    return {"budget": _budget_left(request), "live": {"model": config.model(), "label": config.label(config.model()),
+            "word_limit": config.word_limit()}, "models": _ready_models(),
+            "topics": ["General"] + [t for t, _ in TOPICS], "limits": {k: config.get(k) for k in LIMIT_KEYS}}
+
+
+def _playground_profile(body: dict) -> dict:
+    """The Playground works on saved charts only (the chart picker), never new birth details."""
+    try:
+        profile = storage.get(int(body.get("profile_id")))
+    except (TypeError, ValueError):
+        profile = None
+    if not profile:
+        raise HTTPException(status_code=404, detail="Pick a saved chart")
+    return profile
+
+
+@router.post("/admin/api/playground")
+async def playground(request: Request) -> dict:
+    from concurrent.futures import ThreadPoolExecutor
+    from app import chat
+    _require_role(request, "mentor", "astrologer")
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=422, detail="Expected a JSON object")
+    question = (body.get("question") or "").strip()
+    if not 3 <= len(question) <= 2000:
+        raise HTTPException(status_code=422, detail="Ask a question of 3 to 2000 characters")
+    variants = body.get("variants") or [{}]
+    if not isinstance(variants, list) or not 1 <= len(variants) <= 2:
+        raise HTTPException(status_code=422, detail="Run one or two versions at a time")
+    runs = []
+    for i, v in enumerate(variants):
+        v = v if isinstance(v, dict) else {}
+        model = v.get("model") or config.model()
+        if model not in config.MODELS or not config.provider_ready(config.provider_of(model)):
+            raise HTTPException(status_code=422, detail=f"That model isn't available: {model}")
+        wl = v.get("word_limit")
+        if wl is not None and (isinstance(wl, bool) or not isinstance(wl, int) or not 100 <= wl <= 800):
+            raise HTTPException(status_code=422, detail="Word limit must be a whole number from 100 to 800")
+        ins = (v.get("instruction") or "").strip()
+        if len(ins) > 1000:
+            raise HTTPException(status_code=422, detail="Keep the instruction under 1000 characters")
+        runs.append({"label": str(v.get("label") or ("Live" if i == 0 else "Test"))[:40], "model": model,
+                     "test": {"word_limit": wl, "instruction": ins or None}})
+    budget = _budget_left(request)
+    if budget["limited"] and budget["left"] < len(runs):
+        raise HTTPException(status_code=429, detail=f"Today's Playground budget is used up ({budget['used']} of "
+                                                    f"{budget['limit']}). It resets tomorrow.")
+    profile = _playground_profile(body)
+    if isinstance(body.get("here"), dict):
+        profile = {**profile, "viewer": body["here"]}
+
+    def run(r: dict) -> dict:
+        try:
+            out = chat.answer_once(profile, question, r["model"], test=r["test"], explain=True)
+        except Exception as exc:  # one version failing must not hide the other
+            return {"label": r["label"], "error": str(exc)}
+        u = out["usage"]
+        storage.log_usage(profile["id"], "playground", question, model=r["model"], input_tokens=u["input"],
+                          output_tokens=u["output"], cache_read=u["cache_read"], cache_write=u["cache_write"],
+                          tool_rounds=u["rounds"], words=len(out["text"].split()), owner=request.state.owner,
+                          answer=out["text"], factcheck=out["factcheck"])
+        return {**out, "label": r["label"], "words": len(out["text"].split())}
+
+    with ThreadPoolExecutor(max_workers=len(runs)) as pool:
+        results = list(pool.map(run, runs))
+    labels = storage.owner_code_labels()
+    return {"question": question, "results": results, "budget": _budget_left(request),
+            "chart": {"id": profile["id"], "name": profile["name"],
+                      "tester": _tester(profile.get("owner"), labels) if profile.get("owner") else None}}
+
+
+@router.get("/admin/api/studio/drafts")
+def studio_drafts(request: Request) -> list[dict]:
+    _require_role(request, "mentor", "astrologer")
+    return storage.drafts()
+
+
+@router.post("/admin/api/studio/drafts", status_code=201)
+async def studio_add_draft(request: Request) -> dict:
+    from app.usage import TOPICS
+    _require_role(request, "mentor", "astrologer")
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=422, detail="Expected a JSON object")
+    kind, topic, text = body.get("kind"), body.get("topic") or "General", (body.get("text") or "").strip()
+    if kind not in ("gold", "lesson"):
+        raise HTTPException(status_code=422, detail="kind must be gold or lesson")
+    if topic not in ["General"] + [t for t, _ in TOPICS]:
+        raise HTTPException(status_code=422, detail="Unknown topic")
+    if not 10 <= len(text) <= (4000 if kind == "gold" else 600):
+        raise HTTPException(status_code=422, detail="A lesson needs 10–600 characters; a gold answer 10–4000")
+    name, _ = _actor(request)
+    d = storage.add_draft(kind, topic, text, name, question=(body.get("question") or None),
+                          answer=(body.get("answer") or None), profile_id=body.get("profile_id"))
+    _audit(request, "saved a draft " + ("gold answer" if kind == "gold" else "lesson"), topic, text[:120])
+    return d
+
+
+@router.put("/admin/api/limits")
+async def save_limits(request: Request) -> dict:
+    """The word limit and daily limits: the owner and the Studio admin (mentor) may change them; each change is
+    in the change log. The AI model stays with the owner (Settings)."""
+    _require_role(request, "mentor")
+    body = await request.json()
+    if not isinstance(body, dict) or not body or set(body) - set(LIMIT_KEYS):
+        raise HTTPException(status_code=422, detail="Send only: " + ", ".join(LIMIT_KEYS))
+    before = {k: config.get(k) for k in body}
+    try:
+        after = config.update(body)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    changes = [f"{LIMIT_NAMES[k]} {before[k]} → {after[k]}" for k in body if before[k] != after[k]]
+    if changes:
+        _audit(request, "changed limits", None, "; ".join(changes))
+    return {k: after[k] for k in LIMIT_KEYS}
 
 
 # ----- backups -----

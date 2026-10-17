@@ -59,8 +59,8 @@
   /* settings */
   form.settings{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px;align-items:start}
   label{display:block;font-size:.8rem;font-weight:600;color:var(--ink2);margin-bottom:6px}
-  input,select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit}
-  input:focus,select:focus{outline:2px solid var(--g2);outline-offset:1px}
+  input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--g2);outline-offset:1px}
   .help{color:var(--mut);font-size:.78rem;margin-top:5px}
   .actions{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin-top:2px}
   .btn{border:0;border-radius:10px;padding:10px 18px;font:600 .95rem var(--sans);cursor:pointer;color:#241903;background:linear-gradient(140deg,var(--g1),var(--g2))}
@@ -95,6 +95,21 @@
   .qhead{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap}
   .qbtns{display:flex;gap:8px}
   main.pending [data-roles]{display:none}  /* until /me says who is signed in */
+  .pgbudget{margin:0 0 10px;font-size:.85rem;color:var(--mut)}
+  .pgform{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));align-items:end}
+  .pgform .pgq,.pgform .pgtest,.pgform .pggo,.pgform .pgchk{grid-column:1/-1}
+  .pgtest{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))}
+  .pgtest .pgins{grid-column:1/-1} .pgform textarea{width:100%;resize:vertical;font:inherit}
+  .pgtest[hidden]{display:none}
+  .pgchk{display:flex;gap:10px;align-items:center;font-size:.9rem;justify-self:start;cursor:pointer}
+  .pgchk input{width:20px;height:20px;padding:0;margin:0;flex:none;accent-color:var(--g2)} .pggo{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .pgres{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));margin-top:16px}
+  .pgcard{border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;background:var(--bg2);min-width:0}
+  .pgcard h4{margin:0;font-size:.95rem} .pgmeta{font-size:.78rem;color:var(--mut)}
+  .pgans{white-space:normal} .pgans p,.pgans h4{margin:0 0 .5em} .pgans ul{margin:0 0 .6em;padding-left:1.2em}
+  .pgseen summary{cursor:pointer;font-weight:600;font-size:.85rem}
+  .pgseen pre{white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:.75rem}
+  .pgacts{display:flex;gap:8px;flex-wrap:wrap} .pgsave{display:grid;gap:8px} .pgsave textarea{width:100%;font:inherit;resize:vertical}
   .usgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:4px 20px}
   .ush{font:600 .92rem var(--sans);margin:18px 0 6px} .ush small{color:var(--mut);font-weight:500;margin-left:4px}
   .uschips{display:flex;flex-wrap:wrap;gap:6px} tr.dim td{color:var(--mut)} td.pair{white-space:nowrap;font-variant-numeric:tabular-nums} .qbtns a.sbtn{text-decoration:none;display:inline-flex;align-items:center}
@@ -182,7 +197,38 @@
 
   <section class="card" id="st" data-roles="owner mentor astrologer">
     <h2>Studio</h2>
-    <p class="sub" id="st-sub">Test and improve Astropositivism's answers. Next to arrive here: the Playground, to try any question on any chart.</p>
+    <p class="sub" id="st-sub">Test and improve Astropositivism's answers. Try any question on any chart in the Playground, compare live and test settings, and save what works as a draft.</p>
+    <div id="pg">
+      <h3 class="ush">Playground <small>any question on any chart · nothing reaches users</small></h3>
+      <p class="pgbudget" id="pg-budget"></p>
+      <div class="pgform">
+        <div><label for="pg-chart">Saved chart</label><select id="pg-chart"><option value="">Loading…</option></select></div>
+        <div class="pgq"><label for="pg-q">Question</label><textarea id="pg-q" rows="2" maxlength="2000" placeholder="e.g. When will my career improve?"></textarea></div>
+        <label class="pgchk"><input type="checkbox" id="pg-cmp"> Compare with test settings</label>
+        <div class="pgtest" id="pg-test" hidden>
+          <div><label for="pg-model">Model</label><select id="pg-model"></select></div>
+          <div><label for="pg-words">Word limit</label><input id="pg-words" type="number" min="100" max="800" step="10" inputmode="numeric"></div>
+          <div class="pgins"><label for="pg-ins">Extra instruction <span class="opt">this test only</span></label><textarea id="pg-ins" rows="2" maxlength="1000" placeholder="e.g. Always name the 10th lord and where it sits."></textarea></div>
+        </div>
+        <div class="pggo"><button class="btn" id="pg-run" type="button">Ask</button><span class="status" id="pg-st" role="status"></span></div>
+      </div>
+      <div class="pgres" id="pg-res"></div>
+      <h3 class="ush">Drafts <small>gold answers and lessons · publishing them comes with the next step</small></h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Type</th><th>Topic</th><th>Text</th><th>By</th><th>When</th></tr></thead>
+        <tbody id="dr-list"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+    <div data-roles="owner mentor">
+      <h3 class="ush">Limits <small>apply to the next question · every change is in the change log</small></h3>
+      <form class="settings" id="lim-form">
+      <div><label for="l-words">Reply length (words)</label><input id="l-words" type="number" min="100" max="800" step="10" required><div class="help">100 to 800. Longer replies cost more.</div></div>
+      <div><label for="l-per">Questions per tester per day</label><input id="l-per" type="number" min="0" max="1000" required><div class="help">0 pauses chat for testers.</div></div>
+      <div><label for="l-total">Questions per day, all testers</label><input id="l-total" type="number" min="0" max="10000" required><div class="help">Your daily spending ceiling.</div></div>
+      <div><label for="l-tg">Telegram questions per person per day</label><input id="l-tg" type="number" min="0" max="1000" required><div class="help">The free morning guide is not counted. 0 turns Telegram chat off.</div></div>
+        <div class="actions"><button class="btn" type="submit" id="lim-save">Save limits</button><span class="status" id="lim-st" role="status"></span></div>
+      </form>
+    </div>
     <div data-roles="owner mentor">
       <h3 class="ush">Team <small>admin and astrologer codes</small></h3>
       <form class="newcode" id="t-form">
@@ -206,13 +252,9 @@
 
   <section class="card" data-roles="owner">
     <h2>Settings</h2>
-    <p class="sub">Changes apply to the next question. No redeploy needed.</p>
+    <p class="sub">The AI model used for every answer. Word limit and daily limits are in Studio › Limits. Changes apply to the next question.</p>
     <form class="settings" id="settings">
       <div><label for="s-model">Model</label><select id="s-model"></select><div class="help" id="s-model-help"></div></div>
-      <div><label for="s-words">Reply length (words)</label><input id="s-words" type="number" min="100" max="800" step="10" required><div class="help">100 to 800. Longer replies cost more.</div></div>
-      <div><label for="s-per">Questions per tester per day</label><input id="s-per" type="number" min="0" max="1000" required><div class="help">0 pauses chat for testers.</div></div>
-      <div><label for="s-total">Questions per day, all testers</label><input id="s-total" type="number" min="0" max="10000" required><div class="help">Your daily spending ceiling.</div></div>
-      <div><label for="s-tg">Telegram questions per person per day</label><input id="s-tg" type="number" min="0" max="1000" required><div class="help">The free morning guide is not counted. 0 turns Telegram chat off.</div></div>
       <div class="actions"><button class="btn" type="submit" id="save">Save settings</button><span class="status" id="save-status" role="status"></span></div>
     </form>
   </section>
@@ -377,7 +419,7 @@ function renderOverview(o) {
   sel.innerHTML = modelOptions(s.model);
   sel.value = s.model; showModelHelp();
   if (ROLE === 'owner') fillCompare();
-  $('s-words').value = s.word_limit; $('s-per').value = s.daily_limit_per_tester; $('s-total').value = s.daily_limit_total; $('s-tg').value = s.telegram_daily_limit;
+  fillLimits(s);
 
   $('testers').innerHTML = o.testers.length ? o.testers.map(t => `<tr>
       <td class="nowrap">${esc(t.label)}</td>
@@ -807,7 +849,7 @@ function applyRole(me) {
   document.querySelectorAll('[data-roles]').forEach(el => el.hidden = !el.dataset.roles.split(' ').includes(ROLE));
   $('who-role').textContent = (ROLE === 'owner' ? 'Admin' : ROLE_NAME[ROLE]) + (me.name ? ' · ' + me.name : '');
   document.querySelector('main').classList.remove('pending');
-  if (ROLE === 'astrologer') $('st-sub').textContent = `Welcome${me.name ? ', ' + me.name : ''}. Review the questions below and add notes; the Playground arrives here next.`;
+  if (ROLE === 'astrologer') $('st-sub').textContent = `Welcome${me.name ? ', ' + me.name : ''}. Try questions on any chart in the Playground, save ideal answers and lessons as drafts, and add notes on the questions below.`;
 }
 
 // ----- Studio team: mentor and astrologer codes, and the change log -----
@@ -858,8 +900,109 @@ $('t-list').addEventListener('click', async e => {
   } catch (err) { $('t-st').className = 'status err'; $('t-st').textContent = err.message; }
 });
 
+// ----- Studio Playground -----
+let PG = null, PGQ = '';
+const pgTopics = () => PG.topics.map(t => `<option>${esc(t)}</option>`).join('');
+function paintBudget(b) {
+  $('pg-budget').textContent = b.limited ? `Your Playground budget today: ${b.left} of ${b.limit} answers left.`
+    : 'Owner: no daily Playground budget. Each answer is a paid AI call.';
+}
+function fillLimits(s) {
+  if (!s) return;
+  $('l-words').value = s.word_limit; $('l-per').value = s.daily_limit_per_tester;
+  $('l-total').value = s.daily_limit_total; $('l-tg').value = s.telegram_daily_limit;
+}
+async function loadPlayground() {
+  try {
+    const [st, profiles] = await Promise.all([api('/admin/api/playground'), api('/admin/api/profiles')]);
+    PG = st; paintBudget(st.budget);
+    $('pg-chart').innerHTML = profiles.map(p => `<option value="${p.id}">${esc(p.name)}${p.dob ? ' · ' + esc(p.dob) : ''}${p.tester && p.tester !== 'local' ? ' · ' + esc(p.tester) : ''}</option>`).join('')
+;
+    if (!profiles.length) { $('pg-chart').innerHTML = '<option value="">No saved charts yet</option>'; $('pg-run').disabled = true; }
+    $('pg-model').innerHTML = st.models.map(m => `<option value="${m.id}">${esc(m.label)}</option>`).join('');
+    $('pg-model').value = st.live.model; $('pg-words').value = st.live.word_limit;
+    fillLimits(st.limits);
+  } catch (e) { $('pg-budget').textContent = "Couldn't load the Playground: " + e.message; }
+}
+async function loadDrafts() {
+  try {
+    const rows = await api('/admin/api/studio/drafts');
+    $('dr-list').innerHTML = rows.length ? rows.map(d => `<tr><td>${d.kind === 'gold' ? 'Gold answer' : 'Lesson'}</td><td>${esc(d.topic)}</td>
+      <td style="min-width:220px">${esc(d.text.length > 160 ? d.text.slice(0, 160) + '…' : d.text)}</td><td>${esc(d.author)}</td><td class="nowrap">${when(d.created_at)}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="empty">No drafts yet. Save one from a Playground answer.</td></tr>';
+  } catch (e) { $('dr-list').innerHTML = `<tr><td colspan="5" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
+}
+$('pg-cmp').addEventListener('change', () => $('pg-test').hidden = !$('pg-cmp').checked);
+function pgCard(r, i) {
+  if (r.error) return `<div class="pgcard"><h4>${esc(r.label)}</h4><p class="hint err">${esc(r.error)}</p></div>`;
+  const fc = r.factcheck, s = r.seen || {};
+  let facts = s.chart_facts || ''; try { facts = JSON.stringify(JSON.parse(facts), null, 1); } catch (e) {}
+  return `<div class="pgcard" data-i="${i}">
+    <h4>${esc(r.label)}</h4>
+    <div class="pgmeta">${esc(r.label === 'Live' ? 'Live settings' : 'Test settings')} · ${esc(r.label && r.model ? (PG.models.find(m => m.id === r.model) || {}).label || r.model : '')} · ${r.words} words · ${r.seconds} s · ${money(r.cost)}</div>
+    <div class="pgmeta">${fc && fc.found && fc.found.length ? `Fact check caught ${fc.found.length}: ${esc(fc.found.join(' | '))}${fc.revised ? ' (corrected by a rewrite)' : ''}${fc.removed && fc.removed.length ? ' · still wrong, so removed: ' + esc(fc.removed.join(' | ')) : ''}` : 'Fact check: nothing wrong found.'}</div>
+    <div class="pgans">${md(r.text || '')}</div>
+    <details class="pgseen"><summary>What the AI saw</summary>
+      <p class="pgmeta">Word limit ${s.word_limit}${s.instruction ? ' · Extra instruction: ' + esc(s.instruction) : ''}</p>
+      <p class="pgmeta">Lookups: ${s.lookups && s.lookups.length ? s.lookups.map(l => esc(l.name) + ' ' + esc(JSON.stringify(l.args))).join(' · ') : 'none'}</p>
+      ${s.kp ? `<p class="pgmeta">KP verdicts added to the question:</p><pre>${esc(s.kp)}</pre>` : ''}
+      <p class="pgmeta">Chart facts:</p><pre>${esc(facts)}</pre></details>
+    <div class="pgacts"><button class="sbtn" type="button" data-save="gold">Save as gold answer</button><button class="sbtn" type="button" data-save="lesson">Turn into a lesson</button></div>
+    <div class="pgsave" hidden></div></div>`;
+}
+let PGRES = [];
+$('pg-run').addEventListener('click', async () => {
+  const q = $('pg-q').value.trim(), st = $('pg-st');
+  if (q.length < 3) { st.className = 'status err'; st.textContent = 'Type a question first.'; return; }
+  const body = {question: q, variants: [{}]};
+  body.profile_id = +$('pg-chart').value;
+  if ($('pg-cmp').checked) body.variants.push({label: 'Test', model: $('pg-model').value, word_limit: +$('pg-words').value, instruction: $('pg-ins').value.trim()});
+  st.className = 'status'; st.textContent = body.variants.length > 1 ? 'Asking both versions… this takes about half a minute.' : 'Asking… this takes about half a minute.';
+  $('pg-run').disabled = true;
+  try {
+    const r = await api('/admin/api/playground', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
+    PGRES = r.results; PGQ = r.question; PG.chart = r.chart;
+    r.results.forEach((x, i) => { if (!x.model) x.model = i === 0 ? PG.live.model : body.variants[i].model; });
+    $('pg-res').innerHTML = r.results.map(pgCard).join('');
+    paintBudget(r.budget); st.className = 'status ok'; st.textContent = `Answered for ${r.chart.name}${r.chart.tester ? ' (' + r.chart.tester + ')' : ''}.`;
+  } catch (e) { st.className = 'status err'; st.textContent = e.message; }
+  $('pg-run').disabled = false;
+});
+$('pg-res').addEventListener('click', async e => {
+  const card = e.target.closest('.pgcard'); if (!card) return;
+  const r = PGRES[+card.dataset.i], box = card.querySelector('.pgsave');
+  const sv = e.target.closest('[data-save]');
+  if (sv) {
+    const gold = sv.dataset.save === 'gold';
+    box.hidden = false;
+    box.innerHTML = `<label>${gold ? 'The ideal answer (edit it until it reads the way it should)' : 'The lesson: one short rule for this topic'}</label>
+      <textarea rows="${gold ? 8 : 3}" maxlength="${gold ? 4000 : 600}" placeholder="${gold ? '' : 'e.g. For marriage questions, always look at the Upapada as well as the 7th.'}">${gold ? esc(r.text) : ''}</textarea>
+      <div class="pggo"><label>Topic <select>${pgTopics()}</select></label><button class="btn" type="button" data-keep="${gold ? 'gold' : 'lesson'}">Save draft</button><span class="status" role="status"></span></div>`;
+    return;
+  }
+  const keep = e.target.closest('[data-keep]'); if (!keep) return;
+  const out = box.querySelector('.status');
+  try {
+    await api('/admin/api/studio/drafts', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({
+      kind: keep.dataset.keep, topic: box.querySelector('select').value, text: box.querySelector('textarea').value.trim(),
+      question: PGQ, answer: r.text, profile_id: PG.chart && PG.chart.id})});
+    out.className = 'status ok'; out.textContent = 'Saved as a draft.'; await loadDrafts(); if (ROLE !== 'astrologer') await loadAudit();
+  } catch (err) { out.className = 'status err'; out.textContent = err.message; }
+});
+$('lim-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const st = $('lim-st'); st.className = 'status'; st.textContent = 'Saving…';
+  try {
+    const r = await api('/admin/api/limits', {method: 'PUT', headers: {'content-type': 'application/json'}, body: JSON.stringify({
+      word_limit: +$('l-words').value, daily_limit_per_tester: +$('l-per').value, daily_limit_total: +$('l-total').value, telegram_daily_limit: +$('l-tg').value})});
+    fillLimits(r); st.className = 'status ok'; st.textContent = 'Saved. The next question uses these limits.'; await loadAudit();
+    if (PG) { PG.live.word_limit = r.word_limit; $('pg-words').value = r.word_limit; }
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+});
+
 async function loadAll() {
   try {
+    await loadPlayground(); await loadDrafts();
     if (ROLE !== 'astrologer') { renderOverview(await api('/admin/api/overview')); await loadUsage(); await loadTeam(); await loadAudit(); }
     if (ROLE === 'owner') { await loadCodes(); await loadRL(); await loadEvents(); await loadBackups(); }
     await loadQueries(true);
@@ -872,8 +1015,7 @@ $('settings').addEventListener('submit', async e => {
   e.preventDefault();
   const st = $('save-status'); st.className = 'status'; st.textContent = 'Saving…'; $('save').disabled = true;
   try {
-    const body = {model: $('s-model').value, word_limit: +$('s-words').value,
-                  daily_limit_per_tester: +$('s-per').value, daily_limit_total: +$('s-total').value, telegram_daily_limit: +$('s-tg').value};
+    const body = {model: $('s-model').value};  // limits are saved from Studio › Limits
     await api('/admin/api/settings', {method: 'PUT', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
     st.className = 'status ok'; st.textContent = 'Saved. The next question uses these settings.';
     renderOverview(await api('/admin/api/overview'));

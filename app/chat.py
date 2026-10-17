@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import re
+from contextvars import ContextVar
 from datetime import date, datetime, timezone
 
 from app import ask, config, storage
@@ -338,11 +339,25 @@ def kp_context(profile: dict, message: str) -> str:
             "explain the reasons in plain words]\n" + "\n\n".join(briefs))
 
 
+# Playground test settings for one run (word limit, an extra instruction), so the live settings never change.
+# Set by answer_once in its own thread; everything below reads them through these helpers.
+_TEST: ContextVar[dict | None] = ContextVar("playground_test", default=None)
+
+
+def _word_limit() -> int:
+    t = _TEST.get()
+    return (t or {}).get("word_limit") or config.word_limit()
+
+
 def _system_text(profile: dict) -> str:
-    text = SYSTEM.format(words=config.word_limit()) + ask.llm_context(profile)
+    text = SYSTEM.format(words=_word_limit()) + ask.llm_context(profile)
     remarks = storage.tester_remarks(profile.get("owner"))
     if remarks:
         text += f"\n\n[CONTEXT NOTE: {remarks}]"
+    test = _TEST.get()
+    if test and test.get("instruction"):
+        text += ("\n\n[INSTRUCTION FROM YOUR ASTROLOGERS — follow it unless it conflicts with the chart data or the "
+                 f"rules above: {test['instruction']}]")
     return text
 
 
@@ -384,7 +399,7 @@ def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs
     if issues:
         yield {"type": "status", "text": "Double-checking against your chart…"}
         try:
-            fixed, use = revise(profile, history, message, text, factcheck.correction_note(issues, config.word_limit()), model)
+            fixed, use = revise(profile, history, message, text, factcheck.correction_note(issues, _word_limit()), model)
         except Exception:  # if the correction call fails, fall back to removing the wrong sentences
             fixed = ""
         if fixed:
@@ -550,7 +565,7 @@ def chat_events(profile: dict, message: str):
                 use["rounds"] += 1
                 for k in ("input", "output", "cache_read", "cache_write"):
                     use[k] += ev["usage"][k]
-        text = limit_words(drop_greeting(text), config.word_limit())
+        text = limit_words(drop_greeting(text), _word_limit())
     if not text:  # never store or show a blank answer
         raise RuntimeError("The assistant didn't produce an answer. Please try again.")
     yield {"type": "delta", "text": text}
@@ -666,8 +681,18 @@ def _compat_once(profile: dict, msgs: list, model: str) -> tuple[str, dict]:
                                                                                   "cache_write")}
 
 
-def answer_once(profile: dict, message: str, model: str) -> dict:
-    """One fresh, checked answer from a given model without saving anything — for the admin comparison."""
+def answer_once(profile: dict, message: str, model: str, test: dict | None = None, explain: bool = False) -> dict:
+    """One fresh, checked answer from a given model without saving anything — for the admin comparison and the
+    Studio Playground. test: {"word_limit", "instruction"} for this run only. explain: also return what the AI
+    saw (chart facts, the KP verdicts added to the question, lookups and their inputs)."""
+    token = _TEST.set(test or None)
+    try:
+        return _answer_once(profile, message, model, explain)
+    finally:
+        _TEST.reset(token)
+
+
+def _answer_once(profile: dict, message: str, model: str, explain: bool) -> dict:
     import time
     t0 = time.monotonic()
     parts, tool_outs = [], []
@@ -691,7 +716,13 @@ def answer_once(profile: dict, message: str, model: str) -> dict:
                     use["rounds"] += 1
                     for k in ("input", "output", "cache_read", "cache_write"):
                         use[k] += ev["usage"][k]
-        text = limit_words(drop_greeting(text), config.word_limit())
-    return {"model": model, "label": config.label(model), "text": text, "draft": draft, "factcheck": report,
-            "tools": [t["name"] for t in tool_outs], "usage": use, "seconds": round(time.monotonic() - t0, 1),
-            "cost": config.cost(model, use["input"], use["output"], use["cache_read"], use["cache_write"])}
+        text = limit_words(drop_greeting(text), _word_limit())
+    out = {"model": model, "label": config.label(model), "text": text, "draft": draft, "factcheck": report,
+           "tools": [t["name"] for t in tool_outs], "usage": use, "seconds": round(time.monotonic() - t0, 1),
+           "cost": config.cost(model, use["input"], use["output"], use["cache_read"], use["cache_write"])}
+    if explain:
+        test = _TEST.get() or {}
+        out["seen"] = {"chart_facts": ask.llm_context(profile), "kp": kp_context(profile, message).strip(),
+                       "lookups": [{"name": t["name"], "args": t.get("args", {})} for t in tool_outs],
+                       "word_limit": _word_limit(), "instruction": test.get("instruction")}
+    return out
