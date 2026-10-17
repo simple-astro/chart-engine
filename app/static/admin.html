@@ -191,6 +191,12 @@
   .rlbody{margin-top:8px;font-size:.86rem;line-height:1.5} .rlbody ul{margin:4px 0;padding-left:18px}
   .rlbody .k{color:var(--mut);font-size:.76rem;text-transform:uppercase;letter-spacing:.6px;display:block;margin-top:6px}
   .rlacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .rlprop{border:1px dashed var(--g2);border-radius:10px;padding:8px 10px;margin-top:8px}
+  .rlprop ul{margin:4px 0;padding-left:18px}
+  .raform{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));margin-top:10px}
+  .raform .wide{grid-column:1/-1} .raform textarea{min-height:64px;resize:vertical;font:inherit;margin:0}
+  .rachk{display:flex;flex-wrap:wrap;gap:6px 12px} .rachk label{display:inline-flex;gap:6px;align-items:center;font-size:.85rem;font-weight:400}
+  .rachk input{width:16px;height:16px;padding:0;margin:0;accent-color:var(--g2)}
   @media(max-width:700px){.rlfilters{grid-template-columns:1fr 1fr} .rlbtns{grid-column:1/-1}}
   @media(max-width:980px){form.newcode{grid-template-columns:1fr 1fr} form.newcode .go{grid-column:1/-1}}
   @media(max-width:560px){form.newcode{grid-template-columns:1fr}}
@@ -264,6 +270,33 @@
         <button class="sbtn arm" type="button" data-f="">All</button><button class="sbtn" type="button" data-f="draft">Drafts</button>
         <button class="sbtn" type="button" data-f="published">Published</button><button class="sbtn" type="button" data-f="retired">Retired</button></div>
       <div class="drlist" id="dr-list"><p class="empty">Loading…</p></div>
+      </div>
+      <div id="rl">
+      <div class="fhead"><h3 class="ush">Remedies <small>library and prescription rules · users see only approved items</small></h3><button class="sbtn" type="button" data-fold="rl-body" data-fold-default="shut" aria-expanded="true" aria-controls="rl-body">Collapse</button></div>
+      <div id="rl-body">
+      <p class="pgmeta" id="rl-sub"></p>
+      <div class="rlcounts" id="rl-counts"></div>
+      <details class="rlimp" data-roles="owner"><summary>Import or update from a file</summary>
+      <p class="help">Paste the contents of <span class="mono">remedies_seed.yaml</span> (or JSON), or choose the file. Everything is checked first; if any item breaks a content rule, nothing is imported.</p>
+      <input type="file" id="rl-file" accept=".yaml,.yml,.json,text/yaml,application/json">
+      <textarea id="rl-text" rows="6" placeholder="items:&#10;  - kind: remedy&#10;    slug: …"></textarea>
+      <div class="rlrow"><button class="btn" type="button" id="rl-import">Import</button><span class="status" id="rl-imst" role="status"></span></div>
+    </details>
+      <details class="rlimp" id="rl-add"><summary>Add to the library</summary>
+        <p class="help">New items wait for review: the Admin or the owner approves them before users see them. The content rules still apply (no fear wording, no banned materials, a gem needs a substitute).</p>
+        <div><label for="ra-kind">What are you adding?</label><select id="ra-kind"><option value="remedy">A remedy</option><option value="rule">A prohibition rule (when a remedy is not for someone)</option><option value="other">Something else (JSON)</option></select></div>
+        <form class="raform" id="ra-form"></form>
+        <div class="rlrow"><button class="btn" type="button" id="ra-save">Add for review</button><span class="status" id="ra-st" role="status"></span></div>
+      </details>
+      <div class="rlfilters">
+      <div><label for="rl-kind">Show</label><select id="rl-kind"><option value="">Everything</option><option value="remedy">Remedies</option><option value="graha">Planet correspondences</option><option value="rule">Prohibition rules</option><option value="rin">Rin (debts)</option><option value="home_audit">Home audit</option><option value="prep">Get-ready checklists</option></select></div>
+      <div><label for="rl-status">Status</label><select id="rl-status"><option value="pending_astrologer">Waiting for review</option><option value="approved">Approved</option><option value="retired">Retired</option><option value="proposal">Has a suggested change</option><option value="">All</option></select></div>
+      <div><label for="rl-planet">Planet</label><select id="rl-planet"><option value="">All planets</option></select></div>
+      <div class="rlbtns"><button class="sbtn" type="button" id="rl-export" data-roles="owner mentor">Export</button><button class="sbtn" type="button" id="rl-approve-all" hidden>Approve all shown</button></div>
+    </div>
+    <span class="status" id="rl-st" role="status"></span>
+      <div id="rl-list" class="rllist"><p class="empty">Loading…</p></div>
+      </div>
       </div>
     </div>
     <div data-roles="owner mentor">
@@ -347,25 +380,6 @@
     </div>
   </section>
 
-  <section class="card" id="rl" data-roles="owner">
-    <h2>Remedies library</h2>
-    <p class="sub">The curated remedies, rules and correspondences. Users only see <b>approved</b> items. Import the private seed file, review each item, then approve it. Editing an item sends it back for review.</p>
-    <div class="rlcounts" id="rl-counts"></div>
-    <details class="rlimp"><summary>Import or update from a file</summary>
-      <p class="help">Paste the contents of <span class="mono">remedies_seed.yaml</span> (or JSON), or choose the file. Everything is checked first; if any item breaks a content rule, nothing is imported.</p>
-      <input type="file" id="rl-file" accept=".yaml,.yml,.json,text/yaml,application/json">
-      <textarea id="rl-text" rows="6" placeholder="items:&#10;  - kind: remedy&#10;    slug: …"></textarea>
-      <div class="rlrow"><button class="btn" type="button" id="rl-import">Import</button><span class="status" id="rl-imst" role="status"></span></div>
-    </details>
-    <div class="rlfilters">
-      <div><label for="rl-kind">Show</label><select id="rl-kind"><option value="">Everything</option><option value="remedy">Remedies</option><option value="graha">Planet correspondences</option><option value="rule">Prohibition rules</option><option value="rin">Rin (debts)</option><option value="home_audit">Home audit</option><option value="prep">Get-ready checklists</option></select></div>
-      <div><label for="rl-status">Status</label><select id="rl-status"><option value="pending_astrologer">Waiting for review</option><option value="approved">Approved</option><option value="retired">Retired</option><option value="">All</option></select></div>
-      <div><label for="rl-planet">Planet</label><select id="rl-planet"><option value="">All planets</option></select></div>
-      <div class="rlbtns"><button class="sbtn" type="button" id="rl-export">Export</button><button class="sbtn" type="button" id="rl-approve-all" hidden>Approve all shown</button></div>
-    </div>
-    <span class="status" id="rl-st" role="status"></span>
-    <div id="rl-list" class="rllist"><p class="empty">Loading…</p></div>
-  </section>
 
   <section class="card" id="ev" data-roles="owner">
     <h2>Real-life accuracy</h2>
@@ -731,23 +745,35 @@ function rlBody(i) {
   add('Note for the astrologer', esc(i.review_note));
   return parts.join('');
 }
-const rlData = i => Object.fromEntries(Object.entries(i).filter(([k]) => !['kind', 'slug', 'review_status', 'version', 'updated_at'].includes(k)));
+const rlData = i => Object.fromEntries(Object.entries(i).filter(([k]) => !['kind', 'slug', 'review_status', 'version', 'updated_at', 'proposal'].includes(k)));
+const APPROVER = () => ROLE !== 'astrologer';
+const rlShown = (k, st, pl) => RL.items.filter(i => (!k || i.kind === k) && (!st || (st === 'proposal' ? !!i.proposal : i.review_status === st)) && (!pl || i.planet === pl));
+function rlProposal(i) {
+  const p = i.proposal; if (!p) return '';
+  const now = rlData(i), next = p.data, keys = [...new Set([...Object.keys(now), ...Object.keys(next)])].filter(k => JSON.stringify(now[k]) !== JSON.stringify(next[k]));
+  const show = v => esc(v == null ? '(removed)' : typeof v === 'string' ? v : JSON.stringify(v));
+  const mine = p.by === ME.name;
+  return `<div class="rlprop"><span class="k">Suggested change by ${esc(p.by)}, ${when(p.at)} · users keep the approved version until it is accepted</span>
+    <ul>${keys.map(k => `<li><b>${esc(k.replace(/_/g, ' '))}</b>: ${show(next[k])}</li>`).join('') || '<li>No differences</li>'}</ul>
+    <div class="rlacts">${APPROVER() ? '<button class="sbtn" type="button" data-act="accept">Accept change</button><button class="sbtn danger" type="button" data-act="discard">Discard</button>'
+      : mine ? '<button class="sbtn danger" type="button" data-act="discard">Withdraw my suggestion</button>' : ''}</div></div>`;
+}
 function renderRL() {
   const k = $('rl-kind').value, st = $('rl-status').value, pl = $('rl-planet').value;
-  const shown = RL.items.filter(i => (!k || i.kind === k) && (!st || i.review_status === st) && (!pl || i.planet === pl));
-  $('rl-approve-all').hidden = !shown.some(i => i.review_status !== 'approved');
+  const shown = rlShown(k, st, pl);
+  $('rl-approve-all').hidden = !APPROVER() || !shown.some(i => i.review_status !== 'approved');
   $('rl-approve-all').textContent = `Approve all shown (${shown.filter(i => i.review_status !== 'approved').length})`;
   $('rl-list').innerHTML = shown.length ? shown.map(i => {
     const id = `${i.kind}/${i.slug}`, [t, sub] = rlTitle(i), [sl, sc] = STATUS_TAG[i.review_status];
-    return `<div class="rlitem" data-id="${esc(id)}"><div class="rlhead" data-act="toggle"><span class="tag">${KIND[i.kind]}</span><b>${esc(t)}<br><small>${esc(sub)}</small></b><span class="tag ${sc}">${sl}</span></div>
-      ${RL.open === id ? `<div class="rlbody">${rlBody(i)}
+    return `<div class="rlitem" data-id="${esc(id)}"><div class="rlhead" data-act="toggle"><span class="tag">${KIND[i.kind]}</span><b>${esc(t)}<br><small>${esc(sub)}</small></b>${i.proposal ? '<span class="tag ai">Change suggested</span>' : ''}<span class="tag ${sc}">${sl}</span></div>
+      ${RL.open === id ? `<div class="rlbody">${rlBody(i)}${rlProposal(i)}
         ${RL.editing === id ? `<textarea rows="14">${esc(JSON.stringify(rlData(i), null, 2))}</textarea>` : ''}
         <div class="rlacts">${RL.editing === id ? '<button class="btn" type="button" data-act="save">Save changes</button><button class="sbtn" type="button" data-act="cancel">Cancel</button>'
-          : `${i.review_status !== 'approved' ? '<button class="sbtn" type="button" data-act="approved">Approve</button>' : ''}
-             ${i.review_status !== 'pending_astrologer' ? '<button class="sbtn" type="button" data-act="pending_astrologer">Back to review</button>' : ''}
-             ${i.review_status !== 'retired' ? '<button class="sbtn danger" type="button" data-act="retired">Retire</button>' : ''}
-             <button class="sbtn" type="button" data-act="edit">Edit</button><small style="color:var(--mut)">v${i.version} · ${esc(i.slug)}</small>`}</div></div>` : ''}</div>`;
-  }).join('') : '<p class="empty">Nothing here. Import the seed file above, or change the filters.</p>';
+          : `${APPROVER() && i.review_status !== 'approved' ? '<button class="sbtn" type="button" data-act="approved">Approve</button>' : ''}
+             ${APPROVER() && i.review_status !== 'pending_astrologer' ? '<button class="sbtn" type="button" data-act="pending_astrologer">Back to review</button>' : ''}
+             ${APPROVER() && i.review_status !== 'retired' ? '<button class="sbtn danger" type="button" data-act="retired">Retire</button>' : ''}
+             <button class="sbtn" type="button" data-act="edit">${!APPROVER() && i.review_status === 'approved' ? 'Suggest a change' : 'Edit'}</button><small style="color:var(--mut)">v${i.version} · ${esc(i.slug)}</small>`}</div></div>` : ''}</div>`;
+  }).join('') : `<p class="empty">Nothing here. ${ROLE === 'owner' ? 'Import the seed file above, or change' : 'Change'} the filters.</p>`;
 }
 async function loadRL() {
   const d = await api('/admin/api/remedies');
@@ -783,7 +809,7 @@ $('rl-approve-all').addEventListener('click', async e => {
   if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = 'Click again to approve all shown'; setTimeout(() => { if (b.isConnected) { b.classList.remove('arm'); renderRL(); } }, 4000); return; }
   b.classList.remove('arm');
   const k = $('rl-kind').value, st = $('rl-status').value, pl = $('rl-planet').value;
-  const todo = RL.items.filter(i => (!k || i.kind === k) && (!st || i.review_status === st) && (!pl || i.planet === pl) && i.review_status !== 'approved');
+  const todo = rlShown(k, st, pl).filter(i => i.review_status !== 'approved');
   $('rl-st').className = 'status'; $('rl-st').textContent = `Approving ${todo.length}…`;
   try { for (const i of todo) await rlPatch(i, {review_status: 'approved'}); $('rl-st').className = 'status ok'; $('rl-st').textContent = `Approved ${todo.length}.`; }
   catch (err) { $('rl-st').className = 'status err'; $('rl-st').textContent = err.message; }
@@ -799,13 +825,99 @@ $('rl-list').addEventListener('click', async e => {
     if (b.dataset.act === 'cancel') { RL.editing = null; return renderRL(); }
     if (b.dataset.act === 'save') {
       let data; try { data = JSON.parse(card.querySelector('textarea').value); } catch (err) { throw new Error('That is not valid JSON: ' + err.message); }
-      await rlPatch(i, {data}); RL.editing = null;
-      st.className = 'status ok'; st.textContent = `Saved ${i.slug}. It is waiting for review again.`;
+      const r = await rlPatch(i, {data}); RL.editing = null;
+      st.className = 'status ok';
+      st.textContent = r.proposal && !APPROVER() ? `Your suggested change to ${i.slug} is waiting for the Admin. Users keep the approved version until then.`
+        : r.review_status === 'approved' ? `Saved ${i.slug}. It is live.` : `Saved ${i.slug}. It is waiting for review.`;
+    } else if (b.dataset.act === 'accept' || b.dataset.act === 'discard') {
+      await api(`/admin/api/remedies/${i.kind}/${encodeURIComponent(i.slug)}/proposal/${b.dataset.act}`, {method: 'POST'});
+      st.className = 'status ok'; st.textContent = b.dataset.act === 'accept' ? `${i.slug}: change accepted and live.` : `${i.slug}: suggestion discarded.`;
     } else {
       await rlPatch(i, {review_status: b.dataset.act});
       st.className = 'status ok'; st.textContent = `${i.slug}: ${STATUS_TAG[b.dataset.act][0].toLowerCase()}.`;
     }
-    await loadRL();
+    await loadRL(); if (b.dataset.act !== 'save' || APPROVER()) loadAudit().catch(() => {});
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+});
+
+// Add to the library: simple forms for a remedy and a prohibition rule, JSON for the rest.
+const RTYPES = {aacharan: 'Conduct (aacharan)', seva: 'Service (seva)', daan: 'Giving (daan)', jal_pravah: 'Water immersion (jal pravah)',
+  ahar: 'Food (ahar)', vastra_rang: 'Clothes and colour', vanaspati: 'Plants (vanaspati)', griha: 'Home (griha)', mantra: 'Mantra',
+  vrat: 'Fast (vrat)', yantra_puja: 'Yantra or puja', ratna: 'Gemstone (ratna)'};
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const opt = (xs, label = x => x) => xs.map(x => `<option value="${esc(x)}">${esc(label(x))}</option>`).join('');
+const fld = (id, label, html, wide) => `<div${wide ? ' class="wide"' : ''}><label for="${id}">${label}</label>${html}</div>`;
+const OTHER_TEMPLATE = {graha: {planet: 'Saturn', colors: ['black'], beej_mantra: '…', japa_count: 23000},
+  rin: {name: '…', when: {any_of: [{planet: 'Saturn', houses: [10]}]}, remedy_steps: ['…'], why_template: '…'},
+  home_audit: {zone: 'west', planet: 'Saturn', prompt: '…', suggested_action: 'clean', explanation: '…'},
+  prep: {situation: 'job_change', title: '…', before: ['…'], on_the_day: '…', during: ['…']}};
+function raForm() {
+  const k = $('ra-kind').value;
+  if (k === 'remedy') $('ra-form').innerHTML = [
+    fld('ra-planet', 'Planet', `<select id="ra-planet">${opt(PLANETS)}</select>`),
+    fld('ra-type', 'Type', `<select id="ra-type">${opt(Object.keys(RTYPES), x => RTYPES[x])}</select>`),
+    fld('ra-source', 'Source', `<select id="ra-source">${opt(['lal_kitab', 'parashari', 'vastu', 'folk'], x => ({lal_kitab: 'Lal Kitab', parashari: 'Parashari', vastu: 'Vastu', folk: 'Folk'})[x])}</select>`),
+    fld('ra-cost', 'Cost', `<select id="ra-cost">${opt(['free', 'low', 'medium', 'high'])}</select>`),
+    fld('ra-effort', 'Effort (1 easy – 5 hard)', `<select id="ra-effort">${opt(['1', '2', '3', '4', '5'])}</select>`),
+    fld('ra-days', 'For how many days', `<select id="ra-days">${opt(['43', '40', '35', '21', '7', '1'], x => x === '35' ? '35 (five weeks)' : x)}</select>`),
+    `<div class="wide"><span class="lbl">It is for a planet that needs to be</span><div class="rachk">${['strengthen', 'pacify', 'maintain'].map(x => `<label><input type="checkbox" name="ra-intent" value="${x}"${x === 'pacify' ? ' checked' : ''}> ${x === 'strengthen' ? 'Strengthened' : x === 'pacify' ? 'Calmed (pacified)' : 'Kept as it is'}</label>`).join('')}</div></div>`,
+    fld('ra-title', 'Title', '<input id="ra-title" maxlength="120" placeholder="e.g. Help an elder on Saturdays">', true),
+    fld('ra-steps', 'Steps (one per line)', '<textarea id="ra-steps" placeholder="Spend an hour helping an elderly neighbour on Saturday."></textarea>', true),
+    fld('ra-why', 'Why it helps (shown to the person)', '<textarea id="ra-why" placeholder="{planet} is your {role}; quiet service to elders softens it."></textarea><div class="help">{planet} and {role} are filled in for each person.</div>', true),
+    fld('ra-materials', 'Materials (commas)', '<input id="ra-materials" placeholder="e.g. black sesame, mustard oil">', true),
+    fld('ra-weekday', 'Day', `<select id="ra-weekday"><option value="">Any day</option>${opt(DAYS)}</select>`),
+    `<div><span class="lbl">Timing</span><label class="rachk"><input type="checkbox" id="ra-daytime"> Only between sunrise and sunset</label></div>`,
+    fld('ra-safety', 'Safety notes (one per line)', '<textarea id="ra-safety" placeholder="Needed for a fast: who should not fast"></textarea>', true),
+    fld('ra-light', 'Lighter version (needed for a fast)', '<input id="ra-light">', true),
+    fld('ra-diaspora', 'Where rivers are not allowed (needed for water immersion)', '<input id="ra-diaspora">', true),
+    fld('ra-sub', 'Substitute (needed for a gemstone)', '<input id="ra-sub">', true)].join('');
+  else if (k === 'rule') $('ra-form').innerHTML = [
+    fld('ra-planet', 'Planet', `<select id="ra-planet">${opt([...PLANETS, 'any'], x => x === 'any' ? 'Any planet' : x)}</select>`),
+    fld('ra-houses', 'In house(s)', '<input id="ra-houses" placeholder="e.g. 6 or 6, 8">'),
+    fld('ra-sign', 'Or in sign', `<select id="ra-sign"><option value="">Any sign</option>${opt(['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'])}</select>`),
+    fld('ra-dignity', 'Dignity', `<select id="ra-dignity"><option value="">Any</option>${opt(['exalted', 'debilitated', 'own'])}</select>`),
+    fld('ra-system', 'Houses counted by', `<select id="ra-system">${opt(['lal_kitab', 'kp', ''], x => ({lal_kitab: 'Lal Kitab', kp: 'KP', '': 'Either'})[x])}</select>`),
+    `<div class="wide"><span class="lbl">Not for this person: remedy types</span><div class="rachk">${Object.keys(RTYPES).map(x => `<label><input type="checkbox" name="ra-block" value="${x}"> ${esc(RTYPES[x])}</label>`).join('')}</div></div>`,
+    fld('ra-bmat', 'Not for this person: materials (commas)', '<input id="ra-bmat" placeholder="e.g. milk, water">', true),
+    fld('ra-reason', 'Why (shown to the person)', '<textarea id="ra-reason" placeholder="With the Moon in the 6th, giving milk or water away is avoided."></textarea>', true),
+    fld('ra-alt', 'What to do instead', '<textarea id="ra-alt" placeholder="Serve your mother and keep a silver item with you."></textarea>', true)].join('');
+  else $('ra-form').innerHTML = fld('ra-okind', 'Kind', `<select id="ra-okind">${opt(Object.keys(OTHER_TEMPLATE), x => KIND[x])}</select>`)
+    + fld('ra-json', 'Content (JSON)', '<textarea id="ra-json" rows="10"></textarea>', true);
+  if (k === 'other') { const fill = () => $('ra-json').value = JSON.stringify(OTHER_TEMPLATE[$('ra-okind').value], null, 2); $('ra-okind').addEventListener('change', fill); fill(); }
+}
+const lines = id => $(id).value.split('\n').map(x => x.trim()).filter(Boolean);
+const commas = id => $(id).value.split(',').map(x => x.trim()).filter(Boolean);
+function raData() {
+  const k = $('ra-kind').value, v = id => $(id).value.trim(), d = {};
+  const put = (key, val) => { if (val !== '' && val != null && !(Array.isArray(val) && !val.length)) d[key] = val; };
+  if (k === 'remedy') {
+    Object.assign(d, {planet: v('ra-planet'), type: v('ra-type'), source: v('ra-source'), cost_tier: v('ra-cost'), effort: +v('ra-effort'),
+      intent: [...document.querySelectorAll('[name=ra-intent]:checked')].map(x => x.value), title: v('ra-title'), steps: lines('ra-steps'), why_template: v('ra-why'),
+      timing: {weekday: v('ra-weekday') || null, daytime_only: $('ra-daytime').checked, duration_days: +v('ra-days')}});
+    put('materials', commas('ra-materials')); put('safety_notes', lines('ra-safety')); put('light_variant', v('ra-light'));
+    put('diaspora_alternative', v('ra-diaspora')); put('substitute', v('ra-sub'));
+    if (d.type === 'ratna') d.requires_advisor_review = true;
+    return ['remedy', d];
+  }
+  if (k === 'rule') {
+    const hs = commas('ra-houses').map(Number).filter(n => n >= 1 && n <= 12), when = {};
+    if (hs.length === 1) when.house = hs[0]; else if (hs.length) when.houses = hs;
+    if (v('ra-sign')) when.sign = v('ra-sign'); if (v('ra-dignity')) when.dignity = v('ra-dignity'); if (v('ra-system')) when.system = v('ra-system');
+    const blocks = {}; const ts = [...document.querySelectorAll('[name=ra-block]:checked')].map(x => x.value); if (ts.length) blocks.types = ts;
+    if (commas('ra-bmat').length) blocks.materials = commas('ra-bmat');
+    Object.assign(d, {planet: v('ra-planet'), when, blocks, reason: v('ra-reason')}); put('alternative', v('ra-alt'));
+    return ['rule', d];
+  }
+  try { return [v('ra-okind'), JSON.parse($('ra-json').value)]; } catch (e) { throw new Error('That is not valid JSON: ' + e.message); }
+}
+$('ra-kind').addEventListener('change', raForm); raForm();
+$('ra-save').addEventListener('click', async () => {
+  const st = $('ra-st'); st.className = 'status'; st.textContent = 'Checking…';
+  try {
+    const [kind, data] = raData();
+    const r = await api('/admin/api/remedies', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({kind, data})});
+    st.className = 'status ok'; st.textContent = `Added “${r.slug}”. It is waiting for review.`;
+    raForm(); $('rl-status').value = 'pending_astrologer'; RL.open = `${r.kind}/${r.slug}`; await loadRL(); if (APPROVER()) loadAudit().catch(() => {});
   } catch (err) { st.className = 'status err'; st.textContent = err.message; }
 });
 
@@ -923,6 +1035,8 @@ let ROLE = 'owner';
 const ROLE_NAME = {owner: 'Owner', mentor: 'Admin', astrologer: 'Astrologer'};
 function applyRole(me) {
   ROLE = me.role || 'owner'; ME = me;
+  $('rl-sub').textContent = ROLE === 'astrologer' ? 'Add remedies and rules, or suggest changes. The Admin approves them before users see anything.'
+    : 'Approve what users may see. Astrologers’ suggestions to approved items wait here; users keep the approved version until you accept.';
   document.querySelectorAll('[data-roles]').forEach(el => el.hidden = !el.dataset.roles.split(' ').includes(ROLE));
   $('who-role').textContent = (ROLE === 'owner' ? 'Admin' : ROLE_NAME[ROLE]) + (me.name ? ' · ' + me.name : '');
   document.querySelector('main').classList.remove('pending');
@@ -1145,7 +1259,7 @@ async function loadReview() {
     const done = await api('/admin/api/reviews');
     $('rv-donewrap').hidden = !done.length;
     $('rv-done').innerHTML = done.map(r => `<div class="tvrow"><span><b>${esc(r.question || '')}</b><br><small>${esc(r.reviewer)} · ${when(r.created_at)} · ${esc(r.tester)} · `
-      + RV.checks.map(k => `${r.checks[k.key] === 'pass' ? '✓' : r.checks[k.key] === 'fail' ? '✗' : '–'} ${esc(k.name)}`).join(' · ')
+      + (r.check_set === 'remedy' ? 'Remedy checks: ' : '') + r.checks.map(k => `${r.checks_done[k.key] === 'pass' ? '✓' : r.checks_done[k.key] === 'fail' ? '✗' : '–'} ${esc(k.name)}`).join(' · ')
       + `${r.tags.length ? ' · ' + esc(r.tags.join(', ')) : ''}${r.note ? ' · “' + esc(r.note) + '”' : ''}</small></span></div>`).join('');
   } catch (e) { $('rv-counts').textContent = "Couldn't load the review queue: " + e.message; }
 }
@@ -1165,9 +1279,10 @@ async function openReview(item) {
       ${ch ? `<details class="pgseen"><summary>What Astropositivism is given</summary>
         ${ch.kp ? `<p class="pgmeta">KP verdicts added to this question:</p><pre>${esc(ch.kp)}</pre>` : ''}
         <p class="pgmeta">Chart facts (worked out again now: the chart is the same, today's sky may differ):</p><pre>${esc(facts)}</pre></details>` : ''}
-      <form class="rvchk">${RV.checks.map(k => `<div class="rvrow"><span>${esc(k.name)}</span><span class="seg" role="radiogroup" aria-label="${esc(k.name)}">${
+      ${c.check_set === 'remedy' ? '<p class="pgmeta">A remedy question, so it gets the remedy checks.</p>' : ''}
+      <form class="rvchk">${c.checks.map(k => `<div class="rvrow"><span>${esc(k.name)}</span><span class="seg" role="radiogroup" aria-label="${esc(k.name)}">${
           Object.entries(RESULT).map(([v, t]) => `<label class="${v}"><input type="radio" name="${k.key}" value="${v}"><span>${t}</span></label>`).join('')}</span></div>`).join('')}
-        <div><span class="lbl">Problems</span><div class="rvtags">${RV.tags.map(t => `<label><input type="checkbox" value="${esc(t)}">${esc(t)}</label>`).join('')}</div></div>
+        <div><span class="lbl">Problems</span><div class="rvtags">${c.tags.map(t => `<label><input type="checkbox" value="${esc(t)}">${esc(t)}</label>`).join('')}</div></div>
         <textarea rows="2" maxlength="1000" placeholder="Note (what was wrong, or what was good)"></textarea>
         <div class="pggo"><button class="btn" type="submit">Save review</button><button class="sbtn" type="button" data-act="close">Close</button><span class="status" role="status"></span></div></form>
       <div class="pgacts"><button class="sbtn" type="button" data-save="gold">Write the ideal answer</button><button class="sbtn" type="button" data-save="lesson">Add a lesson</button></div>
@@ -1175,7 +1290,7 @@ async function openReview(item) {
     box.querySelector('form').addEventListener('submit', async ev => {
       ev.preventDefault();
       const f = ev.target, st = f.querySelector('.status'), checks = {};
-      RV.checks.forEach(k => { const x = f.querySelector(`input[name="${k.key}"]:checked`); checks[k.key] = x ? x.value : null; });
+      c.checks.forEach(k => { const x = f.querySelector(`input[name="${k.key}"]:checked`); checks[k.key] = x ? x.value : null; });
       try {
         await api('/admin/api/review/' + id, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({checks,
           tags: [...f.querySelectorAll('.rvtags input:checked')].map(x => x.value), note: f.querySelector('textarea').value.trim()})});
@@ -1232,9 +1347,9 @@ $('lim-form').addEventListener('submit', async e => {
 
 async function loadAll() {
   try {
-    await loadPlayground(); await loadDrafts(); await loadReview();
+    await loadPlayground(); await loadDrafts(); await loadReview(); await loadRL();
     if (ROLE !== 'astrologer') { renderOverview(await api('/admin/api/overview')); await loadUsage(); await loadTeam(); await loadAudit(); }
-    if (ROLE === 'owner') { await loadCodes(); await loadRL(); await loadEvents(); await loadBackups(); }
+    if (ROLE === 'owner') { await loadCodes(); await loadEvents(); await loadBackups(); }
     await loadQueries(true);
   }
   catch (e) { $('queries').innerHTML = `<tr><td colspan="7" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }

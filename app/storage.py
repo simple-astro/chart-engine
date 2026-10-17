@@ -75,6 +75,12 @@ def _connect() -> sqlite3.Connection:
         " review_status TEXT NOT NULL DEFAULT 'pending_astrologer', version INTEGER NOT NULL DEFAULT 1,"
         " updated_at TEXT NOT NULL, PRIMARY KEY (kind, slug))"
     )
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(remedy_items)")}
+    if "proposed" not in cols:
+        # An astrologer's suggested change to an approved item (JSON), kept apart so the approved version stays
+        # live until the Studio admin or the owner accepts it.
+        for col in ("proposed TEXT", "proposed_by TEXT", "proposed_code INTEGER", "proposed_at TEXT"):
+            conn.execute(f"ALTER TABLE remedy_items ADD COLUMN {col}")
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(access_codes)")}
     if "daily_limit" not in cols:
         # Questions per day for each tester on this code; NULL = the default from Settings.

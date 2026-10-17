@@ -89,11 +89,13 @@ def test_import_review_approve_and_serve(gated):
     assert library.served("remedy") == []
     assert a.patch("/admin/api/remedies/remedy/sun-arghya", json={"review_status": "approved"}).status_code == 200
     assert [i["slug"] for i in library.served("remedy")] == ["sun-arghya"]
-    # editing content sends it back for review and bumps the version
+    # the owner's edit to approved content stays live (they approve) and bumps the version
     item = a.get("/admin/api/remedies?kind=remedy").json()["items"][0]
     data = {k: v for k, v in item.items() if k not in ("kind", "slug", "review_status", "version", "updated_at")}
     r = a.patch("/admin/api/remedies/remedy/sun-arghya", json={"data": {**data, "effort": 2}})
-    assert r.status_code == 200 and r.json()["review_status"] == "pending_astrologer" and r.json()["version"] == 2
+    assert r.status_code == 200 and r.json()["review_status"] == "approved" and r.json()["version"] == 2
+    assert [i["slug"] for i in library.served("remedy")] == ["sun-arghya"]
+    a.patch("/admin/api/remedies/remedy/sun-arghya", json={"review_status": "pending_astrologer"})
     assert library.served("remedy") == []
     # invalid edits and imports are refused whole, with the reason
     r = a.patch("/admin/api/remedies/remedy/sun-arghya", json={"data": {**data, "steps": ["Use ivory."]}})

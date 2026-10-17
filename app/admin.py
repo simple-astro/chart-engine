@@ -16,7 +16,7 @@ _PAGE = Path(__file__).parent / "static" / "admin.html"
 
 
 def _require_admin(request: Request) -> None:
-    """The owner only (settings, tester codes, backups, the remedy library for now)."""
+    """The owner only (settings, tester codes, backups, importing the remedy library)."""
     if not request.state.admin:
         raise HTTPException(status_code=403, detail="Admin access required")
 
@@ -358,7 +358,7 @@ def _parse_items(body) -> list:
 @router.get("/admin/api/remedies")
 def remedy_library(request: Request, kind: str | None = None, status: str | None = None) -> dict:
     from app.remedies import library
-    _require_admin(request)
+    _require_role(request, "mentor", "astrologer")
     return {"counts": library.counts(), "items": library.list_items(kind, status)}
 
 
@@ -368,31 +368,92 @@ async def remedy_import(request: Request) -> dict:
     from app.remedies.schema import Invalid
     _require_admin(request)
     try:
-        return library.import_items(_parse_items(await request.json()))
+        r = library.import_items(_parse_items(await request.json()))
     except Invalid as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    _audit(request, "imported the remedy library", None, f"added {r['added']}, updated {r['updated']}")
+    return r
+
+
+def _rl_name(kind: str, slug: str) -> str:
+    return f"{kind.replace('_', ' ')} {slug}"
+
+
+@router.post("/admin/api/remedies", status_code=201)
+async def remedy_add(request: Request) -> dict:
+    """A new remedy, rule or other item from the Studio; it waits for review before users see it."""
+    from app.remedies import library
+    from app.remedies.schema import Invalid
+    _require_role(request, "mentor", "astrologer")
+    body = await request.json()
+    if not isinstance(body, dict) or not isinstance(body.get("data"), dict):
+        raise HTTPException(status_code=422, detail="Send {kind, data}")
+    try:
+        item = library.add_item(body.get("kind") or "", body["data"])
+    except Invalid as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    _audit(request, "added a remedy item", _rl_name(item["kind"], item["slug"]), "waiting for review")
+    return item
 
 
 @router.patch("/admin/api/remedies/{kind}/{slug}")
 async def remedy_edit(kind: str, slug: str, request: Request) -> dict:
+    """Approve / retire / send back (owner and Admin), or edit the content. An astrologer's edit to an approved
+    item is kept as a suggested change, so the approved version stays with users until it is accepted; the owner's
+    and Admin's edits to an approved item go live at once (they approve)."""
     from app.remedies import library
     from app.remedies.schema import STATUSES, Invalid
-    _require_admin(request)
+    role = _require_role(request, "mentor", "astrologer")
     body = await request.json()
     if not isinstance(body, dict):
         raise HTTPException(status_code=422, detail="Expected a JSON object")
     status = body.get("review_status")
     if status is not None and status not in STATUSES:
         raise HTTPException(status_code=422, detail=f"review_status must be one of {', '.join(STATUSES)}")
+    if status is not None and role == "astrologer":
+        raise HTTPException(status_code=403, detail="Only the Admin or the owner can approve or retire")
     data = body.get("data")
     if data is not None and not isinstance(data, dict):
         raise HTTPException(status_code=422, detail="data must be an object")
+    cur = library.get_item(kind, slug)
+    if cur is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    name, _ = _actor(request)
     try:
+        if data is not None and cur["review_status"] == "approved" and role == "astrologer":
+            item = library.propose(kind, slug, data, name, request.state.code_id)
+            _audit(request, "suggested a change to a remedy item", _rl_name(kind, slug), "waiting for the Admin")
+            return item
+        if data is not None and cur["review_status"] == "approved" and status is None:
+            status = "approved"  # an approver's edit to live content stays live
         item = library.update_item(kind, slug, data=data, review_status=status)
     except Invalid as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    if item is None:
+    words = {"approved": "approved", "retired": "retired", "pending_astrologer": "sent back for review"}
+    _audit(request, "edited a remedy item" if data is not None else f"{words[status]} a remedy item",
+           _rl_name(kind, slug), f"now {words[item['review_status']]}" if data is not None else None)
+    return item
+
+
+@router.post("/admin/api/remedies/{kind}/{slug}/proposal/{action}")
+def remedy_proposal(kind: str, slug: str, action: str, request: Request) -> dict:
+    """Accept a suggested change (owner and Admin) or discard it (they, or whoever suggested it)."""
+    from app.remedies import library
+    from app.remedies.schema import Invalid
+    role = _require_role(request, "mentor", "astrologer")
+    if action not in ("accept", "discard"):
         raise HTTPException(status_code=404, detail="Not found")
+    cur = library.get_item(kind, slug)
+    if not cur or "proposal" not in cur:
+        raise HTTPException(status_code=404, detail="No suggested change here")
+    if role == "astrologer" and (action == "accept" or cur["proposal"]["code"] != request.state.code_id):
+        raise HTTPException(status_code=403, detail="Only the Admin or the owner can do that")
+    try:
+        item = library.settle_proposal(kind, slug, accept=action == "accept")
+    except Invalid as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    _audit(request, ("accepted" if action == "accept" else "discarded") + " a suggested remedy change",
+           _rl_name(kind, slug), f"suggested by {cur['proposal']['by']}")
     return item
 
 
@@ -400,8 +461,8 @@ async def remedy_edit(kind: str, slug: str, request: Request) -> dict:
 def remedy_export(request: Request) -> dict:
     """Everything with its review status, to save back into the private content repo."""
     from app.remedies import library
-    _require_admin(request)
-    keep = lambda i: {k: v for k, v in i.items() if k not in ("version", "updated_at")}
+    _require_role(request, "mentor")
+    keep = lambda i: {k: v for k, v in i.items() if k not in ("version", "updated_at", "proposal")}
     return {"items": [keep(i) for i in library.list_items()]}
 
 
@@ -714,9 +775,15 @@ def review_queue(request: Request) -> dict:
     q = review.queue(storage.review_candidates())
     labels = storage.owner_code_labels()
     counts = {k: sum(r["reason"] == k for r in q) for k in review.REASONS}
-    return {"counts": counts | {"total": len(q)}, "checks": [{"key": k, "name": n} for k, n in review.CHECKS],
-            "tags": review.TAGS, "items": [_answer_row(r, labels) | {k: r[k] for k in ("reason", "reason_text", "topics")}
-                                           for r in q[:50]]}
+    return {"counts": counts | {"total": len(q)},
+            "items": [_answer_row(r, labels) | {k: r[k] for k in ("reason", "reason_text", "topics")}
+                      | {"check_set": review.check_set(r["question"])[0]} for r in q[:50]]}
+
+
+def _checks(question: str | None) -> dict:
+    from app import review
+    name, checks, tags = review.check_set(question)
+    return {"check_set": name, "checks": [{"key": k, "name": n} for k, n in checks], "tags": tags}
 
 
 @router.get("/admin/api/review/{usage_id}")
@@ -730,7 +797,8 @@ def review_card(usage_id: int, request: Request) -> dict:
     r = storage.get_answer(usage_id)
     if not r or r["kind"] != "llm" or not r.get("answer"):
         raise HTTPException(status_code=404, detail="Answer not found")
-    out = _answer_row(r, storage.owner_code_labels()) | {"review": storage.get_review(usage_id), "chart": None}
+    out = _answer_row(r, storage.owner_code_labels()) | {"review": storage.get_review(usage_id), "chart": None} \
+        | _checks(r["question"])
     profile = storage.get(r["profile_id"]) if r["profile_id"] else None
     if profile:
         c = profile["chart"]
@@ -751,14 +819,14 @@ async def review_save(usage_id: int, request: Request) -> dict:
         raise HTTPException(status_code=404, detail="Answer not found")
     body = await request.json()
     try:
-        checks, tags, note = review.clean(body if isinstance(body, dict) else {})
+        checks, tags, note = review.clean(body if isinstance(body, dict) else {}, r["question"])
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     name, _ = _actor(request)
     saved = storage.add_review(usage_id, name, None if request.state.admin else request.state.code_id, checks, tags, note)
     if not saved:
         raise HTTPException(status_code=409, detail="Someone has already reviewed this answer")
-    fails = [n for k, n in review.CHECKS if checks[k] == "fail"]
+    fails = [n for k, n in review.check_set(r["question"])[1] if checks[k] == "fail"]
     _audit(request, "reviewed an answer", (r["question"] or "")[:80],
            ("failed: " + ", ".join(fails) if fails else "all checks passed") + (f"; tags: {', '.join(tags)}" if tags else ""))
     return saved
@@ -768,7 +836,9 @@ async def review_save(usage_id: int, request: Request) -> dict:
 def reviews_done(request: Request) -> list[dict]:
     _require_role(request, "mentor", "astrologer")
     labels = storage.owner_code_labels()
-    return [{**r, "tester": _tester(r.pop("owner"), labels)} for r in storage.reviews()]
+    # checks_done: what the reviewer marked; checks: the list it was marked against (reading or remedy)
+    return [{**r, "tester": _tester(r.pop("owner"), labels), "checks_done": r["checks"]} | _checks(r["question"])
+            for r in storage.reviews()]
 
 
 @router.put("/admin/api/limits")

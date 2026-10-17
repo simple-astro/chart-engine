@@ -36,9 +36,9 @@ def test_owner_makes_a_mentor_who_sees_costs_and_studio_but_not_owner_settings(g
     me = m.get("/me").json()
     assert me["role"] == "mentor" and me["name"] == "Guruji" and me["admin"] is False
     for path in ("/admin/api/overview", "/admin/api/usage", "/admin/api/queries", "/admin/api/team", "/admin/api/audit",
-                 "/admin/api/profiles"):  # profiles: the Playground's chart picker
+                 "/admin/api/profiles", "/admin/api/remedies"):  # the Playground's chart picker; Studio › Remedies
         assert m.get(path).status_code == 200, path
-    for path in ("/admin/api/codes", "/admin/api/backups", "/admin/api/remedies"):
+    for path in ("/admin/api/codes", "/admin/api/backups"):
         assert m.get(path).status_code == 403, path
     assert m.put("/admin/api/settings", json={"word_limit": 500}).status_code == 403
 

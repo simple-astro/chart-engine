@@ -7,6 +7,7 @@ from app.main import app
 
 BODY = {"name": "Asha", "dob": "1990-05-15", "tob": "14:30:00", "lat": 28.6139, "lon": 77.209, "tz_name": "Asia/Kolkata"}
 PASS = {k: "pass" for k, _ in review.CHECKS}
+RPASS = {k: "pass" for k, _ in review.REMEDY_CHECKS}
 
 
 @pytest.fixture
@@ -85,3 +86,17 @@ def test_review_card_and_validation(env):
 def test_testers_cannot_review(env):
     t = _login("tester-code", "/")
     assert t.get("/admin/api/review/queue").status_code in (401, 403)
+
+
+def test_remedy_questions_get_the_remedy_checks(env):
+    pid = _login("tester-code", "/").post("/profiles", json=BODY).json()["id"]
+    uid = _log(pid, "Which remedies help my Saturn period?")
+    owner = _login("admin-code")
+    card = owner.get(f"/admin/api/review/{uid}").json()
+    assert card["check_set"] == "remedy" and [c["key"] for c in card["checks"]] == ["fits", "safe", "habits", "gems", "tone"]
+    assert owner.post(f"/admin/api/review/{uid}", json={"checks": PASS}).status_code == 422      # the reading checks
+    r = owner.post(f"/admin/api/review/{uid}", json={"checks": {**RPASS, "gems": "fail"}, "tags": ["Gem without substitute"]})
+    assert r.status_code == 201
+    done = owner.get("/admin/api/reviews").json()[0]
+    assert done["check_set"] == "remedy" and done["checks_done"]["gems"] == "fail"
+    assert "failed: Gems only with a substitute" in owner.get("/admin/api/audit").json()[0]["detail"]

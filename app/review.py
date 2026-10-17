@@ -13,6 +13,11 @@ from app.teach import topics_of
 CHECKS = [("facts", "Chart facts correct"), ("method", "Method correct (KP / Nadi)"), ("timing", "Timing correct"),
           ("tone", "Tone: no fear"), ("action", "A useful action")]
 TAGS = ["Wrong Dasha", "Wrong house", "Wrong date", "Fear word", "Too long", "Missed upaya", "Other"]
+# Answers to remedy questions are checked for the remedy rules instead (STUDIO_PLAN.md, Remedies).
+REMEDY_CHECKS = [("fits", "Fits this chart"), ("safe", "Safe"), ("habits", "Habits first"),
+                 ("gems", "Gems only with a substitute and a consultation"), ("tone", "No fear and no japa")]
+REMEDY_TAGS = ["Not for this chart", "Unsafe", "Japa suggested", "Gem without substitute", "Fear word", "Too long",
+               "Other"]
 RESULTS = ("pass", "fail", "na")
 REASONS = {"caught": "The fact check caught something", "new_topic": "First answer on a topic not reviewed yet",
            "sample": "Random sample"}
@@ -21,6 +26,13 @@ _ORDER = {"caught": 0, "new_topic": 1, "sample": 2}
 
 def _topics(question: str | None) -> list[str]:
     return topics_of(question or "") or ["Other"]
+
+
+def check_set(question: str | None) -> tuple[str, list, list]:
+    """("remedy", checks, tags) for a question about remedies, else ("reading", …)."""
+    if "Remedies" in topics_of(question or ""):
+        return "remedy", REMEDY_CHECKS, REMEDY_TAGS
+    return "reading", CHECKS, TAGS
 
 
 def sampled(usage_id: int) -> bool:
@@ -51,16 +63,18 @@ def queue(rows: list[dict]) -> list[dict]:
     return sorted(out, key=lambda r: (_ORDER[r["reason"]], -r["id"]))
 
 
-def clean(body: dict) -> tuple[dict, list[str], str | None]:
-    """The checks, tags and note from a review form; ValueError says what is missing."""
+def clean(body: dict, question: str | None = None) -> tuple[dict, list[str], str | None]:
+    """The checks, tags and note from a review form (the remedy checks for a remedy question); ValueError says
+    what is missing."""
+    _, check_list, tag_list = check_set(question)
     checks = body.get("checks") if isinstance(body.get("checks"), dict) else {}
     out = {}
-    for key, name in CHECKS:
+    for key, name in check_list:
         if checks.get(key) not in RESULTS:
             raise ValueError(f"Mark “{name}” as pass, fail or not relevant")
         out[key] = checks[key]
     tags = body.get("tags") or []
-    if not isinstance(tags, list) or any(t not in TAGS for t in tags):
+    if not isinstance(tags, list) or any(t not in tag_list for t in tags):
         raise ValueError("Unknown problem tag")
     note = (body.get("note") or "").strip() or None
     if note and len(note) > 1000:

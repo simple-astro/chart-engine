@@ -7,6 +7,7 @@ astrologer can preview content before approving it.
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 
 from app import access, storage
@@ -18,8 +19,71 @@ def _now() -> str:
 
 
 def _row(r) -> dict:
-    return {**json.loads(r["data"]), "kind": r["kind"], "slug": r["slug"], "review_status": r["review_status"],
-            "version": r["version"], "updated_at": r["updated_at"]}
+    out = {**json.loads(r["data"]), "kind": r["kind"], "slug": r["slug"], "review_status": r["review_status"],
+           "version": r["version"], "updated_at": r["updated_at"]}
+    if r["proposed"]:
+        out["proposal"] = {"data": json.loads(r["proposed"]), "by": r["proposed_by"], "code": r["proposed_code"],
+                           "at": r["proposed_at"]}
+    return out
+
+
+def _clean(kind: str, slug: str, data: dict, status: str) -> tuple[dict, str]:
+    """Validated item and its stored JSON (without slug, status or bookkeeping)."""
+    body = {k: v for k, v in data.items() if k not in ("kind", "slug", "review_status", "version", "updated_at",
+                                                         "proposal")}
+    clean = validate(kind, {**body, "slug": slug, "review_status": status})
+    return clean, json.dumps({k: v for k, v in clean.items() if k not in ("slug", "review_status", "version")},
+                             sort_keys=True, ensure_ascii=False)
+
+
+def _slugify(kind: str, data: dict) -> str:
+    base = (data.get("title") or data.get("name") or data.get("reason") or data.get("prompt") or data.get("planet")
+            or kind)
+    words = re.findall(r"[a-z0-9]+", f"{data.get('planet', '')} {base}".lower())[:8]
+    slug = "-".join(words)[:60].strip("-") or kind
+    taken = {i["slug"] for i in list_items(kind)}
+    n, out = 2, slug
+    while out in taken:
+        out, n = f"{slug}-{n}", n + 1
+    return out
+
+
+def add_item(kind: str, data: dict) -> dict:
+    """A new item from the Studio: always waits for review."""
+    slug = data.get("slug") or _slugify(kind, data)
+    if get_item(kind, slug):
+        raise Invalid(f"there is already a {kind} called {slug}")
+    _, blob = _clean(kind, slug, data, "pending_astrologer")
+    with storage._lock, storage._connect() as conn:
+        conn.execute("INSERT INTO remedy_items (kind, slug, data, review_status, version, updated_at)"
+                     " VALUES (?, ?, ?, 'pending_astrologer', 1, ?)", (kind, slug, blob, _now()))
+    return get_item(kind, slug)
+
+
+def propose(kind: str, slug: str, data: dict, by: str, code: int | None) -> dict | None:
+    """Keep a suggested change next to the live item (validated now, applied only when accepted)."""
+    if get_item(kind, slug) is None:
+        return None
+    _, blob = _clean(kind, slug, data, "approved")
+    with storage._lock, storage._connect() as conn:
+        conn.execute("UPDATE remedy_items SET proposed = ?, proposed_by = ?, proposed_code = ?, proposed_at = ?"
+                     " WHERE kind = ? AND slug = ?", (blob, by, code, _now(), kind, slug))
+    return get_item(kind, slug)
+
+
+def settle_proposal(kind: str, slug: str, accept: bool) -> dict | None:
+    """Accept (the change becomes the live, approved content; version goes up) or discard a suggested change."""
+    cur = get_item(kind, slug)
+    if cur is None or "proposal" not in cur:
+        return None
+    with storage._lock, storage._connect() as conn:
+        if accept:
+            _, blob = _clean(kind, slug, cur["proposal"]["data"], "approved")
+            conn.execute("UPDATE remedy_items SET data = ?, review_status = 'approved', version = version + 1,"
+                         " updated_at = ? WHERE kind = ? AND slug = ?", (blob, _now(), kind, slug))
+        conn.execute("UPDATE remedy_items SET proposed = NULL, proposed_by = NULL, proposed_code = NULL,"
+                     " proposed_at = NULL WHERE kind = ? AND slug = ?", (kind, slug))
+    return get_item(kind, slug)
 
 
 def import_items(items: list[dict]) -> dict:
@@ -85,10 +149,7 @@ def update_item(kind: str, slug: str, *, data: dict | None = None, review_status
     if cur is None:
         return None
     if data is not None:
-        body = {**data, "slug": slug, "review_status": review_status or "pending_astrologer"}
-        clean = validate(kind, {k: v for k, v in body.items() if k not in ("kind", "version", "updated_at")})
-        blob = json.dumps({k: v for k, v in clean.items() if k not in ("slug", "review_status", "version")},
-                          sort_keys=True, ensure_ascii=False)
+        clean, blob = _clean(kind, slug, data, review_status or "pending_astrologer")
         with storage._lock, storage._connect() as conn:
             conn.execute("UPDATE remedy_items SET data = ?, review_status = ?, version = version + 1, updated_at = ?"
                          " WHERE kind = ? AND slug = ?", (blob, clean["review_status"], _now(), kind, slug))
