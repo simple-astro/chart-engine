@@ -158,7 +158,7 @@ def today(req: TodayRequest) -> dict:
 def daily_muhurat(req: MuhuratRequest) -> dict:
     try:
         days = muhurat.muhurat_days(req.start, req.days, req.lat, req.lon, req.tz_name,
-                                    req.birth_nakshatra, req.birth_moon_sign, req.lagna_sign)
+                                    req.birth_nakshatra, req.birth_moon_sign, req.lagna_sign, full=True)
     except Exception as exc:  # bad timezone or polar day without sunrise
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"tz_name": req.tz_name, "days": days}

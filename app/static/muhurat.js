@@ -60,6 +60,34 @@
           <li><b>Gulika kalam</b> ${span(w.gulika)}</li></ul></div>
       </div>`;
 
+    // The four limbs with when each ends (and what follows), and the fuller panchang in a drawer.
+    const dayOf = iso => new Date(iso).toLocaleDateString('en-CA', { timeZone: tz });
+    const until = e => e ? `until ${t(e.ends)}${dayOf(e.ends) !== day.date ? ' ' + new Date(e.ends).toLocaleDateString([], { weekday: 'short', timeZone: tz }) : ''}` : '';
+    const limb = (label, name, key) => {
+      const e = day.ends && day.ends[key];
+      return `<div><small>${label}</small><b>${esc(name)}</b>${e ? `<em>${esc(until(e))} · then ${esc(e.next)}</em>` : ''}</div>`;
+    };
+    const P = day.panchang;
+    let full = '';
+    if (P) {
+      const nowMs = Date.now(), hi = P.horas.findIndex(h => +new Date(h.start) <= nowMs && nowMs < +new Date(h.end));
+      const hora = hi >= 0 ? `<b>${esc(P.horas[hi].lord)}</b><em>until ${t(P.horas[hi].end)} · next ${esc(P.horas[hi + 1] ? P.horas[hi + 1].lord : '')}</em>`
+        : `<b>${esc(P.horas[0].lord)}</b><em>at sunrise · ${P.horas.slice(1, 4).map(h => esc(h.lord)).join(', ')} follow</em>`;
+      const cell = (k, v, e) => `<div><small>${k}</small><b>${v}</b>${e ? `<em>${e}</em>` : ''}</div>`;
+      full = `<details class="mfull"><summary>Full panchang</summary><div class="mfgrid">
+        <div><small>${hi >= 0 ? 'Hora now' : 'Hora'}</small>${hora}</div>
+        ${cell('Vedic day', esc(day.weekday), 'sunrise to the next sunrise')}
+        ${cell('Nakshatra lord · deity', `${esc(P.nakshatra_lord)} · ${esc(P.nakshatra_deity)}`)}
+        ${cell('Tithi lord · deity', `${esc(P.tithi_lord)} · ${esc(P.tithi_deity)}`)}
+        ${cell('Samvatsara', esc(P.samvatsara), 'the year’s name')}
+        ${cell('Lunar month · ritu', `${esc(P.lunar_month)} · ${esc(P.ritu)}`)}
+        ${cell('Solar month', esc(P.solar_month), 'the Sun’s sign')}
+        ${cell('Naming letters', P.naming.letters.map((x, i) => i + 1 === P.naming.pada ? `<u>${esc(x)}</u>` : esc(x)).join(' · '), `pada ${P.naming.pada} at sunrise is underlined`)}
+        ${cell('Brahma muhurta', span(w.brahma))}
+        ${cell('Sunrise · sunset', `${t(w.sunrise)} · ${t(w.sunset)}`)}
+      </div><p class="mnote">Worked out with the KP ayanamsa, like the rest of the app. Printed panchangs use Lahiri, so their Nakshatra and Yoga can end 10–20 minutes later.</p></details>`;
+    }
+
     const grid = `<div class="scroll"><table class="mgrid"><thead><tr><th>Activity</th>${days.map((d, i) =>
         `<th class="${i === state.sel ? 'on' : ''}"><button type="button" class="mpick" data-i="${i}">${esc(d.weekday.slice(0, 3))}<small>${esc(dShort(d.date))}</small></button></th>`).join('')}</tr></thead>
       <tbody>${days[0].activities.map((a, k) => `<tr><td>${icon(a.icon)} ${esc(a.name)}</td>${days.map((d, i) => {
@@ -72,7 +100,7 @@
       <div class="mplace">Times for <b>${esc(state.placeName)}</b> · <button type="button" class="linkbtn" id="mloc">${state.here ? 'Use birthplace instead' : 'Use my current location'}</button></div>
       <section class="msum">
         <div class="msum-h"><h3>${esc(dLong(day.date))}</h3><span class="badge ${BADGE[day.overall.verdict]}">Overall: ${esc(day.overall.label)}</span></div>
-        <div class="mpan"><span>Tithi <b>${esc(day.tithi.name)}</b></span><span>Nakshatra <b>${esc(day.nakshatra)}</b></span><span>Yoga <b>${esc(day.yoga)}</b></span><span>Karana <b>${esc(day.karana)}</b></span></div>
+        <div class="mpan">${limb('Tithi', day.tithi.name, 'tithi')}${limb('Nakshatra', day.nakshatra, 'nakshatra')}${limb('Yoga', day.yoga, 'yoga')}${limb('Karana', day.karana, 'karana')}</div>
         ${personal.length ? `<div class="mpers">${personal.join('<span class="sepdot">·</span>')}</div>` : ''}
         ${day.colours ? `<div class="mcol"><div><small>Wear</small><span class="mcc"><i style="background:${day.colours.wear.hex}"></i><b>${esc(day.colours.wear.name)}</b></span>
             ${day.colours.also_good.length ? `<em>also good: ${day.colours.also_good.map(c => esc(c.name)).join(', ')}</em>` : ''}<em>${esc(day.colours.wear.why)}</em></div>
@@ -80,6 +108,7 @@
       </section>
       <h3 class="mh3">${state.sel === 0 && state.today ? 'Is today' : 'Is this day'} good for…</h3><div class="macts">${acts}</div>
       <h3 class="mh3">Best and worst times of the day</h3>${timeline}
+      ${full}
       <h3 class="mh3">Find a good day this week</h3>${grid}`;
   };
 })();

@@ -172,11 +172,16 @@ def windows(p) -> dict:
 
 def muhurat_days(start: date, days: int, lat: float, lon: float, tz_name: str,
                  birth_nak: int | None = None, birth_moon_sign: int | None = None,
-                 lagna_sign: int | None = None) -> list[dict]:
+                 lagna_sign: int | None = None, full: bool = False) -> list[dict]:
+    """full: also the fuller panchang (limb end times, hora, lords and deities, month, season, naming letters)
+    that only the Muhurat screen shows."""
     from app.today import colours  # local import: app.today imports this module
+    from app import panchang_extra
     out = []
+    p_next = None
     for i in range(days):
-        p = compute_panchang(start + timedelta(days=i), lat, lon, tz_name)
+        p = p_next or compute_panchang(start + timedelta(days=i), lat, lon, tz_name)
+        p_next = compute_panchang(start + timedelta(days=i + 1), lat, lon, tz_name) if full else None
         f = day_factors(p, birth_nak, birth_moon_sign)
         acts = [judge(a, p, f) for a in ACTIVITIES]
         overall = round(sum(a["score"] for a in acts) / len(acts))
@@ -190,6 +195,8 @@ def muhurat_days(start: date, days: int, lat: float, lon: float, tz_name: str,
             "overall": dict(zip(("verdict", "label"), _verdict(overall))),
             "activities": acts, "windows": windows(p),
             "colours": colours(lagna_sign, f["weekday"]) if lagna_sign is not None else None,
+            **({"ends": panchang_extra.limb_ends(p.sunrise), "panchang": panchang_extra.details(p, p_next.sunrise)}
+               if full else {}),
         })
     return out
 
