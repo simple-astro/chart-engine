@@ -184,7 +184,7 @@
     <h2>Studio</h2>
     <p class="sub" id="st-sub">Test and improve Astropositivism's answers. Next to arrive here: the Playground, to try any question on any chart.</p>
     <div data-roles="owner mentor">
-      <h3 class="ush">Team <small>mentor and astrologer codes</small></h3>
+      <h3 class="ush">Team <small>admin and astrologer codes</small></h3>
       <form class="newcode" id="t-form">
         <div><label for="t-label">Name</label><input id="t-label" maxlength="60" placeholder="e.g. Meera Joshi" required></div>
         <div id="t-role-wrap"><label for="t-role">Role</label><select id="t-role"></select></div>
@@ -800,11 +800,12 @@ try { if (localStorage.getItem('sj-admin-us') === 'shut') setUsOpen(false); } ca
 // ----- who is signed in: the owner sees everything; a mentor the Studio, costs, testers, usage and questions;
 // an astrologer the Studio and questions. The server checks every call as well.
 let ROLE = 'owner';
-const ROLE_NAME = {owner: 'Admin', mentor: 'Mentor', astrologer: 'Astrologer'};
+// The mentor role is called "Admin" in the app; the owner shows as "Owner" so the two stay distinct.
+const ROLE_NAME = {owner: 'Owner', mentor: 'Admin', astrologer: 'Astrologer'};
 function applyRole(me) {
   ROLE = me.role || 'owner';
   document.querySelectorAll('[data-roles]').forEach(el => el.hidden = !el.dataset.roles.split(' ').includes(ROLE));
-  $('who-role').textContent = ROLE_NAME[ROLE] + (me.name ? ' · ' + me.name : '');
+  $('who-role').textContent = (ROLE === 'owner' ? 'Admin' : ROLE_NAME[ROLE]) + (me.name ? ' · ' + me.name : '');
   document.querySelector('main').classList.remove('pending');
   if (ROLE === 'astrologer') $('st-sub').textContent = `Welcome${me.name ? ', ' + me.name : ''}. Review the questions below and add notes; the Playground arrives here next.`;
 }
@@ -830,7 +831,7 @@ async function loadTeam() { try { renderTeam(await api('/admin/api/team')); } ca
 async function loadAudit() {
   try {
     const rows = await api('/admin/api/audit?limit=50');
-    $('t-audit').innerHTML = rows.length ? rows.map(r => `<tr><td class="nowrap">${when(r.ts)}</td><td>${esc(r.actor)} <span class="tag">${ROLE_NAME[r.actor_role] || r.actor_role}</span></td>
+    $('t-audit').innerHTML = rows.length ? rows.map(r => `<tr><td class="nowrap">${when(r.ts)}</td><td>${esc(r.actor)}${r.actor_role === 'owner' ? '' : ` <span class="tag">${ROLE_NAME[r.actor_role] || r.actor_role}</span>`}</td>
       <td>${esc(r.action)}${r.object ? ': <b>' + esc(r.object) + '</b>' : ''}</td><td>${esc(r.detail || '')}</td></tr>`).join('')
       : '<tr><td colspan="4" class="empty">Nothing yet.</td></tr>';
   } catch (e) { $('t-audit').innerHTML = `<tr><td colspan="4" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }

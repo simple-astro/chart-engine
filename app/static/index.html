@@ -2032,7 +2032,7 @@ function render(c,req){
 }
 loadList().then(l=>{if(l.length)loadProfile(l[0].id)});
 // Admins reach the admin page from the chart menu (kept out of the header to leave room for the name).
-fetch('/me').then(r=>r.ok?r.json():null).then(m=>{if(m&&m.admin&&m.gated)$('madmin').hidden=false}).catch(()=>{});
+fetch('/me').then(r=>r.ok?r.json():null).then(m=>{if(m&&m.gated&&(m.admin||m.role==='mentor'||m.role==='astrologer'))$('madmin').hidden=false}).catch(()=>{});
 </script>
 </body>
 </html>

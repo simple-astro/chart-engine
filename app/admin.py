@@ -243,7 +243,8 @@ def remove_code(code_id: int, request: Request) -> dict:
 
 # ----- Studio team: the owner makes mentor and astrologer codes; a mentor makes astrologer codes -----
 STUDIO_BUDGET = 30  # Playground answers per day for a new Studio code
-_an = lambda role: ("an " if role[0] in "aeiou" else "a ") + role
+ROLE_LABEL = {"mentor": "admin", "astrologer": "astrologer"}  # the mentor role is called "Admin" in the app
+_an = lambda role: ("an " if ROLE_LABEL.get(role, role)[0] in "aeiou" else "a ") + ROLE_LABEL.get(role, role)
 
 
 def _budget(body: dict, default: int | None) -> int | None:
@@ -259,7 +260,7 @@ def _team_target(request: Request, code_id: int, role: str) -> dict:
     if not code or code.get("role") not in access.STUDIO:
         raise HTTPException(status_code=404, detail="Studio code not found")
     if role == "mentor" and code["role"] != "astrologer":
-        raise HTTPException(status_code=403, detail="Mentors can change astrologer codes only")
+        raise HTTPException(status_code=403, detail="Admins can change astrologer codes only")
     return code
 
 
@@ -281,9 +282,9 @@ async def team_add(request: Request) -> dict:
         raise HTTPException(status_code=422, detail="Expected a JSON object")
     new_role = body.get("role", "astrologer")
     if new_role not in access.STUDIO:
-        raise HTTPException(status_code=422, detail="Role must be mentor or astrologer")
+        raise HTTPException(status_code=422, detail="Role must be Admin or Astrologer")
     if role == "mentor" and new_role != "astrologer":
-        raise HTTPException(status_code=403, detail="Mentors can create astrologer codes only")
+        raise HTTPException(status_code=403, detail="Admins can create astrologer codes only")
     label = _label(body)
     if not label:
         raise HTTPException(status_code=422, detail="Add the person's name so their work is credited")
