@@ -94,6 +94,7 @@
   .more{display:flex;justify-content:center;margin-top:12px}
   .qhead{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap}
   .qbtns{display:flex;gap:8px}
+  main.pending [data-roles]{display:none}  /* until /me says who is signed in */
   .usgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:4px 20px}
   .ush{font:600 .92rem var(--sans);margin:18px 0 6px} .ush small{color:var(--mut);font-weight:500;margin-left:4px}
   .uschips{display:flex;flex-wrap:wrap;gap:6px} tr.dim td{color:var(--mut)} td.pair{white-space:nowrap;font-variant-numeric:tabular-nums} .qbtns a.sbtn{text-decoration:none;display:inline-flex;align-items:center}
@@ -163,13 +164,13 @@
 </head>
 <body>
 <header class="top"><div class="in">
-  <div class="brand"><img class="logo" src="/static/sun.svg" alt=""><b>Simple<em>Jyotish</em></b><span>Admin</span></div>
+  <div class="brand"><img class="logo" src="/static/sun.svg" alt=""><b>Simple<em>Jyotish</em></b><span id="who-role">Admin</span></div>
   <button class="btn ghost" id="refresh" type="button">Refresh</button>
   <a href="/">Back to app</a>
 </div></header>
 
-<main>
-  <section class="kpis" aria-label="Today at a glance">
+<main class="pending">
+  <section class="kpis" aria-label="Today at a glance" data-roles="owner mentor">
     <div class="tile"><div class="label">AI questions today</div><div class="value" id="k-today">–</div>
       <div class="meter" id="k-meter" role="meter" aria-label="Share of today's overall limit used" aria-valuemin="0"><i style="width:0"></i></div>
       <div class="hint" id="k-today-hint">&nbsp;</div></div>
@@ -179,7 +180,31 @@
     <div class="tile"><div class="label">Charts saved</div><div class="value" id="k-charts">–</div><div class="hint">Across all testers</div></div>
   </section>
 
-  <section class="card">
+  <section class="card" id="st" data-roles="owner mentor astrologer">
+    <h2>Studio</h2>
+    <p class="sub" id="st-sub">Test and improve Astropositivism's answers. Next to arrive here: the Playground, to try any question on any chart.</p>
+    <div data-roles="owner mentor">
+      <h3 class="ush">Team <small>mentor and astrologer codes</small></h3>
+      <form class="newcode" id="t-form">
+        <div><label for="t-label">Name</label><input id="t-label" maxlength="60" placeholder="e.g. Meera Joshi" required></div>
+        <div id="t-role-wrap"><label for="t-role">Role</label><select id="t-role"></select></div>
+        <div><label for="t-budget">Daily budget <span class="opt">Playground answers</span></label><input id="t-budget" type="number" min="0" max="1000" step="1" inputmode="numeric"></div>
+        <div class="actions"><button class="btn" type="submit" id="t-add">Create code</button></div>
+      </form>
+      <span class="status" id="t-st" role="status"></span>
+      <div class="scroll"><table>
+        <thead><tr><th>Name</th><th>Role</th><th>Code</th><th>Status</th><th class="num">Daily budget</th><th class="num">Used today</th><th>Made by</th><th>Last used</th><th></th></tr></thead>
+        <tbody id="t-list"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody>
+      </table></div>
+      <h3 class="ush">Change log</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>When</th><th>Who</th><th>What</th><th>Details</th></tr></thead>
+        <tbody id="t-audit"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="card" data-roles="owner">
     <h2>Settings</h2>
     <p class="sub">Changes apply to the next question. No redeploy needed.</p>
     <form class="settings" id="settings">
@@ -192,7 +217,7 @@
     </form>
   </section>
 
-  <section class="card" id="cmp">
+  <section class="card" id="cmp" data-roles="owner">
     <h2>Compare models</h2>
     <p class="sub">Ask one question about a saved chart to two models at once. Both answers go through the same fact check against the chart. Nothing is saved to that person's chat, and comparisons don't use up their daily questions; the cost is logged as "Model comparison".</p>
     <div class="cmpform">
@@ -206,7 +231,7 @@
     <div class="cmpres" id="cmp-res"></div>
   </section>
 
-  <section class="card">
+  <section class="card" data-roles="owner">
     <h2>Access codes</h2>
     <p class="sub">Give each person or group their own code. You'll see who is using the app, and pausing a code signs those testers out straight away.</p>
     <div class="notice" id="c-gate" hidden>The access gate is off here (no ADMIN_ACCESS_CODE set), so codes have no effect until it is turned on.</div>
@@ -223,7 +248,7 @@
     <p class="help" id="c-env" hidden></p>
   </section>
 
-  <section class="card" id="rl">
+  <section class="card" id="rl" data-roles="owner">
     <h2>Remedies library</h2>
     <p class="sub">The curated remedies, rules and correspondences. Users only see <b>approved</b> items. Import the private seed file, review each item, then approve it. Editing an item sends it back for review.</p>
     <div class="rlcounts" id="rl-counts"></div>
@@ -243,7 +268,7 @@
     <div id="rl-list" class="rllist"><p class="empty">Loading…</p></div>
   </section>
 
-  <section class="card" id="ev">
+  <section class="card" id="ev" data-roles="owner">
     <h2>Real-life accuracy</h2>
     <p class="sub">Life events people added (“Your life so far”), checked against their charts. <b>Fits</b> = the event fell in a period the engine supports; <b>by chance</b> = how many would fit if the dates were random. Year-only dates are left out. No names are shown.</p>
     <div class="evkpi" id="ev-kpi"></div>
@@ -253,7 +278,7 @@
     </table></div>
   </section>
 
-  <section class="card" id="bk">
+  <section class="card" id="bk" data-roles="owner">
     <h2>Backups</h2>
     <p class="sub">The app keeps a copy of everything (charts, chats, mood logs, the remedy library, settings and codes) once a day for <span id="bk-days">14</span> days. Those copies sit on the same server disk, so <b>download a copy each week</b> and keep it somewhere safe, like Google Drive.</p>
     <div class="rlrow"><a class="btn" id="bk-dl" href="/admin/api/backups/download" download>Download a backup now</a><button class="sbtn" type="button" id="bk-run">Make today's copy now</button><span class="status" id="bk-st" role="status"></span></div>
@@ -263,7 +288,7 @@
     </table></div>
   </section>
 
-  <section class="card">
+  <section class="card" data-roles="owner mentor">
     <h2>Testers</h2>
     <p class="sub">Each tester is one browser that entered the access code. Names come from the charts they saved.</p>
     <div class="scroll"><table>
@@ -272,7 +297,7 @@
     </table></div>
   </section>
 
-  <section class="card" id="us">
+  <section class="card" id="us" data-roles="owner mentor">
     <div class="qhead"><h2>Usage</h2>
       <div class="qbtns"><button class="sbtn" type="button" id="us-toggle" aria-expanded="true" aria-controls="us-body">Collapse</button></div></div>
     <div id="us-body">
@@ -297,7 +322,7 @@
     </div>
   </section>
 
-  <section class="card" id="qs">
+  <section class="card" id="qs" data-roles="owner mentor astrologer">
     <div class="qhead"><h2>Questions</h2>
       <div class="qbtns"><a class="sbtn" id="q-export" href="/admin/api/queries/export" download>Export CSV</a>
         <button class="sbtn" type="button" id="q-toggle" aria-expanded="true" aria-controls="q-body">Collapse</button></div></div>
@@ -351,7 +376,7 @@ function renderOverview(o) {
   const sel = $('s-model');
   sel.innerHTML = modelOptions(s.model);
   sel.value = s.model; showModelHelp();
-  fillCompare();
+  if (ROLE === 'owner') fillCompare();
   $('s-words').value = s.word_limit; $('s-per').value = s.daily_limit_per_tester; $('s-total').value = s.daily_limit_total; $('s-tg').value = s.telegram_daily_limit;
 
   $('testers').innerHTML = o.testers.length ? o.testers.map(t => `<tr>
@@ -772,8 +797,72 @@ function setUsOpen(open) {
 $('us-toggle').addEventListener('click', () => setUsOpen($('us-body').hidden));
 try { if (localStorage.getItem('sj-admin-us') === 'shut') setUsOpen(false); } catch (e) {}
 
+// ----- who is signed in: the owner sees everything; a mentor the Studio, costs, testers, usage and questions;
+// an astrologer the Studio and questions. The server checks every call as well.
+let ROLE = 'owner';
+const ROLE_NAME = {owner: 'Admin', mentor: 'Mentor', astrologer: 'Astrologer'};
+function applyRole(me) {
+  ROLE = me.role || 'owner';
+  document.querySelectorAll('[data-roles]').forEach(el => el.hidden = !el.dataset.roles.split(' ').includes(ROLE));
+  $('who-role').textContent = ROLE_NAME[ROLE] + (me.name ? ' · ' + me.name : '');
+  document.querySelector('main').classList.remove('pending');
+  if (ROLE === 'astrologer') $('st-sub').textContent = `Welcome${me.name ? ', ' + me.name : ''}. Review the questions below and add notes; the Playground arrives here next.`;
+}
+
+// ----- Studio team: mentor and astrologer codes, and the change log -----
+let TEAM = null;
+function renderTeam(d) {
+  TEAM = d;
+  $('t-role').innerHTML = d.can_make.map(r => `<option value="${r}">${ROLE_NAME[r]}</option>`).join('');
+  $('t-role').value = 'astrologer'; $('t-role-wrap').hidden = d.can_make.length < 2;
+  if (!$('t-budget').value) $('t-budget').value = d.default_budget;
+  $('t-list').innerHTML = d.codes.length ? d.codes.map(c => `<tr>
+      <td class="nowrap"><b>${esc(c.label)}</b></td><td><span class="tag">${ROLE_NAME[c.role]}</span></td>
+      <td class="nowrap"><code>${esc(c.code)}</code> <button class="sbtn" type="button" data-copy="${esc(c.code)}">Copy</button></td>
+      <td>${c.active ? 'Active' : '<span style="color:var(--warn)">Paused</span>'}</td>
+      <td class="num">${c.daily_limit ?? '–'}</td><td class="num">${c.used_today}</td>
+      <td>${esc(c.created_by_label || 'Owner')}</td><td class="nowrap">${when(c.last_used)}</td>
+      <td class="nowrap"><button class="sbtn" type="button" data-t-act="${c.active ? 'pause' : 'resume'}" data-id="${c.id}">${c.active ? 'Pause' : 'Resume'}</button>
+        <button class="sbtn" type="button" data-t-act="delete" data-id="${c.id}">Delete</button></td></tr>`).join('')
+    : '<tr><td colspan="9" class="empty">No codes yet. Create one above and share it with the person.</td></tr>';
+}
+async function loadTeam() { try { renderTeam(await api('/admin/api/team')); } catch (e) { $('t-list').innerHTML = `<tr><td colspan="9" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; } }
+async function loadAudit() {
+  try {
+    const rows = await api('/admin/api/audit?limit=50');
+    $('t-audit').innerHTML = rows.length ? rows.map(r => `<tr><td class="nowrap">${when(r.ts)}</td><td>${esc(r.actor)} <span class="tag">${ROLE_NAME[r.actor_role] || r.actor_role}</span></td>
+      <td>${esc(r.action)}${r.object ? ': <b>' + esc(r.object) + '</b>' : ''}</td><td>${esc(r.detail || '')}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="empty">Nothing yet.</td></tr>';
+  } catch (e) { $('t-audit').innerHTML = `<tr><td colspan="4" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
+}
+$('t-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const st = $('t-st'); st.className = 'status'; st.textContent = 'Creating…';
+  try {
+    const made = await api('/admin/api/team', {method: 'POST', headers: {'content-type': 'application/json'},
+      body: JSON.stringify({label: $('t-label').value.trim(), role: $('t-role').value, daily_limit: +$('t-budget').value})});
+    st.className = 'status ok'; st.textContent = `Created. Share this code with ${made.label}: ${made.code}`;
+    $('t-label').value = ''; await loadTeam(); await loadAudit();
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+});
+$('t-list').addEventListener('click', async e => {
+  const cp = e.target.closest('[data-copy]'); if (cp) { copy(cp.dataset.copy, cp, 'Copied'); return; }
+  const b = e.target.closest('[data-t-act]'); if (!b) return;
+  const id = b.dataset.id, act = b.dataset.tAct, c = TEAM.codes.find(x => String(x.id) === id);
+  if (act === 'delete' && !confirm(`Delete ${c.label}'s code? They are signed out at once.`)) return;
+  try {
+    await api(`/admin/api/team/${id}`, act === 'delete' ? {method: 'DELETE'}
+      : {method: 'PATCH', headers: {'content-type': 'application/json'}, body: JSON.stringify({active: act === 'resume'})});
+    await loadTeam(); await loadAudit();
+  } catch (err) { $('t-st').className = 'status err'; $('t-st').textContent = err.message; }
+});
+
 async function loadAll() {
-  try { renderOverview(await api('/admin/api/overview')); await loadUsage(); await loadCodes(); await loadRL(); await loadEvents(); await loadBackups(); await loadQueries(true); }
+  try {
+    if (ROLE !== 'astrologer') { renderOverview(await api('/admin/api/overview')); await loadUsage(); await loadTeam(); await loadAudit(); }
+    if (ROLE === 'owner') { await loadCodes(); await loadRL(); await loadEvents(); await loadBackups(); }
+    await loadQueries(true);
+  }
   catch (e) { $('queries').innerHTML = `<tr><td colspan="7" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
 }
 $('refresh').addEventListener('click', loadAll);
@@ -791,7 +880,7 @@ $('settings').addEventListener('submit', async e => {
   $('save').disabled = false;
 });
 
-loadAll();
+api('/me').then(me => { applyRole(me); loadAll(); }).catch(() => { applyRole({role: 'astrologer'}); loadAll(); });  // fail closed
 </script>
 </body>
 </html>

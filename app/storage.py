@@ -75,9 +75,18 @@ def _connect() -> sqlite3.Connection:
         " review_status TEXT NOT NULL DEFAULT 'pending_astrologer', version INTEGER NOT NULL DEFAULT 1,"
         " updated_at TEXT NOT NULL, PRIMARY KEY (kind, slug))"
     )
-    if "daily_limit" not in {r["name"] for r in conn.execute("PRAGMA table_info(access_codes)")}:
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(access_codes)")}
+    if "daily_limit" not in cols:
         # Questions per day for each tester on this code; NULL = the default from Settings.
         conn.execute("ALTER TABLE access_codes ADD COLUMN daily_limit INTEGER")
+    if "role" not in cols:
+        # tester (the app) | astrologer / mentor (the Studio section of Admin). A Studio code's daily_limit is its
+        # daily experiment budget. created_by: the code id of the mentor who made it (NULL = the owner).
+        conn.execute("ALTER TABLE access_codes ADD COLUMN role TEXT NOT NULL DEFAULT 'tester'")
+        conn.execute("ALTER TABLE access_codes ADD COLUMN created_by INTEGER")
+    # Who did what in Admin and the Studio (codes, publishes, rollbacks), for the owner and the mentor.
+    conn.execute("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL,"
+                 " actor TEXT NOT NULL, actor_role TEXT NOT NULL, action TEXT NOT NULL, object TEXT, detail TEXT)")
     # State of mind: private mood logs, each with that moment's astrology (app/mood.py), for finding patterns.
     conn.execute(
         "CREATE TABLE IF NOT EXISTS mood_logs ("
@@ -327,15 +336,17 @@ def list_codes() -> list[dict]:
             "SELECT c.*, (SELECT COUNT(*) FROM owner_codes o WHERE o.code_id = c.id) testers,"
             " (SELECT COUNT(*) FROM usage_log u JOIN owner_codes o ON o.owner = u.owner"
             "  WHERE o.code_id = c.id AND u.kind = 'llm' AND substr(u.ts, 1, 10) = ?) asked_today"
-            " FROM access_codes c ORDER BY c.id DESC", (datetime.now(timezone.utc).date().isoformat(),)).fetchall()
+            " FROM access_codes c WHERE c.role = 'tester' ORDER BY c.id DESC",  # Studio codes: storage.studio_codes
+            (datetime.now(timezone.utc).date().isoformat(),)).fetchall()
     return [dict(r) | {"active": bool(r["active"])} for r in rows]
 
 
-def add_code(code: str, label: str) -> dict:
+def add_code(code: str, label: str, role: str = "tester", created_by: int | None = None,
+             daily_limit: int | None = None) -> dict:
     """Raises sqlite3.IntegrityError when the code already exists."""
     with _lock, _connect() as conn:
-        cur = conn.execute("INSERT INTO access_codes (code, label, created_at) VALUES (?, ?, ?)",
-                           (code, label, _now()))
+        cur = conn.execute("INSERT INTO access_codes (code, label, created_at, role, created_by, daily_limit)"
+                           " VALUES (?, ?, ?, ?, ?, ?)", (code, label, _now(), role, created_by, daily_limit))
         r = conn.execute("SELECT * FROM access_codes WHERE id = ?", (cur.lastrowid,)).fetchone()
     return dict(r) | {"active": bool(r["active"]), "testers": 0, "asked_today": 0}
 
@@ -363,9 +374,47 @@ def delete_code(code_id: int) -> bool:
         return conn.execute("DELETE FROM access_codes WHERE id = ?", (code_id,)).rowcount > 0
 
 
-def active_codes() -> list[tuple[int, str]]:
+def active_codes() -> list[tuple[int, str, str]]:
     with _lock, _connect() as conn:
-        return [(r["id"], r["code"]) for r in conn.execute("SELECT id, code FROM access_codes WHERE active = 1")]
+        return [(r["id"], r["code"], r["role"]) for r in
+                conn.execute("SELECT id, code, role FROM access_codes WHERE active = 1")]
+
+
+def code_role(code_id: int) -> str | None:
+    """The role of an active code, or None when it is paused or deleted (checked on every request)."""
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT role FROM access_codes WHERE id = ? AND active = 1", (code_id,)).fetchone()
+    return r["role"] if r else None
+
+
+def get_code(code_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM access_codes WHERE id = ?", (code_id,)).fetchone()
+    return dict(r) | {"active": bool(r["active"])} if r else None
+
+
+def studio_codes() -> list[dict]:
+    """Mentor and astrologer codes, newest first, with who made them and today's paid answers."""
+    today = datetime.now(timezone.utc).date().isoformat()
+    with _lock, _connect() as conn:
+        rows = conn.execute(
+            "SELECT c.*, m.label AS created_by_label,"
+            " (SELECT COUNT(*) FROM usage_log u JOIN owner_codes o ON o.owner = u.owner"
+            "  WHERE o.code_id = c.id AND u.kind = 'llm' AND substr(u.ts, 1, 10) = ?) used_today"
+            " FROM access_codes c LEFT JOIN access_codes m ON m.id = c.created_by"
+            " WHERE c.role IN ('mentor', 'astrologer') ORDER BY c.id DESC", (today,)).fetchall()
+    return [dict(r) | {"active": bool(r["active"])} for r in rows]
+
+
+def log_audit(actor: str, actor_role: str, action: str, obj: str | None = None, detail: str | None = None) -> None:
+    with _lock, _connect() as conn:
+        conn.execute("INSERT INTO audit_log (ts, actor, actor_role, action, object, detail) VALUES (?, ?, ?, ?, ?, ?)",
+                     (_now(), actor, actor_role, action, obj, detail))
+
+
+def audit(limit: int = 100) -> list[dict]:
+    with _lock, _connect() as conn:
+        return [dict(r) for r in conn.execute("SELECT * FROM audit_log ORDER BY id DESC LIMIT ?", (limit,))]
 
 
 def code_is_active(code_id: int) -> bool:

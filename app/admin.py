@@ -16,8 +16,30 @@ _PAGE = Path(__file__).parent / "static" / "admin.html"
 
 
 def _require_admin(request: Request) -> None:
+    """The owner only (settings, tester codes, backups, the remedy library for now)."""
     if not request.state.admin:
         raise HTTPException(status_code=403, detail="Admin access required")
+
+
+def _require_role(request: Request, *roles: str) -> str:
+    """The owner, or a Studio code with one of these roles. Returns the role."""
+    role = "owner" if request.state.admin else getattr(request.state, "role", None)
+    if role != "owner" and role not in roles:
+        raise HTTPException(status_code=403, detail="Not available for your access code")
+    return role
+
+
+def _actor(request: Request) -> tuple[str, str]:
+    """(name, role) of whoever is signed in, for the change log."""
+    if request.state.admin:
+        return "Owner", "owner"
+    code = storage.get_code(getattr(request.state, "code_id", 0) or 0) or {}
+    return code.get("label") or code.get("code") or "Unknown", request.state.role or "?"
+
+
+def _audit(request: Request, action: str, obj: str | None = None, detail: str | None = None) -> None:
+    name, role = _actor(request)
+    storage.log_audit(name, role, action, obj, detail)
 
 
 def _tester(owner: str | None, labels: dict[str, str] | None = None) -> str:
@@ -33,19 +55,23 @@ def _cost(rows: list[dict]) -> float:
 
 @router.get("/me")
 def me(request: Request) -> dict:
-    return {"admin": bool(request.state.admin), "gated": access.enabled()}
+    role = "owner" if request.state.admin else getattr(request.state, "role", None)
+    out = {"admin": bool(request.state.admin), "gated": access.enabled(), "role": role}
+    if role in access.STUDIO:
+        out["name"] = _actor(request)[0]
+    return out
 
 
 @router.get("/admin")
 def admin_page(request: Request):
-    if not request.state.admin:
+    if not request.state.admin and getattr(request.state, "role", None) not in access.STUDIO:
         return HTMLResponse(access.login_page(admin=True))
     return FileResponse(_PAGE, media_type="text/html", headers={"Cache-Control": "no-cache"})
 
 
 @router.get("/admin/api/overview")
 def overview(request: Request) -> dict:
-    _require_admin(request)
+    _require_role(request, "mentor")
     today, ever = storage.token_totals(today_only=True), storage.token_totals(today_only=False)
     testers, labels = storage.tester_summary(), storage.owner_code_labels()
     return {
@@ -74,7 +100,7 @@ async def save_settings(request: Request) -> dict:
 
 @router.get("/admin/api/queries")
 def queries(request: Request, limit: int = 50, before_id: int | None = None) -> list[dict]:
-    _require_admin(request)
+    _require_role(request, "mentor", "astrologer")
     rows = storage.recent_queries(max(1, min(limit, 200)), before_id)
     labels = storage.owner_code_labels()
     for r in rows:
@@ -89,7 +115,7 @@ def queries(request: Request, limit: int = 50, before_id: int | None = None) -> 
 def usage_report(request: Request) -> dict:
     """Which sections testers open and which they leave untouched (app/usage.py), with tester labels."""
     from app import usage
-    _require_admin(request)
+    _require_role(request, "mentor")
     r = usage.report()
     labels = storage.owner_code_labels()
     for t in r["testers"]:
@@ -104,7 +130,7 @@ def export_queries(request: Request, q: str = ""):
     import io
     from datetime import datetime, timezone
     from fastapi.responses import Response
-    _require_admin(request)
+    _require_role(request, "mentor", "astrologer")
     rows = queries(request, limit=200)
     while len(rows) % 200 == 0 and rows:            # page back through the whole log
         older = queries(request, limit=200, before_id=rows[-1]["id"])
@@ -131,7 +157,7 @@ def export_queries(request: Request, q: str = ""):
 
 @router.put("/admin/api/queries/{query_id}/remarks")
 async def save_remarks(request: Request, query_id: int) -> dict:
-    _require_admin(request)
+    _require_role(request, "mentor", "astrologer")
     body = await request.json()
     if not isinstance(body, dict):
         raise HTTPException(status_code=422, detail="Expected a JSON object")
@@ -213,6 +239,100 @@ def remove_code(code_id: int, request: Request) -> dict:
     if not storage.delete_code(code_id):
         raise HTTPException(status_code=404, detail="Code not found")
     return {"ok": True}
+
+
+# ----- Studio team: the owner makes mentor and astrologer codes; a mentor makes astrologer codes -----
+STUDIO_BUDGET = 30  # Playground answers per day for a new Studio code
+_an = lambda role: ("an " if role[0] in "aeiou" else "a ") + role
+
+
+def _budget(body: dict, default: int | None) -> int | None:
+    lim = body.get("daily_limit", default)
+    if lim is not None and (isinstance(lim, bool) or not isinstance(lim, int) or not 0 <= lim <= 1000):
+        raise HTTPException(status_code=422, detail="Daily budget must be a whole number from 0 to 1000")
+    return lim
+
+
+def _team_target(request: Request, code_id: int, role: str) -> dict:
+    """The Studio code this person may change: the owner any, a mentor only astrologer codes."""
+    code = storage.get_code(code_id)
+    if not code or code.get("role") not in access.STUDIO:
+        raise HTTPException(status_code=404, detail="Studio code not found")
+    if role == "mentor" and code["role"] != "astrologer":
+        raise HTTPException(status_code=403, detail="Mentors can change astrologer codes only")
+    return code
+
+
+@router.get("/admin/api/team")
+def team(request: Request) -> dict:
+    role = _require_role(request, "mentor")
+    codes = storage.studio_codes()
+    if role == "mentor":
+        codes = [c for c in codes if c["role"] == "astrologer"]
+    return {"codes": codes, "can_make": ["mentor", "astrologer"] if role == "owner" else ["astrologer"],
+            "default_budget": STUDIO_BUDGET}
+
+
+@router.post("/admin/api/team", status_code=201)
+async def team_add(request: Request) -> dict:
+    role = _require_role(request, "mentor")
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=422, detail="Expected a JSON object")
+    new_role = body.get("role", "astrologer")
+    if new_role not in access.STUDIO:
+        raise HTTPException(status_code=422, detail="Role must be mentor or astrologer")
+    if role == "mentor" and new_role != "astrologer":
+        raise HTTPException(status_code=403, detail="Mentors can create astrologer codes only")
+    label = _label(body)
+    if not label:
+        raise HTTPException(status_code=422, detail="Add the person's name so their work is credited")
+    lim = _budget(body, STUDIO_BUDGET)
+    for _ in range(5):
+        try:
+            made = storage.add_code(_new_code(), label, role=new_role, daily_limit=lim,
+                                    created_by=(request.state.code_id or None) if role == "mentor" else None)
+            break
+        except sqlite3.IntegrityError:
+            continue
+    else:
+        raise HTTPException(status_code=500, detail="Could not make a unique code, please try again")
+    _audit(request, f"created {_an(new_role)} code", label, f"daily budget {lim}")
+    return made
+
+
+@router.patch("/admin/api/team/{code_id}")
+async def team_edit(code_id: int, request: Request) -> dict:
+    role = _require_role(request, "mentor")
+    code = _team_target(request, code_id, role)
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=422, detail="Expected a JSON object")
+    active = body.get("active")
+    if active is not None and not isinstance(active, bool):
+        raise HTTPException(status_code=422, detail="active must be true or false")
+    label = _label(body) if "label" in body else None
+    extra = {"daily_limit": _budget(body, None)} if "daily_limit" in body else {}
+    storage.update_code(code_id, active=active, label=label, **extra)
+    changes = [("paused" if active is False else "resumed") if active is not None else "",
+               f"renamed to {label}" if label else "", f"daily budget {extra['daily_limit']}" if extra else ""]
+    _audit(request, f"changed {_an(code['role'])} code", code["label"] or code["code"], ", ".join(c for c in changes if c))
+    return {"ok": True}
+
+
+@router.delete("/admin/api/team/{code_id}")
+def team_remove(code_id: int, request: Request) -> dict:
+    role = _require_role(request, "mentor")
+    code = _team_target(request, code_id, role)
+    storage.delete_code(code_id)
+    _audit(request, f"deleted {_an(code['role'])} code", code["label"] or code["code"])
+    return {"ok": True}
+
+
+@router.get("/admin/api/audit")
+def audit_log(request: Request, limit: int = 100) -> list[dict]:
+    _require_role(request, "mentor")
+    return storage.audit(max(1, min(limit, 500)))
 
 
 # ----- remedy library (curated content lives in the database, imported from a private seed file) -----

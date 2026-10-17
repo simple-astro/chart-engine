@@ -5,6 +5,10 @@ When on, an access code unlocks a signed cookie carrying a random owner id: each
 browser gets its own private set of profiles and chats. Tester codes come from the
 environment or from codes the admin creates on /admin; a session made with an admin
 -created code ends when that code is paused or deleted.
+
+Roles: owner (the admin code), mentor and astrologer (Studio codes, made by the owner or, for astrologers, by a
+mentor) and tester. A code's role is looked up on every request, so pausing it takes effect at once.
+request.state.admin stays true only for the owner; request.state.role says who is signed in.
 """
 from __future__ import annotations
 
@@ -22,6 +26,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from app import storage
 
 COOKIE = "sj_session"
+STUDIO = ("mentor", "astrologer")  # roles that may open the admin page (each sees only its own sections)
 MAX_AGE = 180 * 24 * 3600
 OPEN_PATHS = {"/health", "/version", "/login", "/favicon.ico", "/telegram/webhook"}  # webhook checks its own secret
 NEXT_PAGES = {"/admin"}  # where a login form may send the browser afterwards
@@ -56,7 +61,7 @@ def check_code(code: str) -> tuple[str, int] | None:
         return "admin", 0
     if any(_eq(code, c) for c in _codes()):
         return "tester", 0
-    return next((("tester", cid) for cid, c in storage.active_codes() if _eq(code, c)), None)
+    return next(((role, cid) for cid, c, role in storage.active_codes() if _eq(code, c)), None)
 
 
 def _sign(value: str) -> str:
@@ -95,16 +100,20 @@ def _too_many_failures(ip: str) -> bool:
 
 
 async def gate(request: Request, call_next):
-    """Middleware: attach request.state.owner / .admin, or block until a code is entered."""
-    request.state.owner, request.state.admin = None, True  # local single-user mode
-    if not enabled():
+    """Middleware: attach request.state.owner / .admin / .role / .code_id, or block until a code is entered."""
+    request.state.owner, request.state.admin, request.state.role, request.state.code_id = None, True, "owner", 0
+    if not enabled():  # local single-user mode
         return await call_next(request)
     session = read_session(request.cookies.get(COOKIE, ""))
-    revoked = bool(session and not session[1] and session[2] and not storage.code_is_active(session[2]))
+    role = None
+    if session:
+        role = "owner" if session[1] else storage.code_role(session[2]) if session[2] else "tester"
+    revoked = bool(session and role is None)
     if session and not revoked:
         request.state.owner, request.state.admin = session[0], session[1]
+        request.state.role, request.state.code_id = role, session[2]
         return await call_next(request)
-    request.state.admin = False
+    request.state.admin, request.state.role = False, None
     path = request.url.path
     if revoked and path not in OPEN_PATHS and not path.startswith("/static/"):
         msg = "Your access code has been turned off. Please ask for a new one."
@@ -156,9 +165,9 @@ async def login(request: Request):
         _fails[ip].append(time.monotonic())
         return HTMLResponse(login_page("That code isn't right. Please check it and try again.", admin=want_admin),
                             status_code=401)
-    if want_admin and role != "admin":
-        return HTMLResponse(login_page("That's a tester code. The admin page needs the admin code.", admin=True),
-                            status_code=401)
+    if want_admin and role != "admin" and role not in STUDIO:
+        return HTMLResponse(login_page("That's a tester code. The admin page needs an admin, mentor or astrologer "
+                                       "code.", admin=True), status_code=401)
     existing = read_session(request.cookies.get(COOKIE, ""))
     owner = existing[0] if existing else secrets.token_hex(16)  # keep the same private space
     admin = role == "admin" or bool(existing and existing[1])  # a tester code never removes admin

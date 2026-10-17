@@ -83,7 +83,7 @@ def test_admin_sign_in_from_a_tester_browser_keeps_their_charts(gated):
     _admin(t)
     assert "Settings" in t.get("/admin").text
     assert [p["id"] for p in t.get("/profiles").json()] == [pid]
-    assert t.get("/me").json() == {"admin": True, "gated": True}
+    assert t.get("/me").json() == {"admin": True, "gated": True, "role": "owner"}
     # signing in again with the tester code does not drop admin
     t.post("/login", data={"code": "tester-code"}, follow_redirects=False)
     assert t.get("/admin/api/overview").status_code == 200
@@ -172,7 +172,7 @@ def test_local_mode_admin_is_open(tmp_path, monkeypatch):
     monkeypatch.delenv("ADMIN_ACCESS_CODE", raising=False)
     c = TestClient(app)
     assert "Settings" in c.get("/admin").text and c.get("/admin/api/overview").status_code == 200
-    assert c.get("/me").json() == {"admin": True, "gated": False}
+    assert c.get("/me").json() == {"admin": True, "gated": False, "role": "owner"}
 
 
 def test_admin_can_add_remarks_to_questions(gated, fake_llm):
