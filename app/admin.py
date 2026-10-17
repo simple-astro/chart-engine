@@ -524,8 +524,12 @@ async def playground(request: Request) -> dict:
         ins = (v.get("instruction") or "").strip()
         if len(ins) > 1000:
             raise HTTPException(status_code=422, detail="Keep the instruction under 1000 characters")
+        drafts = v.get("drafts") or []
+        if not isinstance(drafts, list) or len(drafts) > 20 or not all(isinstance(d, int) for d in drafts):
+            raise HTTPException(status_code=422, detail="drafts must be a list of draft ids")
         runs.append({"label": str(v.get("label") or ("Live" if i == 0 else "Test"))[:40], "model": model,
-                     "test": {"word_limit": wl, "instruction": ins or None}})
+                     "test": {"word_limit": wl, "instruction": ins or None, "drafts": drafts,
+                              "no_teaching": bool(v.get("no_teaching"))}})
     budget = _budget_left(request)
     if budget["limited"] and budget["left"] < len(runs):
         raise HTTPException(status_code=429, detail=f"Today's Playground budget is used up ({budget['used']} of "
@@ -560,25 +564,139 @@ def studio_drafts(request: Request) -> list[dict]:
     return storage.drafts()
 
 
+def _kind(kind: str) -> str:
+    return "gold answer" if kind == "gold" else "lesson"
+
+
+def _draft_fields(body: dict, kind: str) -> tuple[str, str]:
+    """A valid topic and text that pass the fixed rules (app/teach.check), or a 422 saying what to change."""
+    from app import teach
+    topic, text = body.get("topic") or "General", (body.get("text") or "").strip()
+    if topic not in teach.TOPIC_NAMES:
+        raise HTTPException(status_code=422, detail="Unknown topic")
+    if not 10 <= len(text) <= (teach.GOLD_MAX_CHARS if kind == "gold" else teach.LESSON_CHARS):
+        raise HTTPException(status_code=422, detail="A lesson needs 10–600 characters; a gold answer 10–4000")
+    if problems := teach.check(text):
+        raise HTTPException(status_code=422, detail="Please change this first: " + " ".join(problems))
+    return topic, text
+
+
 @router.post("/admin/api/studio/drafts", status_code=201)
 async def studio_add_draft(request: Request) -> dict:
-    from app.usage import TOPICS
     _require_role(request, "mentor", "astrologer")
     body = await request.json()
     if not isinstance(body, dict):
         raise HTTPException(status_code=422, detail="Expected a JSON object")
-    kind, topic, text = body.get("kind"), body.get("topic") or "General", (body.get("text") or "").strip()
+    kind = body.get("kind")
     if kind not in ("gold", "lesson"):
         raise HTTPException(status_code=422, detail="kind must be gold or lesson")
-    if topic not in ["General"] + [t for t, _ in TOPICS]:
-        raise HTTPException(status_code=422, detail="Unknown topic")
-    if not 10 <= len(text) <= (4000 if kind == "gold" else 600):
-        raise HTTPException(status_code=422, detail="A lesson needs 10–600 characters; a gold answer 10–4000")
+    topic, text = _draft_fields(body, kind)
     name, _ = _actor(request)
     d = storage.add_draft(kind, topic, text, name, question=(body.get("question") or None),
-                          answer=(body.get("answer") or None), profile_id=body.get("profile_id"))
-    _audit(request, "saved a draft " + ("gold answer" if kind == "gold" else "lesson"), topic, text[:120])
+                          answer=(body.get("answer") or None), profile_id=body.get("profile_id"),
+                          author_code=None if request.state.admin else request.state.code_id)
+    _audit(request, "saved a draft " + _kind(kind), topic, text[:120])
     return d
+
+
+def _own_draft(request: Request, draft_id: int) -> dict:
+    """A draft this person may change: the owner and the Admin (mentor) any, an astrologer only their own;
+    and only while it is a draft (published or retired teaching stays as it was, so rollback restores it)."""
+    role = _require_role(request, "mentor", "astrologer")
+    d = storage.get_draft(draft_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="Draft not found")
+    if role == "astrologer" and (d["author_code"] is None or d["author_code"] != request.state.code_id):
+        raise HTTPException(status_code=403, detail="You can change only your own drafts")
+    if d["status"] != "draft":
+        raise HTTPException(status_code=409, detail="Only drafts can be changed. Save a new draft instead.")
+    return d
+
+
+@router.patch("/admin/api/studio/drafts/{draft_id}")
+async def studio_edit_draft(draft_id: int, request: Request) -> dict:
+    d = _own_draft(request, draft_id)
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=422, detail="Expected a JSON object")
+    topic, text = _draft_fields({"topic": body.get("topic", d["topic"]), "text": body.get("text", d["text"])}, d["kind"])
+    _audit(request, "edited a draft " + _kind(d["kind"]), topic, text[:120])
+    return storage.update_draft(draft_id, topic, text)
+
+
+@router.delete("/admin/api/studio/drafts/{draft_id}")
+def studio_delete_draft(draft_id: int, request: Request) -> dict:
+    d = _own_draft(request, draft_id)
+    storage.delete_draft(draft_id)
+    _audit(request, "deleted a draft " + _kind(d["kind"]), d["topic"], d["text"][:120])
+    return {"deleted": draft_id}
+
+
+def _teach_summary(v: dict) -> dict:
+    items = storage.teaching_items(v["items"])
+    return {**v, "lessons": sum(i["kind"] == "lesson" for i in items), "gold": sum(i["kind"] == "gold" for i in items)}
+
+
+@router.get("/admin/api/studio/teach")
+def studio_teach(request: Request) -> dict:
+    """The live teaching version and the recent ones (each publish, retire and rollback makes one)."""
+    _require_role(request, "mentor", "astrologer")
+    return {"version": _teach_summary(storage.teach_version()),
+            "versions": [_teach_summary(v) for v in storage.teach_versions()]}
+
+
+@router.post("/admin/api/studio/drafts/{draft_id}/{action}")
+def studio_publish(draft_id: int, action: str, request: Request) -> dict:
+    """Publish a draft (or a retired item) into the live teaching, or retire a published one: owner and Admin."""
+    from app import teach
+    _require_role(request, "mentor")
+    if action not in ("publish", "retire"):
+        raise HTTPException(status_code=404, detail="Not found")
+    d = storage.get_draft(draft_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="Draft not found")
+    live = storage.teach_version()["items"]
+    if action == "publish":
+        if d["status"] == "published":
+            raise HTTPException(status_code=409, detail="Already published")
+        if problems := teach.check(d["text"]):
+            raise HTTPException(status_code=422, detail="Please change this first: " + " ".join(problems))
+        items = live + [draft_id]
+    else:
+        if d["status"] != "published":
+            raise HTTPException(status_code=409, detail="Only published teaching can be retired")
+        items = [i for i in live if i != draft_id]
+    name, _ = _actor(request)
+    done = {"publish": "published", "retire": "retired"}[action]
+    v = storage.set_teaching(items, f"{done} {_kind(d['kind'])} #{draft_id}", name)
+    _audit(request, f"{done} a {_kind(d['kind'])}", d["topic"],
+           f"{d['text'][:120]} (teaching version {v['id']})")
+    return _teach_summary(v)
+
+
+@router.post("/admin/api/studio/rollback")
+async def studio_rollback(request: Request) -> dict:
+    """Make an earlier version's set live again, as a new version (so the rollback itself can be undone)."""
+    _require_role(request, "mentor")
+    body = await request.json() if (await request.body()) else {}
+    live = storage.teach_version()
+    target_id = body.get("version") if isinstance(body, dict) else None
+    if target_id is None:  # one step back: the version before the live one
+        older = [v for v in storage.teach_versions(2) if v["id"] != live["id"]]
+        target = older[0] if older else {"id": 0, "items": []}
+    elif target_id == 0:
+        target = {"id": 0, "items": []}
+    else:
+        target = storage.get_teach_version(int(target_id)) if isinstance(target_id, int) else None
+    if not live["id"]:
+        raise HTTPException(status_code=409, detail="Nothing has been published yet")
+    if not target or target["id"] >= live["id"]:
+        raise HTTPException(status_code=422, detail="Pick an earlier version")
+    name, _ = _actor(request)
+    v = storage.set_teaching(target["items"], f"rolled back to version {target['id']}", name)
+    _audit(request, "rolled back teaching", f"to version {target['id']}",
+           f"version {live['id']} → {v['id']} ({len(target['items'])} item{'' if len(target['items']) == 1 else 's'} live)")
+    return _teach_summary(v)
 
 
 @router.put("/admin/api/limits")

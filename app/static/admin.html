@@ -94,6 +94,8 @@
   .more{display:flex;justify-content:center;margin-top:12px}
   .qhead{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap}
   .qbtns{display:flex;gap:8px}
+  .fhead{display:flex;justify-content:space-between;align-items:center;gap:8px 12px} .fhead .sbtn{flex:none}
+  .card.shut .qhead h2{margin:0}
   main.pending [data-roles]{display:none}  /* until /me says who is signed in */
   .pgbudget{margin:0 0 10px;font-size:.85rem;color:var(--mut)}
   .pgform{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));align-items:end}
@@ -109,7 +111,20 @@
   .pgans{white-space:normal} .pgans p,.pgans h4{margin:0 0 .5em} .pgans ul{margin:0 0 .6em;padding-left:1.2em}
   .pgseen summary{cursor:pointer;font-weight:600;font-size:.85rem}
   .pgseen pre{white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:.75rem}
-  .pgacts{display:flex;gap:8px;flex-wrap:wrap} .pgsave{display:grid;gap:8px} .pgsave textarea{width:100%;font:inherit;resize:vertical}
+  .pgacts{display:flex;gap:8px;flex-wrap:wrap}
+  .lbl{display:block;font-size:.85rem;font-weight:600;margin-bottom:6px}
+  .pgdrafts{display:grid;gap:6px;margin-top:8px} .pgdrafts label{display:flex;gap:8px;align-items:flex-start;font-size:.85rem}
+  .pgdrafts input{width:18px;height:18px;padding:0;margin:2px 0 0;flex:none;accent-color:var(--g2)}
+  .tvbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:.88rem;margin:0 0 8px}
+  .tvhist{margin:0 0 12px;font-size:.85rem} .tvhist summary{cursor:pointer;color:var(--mut)}
+  .tvrow{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)}
+  #dr-filter{margin:4px 0 12px}
+  .drlist{display:grid;gap:10px}
+  .dritem{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;background:var(--bg2);min-width:0}
+  .dritem.st-retired{opacity:.7} .drhead{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .drq{font-size:.82rem;color:var(--mut)} .drtext{white-space:pre-wrap;font-size:.9rem;word-break:break-word}
+  .drtext.clip{max-height:9.5em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 70%,transparent)}
+  .drmeta{font-size:.76rem;color:var(--mut)} .dredit{display:grid;gap:8px} .dredit textarea{resize:vertical} .pgsave{display:grid;gap:8px} .pgsave textarea{width:100%;font:inherit;resize:vertical}
   .usgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:4px 20px}
   .ush{font:600 .92rem var(--sans);margin:18px 0 6px} .ush small{color:var(--mut);font-weight:500;margin-left:4px}
   .uschips{display:flex;flex-wrap:wrap;gap:6px} tr.dim td{color:var(--mut)} td.pair{white-space:nowrap;font-variant-numeric:tabular-nums} .qbtns a.sbtn{text-decoration:none;display:inline-flex;align-items:center}
@@ -196,10 +211,13 @@
   </section>
 
   <section class="card" id="st" data-roles="owner mentor astrologer">
-    <h2>Studio</h2>
-    <p class="sub" id="st-sub">Test and improve Astropositivism's answers. Try any question on any chart in the Playground, compare live and test settings, and save what works as a draft.</p>
+    <div class="qhead"><h2>Studio</h2>
+      <div class="qbtns"><button class="sbtn" type="button" data-fold="st-body" aria-expanded="true" aria-controls="st-body">Collapse</button></div></div>
+    <div id="st-body">
+    <p class="sub" id="st-sub">Test and improve Astropositivism's answers. Try any question on any chart in the Playground, compare live and test settings, save what works as a draft, and publish lessons and gold answers so Astropositivism uses them.</p>
     <div id="pg">
-      <h3 class="ush">Playground <small>any question on any chart · nothing reaches users</small></h3>
+      <div class="fhead"><h3 class="ush">Playground <small>any question on any chart · nothing reaches users</small></h3><button class="sbtn" type="button" data-fold="pg-body" aria-expanded="true" aria-controls="pg-body">Collapse</button></div>
+      <div id="pg-body">
       <p class="pgbudget" id="pg-budget"></p>
       <div class="pgform">
         <div><label for="pg-chart">Saved chart</label><select id="pg-chart"><option value="">Loading…</option></select></div>
@@ -209,18 +227,27 @@
           <div><label for="pg-model">Model</label><select id="pg-model"></select></div>
           <div><label for="pg-words">Word limit</label><input id="pg-words" type="number" min="100" max="800" step="10" inputmode="numeric"></div>
           <div class="pgins"><label for="pg-ins">Extra instruction <span class="opt">this test only</span></label><textarea id="pg-ins" rows="2" maxlength="1000" placeholder="e.g. Always name the 10th lord and where it sits."></textarea></div>
+          <div class="pgins"><span class="lbl">Teaching in the test</span>
+            <label class="pgchk"><input type="checkbox" id="pg-noteach"> Turn off all published teaching</label>
+            <div class="pgdrafts" id="pg-drafts"></div></div>
         </div>
         <div class="pggo"><button class="btn" id="pg-run" type="button">Ask</button><span class="status" id="pg-st" role="status"></span></div>
       </div>
       <div class="pgres" id="pg-res"></div>
-      <h3 class="ush">Drafts <small>gold answers and lessons · publishing them comes with the next step</small></h3>
-      <div class="scroll"><table>
-        <thead><tr><th>Type</th><th>Topic</th><th>Text</th><th>By</th><th>When</th></tr></thead>
-        <tbody id="dr-list"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
-      </table></div>
+      </div>
+      <div class="fhead"><h3 class="ush">Teaching <small>lessons and gold answers · published ones are used in answers on their topic</small></h3><button class="sbtn" type="button" data-fold="tc-body" aria-expanded="true" aria-controls="tc-body">Collapse</button></div>
+      <div id="tc-body">
+      <div class="tvbar" id="tv-bar"></div>
+      <details class="tvhist" id="tv-hist" hidden><summary>Earlier versions</summary><div id="tv-list"></div></details>
+      <div class="uschips" id="dr-filter" role="group" aria-label="Show">
+        <button class="sbtn arm" type="button" data-f="">All</button><button class="sbtn" type="button" data-f="draft">Drafts</button>
+        <button class="sbtn" type="button" data-f="published">Published</button><button class="sbtn" type="button" data-f="retired">Retired</button></div>
+      <div class="drlist" id="dr-list"><p class="empty">Loading…</p></div>
+      </div>
     </div>
     <div data-roles="owner mentor">
-      <h3 class="ush">Limits <small>apply to the next question · every change is in the change log</small></h3>
+      <div class="fhead"><h3 class="ush">Limits <small>apply to the next question · every change is in the change log</small></h3><button class="sbtn" type="button" data-fold="lim-body" aria-expanded="true" aria-controls="lim-body">Collapse</button></div>
+      <div id="lim-body">
       <form class="settings" id="lim-form">
       <div><label for="l-words">Reply length (words)</label><input id="l-words" type="number" min="100" max="800" step="10" required><div class="help">100 to 800. Longer replies cost more.</div></div>
       <div><label for="l-per">Questions per tester per day</label><input id="l-per" type="number" min="0" max="1000" required><div class="help">0 pauses chat for testers.</div></div>
@@ -228,9 +255,11 @@
       <div><label for="l-tg">Telegram questions per person per day</label><input id="l-tg" type="number" min="0" max="1000" required><div class="help">The free morning guide is not counted. 0 turns Telegram chat off.</div></div>
         <div class="actions"><button class="btn" type="submit" id="lim-save">Save limits</button><span class="status" id="lim-st" role="status"></span></div>
       </form>
+      </div>
     </div>
     <div data-roles="owner mentor">
-      <h3 class="ush">Team <small>admin and astrologer codes</small></h3>
+      <div class="fhead"><h3 class="ush">Team <small>admin and astrologer codes</small></h3><button class="sbtn" type="button" data-fold="team-body" aria-expanded="true" aria-controls="team-body">Collapse</button></div>
+      <div id="team-body">
       <form class="newcode" id="t-form">
         <div><label for="t-label">Name</label><input id="t-label" maxlength="60" placeholder="e.g. Meera Joshi" required></div>
         <div id="t-role-wrap"><label for="t-role">Role</label><select id="t-role"></select></div>
@@ -242,11 +271,15 @@
         <thead><tr><th>Name</th><th>Role</th><th>Code</th><th>Status</th><th class="num">Daily budget</th><th class="num">Used today</th><th>Made by</th><th>Last used</th><th></th></tr></thead>
         <tbody id="t-list"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody>
       </table></div>
-      <h3 class="ush">Change log</h3>
+      </div>
+      <div class="fhead"><h3 class="ush">Change log</h3><button class="sbtn" type="button" data-fold="log-body" aria-expanded="true" aria-controls="log-body">Collapse</button></div>
+      <div id="log-body">
       <div class="scroll"><table>
         <thead><tr><th>When</th><th>Who</th><th>What</th><th>Details</th></tr></thead>
         <tbody id="t-audit"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
       </table></div>
+      </div>
+    </div>
     </div>
   </section>
 
@@ -274,7 +307,9 @@
   </section>
 
   <section class="card" data-roles="owner">
-    <h2>Access codes</h2>
+    <div class="qhead"><h2>Access codes</h2>
+      <div class="qbtns"><button class="sbtn" type="button" data-fold="ac-body" data-fold-default="shut" aria-expanded="true" aria-controls="ac-body">Collapse</button></div></div>
+    <div id="ac-body">
     <p class="sub">Give each person or group their own code. You'll see who is using the app, and pausing a code signs those testers out straight away.</p>
     <div class="notice" id="c-gate" hidden>The access gate is off here (no ADMIN_ACCESS_CODE set), so codes have no effect until it is turned on.</div>
     <form class="newcode" id="c-form">
@@ -288,6 +323,7 @@
       <tbody id="codes"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
     </table></div>
     <p class="help" id="c-env" hidden></p>
+    </div>
   </section>
 
   <section class="card" id="rl" data-roles="owner">
@@ -321,22 +357,28 @@
   </section>
 
   <section class="card" id="bk" data-roles="owner">
-    <h2>Backups</h2>
+    <div class="qhead"><h2>Backups</h2>
+      <div class="qbtns"><button class="sbtn" type="button" data-fold="bk-body" data-fold-default="shut" aria-expanded="true" aria-controls="bk-body">Collapse</button></div></div>
+    <div id="bk-body">
     <p class="sub">The app keeps a copy of everything (charts, chats, mood logs, the remedy library, settings and codes) once a day for <span id="bk-days">14</span> days. Those copies sit on the same server disk, so <b>download a copy each week</b> and keep it somewhere safe, like Google Drive.</p>
     <div class="rlrow"><a class="btn" id="bk-dl" href="/admin/api/backups/download" download>Download a backup now</a><button class="sbtn" type="button" id="bk-run">Make today's copy now</button><span class="status" id="bk-st" role="status"></span></div>
     <div class="scroll"><table>
       <thead><tr><th>Daily copy</th><th class="num">Size</th><th>Made</th></tr></thead>
       <tbody id="bk-list"><tr><td colspan="3" class="empty">Loading…</td></tr></tbody>
     </table></div>
+    </div>
   </section>
 
   <section class="card" data-roles="owner mentor">
-    <h2>Testers</h2>
+    <div class="qhead"><h2>Testers</h2>
+      <div class="qbtns"><button class="sbtn" type="button" data-fold="tr-body" data-fold-default="shut" aria-expanded="true" aria-controls="tr-body">Collapse</button></div></div>
+    <div id="tr-body">
     <p class="sub">Each tester is one browser that entered the access code. Names come from the charts they saved.</p>
     <div class="scroll"><table>
       <thead><tr><th>Tester</th><th>Charts</th><th class="num">Today</th><th class="num">All questions</th><th>Last active</th></tr></thead>
       <tbody id="testers"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
     </table></div>
+    </div>
   </section>
 
   <section class="card" id="us" data-roles="owner mentor">
@@ -838,6 +880,20 @@ function setUsOpen(open) {
 }
 $('us-toggle').addEventListener('click', () => setUsOpen($('us-body').hidden));
 try { if (localStorage.getItem('sj-admin-us') === 'shut') setUsOpen(false); } catch (e) {}
+// Collapse / Expand for the Studio and its parts, Access codes, Backups and Testers, each remembered on this
+// device; data-fold-default="shut" starts a section collapsed until it is first opened.
+function setFold(id, open, remember = true) {
+  const b = document.querySelector(`[data-fold="${id}"]`);
+  $(id).hidden = !open; b.textContent = open ? 'Collapse' : 'Expand'; b.setAttribute('aria-expanded', String(open));
+  if (b.closest('.qhead')) b.closest('.card').classList.toggle('shut', !open);
+  if (remember) try { localStorage.setItem('sj-admin-fold-' + id, open ? 'open' : 'shut'); } catch (e) {}
+}
+document.querySelectorAll('[data-fold]').forEach(b => {
+  b.addEventListener('click', () => setFold(b.dataset.fold, $(b.dataset.fold).hidden));
+  let saved = null;
+  try { saved = localStorage.getItem('sj-admin-fold-' + b.dataset.fold); } catch (e) {}
+  if ((saved || b.dataset.foldDefault) === 'shut') setFold(b.dataset.fold, false, false);
+});
 
 // ----- who is signed in: the owner sees everything; a mentor the Studio, costs, testers, usage and questions;
 // an astrologer the Studio and questions. The server checks every call as well.
@@ -845,11 +901,11 @@ let ROLE = 'owner';
 // The mentor role is called "Admin" in the app; the owner shows as "Owner" so the two stay distinct.
 const ROLE_NAME = {owner: 'Owner', mentor: 'Admin', astrologer: 'Astrologer'};
 function applyRole(me) {
-  ROLE = me.role || 'owner';
+  ROLE = me.role || 'owner'; ME = me;
   document.querySelectorAll('[data-roles]').forEach(el => el.hidden = !el.dataset.roles.split(' ').includes(ROLE));
   $('who-role').textContent = (ROLE === 'owner' ? 'Admin' : ROLE_NAME[ROLE]) + (me.name ? ' · ' + me.name : '');
   document.querySelector('main').classList.remove('pending');
-  if (ROLE === 'astrologer') $('st-sub').textContent = `Welcome${me.name ? ', ' + me.name : ''}. Try questions on any chart in the Playground, save ideal answers and lessons as drafts, and add notes on the questions below.`;
+  if (ROLE === 'astrologer') $('st-sub').textContent = `Welcome${me.name ? ', ' + me.name : ''}. Try questions on any chart in the Playground, save ideal answers and lessons as drafts for the Admin to publish, and add notes on the questions below.`;
 }
 
 // ----- Studio team: mentor and astrologer codes, and the change log -----
@@ -924,14 +980,96 @@ async function loadPlayground() {
     fillLimits(st.limits);
   } catch (e) { $('pg-budget').textContent = "Couldn't load the Playground: " + e.message; }
 }
+let DRAFTS = [], DRF = '', ME = {};
+const TKIND = k => k === 'gold' ? 'Gold answer' : 'Lesson';
+const TSTATUS = {draft: 'Draft', published: 'Published', retired: 'Retired'};
+const canPublish = () => ROLE !== 'astrologer';
+const canEdit = d => d.status === 'draft' && (ROLE !== 'astrologer' || d.author === ME.name);
+function drItem(d) {
+  const acts = [];
+  if (canPublish() && d.status !== 'published') acts.push(`<button class="sbtn" type="button" data-act="publish">${d.status === 'retired' ? 'Publish again' : 'Publish'}</button>`);
+  if (canPublish() && d.status === 'published') acts.push('<button class="sbtn" type="button" data-act="retire">Retire</button>');
+  if (canEdit(d)) acts.push('<button class="sbtn" type="button" data-act="edit">Edit</button><button class="sbtn danger" type="button" data-act="delete">Delete</button>');
+  return `<div class="dritem st-${d.status}" data-id="${d.id}">
+    <div class="drhead"><span class="tag ai">${TKIND(d.kind)}</span><span class="tag">${esc(d.topic)}</span><span class="tag ${d.status === 'published' ? 'on' : 'off'}">${TSTATUS[d.status]}</span></div>
+    ${d.question ? `<div class="drq">Question: ${esc(d.question)}</div>` : ''}
+    <div class="drtext${d.text.length > 400 ? ' clip' : ''}">${esc(d.text)}</div>
+    <div class="drmeta">By ${esc(d.author)} · ${when(d.created_at)}${d.updated_at ? ' · edited ' + when(d.updated_at) : ''}</div>
+    ${acts.length ? `<div class="pgacts">${acts.join('')}<span class="status" role="status"></span></div>` : ''}
+    <div class="dredit" hidden></div></div>`;
+}
+function renderDrafts() {
+  const rows = DRAFTS.filter(d => !DRF || d.status === DRF);
+  $('dr-list').innerHTML = rows.length ? rows.map(drItem).join('')
+    : `<p class="empty">${DRAFTS.length ? 'Nothing here.' : 'No lessons or gold answers yet. Save one from a Playground answer.'}</p>`;
+  // drafts the Playground test can turn on (anything not published)
+  const off = DRAFTS.filter(d => d.status !== 'published');
+  $('pg-drafts').innerHTML = off.length ? off.map(d => `<label><input type="checkbox" value="${d.id}"> <span>Try ${TKIND(d.kind).toLowerCase()} · ${esc(d.topic)}: ${esc(d.text.slice(0, 90))}${d.text.length > 90 ? '…' : ''}</span></label>`).join('')
+    : '<span class="pgmeta">Drafts you save show here, to try before publishing.</span>';
+}
+function vText(v) {
+  return `${v.lessons} lesson${v.lessons === 1 ? '' : 's'}, ${v.gold} gold answer${v.gold === 1 ? '' : 's'}`;
+}
+async function loadTeach() {
+  const t = await api('/admin/api/studio/teach'), v = t.version;
+  $('tv-bar').innerHTML = v.id
+    ? `<span><b>Live teaching: version ${v.id}</b> · ${vText(v)} · ${esc(v.action)} by ${esc(v.actor)}, ${when(v.created_at)}</span>`
+      + (canPublish() ? '<button class="sbtn" type="button" id="tv-back">Roll back one step</button><span class="status" id="tv-st" role="status"></span>' : '')
+    : '<span class="pgmeta">Nothing published yet: answers use no lessons or gold answers.</span>';
+  const older = t.versions.filter(x => x.id !== v.id);
+  $('tv-hist').hidden = !older.length;
+  $('tv-list').innerHTML = older.map(x => `<div class="tvrow"><span>Version ${x.id} · ${vText(x)} · ${esc(x.action)} by ${esc(x.actor)}, ${when(x.created_at)}</span>`
+    + (canPublish() ? `<button class="sbtn" type="button" data-restore="${x.id}">Make live</button>` : '') + '</div>').join('');
+}
 async function loadDrafts() {
   try {
-    const rows = await api('/admin/api/studio/drafts');
-    $('dr-list').innerHTML = rows.length ? rows.map(d => `<tr><td>${d.kind === 'gold' ? 'Gold answer' : 'Lesson'}</td><td>${esc(d.topic)}</td>
-      <td style="min-width:220px">${esc(d.text.length > 160 ? d.text.slice(0, 160) + '…' : d.text)}</td><td>${esc(d.author)}</td><td class="nowrap">${when(d.created_at)}</td></tr>`).join('')
-      : '<tr><td colspan="5" class="empty">No drafts yet. Save one from a Playground answer.</td></tr>';
-  } catch (e) { $('dr-list').innerHTML = `<tr><td colspan="5" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
+    DRAFTS = await api('/admin/api/studio/drafts'); renderDrafts(); await loadTeach();
+  } catch (e) { $('dr-list').innerHTML = `<p class="empty">Couldn't load: ${esc(e.message)}</p>`; }
 }
+async function rollback(version) {
+  const st = $('tv-st') || {};
+  try {
+    await api('/admin/api/studio/rollback', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(version == null ? {} : {version})});
+    await loadDrafts(); await loadAudit();
+  } catch (e) { st.className = 'status err'; st.textContent = e.message; }
+}
+$('tv-bar').addEventListener('click', e => { if (e.target.id === 'tv-back') rollback(null); });
+$('tv-list').addEventListener('click', e => { const b = e.target.closest('[data-restore]'); if (b) rollback(+b.dataset.restore); });
+$('dr-filter').addEventListener('click', e => {
+  const b = e.target.closest('[data-f]'); if (!b) return;
+  DRF = b.dataset.f; $('dr-filter').querySelectorAll('[data-f]').forEach(x => x.classList.toggle('arm', x === b)); renderDrafts();
+});
+$('dr-list').addEventListener('click', async e => {
+  const item = e.target.closest('.dritem'); if (!item) return;
+  const d = DRAFTS.find(x => x.id === +item.dataset.id), st = item.querySelector('.pgacts .status'), box = item.querySelector('.dredit');
+  const b = e.target.closest('[data-act]');
+  const fail = err => { if (st) { st.className = 'status err'; st.textContent = err.message; } };
+  if (b && b.dataset.act === 'edit') {
+    box.hidden = false;
+    box.innerHTML = `<textarea rows="${d.kind === 'gold' ? 8 : 3}" maxlength="${d.kind === 'gold' ? 4000 : 600}">${esc(d.text)}</textarea>
+      <div class="pggo"><label>Topic <select>${pgTopics()}</select></label><button class="btn" type="button" data-act="save">Save</button><button class="sbtn" type="button" data-act="cancel">Cancel</button><span class="status" role="status"></span></div>`;
+    box.querySelector('select').value = d.topic; return;
+  }
+  if (b && b.dataset.act === 'cancel') { box.hidden = true; box.innerHTML = ''; return; }
+  if (b && b.dataset.act === 'save') {
+    try {
+      await api(`/admin/api/studio/drafts/${d.id}`, {method: 'PATCH', headers: {'content-type': 'application/json'},
+        body: JSON.stringify({text: box.querySelector('textarea').value.trim(), topic: box.querySelector('select').value})});
+      await loadDrafts(); if (ROLE !== 'astrologer') await loadAudit();
+    } catch (err) { const s2 = box.querySelector('.status'); s2.className = 'status err'; s2.textContent = err.message; }
+    return;
+  }
+  if (b && b.dataset.act === 'delete') {
+    if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = 'Tap again to delete'; return; }
+    try { await api(`/admin/api/studio/drafts/${d.id}`, {method: 'DELETE'}); await loadDrafts(); if (ROLE !== 'astrologer') await loadAudit(); } catch (err) { fail(err); }
+    return;
+  }
+  if (b && (b.dataset.act === 'publish' || b.dataset.act === 'retire')) {
+    b.disabled = true;
+    try { await api(`/admin/api/studio/drafts/${d.id}/${b.dataset.act}`, {method: 'POST'}); await loadDrafts(); await loadAudit(); }
+    catch (err) { fail(err); b.disabled = false; }
+  }
+});
 $('pg-cmp').addEventListener('change', () => $('pg-test').hidden = !$('pg-cmp').checked);
 function pgCard(r, i) {
   if (r.error) return `<div class="pgcard"><h4>${esc(r.label)}</h4><p class="hint err">${esc(r.error)}</p></div>`;
@@ -946,6 +1084,7 @@ function pgCard(r, i) {
       <p class="pgmeta">Word limit ${s.word_limit}${s.instruction ? ' · Extra instruction: ' + esc(s.instruction) : ''}</p>
       <p class="pgmeta">Lookups: ${s.lookups && s.lookups.length ? s.lookups.map(l => esc(l.name) + ' ' + esc(JSON.stringify(l.args))).join(' · ') : 'none'}</p>
       ${s.kp ? `<p class="pgmeta">KP verdicts added to the question:</p><pre>${esc(s.kp)}</pre>` : ''}
+      <p class="pgmeta">Teaching added to the question:${s.teaching ? '' : ' none'}</p>${s.teaching ? `<pre>${esc(s.teaching)}</pre>` : ''}
       <p class="pgmeta">Chart facts:</p><pre>${esc(facts)}</pre></details>
     <div class="pgacts"><button class="sbtn" type="button" data-save="gold">Save as gold answer</button><button class="sbtn" type="button" data-save="lesson">Turn into a lesson</button></div>
     <div class="pgsave" hidden></div></div>`;
@@ -956,7 +1095,8 @@ $('pg-run').addEventListener('click', async () => {
   if (q.length < 3) { st.className = 'status err'; st.textContent = 'Type a question first.'; return; }
   const body = {question: q, variants: [{}]};
   body.profile_id = +$('pg-chart').value;
-  if ($('pg-cmp').checked) body.variants.push({label: 'Test', model: $('pg-model').value, word_limit: +$('pg-words').value, instruction: $('pg-ins').value.trim()});
+  if ($('pg-cmp').checked) body.variants.push({label: 'Test', model: $('pg-model').value, word_limit: +$('pg-words').value, instruction: $('pg-ins').value.trim(),
+    no_teaching: $('pg-noteach').checked, drafts: [...$('pg-drafts').querySelectorAll('input:checked')].map(x => +x.value)});
   st.className = 'status'; st.textContent = body.variants.length > 1 ? 'Asking both versions… this takes about half a minute.' : 'Asking… this takes about half a minute.';
   $('pg-run').disabled = true;
   try {
@@ -986,7 +1126,7 @@ $('pg-res').addEventListener('click', async e => {
     await api('/admin/api/studio/drafts', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({
       kind: keep.dataset.keep, topic: box.querySelector('select').value, text: box.querySelector('textarea').value.trim(),
       question: PGQ, answer: r.text, profile_id: PG.chart && PG.chart.id})});
-    out.className = 'status ok'; out.textContent = 'Saved as a draft.'; await loadDrafts(); if (ROLE !== 'astrologer') await loadAudit();
+    out.className = 'status ok'; out.textContent = 'Saved as a draft (see Teaching below).'; await loadDrafts(); if (ROLE !== 'astrologer') await loadAudit();
   } catch (err) { out.className = 'status err'; out.textContent = err.message; }
 });
 $('lim-form').addEventListener('submit', async e => {

@@ -84,11 +84,19 @@ def _connect() -> sqlite3.Connection:
         # daily experiment budget. created_by: the code id of the mentor who made it (NULL = the owner).
         conn.execute("ALTER TABLE access_codes ADD COLUMN role TEXT NOT NULL DEFAULT 'tester'")
         conn.execute("ALTER TABLE access_codes ADD COLUMN created_by INTEGER")
-    # Studio drafts (STUDIO_PLAN.md): ideal answers and short lessons, saved from the Playground. Publishing and
-    # using them in answers comes with the Teach step; until then they are drafts only.
+    # Studio teaching (STUDIO_PLAN.md, app/teach.py): ideal answers ("gold") and short lessons. status follows the
+    # live teaching version: draft (never published) | published (in it) | retired (published once, not now).
     conn.execute("CREATE TABLE IF NOT EXISTS studio_drafts (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL,"
                  " topic TEXT NOT NULL, text TEXT NOT NULL, question TEXT, answer TEXT, profile_id INTEGER,"
                  " status TEXT NOT NULL DEFAULT 'draft', author TEXT NOT NULL, created_at TEXT NOT NULL)")
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(studio_drafts)")}
+    if "author_code" not in cols:  # the author's code id (NULL = the owner), so astrologers edit only their own
+        conn.execute("ALTER TABLE studio_drafts ADD COLUMN author_code INTEGER")
+        conn.execute("ALTER TABLE studio_drafts ADD COLUMN updated_at TEXT")
+    # Every publish, retire or rollback makes a new teaching version: the full set of published item ids.
+    # The live version is the newest row; rolling back = a new version with an older set.
+    conn.execute("CREATE TABLE IF NOT EXISTS teach_versions (id INTEGER PRIMARY KEY AUTOINCREMENT, items TEXT NOT NULL,"
+                 " action TEXT NOT NULL, actor TEXT NOT NULL, created_at TEXT NOT NULL)")
     # Who did what in Admin and the Studio (codes, publishes, rollbacks), for the owner and the mentor.
     conn.execute("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL,"
                  " actor TEXT NOT NULL, actor_role TEXT NOT NULL, action TEXT NOT NULL, object TEXT, detail TEXT)")
@@ -652,13 +660,77 @@ def playground_used_today(code_id: int) -> int:
 
 
 def add_draft(kind: str, topic: str, text: str, author: str, question: str | None = None,
-              answer: str | None = None, profile_id: int | None = None) -> dict:
+              answer: str | None = None, profile_id: int | None = None, author_code: int | None = None) -> dict:
     with _lock, _connect() as conn:
-        cur = conn.execute("INSERT INTO studio_drafts (kind, topic, text, question, answer, profile_id, author, created_at)"
-                           " VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (kind, topic, text, question, answer, profile_id, author, _now()))
+        cur = conn.execute("INSERT INTO studio_drafts (kind, topic, text, question, answer, profile_id, author,"
+                           " author_code, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                           (kind, topic, text, question, answer, profile_id, author, author_code, _now()))
         return dict(conn.execute("SELECT * FROM studio_drafts WHERE id = ?", (cur.lastrowid,)).fetchone())
 
 
-def drafts(limit: int = 100) -> list[dict]:
+def drafts(limit: int = 200) -> list[dict]:
     with _lock, _connect() as conn:
         return [dict(r) for r in conn.execute("SELECT * FROM studio_drafts ORDER BY id DESC LIMIT ?", (limit,))]
+
+
+def get_draft(draft_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM studio_drafts WHERE id = ?", (draft_id,)).fetchone()
+    return dict(r) if r else None
+
+
+def update_draft(draft_id: int, topic: str, text: str) -> dict:
+    with _lock, _connect() as conn:
+        conn.execute("UPDATE studio_drafts SET topic = ?, text = ?, updated_at = ? WHERE id = ?",
+                     (topic, text, _now(), draft_id))
+        return dict(conn.execute("SELECT * FROM studio_drafts WHERE id = ?", (draft_id,)).fetchone())
+
+
+def delete_draft(draft_id: int) -> None:
+    with _lock, _connect() as conn:
+        conn.execute("DELETE FROM studio_drafts WHERE id = ?", (draft_id,))
+
+
+def _version(r) -> dict:
+    return dict(r) | {"items": json.loads(r["items"])}
+
+
+def teach_version() -> dict:
+    """The live teaching version ({"id": 0, "items": []} before anything is published)."""
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM teach_versions ORDER BY id DESC LIMIT 1").fetchone()
+    return _version(r) if r else {"id": 0, "items": [], "action": None, "actor": None, "created_at": None}
+
+
+def teach_versions(limit: int = 20) -> list[dict]:
+    with _lock, _connect() as conn:
+        return [_version(r) for r in conn.execute("SELECT * FROM teach_versions ORDER BY id DESC LIMIT ?", (limit,))]
+
+
+def get_teach_version(version_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM teach_versions WHERE id = ?", (version_id,)).fetchone()
+    return _version(r) if r else None
+
+
+def set_teaching(items: list[int], action: str, actor: str) -> dict:
+    """Make a new live teaching version with exactly these published items, and bring each item's status in line."""
+    items = sorted(set(items))
+    with _lock, _connect() as conn:
+        cur = conn.execute("INSERT INTO teach_versions (items, action, actor, created_at) VALUES (?, ?, ?, ?)",
+                           (json.dumps(items), action, actor, _now()))
+        marks = ",".join("?" * len(items))
+        conn.execute(f"UPDATE studio_drafts SET status = 'retired' WHERE status = 'published'"
+                     f"{f' AND id NOT IN ({marks})' if items else ''}", items)
+        if items:
+            conn.execute(f"UPDATE studio_drafts SET status = 'published' WHERE id IN ({marks})", items)
+        return _version(conn.execute("SELECT * FROM teach_versions WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def teaching_items(ids: list[int]) -> list[dict]:
+    """These lessons and gold answers, oldest first (the order they were written)."""
+    if not ids:
+        return []
+    with _lock, _connect() as conn:
+        return [dict(r) for r in conn.execute(
+            f"SELECT * FROM studio_drafts WHERE id IN ({','.join('?' * len(ids))}) ORDER BY id", list(ids))]

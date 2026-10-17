@@ -292,7 +292,7 @@ def events(profile: dict, history: list[dict], message: str, model: str | None =
         return
     client = _client()
     msgs = [{"role": m["role"], "content": m["content"]} for m in history[-HISTORY_LIMIT:]]
-    msgs.append({"role": "user", "content": message + kp_context(profile, message)})
+    msgs.append({"role": "user", "content": message + kp_context(profile, message) + teach_context(message)})
     system = _system(profile)
     wrote = False
     for _ in range(MAX_TOOL_ROUNDS):
@@ -339,9 +339,17 @@ def kp_context(profile: dict, message: str) -> str:
             "explain the reasons in plain words]\n" + "\n\n".join(briefs))
 
 
-# Playground test settings for one run (word limit, an extra instruction), so the live settings never change.
-# Set by answer_once in its own thread; everything below reads them through these helpers.
+# Playground test settings for one run (word limit, an extra instruction, draft teaching turned on or all teaching
+# off), so the live settings never change. Set by answer_once in its own thread; read through these helpers.
 _TEST: ContextVar[dict | None] = ContextVar("playground_test", default=None)
+
+
+def teach_context(message: str) -> str:
+    """Published lessons and gold answers for this question's topic (app/teach.py), added to the user turn like
+    the KP verdicts so the cached system prompt stays the same."""
+    from app import teach
+    t = _TEST.get() or {}
+    return teach.context(message, extra=t.get("drafts"), off=bool(t.get("no_teaching")))
 
 
 def _word_limit() -> int:
@@ -502,7 +510,8 @@ def cache_key(message: str) -> str | None:
 def answer_key(profile: dict, message: str) -> str | None:
     """Reused answers are per setup version and per time zone (times and 'today' depend on where the user is)."""
     key = cache_key(message)
-    return key and f"{CONTEXT_VERSION}:{where(profile)['tz_name']}:{key}"
+    # the teaching version too, so a publish or rollback is never answered from an older setup
+    return key and f"{CONTEXT_VERSION}:t{storage.teach_version()['id']}:{where(profile)['tz_name']}:{key}"
 
 
 def chat_events(profile: dict, message: str):
@@ -632,7 +641,7 @@ def _compat_events(profile: dict, history: list[dict], message: str, model: str)
     client = _compat_client(provider)
     msgs = [{"role": "system", "content": _system_text(profile)}]
     msgs += [{"role": m["role"], "content": m["content"]} for m in history[-HISTORY_LIMIT:]]
-    msgs.append({"role": "user", "content": message + kp_context(profile, message)})
+    msgs.append({"role": "user", "content": message + kp_context(profile, message) + teach_context(message)})
     wrote = False
     for _ in range(MAX_TOOL_ROUNDS):
         resp = _compat_call(client, provider, model, msgs, tools=True)
@@ -724,5 +733,6 @@ def _answer_once(profile: dict, message: str, model: str, explain: bool) -> dict
         test = _TEST.get() or {}
         out["seen"] = {"chart_facts": ask.llm_context(profile), "kp": kp_context(profile, message).strip(),
                        "lookups": [{"name": t["name"], "args": t.get("args", {})} for t in tool_outs],
-                       "word_limit": _word_limit(), "instruction": test.get("instruction")}
+                       "word_limit": _word_limit(), "instruction": test.get("instruction"),
+                       "teaching": teach_context(message).strip()}
     return out
