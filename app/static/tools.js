@@ -1,4 +1,4 @@
-// "Plan & decide" tools on the guidance page: Muhurat Finder and KP Prashna (yes/no by number).
+// "Plan & decide" tools on the guidance page: Muhurat Finder, KP Prashna (yes/no by number) and Jamakkol Prashna.
 (function () {
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -6,7 +6,29 @@
     ['start', 'New work or business'], ['travel', 'Travel'], ['marriage', 'Marriage or engagement'],
     ['griha', 'Griha pravesh (housewarming)'], ['study', 'Studies or a new course'], ['meeting', 'Interview or key meeting']];
   const VERDICT = { yes: 'good', likely: 'good', mixed: '', no: 'warn' };
-  let kinds = null;
+  let kinds = null, jkinds = null;
+  // Jamakkol chart: South Indian layout (signs fixed), index = sign 0..11 → [row, col]
+  const SOUTH = { 11: [0, 0], 0: [0, 1], 1: [0, 2], 2: [0, 3], 10: [1, 0], 3: [1, 3], 9: [2, 0], 4: [2, 3], 8: [3, 0], 7: [3, 1], 6: [3, 2], 5: [3, 3] };
+  const SHORT = ['Ari', 'Tau', 'Gem', 'Can', 'Leo', 'Vir', 'Lib', 'Sco', 'Sag', 'Cap', 'Aqu', 'Pis'];
+  const AB = { Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke', Paambu: 'Pb' };
+  const herePlace = () => { try { const h = JSON.parse(localStorage.getItem('sj_here') || 'null'); return h && isFinite(h.lat) && h.tz_name ? h : null; } catch (e) { return null; } };
+  function jkGrid(r) {
+    const U = r.udayam.sign_index, A = r.arudam.sign_index, K = r.kavippu.sign_index;
+    const cells = Array.from({ length: 12 }, (_, i) => {
+      const [row, col] = SOUTH[i];
+      const tags = [i === U ? '<i class="jku">Udayam</i>' : '', i === A ? '<i class="jka">Arudam</i>' : '', i === K ? '<i class="jkk">Kavippu</i>' : ''].join('');
+      const inner = Object.entries(r.transit).filter(([, x]) => x.sign_index === i).map(([p, x]) => AB[p] + (x.retrograde && p !== 'Rahu' && p !== 'Ketu' ? '℞' : '')).join(' ');
+      const outer = Object.entries(r.jama.planets).filter(([, x]) => x.sign_index === i).map(([p]) => AB[p]).join(' ');
+      return `<div class="jkc${i === U ? ' u' : ''}${i === K ? ' k' : ''}" style="grid-row:${row + 1};grid-column:${col + 1}">
+        <small>${SHORT[i]}</small>${tags}${inner ? `<b>${inner}</b>` : ''}${outer ? `<em>${outer}</em>` : ''}</div>`;
+    }).join('');
+    const t = new Date(r.asked_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: r.place.tz_name });
+    const wd = new Date(r.asked_at).toLocaleDateString('en-US', { weekday: 'long', timeZone: r.place.tz_name });
+    const jam = `Jamam ${r.jama.number} · ${esc(r.jama.ruler)}` + (wd !== r.jama.weekday ? ` (${esc(r.jama.weekday)}’s)` : '');
+    return `<div class="jkg" role="img" aria-label="Jamakkol chart: Udayam ${esc(r.udayam.sign)}, Arudam ${esc(r.arudam.sign)}, Kavippu ${esc(r.kavippu.sign)}">${cells}
+      <div class="jkm"><b>Jamakkol</b><span>${esc(wd)} ${esc(t)}</span><span>${jam}</span></div></div>
+      <p class="jkl"><b>Bold</b> = planets in the sky now · <em>gold</em> = jama planets (Pb = Paambu)</p>`;
+  }
 
   async function post(url, body) {
     const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
@@ -21,6 +43,8 @@
     const place = (req.place || '').split(',')[0] || 'your birthplace';
     let here = null;  // current location for Prashna, if the user shares it
     if (!kinds) { try { kinds = await (await fetch('/horary/kinds')).json(); } catch (e) { kinds = []; } }
+    if (!jkinds) { try { jkinds = await (await fetch('/jamakkol/kinds')).json(); } catch (e) { jkinds = []; } }
+    let jkHere = herePlace();  // Jamakkol is cast where the asker is now (the app's "where you are" setting)
 
     el.innerHTML = `<section class="card gcard tool">
         <h3>Find a good date</h3>
@@ -43,6 +67,17 @@
           <button type="button" class="btn" id="hq-go">Ask</button></div>
         <div class="hq-place">Cast for <b id="hq-where">${esc(place)}</b> · <button type="button" class="linkbtn" id="hq-loc">Use where I am now</button></div>
         <div id="hq-out" aria-live="polite"></div>
+      </section>
+      <section class="card gcard tool">
+        <h3>Jamakkol Prashna <small>Tamil horary</small></h3>
+        <p class="gsub">Ask while the question is on your mind. The chart is cast for this very minute, where you are.</p>
+        <label class="tl-lab" for="jk-kind">My question is about</label>
+        <select id="jk-kind">${jkinds.map(k => `<option value="${k.kind}">${esc(k.title)}</option>`).join('')}</select>
+        <label class="tl-lab" for="jk-text">In my words <small>(optional)</small></label>
+        <input id="jk-text" maxlength="160" placeholder="e.g. Will the new job offer come through?">
+        <button type="button" class="btn" id="jk-go">Cast now</button>
+        <div class="hq-place">Cast for <b id="jk-where">${esc(jkHere ? (jkHere.name || 'where you are') : place)}</b> · <button type="button" class="linkbtn" id="jk-loc">Use where I am now</button></div>
+        <div id="jk-out" aria-live="polite"></div>
       </section>`;
 
     let days = 30;
@@ -77,6 +112,39 @@
       $('hq-where').textContent = 'finding you…';
       navigator.geolocation.getCurrentPosition(p => { here = { lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4) }; $('hq-where').textContent = 'where you are now'; },
         () => { $('hq-where').textContent = place + ' (location blocked)'; }, { timeout: 10000 });
+    };
+
+    $('jk-loc').onclick = () => {
+      if (!navigator.geolocation) { $('jk-where').textContent = 'your birthplace (location not available)'; return; }
+      $('jk-where').textContent = 'finding you…';
+      navigator.geolocation.getCurrentPosition(p => {
+        jkHere = { lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), tz_name: Intl.DateTimeFormat().resolvedOptions().timeZone };
+        $('jk-where').textContent = 'where you are now';
+      }, () => { $('jk-where').textContent = place + ' (location blocked)'; }, { timeout: 10000 });
+    };
+    $('jk-go').onclick = async () => {
+      const out = $('jk-out'), btn = $('jk-go');
+      btn.disabled = true; out.innerHTML = '<p class="hint">Casting the Jamakkol chart for this minute…</p>';
+      const at = jkHere || { lat: req.lat, lon: req.lon, tz_name: req.tz_name };
+      try {
+        const r = await post('/jamakkol', { kind: $('jk-kind').value, lat: at.lat, lon: at.lon, tz_name: at.tz_name });
+        const g = r.reading, q = $('jk-text').value.trim();
+        const li = xs => xs.map(x => `<li>${esc(x)}</li>`).join('');
+        const ask = `I asked a Jamakkol Prashna about ${g.question.title.toLowerCase()}${q ? `: "${q}"` : ''}. ` +
+          `The Arudam is ${g.arudam_house} from the Udayam and the Kavippu is ${g.kavippu_house} from the Udayam. The result was "${g.label}". ` +
+          `${[...g.obstacles, ...g.for, ...g.against].join(' ')} Please explain simply what this means for me and what I should do.`;
+        out.innerHTML = `<div class="hqv ${VERDICT[g.verdict]}"><span>Answer</span><b>${esc(g.label)}</b></div>
+          ${jkGrid(r)}
+          <ul class="hqr">${li([g.about, ...g.focus, `Next to reach the Udayam: ${g.approaching.planet} (${g.approaching.about}).`])}</ul>
+          ${g.obstacles.length ? `<p class="jkh warn">Hidden obstacle (Kavippu)</p><ul class="hqr">${li(g.obstacles)}</ul>` : ''}
+          ${g.for.length ? `<p class="jkh good">In favour</p><ul class="hqr">${li(g.for)}</ul>` : ''}
+          ${g.against.length ? `<p class="jkh">Against</p><ul class="hqr">${li(g.against)}</ul>` : ''}
+          ${g.timing ? `<p class="hint">${esc(g.timing.text)}</p>` : ''}
+          <button type="button" class="btn ghost" id="jk-ask">Ask Astropositivism to explain</button>
+          <p class="hint">Jamakkol answers the question as you hold it right now, for about 81 days. Ask each question once.</p>`;
+        $('jk-ask').onclick = () => window.askSukh && window.askSukh(ask);
+      } catch (e) { out.innerHTML = `<p class="hint err">Couldn’t cast the chart: ${esc(e.message)}</p>`; }
+      btn.disabled = false;
     };
 
     $('hq-num').addEventListener('keydown', e => { if (e.key === 'Enter') $('hq-go').click(); });

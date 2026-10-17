@@ -382,7 +382,19 @@
   .hqv.warn{border-color:color-mix(in srgb,var(--bad) 45%,transparent)} .hqv.warn b{color:var(--bad)}
   .hqv:not(.good):not(.warn) b{color:var(--acc)}
   .hqr{margin:0;padding-left:18px;font-size:.9rem;line-height:1.5} .hqr li{margin:3px 0}
-  #hq-ask{align-self:flex-start}
+  #hq-ask,#jk-ask{align-self:flex-start}
+  .jkg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(64px,auto));gap:3px;margin-top:6px}
+  .jkc{border:1px solid var(--line);border-radius:8px;padding:4px 5px;background:var(--bg2);display:flex;flex-direction:column;gap:1px;min-width:0;font-size:.74rem;line-height:1.25}
+  .jkc small{color:var(--mut);font-size:.62rem} .jkc b{font-weight:700;overflow-wrap:anywhere} .jkc em{font-style:normal;color:var(--g2);font-weight:600;overflow-wrap:anywhere}
+  .jkc i{font-style:normal;font-size:.6rem;font-weight:700;letter-spacing:.3px;border-radius:5px;padding:0 4px;align-self:flex-start}
+  .jkc.u{border-color:color-mix(in srgb,var(--ok) 60%,transparent)} .jkc.k{border-color:color-mix(in srgb,var(--bad) 60%,transparent)}
+  .jku{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)} .jka{background:color-mix(in srgb,var(--acc2) 20%,transparent);color:var(--acc2)}
+  .jkk{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+  .jkm{grid-row:2/4;grid-column:2/4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;font-size:.74rem;color:var(--mut)}
+  .jkm b{font:600 1.05rem var(--serif);color:var(--acc)}
+  .jkl{font-size:.72rem;color:var(--mut);margin:2px 0 0} .jkl em{font-style:normal;color:var(--g2);font-weight:600}
+  .jkh{margin:6px 0 -4px;font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut);font-weight:700}
+  .jkh.good{color:var(--ok)} .jkh.warn{color:var(--bad)}
   .gmore{display:none}
   @media (max-width:600px){.garea{grid-template-columns:1fr;gap:14px}
     .gmore{display:inline-flex;align-self:flex-start;border:1px solid var(--line);background:var(--bg2);border-radius:99px;padding:7px 14px;
@@ -1318,6 +1330,7 @@ const FIND=[
   ['KP timing by matter','kp timing when job marriage money property abroad children',['timing','matter']],
   ['Find a good date','muhurat good date day plan wedding travel property',['timing','dates']],
   ['Yes or no? (KP Prashna)','prashna horary question yes no number',['timing','dates']],
+  ['Jamakkol Prashna','jamakkol jamakol jammakkol prasanam prashna udayam arudam kavippu tamil horary',['timing','dates']],
   ['Ask Astropositivism','ask chat question sukh astropositivism',['ask']],
   ['Remedies (upaya)','remedy remedies upaya plan habit',['remedies']],
   ['Lucky colours, gems and days','lucky colour colours gem gems stone day',['remedies']],

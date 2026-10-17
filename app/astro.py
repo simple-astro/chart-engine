@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from app import muhurat, storage, today as today_mod
 from app.routes import chart as compute_chart
 from app.schemas import ChartRequest
-from core import horary, lalkitab, matchmaking
+from core import horary, jamakkol, lalkitab, matchmaking
 
 router = APIRouter(tags=["astrology"])
 
@@ -60,6 +60,14 @@ class HoraryRequest(BaseModel):
     asked_at: datetime | None = None  # defaults to now
 
 
+class JamakkolRequest(BaseModel):
+    kind: str
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    tz_name: str = Field(min_length=1, max_length=64)
+    asked_at: datetime | None = None  # defaults to now: Jamakkol is cast for the moment of asking
+
+
 class MatchRequest(BaseModel):
     groom_id: int
     bride_id: int
@@ -105,6 +113,27 @@ def kp_horary(req: HoraryRequest) -> dict:
 @router.get("/horary/kinds")
 def horary_kinds() -> list[dict]:
     return [{"kind": k, "title": v[0], "house": v[1]} for k, v in horary.QUESTIONS.items()]
+
+
+@router.post("/jamakkol")
+def jamakkol_prashna(req: JamakkolRequest) -> dict:
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    when = req.asked_at or datetime.now(timezone.utc)
+    if when.tzinfo is None:
+        raise HTTPException(status_code=422, detail="asked_at needs a timezone")
+    try:
+        ZoneInfo(req.tz_name)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="Unknown time zone") from exc
+    try:
+        return jamakkol.jamakkol(req.kind, when, req.lat, req.lon, req.tz_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/jamakkol/kinds")
+def jamakkol_kinds() -> list[dict]:
+    return jamakkol.kinds()
 
 
 @router.post("/muhurat/find")
