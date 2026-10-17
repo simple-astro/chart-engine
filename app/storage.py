@@ -93,6 +93,10 @@ def _connect() -> sqlite3.Connection:
     if "author_code" not in cols:  # the author's code id (NULL = the owner), so astrologers edit only their own
         conn.execute("ALTER TABLE studio_drafts ADD COLUMN author_code INTEGER")
         conn.execute("ALTER TABLE studio_drafts ADD COLUMN updated_at TEXT")
+    # Studio reviews (STUDIO_PLAN.md step 4): one review per answer — five checks, problem tags and a note.
+    conn.execute("CREATE TABLE IF NOT EXISTS reviews (id INTEGER PRIMARY KEY AUTOINCREMENT, usage_id INTEGER NOT NULL"
+                 " UNIQUE, reviewer TEXT NOT NULL, reviewer_code INTEGER, checks TEXT NOT NULL, tags TEXT NOT NULL,"
+                 " note TEXT, created_at TEXT NOT NULL)")
     # Every publish, retire or rollback makes a new teaching version: the full set of published item ids.
     # The live version is the newest row; rolling back = a new version with an older set.
     conn.execute("CREATE TABLE IF NOT EXISTS teach_versions (id INTEGER PRIMARY KEY AUTOINCREMENT, items TEXT NOT NULL,"
@@ -734,3 +738,62 @@ def teaching_items(ids: list[int]) -> list[dict]:
     with _lock, _connect() as conn:
         return [dict(r) for r in conn.execute(
             f"SELECT * FROM studio_drafts WHERE id IN ({','.join('?' * len(ids))}) ORDER BY id", list(ids))]
+
+
+# ----- Studio reviews -----
+def review_candidates(limit: int = 3000) -> list[dict]:
+    """Recent AI answers to testers (not cache reuse, comparisons or Playground runs) with any review, newest first."""
+    with _lock, _connect() as conn:
+        rows = conn.execute(
+            "SELECT u.id, u.ts, u.profile_id, u.question, u.answer, u.factcheck, u.owner, u.model, u.words,"
+            " p.name AS profile_name, r.id AS review_id FROM usage_log u LEFT JOIN profiles p ON p.id = u.profile_id"
+            " LEFT JOIN reviews r ON r.usage_id = u.id WHERE u.kind = 'llm' AND u.answer IS NOT NULL"
+            " ORDER BY u.id DESC LIMIT ?", (limit,)).fetchall()
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["factcheck"] = json.loads(d["factcheck"]) if d.get("factcheck") else None
+        out.append(d)
+    return out
+
+
+def get_answer(usage_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT u.*, p.name AS profile_name FROM usage_log u LEFT JOIN profiles p ON p.id = u.profile_id"
+                         " WHERE u.id = ?", (usage_id,)).fetchone()
+    if not r:
+        return None
+    d = dict(r)
+    d["factcheck"] = json.loads(d["factcheck"]) if d.get("factcheck") else None
+    return d
+
+
+def _review(r) -> dict:
+    return dict(r) | {"checks": json.loads(r["checks"]), "tags": json.loads(r["tags"])}
+
+
+def add_review(usage_id: int, reviewer: str, reviewer_code: int | None, checks: dict, tags: list[str],
+               note: str | None) -> dict | None:
+    """None when this answer already has a review."""
+    with _lock, _connect() as conn:
+        try:
+            cur = conn.execute("INSERT INTO reviews (usage_id, reviewer, reviewer_code, checks, tags, note, created_at)"
+                               " VALUES (?, ?, ?, ?, ?, ?, ?)", (usage_id, reviewer, reviewer_code, json.dumps(checks),
+                                                                json.dumps(tags), note, _now()))
+        except sqlite3.IntegrityError:
+            return None
+        return _review(conn.execute("SELECT * FROM reviews WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def get_review(usage_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM reviews WHERE usage_id = ?", (usage_id,)).fetchone()
+    return _review(r) if r else None
+
+
+def reviews(limit: int = 50) -> list[dict]:
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT r.*, u.question, u.owner, p.name AS profile_name FROM reviews r"
+                            " LEFT JOIN usage_log u ON u.id = r.usage_id LEFT JOIN profiles p ON p.id = u.profile_id"
+                            " ORDER BY r.id DESC LIMIT ?", (limit,)).fetchall()
+    return [_review(r) for r in rows]

@@ -124,7 +124,22 @@
   .dritem.st-retired{opacity:.7} .drhead{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .drq{font-size:.82rem;color:var(--mut)} .drtext{white-space:pre-wrap;font-size:.9rem;word-break:break-word}
   .drtext.clip{max-height:9.5em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 70%,transparent)}
-  .drmeta{font-size:.76rem;color:var(--mut)} .dredit{display:grid;gap:8px} .dredit textarea{resize:vertical} .pgsave{display:grid;gap:8px} .pgsave textarea{width:100%;font:inherit;resize:vertical}
+  .drmeta{font-size:.76rem;color:var(--mut)}
+  .rvq{font-weight:600;font-size:.92rem} .rvitem{cursor:pointer} .rvitem.open{cursor:default;border-color:var(--g2)}
+  .rvcard{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:10px}
+  .rvsum{display:grid;gap:2px;font-size:.84rem} .rvsum b{font-weight:600}
+  .rvchk{display:grid;gap:8px} .rvrow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:.88rem}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg label{position:relative;padding:6px 10px;font-size:.8rem;cursor:pointer;border-left:1px solid var(--line)}
+  .seg label:first-child{border-left:0}
+  .seg input{position:absolute;opacity:0;width:1px;height:1px}
+  .seg input:checked+span{font-weight:700}
+  .seg label:has(input:checked){background:color-mix(in srgb,var(--g2) 22%,transparent)}
+  .seg label.fail:has(input:checked){background:color-mix(in srgb,var(--bad) 22%,transparent)}
+  .seg label:has(input:focus-visible){outline:2px solid var(--g2)}
+  .rvtags{display:flex;flex-wrap:wrap;gap:6px} .rvtags label{display:inline-flex;gap:6px;align-items:center;font-size:.8rem;border:1px solid var(--line);border-radius:999px;padding:4px 10px;cursor:pointer}
+  .rvtags input{width:14px;height:14px;padding:0;margin:0;accent-color:var(--bad)}
+  .rvtags label:has(input:checked){border-color:var(--bad)} .dredit{display:grid;gap:8px} .dredit textarea{resize:vertical} .pgsave{display:grid;gap:8px} .pgsave textarea{width:100%;font:inherit;resize:vertical}
   .usgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:4px 20px}
   .ush{font:600 .92rem var(--sans);margin:18px 0 6px} .ush small{color:var(--mut);font-weight:500;margin-left:4px}
   .uschips{display:flex;flex-wrap:wrap;gap:6px} tr.dim td{color:var(--mut)} td.pair{white-space:nowrap;font-variant-numeric:tabular-nums} .qbtns a.sbtn{text-decoration:none;display:inline-flex;align-items:center}
@@ -214,7 +229,7 @@
     <div class="qhead"><h2>Studio</h2>
       <div class="qbtns"><button class="sbtn" type="button" data-fold="st-body" aria-expanded="true" aria-controls="st-body">Collapse</button></div></div>
     <div id="st-body">
-    <p class="sub" id="st-sub">Test and improve Astropositivism's answers. Try any question on any chart in the Playground, compare live and test settings, save what works as a draft, and publish lessons and gold answers so Astropositivism uses them.</p>
+    <p class="sub" id="st-sub">Test and improve Astropositivism's answers. Try any question on any chart in the Playground, review the answers testers got, save what works as a draft, and publish lessons and gold answers so Astropositivism uses them.</p>
     <div id="pg">
       <div class="fhead"><h3 class="ush">Playground <small>any question on any chart · nothing reaches users</small></h3><button class="sbtn" type="button" data-fold="pg-body" aria-expanded="true" aria-controls="pg-body">Collapse</button></div>
       <div id="pg-body">
@@ -234,6 +249,12 @@
         <div class="pggo"><button class="btn" id="pg-run" type="button">Ask</button><span class="status" id="pg-st" role="status"></span></div>
       </div>
       <div class="pgres" id="pg-res"></div>
+      </div>
+      <div class="fhead"><h3 class="ush">Review <small>check answers testers got, highest priority first</small></h3><button class="sbtn" type="button" data-fold="rv-body" aria-expanded="true" aria-controls="rv-body">Collapse</button></div>
+      <div id="rv-body">
+      <p class="pgmeta" id="rv-counts">Loading…</p>
+      <div class="drlist" id="rv-list"></div>
+      <details class="tvhist" id="rv-donewrap"><summary>Recent reviews</summary><div id="rv-done"></div></details>
       </div>
       <div class="fhead"><h3 class="ush">Teaching <small>lessons and gold answers · published ones are used in answers on their topic</small></h3><button class="sbtn" type="button" data-fold="tc-body" aria-expanded="true" aria-controls="tc-body">Collapse</button></div>
       <div id="tc-body">
@@ -905,7 +926,7 @@ function applyRole(me) {
   document.querySelectorAll('[data-roles]').forEach(el => el.hidden = !el.dataset.roles.split(' ').includes(ROLE));
   $('who-role').textContent = (ROLE === 'owner' ? 'Admin' : ROLE_NAME[ROLE]) + (me.name ? ' · ' + me.name : '');
   document.querySelector('main').classList.remove('pending');
-  if (ROLE === 'astrologer') $('st-sub').textContent = `Welcome${me.name ? ', ' + me.name : ''}. Try questions on any chart in the Playground, save ideal answers and lessons as drafts for the Admin to publish, and add notes on the questions below.`;
+  if (ROLE === 'astrologer') $('st-sub').textContent = `Welcome${me.name ? ', ' + me.name : ''}. Try questions on any chart in the Playground, review the answers testers got, and save ideal answers and lessons as drafts for the Admin to publish.`;
 }
 
 // ----- Studio team: mentor and astrologer codes, and the change log -----
@@ -1108,26 +1129,95 @@ $('pg-run').addEventListener('click', async () => {
   } catch (e) { st.className = 'status err'; st.textContent = e.message; }
   $('pg-run').disabled = false;
 });
+// ----- Studio review -----
+let RV = null;
+const RESULT = {pass: 'Pass', fail: 'Fail', na: 'Not relevant'};
+async function loadReview() {
+  try {
+    RV = await api('/admin/api/review/queue');
+    const c = RV.counts;
+    $('rv-counts').textContent = c.total ? `${c.total} to review · ${c.caught} caught by the fact check · ${c.new_topic} first on a topic · ${c.sample} random sample` : 'Nothing waiting. New answers join the queue as testers ask.';
+    $('rv-list').innerHTML = RV.items.map(i => `<div class="dritem rvitem" data-id="${i.id}" tabindex="0" role="button" aria-expanded="false">
+      <div class="drhead"><span class="tag ${i.reason === 'caught' ? 'off' : 'ai'}">${esc(i.reason_text)}</span>${i.topics.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+      <div class="rvq">${esc(i.question)}</div>
+      <div class="drmeta">${esc(i.tester)}${i.profile_name ? ' · chart ' + esc(i.profile_name) : ''} · ${when(i.ts)}</div>
+      <div class="rvcard" hidden></div></div>`).join('');
+    const done = await api('/admin/api/reviews');
+    $('rv-donewrap').hidden = !done.length;
+    $('rv-done').innerHTML = done.map(r => `<div class="tvrow"><span><b>${esc(r.question || '')}</b><br><small>${esc(r.reviewer)} · ${when(r.created_at)} · ${esc(r.tester)} · `
+      + RV.checks.map(k => `${r.checks[k.key] === 'pass' ? '✓' : r.checks[k.key] === 'fail' ? '✗' : '–'} ${esc(k.name)}`).join(' · ')
+      + `${r.tags.length ? ' · ' + esc(r.tags.join(', ')) : ''}${r.note ? ' · “' + esc(r.note) + '”' : ''}</small></span></div>`).join('');
+  } catch (e) { $('rv-counts').textContent = "Couldn't load the review queue: " + e.message; }
+}
+async function openReview(item) {
+  const box = item.querySelector('.rvcard'), id = +item.dataset.id, q = RV.items.find(x => x.id === id);
+  if (!box.hidden) return;
+  item.classList.add('open'); item.setAttribute('aria-expanded', 'true'); box.hidden = false; box.innerHTML = '<p class="pgmeta">Loading…</p>';
+  try {
+    const c = await api('/admin/api/review/' + id), ch = c.chart, fc = c.factcheck;
+    let facts = ch ? ch.facts : ''; try { facts = JSON.stringify(JSON.parse(facts), null, 1); } catch (e) {}
+    box.innerHTML = `
+      <div class="rvsum">${ch ? `<span><b>Lagna</b> ${esc(ch.lagna)} · <b>Moon</b> ${esc(ch.moon)}</span>
+        <span><b>Dasha when asked</b> ${ch.dasha.map(d => `${{maha: 'Maha', antar: 'Antar', praty: 'Pratyantar'}[d.level]} ${esc(d.lord)} (${d.start} – ${d.end})`).join(' › ') || '–'}</span>` : '<span>The chart was deleted.</span>'}
+        <span class="drmeta">${esc(c.model_label || '')}${c.words ? ' · ' + c.words + ' words' : ''}</span></div>
+      <div class="pgans">${md(c.answer || '')}</div>
+      <div class="pgmeta">${fc && fc.found && fc.found.length ? `Fact check caught ${fc.found.length}: ${esc(fc.found.join(' | '))}${fc.revised ? ' (corrected by a rewrite)' : ''}${fc.removed && fc.removed.length ? ' · still wrong, so removed: ' + esc(fc.removed.join(' | ')) : ''}` : 'Fact check: nothing wrong found.'}</div>
+      ${ch ? `<details class="pgseen"><summary>What Astropositivism is given</summary>
+        ${ch.kp ? `<p class="pgmeta">KP verdicts added to this question:</p><pre>${esc(ch.kp)}</pre>` : ''}
+        <p class="pgmeta">Chart facts (worked out again now: the chart is the same, today's sky may differ):</p><pre>${esc(facts)}</pre></details>` : ''}
+      <form class="rvchk">${RV.checks.map(k => `<div class="rvrow"><span>${esc(k.name)}</span><span class="seg" role="radiogroup" aria-label="${esc(k.name)}">${
+          Object.entries(RESULT).map(([v, t]) => `<label class="${v}"><input type="radio" name="${k.key}" value="${v}"><span>${t}</span></label>`).join('')}</span></div>`).join('')}
+        <div><span class="lbl">Problems</span><div class="rvtags">${RV.tags.map(t => `<label><input type="checkbox" value="${esc(t)}">${esc(t)}</label>`).join('')}</div></div>
+        <textarea rows="2" maxlength="1000" placeholder="Note (what was wrong, or what was good)"></textarea>
+        <div class="pggo"><button class="btn" type="submit">Save review</button><button class="sbtn" type="button" data-act="close">Close</button><span class="status" role="status"></span></div></form>
+      <div class="pgacts"><button class="sbtn" type="button" data-save="gold">Write the ideal answer</button><button class="sbtn" type="button" data-save="lesson">Add a lesson</button></div>
+      <div class="pgsave" hidden></div>`;
+    box.querySelector('form').addEventListener('submit', async ev => {
+      ev.preventDefault();
+      const f = ev.target, st = f.querySelector('.status'), checks = {};
+      RV.checks.forEach(k => { const x = f.querySelector(`input[name="${k.key}"]:checked`); checks[k.key] = x ? x.value : null; });
+      try {
+        await api('/admin/api/review/' + id, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({checks,
+          tags: [...f.querySelectorAll('.rvtags input:checked')].map(x => x.value), note: f.querySelector('textarea').value.trim()})});
+        st.className = 'status ok'; st.textContent = 'Review saved.';
+        f.querySelectorAll('input,textarea,button[type=submit]').forEach(x => x.disabled = true);
+        if (ROLE !== 'astrologer') loadAudit();
+      } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+    });
+    box.addEventListener('click', async ev => {
+      const sv = ev.target.closest('[data-save]'), keep = ev.target.closest('[data-keep]'), dbox = box.querySelector('.pgsave');
+      if (sv) draftForm(dbox, sv.dataset.save === 'gold', c.answer, q && q.topics[0]);
+      else if (keep) await saveDraft(dbox, keep.dataset.keep, c.question, c.answer, c.profile_id);
+      else if (ev.target.closest('[data-act="close"]')) { ev.stopPropagation(); await loadReview(); }
+    });
+  } catch (e) { box.innerHTML = `<p class="pgmeta">Couldn't load: ${esc(e.message)}</p>`; }
+}
+$('rv-list').addEventListener('click', e => { const item = e.target.closest('.rvitem'); if (item) openReview(item); });
+$('rv-list').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('rvitem')) { e.preventDefault(); openReview(e.target); } });
+
+// "Save as gold answer" / "Turn into a lesson": a small form under an answer (Playground and Review).
+function draftForm(box, gold, answer, topic) {
+  box.hidden = false;
+  box.innerHTML = `<label>${gold ? 'The ideal answer (edit it until it reads the way it should)' : 'The lesson: one short rule for this topic'}</label>
+    <textarea rows="${gold ? 8 : 3}" maxlength="${gold ? 4000 : 600}" placeholder="${gold ? '' : 'e.g. For marriage questions, always look at the Upapada as well as the 7th.'}">${gold ? esc(answer) : ''}</textarea>
+    <div class="pggo"><label>Topic <select>${pgTopics()}</select></label><button class="btn" type="button" data-keep="${gold ? 'gold' : 'lesson'}">Save draft</button><span class="status" role="status"></span></div>`;
+  if (topic && PG.topics.includes(topic)) box.querySelector('select').value = topic;
+}
+async function saveDraft(box, kind, question, answer, profileId) {
+  const out = box.querySelector('.status');
+  try {
+    await api('/admin/api/studio/drafts', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({
+      kind, topic: box.querySelector('select').value, text: box.querySelector('textarea').value.trim(), question, answer, profile_id: profileId})});
+    out.className = 'status ok'; out.textContent = 'Saved as a draft (see Teaching).'; await loadDrafts(); if (ROLE !== 'astrologer') await loadAudit();
+  } catch (err) { out.className = 'status err'; out.textContent = err.message; }
+}
 $('pg-res').addEventListener('click', async e => {
   const card = e.target.closest('.pgcard'); if (!card) return;
   const r = PGRES[+card.dataset.i], box = card.querySelector('.pgsave');
   const sv = e.target.closest('[data-save]');
-  if (sv) {
-    const gold = sv.dataset.save === 'gold';
-    box.hidden = false;
-    box.innerHTML = `<label>${gold ? 'The ideal answer (edit it until it reads the way it should)' : 'The lesson: one short rule for this topic'}</label>
-      <textarea rows="${gold ? 8 : 3}" maxlength="${gold ? 4000 : 600}" placeholder="${gold ? '' : 'e.g. For marriage questions, always look at the Upapada as well as the 7th.'}">${gold ? esc(r.text) : ''}</textarea>
-      <div class="pggo"><label>Topic <select>${pgTopics()}</select></label><button class="btn" type="button" data-keep="${gold ? 'gold' : 'lesson'}">Save draft</button><span class="status" role="status"></span></div>`;
-    return;
-  }
-  const keep = e.target.closest('[data-keep]'); if (!keep) return;
-  const out = box.querySelector('.status');
-  try {
-    await api('/admin/api/studio/drafts', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({
-      kind: keep.dataset.keep, topic: box.querySelector('select').value, text: box.querySelector('textarea').value.trim(),
-      question: PGQ, answer: r.text, profile_id: PG.chart && PG.chart.id})});
-    out.className = 'status ok'; out.textContent = 'Saved as a draft (see Teaching below).'; await loadDrafts(); if (ROLE !== 'astrologer') await loadAudit();
-  } catch (err) { out.className = 'status err'; out.textContent = err.message; }
+  if (sv) { draftForm(box, sv.dataset.save === 'gold', r.text); return; }
+  const keep = e.target.closest('[data-keep]');
+  if (keep) await saveDraft(box, keep.dataset.keep, PGQ, r.text, PG.chart && PG.chart.id);
 });
 $('lim-form').addEventListener('submit', async e => {
   e.preventDefault();
@@ -1142,7 +1232,7 @@ $('lim-form').addEventListener('submit', async e => {
 
 async function loadAll() {
   try {
-    await loadPlayground(); await loadDrafts();
+    await loadPlayground(); await loadDrafts(); await loadReview();
     if (ROLE !== 'astrologer') { renderOverview(await api('/admin/api/overview')); await loadUsage(); await loadTeam(); await loadAudit(); }
     if (ROLE === 'owner') { await loadCodes(); await loadRL(); await loadEvents(); await loadBackups(); }
     await loadQueries(true);

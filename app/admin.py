@@ -699,6 +699,78 @@ async def studio_rollback(request: Request) -> dict:
     return _teach_summary(v)
 
 
+# ----- Studio review (app/review.py) -----
+def _answer_row(r: dict, labels: dict) -> dict:
+    return {"id": r["id"], "ts": r["ts"], "question": r["question"], "answer": r["answer"],
+            "factcheck": r.get("factcheck"), "tester": _tester(r.get("owner"), labels), "profile_id": r["profile_id"],
+            "profile_name": r.get("profile_name"), "model_label": config.label(r["model"]) if r.get("model") else None,
+            "words": r.get("words")}
+
+
+@router.get("/admin/api/review/queue")
+def review_queue(request: Request) -> dict:
+    from app import review
+    _require_role(request, "mentor", "astrologer")
+    q = review.queue(storage.review_candidates())
+    labels = storage.owner_code_labels()
+    counts = {k: sum(r["reason"] == k for r in q) for k in review.REASONS}
+    return {"counts": counts | {"total": len(q)}, "checks": [{"key": k, "name": n} for k, n in review.CHECKS],
+            "tags": review.TAGS, "items": [_answer_row(r, labels) | {k: r[k] for k in ("reason", "reason_text", "topics")}
+                                           for r in q[:50]]}
+
+
+@router.get("/admin/api/review/{usage_id}")
+def review_card(usage_id: int, request: Request) -> dict:
+    """One answer to review: the question and tester, a short chart summary (Lagna, Moon, the Dasha running when
+    it was asked), the chart facts Astropositivism is given, the KP verdicts, the answer and the fact check."""
+    from datetime import datetime
+    from app import ask, chat
+    from app.transit_view import dasha_on
+    _require_role(request, "mentor", "astrologer")
+    r = storage.get_answer(usage_id)
+    if not r or r["kind"] != "llm" or not r.get("answer"):
+        raise HTTPException(status_code=404, detail="Answer not found")
+    out = _answer_row(r, storage.owner_code_labels()) | {"review": storage.get_review(usage_id), "chart": None}
+    profile = storage.get(r["profile_id"]) if r["profile_id"] else None
+    if profile:
+        c = profile["chart"]
+        moon = c["grahas"]["Moon"]
+        out["chart"] = {"name": profile["name"], "lagna": c["lagna"]["sign"],
+                        "moon": f"{moon['sign']} · {moon['nakshatra']} · house {moon['house']}",
+                        "dasha": dasha_on(c, datetime.fromisoformat(r["ts"])),
+                        "facts": ask.llm_context(profile), "kp": chat.kp_context(profile, r["question"] or "").strip()}
+    return out
+
+
+@router.post("/admin/api/review/{usage_id}", status_code=201)
+async def review_save(usage_id: int, request: Request) -> dict:
+    from app import review
+    _require_role(request, "mentor", "astrologer")
+    r = storage.get_answer(usage_id)
+    if not r or r["kind"] != "llm" or not r.get("answer"):
+        raise HTTPException(status_code=404, detail="Answer not found")
+    body = await request.json()
+    try:
+        checks, tags, note = review.clean(body if isinstance(body, dict) else {})
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    name, _ = _actor(request)
+    saved = storage.add_review(usage_id, name, None if request.state.admin else request.state.code_id, checks, tags, note)
+    if not saved:
+        raise HTTPException(status_code=409, detail="Someone has already reviewed this answer")
+    fails = [n for k, n in review.CHECKS if checks[k] == "fail"]
+    _audit(request, "reviewed an answer", (r["question"] or "")[:80],
+           ("failed: " + ", ".join(fails) if fails else "all checks passed") + (f"; tags: {', '.join(tags)}" if tags else ""))
+    return saved
+
+
+@router.get("/admin/api/reviews")
+def reviews_done(request: Request) -> list[dict]:
+    _require_role(request, "mentor", "astrologer")
+    labels = storage.owner_code_labels()
+    return [{**r, "tester": _tester(r.pop("owner"), labels)} for r in storage.reviews()]
+
+
 @router.put("/admin/api/limits")
 async def save_limits(request: Request) -> dict:
     """The word limit and daily limits: the owner and the Studio admin (mentor) may change them; each change is
