@@ -11,23 +11,54 @@
   const SOUTH = { 11: [0, 0], 0: [0, 1], 1: [0, 2], 2: [0, 3], 10: [1, 0], 3: [1, 3], 9: [2, 0], 4: [2, 3], 8: [3, 0], 7: [3, 1], 6: [3, 2], 5: [3, 3] };
   const SHORT = ['Ari', 'Tau', 'Gem', 'Can', 'Leo', 'Vir', 'Lib', 'Sco', 'Sag', 'Cap', 'Aqu', 'Pis'];
   const AB = { Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke', Paambu: 'Pb' };
+  const jkStyle = () => { try { return localStorage.getItem('sj_jk_style') || 'south'; } catch (e) { return 'south'; } };
   const herePlace = () => { try { const h = JSON.parse(localStorage.getItem('sj_here') || 'null'); return h && isFinite(h.lat) && h.tz_name ? h : null; } catch (e) { return null; } };
-  function jkGrid(r) {
-    const U = r.udayam.sign_index, A = r.arudam.sign_index, K = r.kavippu.sign_index;
-    const cells = Array.from({ length: 12 }, (_, i) => {
-      const [row, col] = SOUTH[i];
-      const tags = [i === U ? '<i class="jku">Udayam</i>' : '', i === A ? '<i class="jka">Arudam</i>' : '', i === K ? '<i class="jkk">Kavippu</i>' : ''].join('');
-      const inner = Object.entries(r.transit).filter(([, x]) => x.sign_index === i).map(([p, x]) => AB[p] + (x.retrograde && p !== 'Rahu' && p !== 'Ketu' ? '℞' : '')).join(' ');
-      const outer = Object.entries(r.jama.planets).filter(([, x]) => x.sign_index === i).map(([p]) => AB[p]).join(' ');
-      return `<div class="jkc${i === U ? ' u' : ''}${i === K ? ' k' : ''}" style="grid-row:${row + 1};grid-column:${col + 1}">
-        <small>${SHORT[i]}</small>${tags}${inner ? `<b>${inner}</b>` : ''}${outer ? `<em>${outer}</em>` : ''}</div>`;
-    }).join('');
+  // Jamakkol chart in the Jamakkol programs' layout: jama planets on an outer ring around the signs, sky planets
+  // inside (retrograde in brackets), with Udayam (shaded), ARU, KAV and Md. South Indian (signs fixed) or North Indian.
+  const RING = { 0: ['t', 1], 1: ['t', 2], 2: ['t', 3], 3: ['r', 1], 4: ['r', 2], 5: ['r', 3], 6: ['b', 2], 7: ['b', 1], 8: ['b', 0], 9: ['l', 2], 10: ['l', 1], 11: ['l', 0] };
+  const skyLabel = (p, x) => x.retrograde && p !== 'Rahu' && p !== 'Ketu' ? `(${AB[p]})` : AB[p];
+  function jkInside(r, i) {
+    return Object.entries(r.transit).filter(([, x]) => x.sign_index === i).map(([p, x]) => skyLabel(p, x))
+      .concat(r.maandi.sign_index === i ? ['Md'] : [], r.arudam.sign_index === i ? ['ARU'] : [], r.kavippu.sign_index === i ? ['KAV'] : []);
+  }
+  function jkChart(r, style) {
+    const U = r.udayam.sign_index, K = r.kavippu.sign_index;
+    const ring = { t: [[], [], [], []], b: [[], [], [], []], l: [[], [], [], []], r: [[], [], [], []] };
+    Object.entries(r.jama.planets).forEach(([p, x]) => { const [side, k] = RING[x.sign_index]; ring[side][k].push(`<span class="jkp">${AB[p]}<small>${Math.floor(x.lon)}°</small></span>`); });
+    const band = (side, cls) => `<div class="${cls} ${side}">${ring[side].map(xs => `<div class="jko2">${xs.join('')}</div>`).join('')}</div>`;
     const t = new Date(r.asked_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: r.place.tz_name });
     const wd = new Date(r.asked_at).toLocaleDateString('en-US', { weekday: 'long', timeZone: r.place.tz_name });
     const jam = `Jamam ${r.jama.number} · ${esc(r.jama.ruler)}` + (wd !== r.jama.weekday ? ` (${esc(r.jama.weekday)}’s)` : '');
-    return `<div class="jkg" role="img" aria-label="Jamakkol chart: Udayam ${esc(r.udayam.sign)}, Arudam ${esc(r.arudam.sign)}, Kavippu ${esc(r.kavippu.sign)}">${cells}
-      <div class="jkm"><b>Jamakkol</b><span>${esc(wd)} ${esc(t)}</span><span>${jam}</span></div></div>
-      <p class="jkl"><b>Bold</b> = planets in the sky now · <em>gold</em> = jama planets (Pb = Paambu)</p>`;
+    let inner;
+    if (style === 'north') {
+      inner = `<div class="jkin chart" id="jk-north"></div>`;
+    } else {
+      inner = `<div class="jkin"><div class="jkg">${Array.from({ length: 12 }, (_, i) => {
+        const [row, col] = SOUTH[i], tags = i === U ? '<i class="jku">Udayam</i>' : '', inside = jkInside(r, i);
+        return `<div class="jkc${i === U ? ' u' : ''}${i === K ? ' k' : ''}" style="grid-row:${row + 1};grid-column:${col + 1}">
+          <small>${SHORT[i]}</small>${tags}${inside.length ? `<b>${inside.map(x => x === 'ARU' ? '<i class="jka">ARU</i>' : x === 'KAV' ? '<i class="jkk">KAV</i>' : x).join(' ')}</b>` : ''}</div>`;
+      }).join('')}<div class="jkm"><b>Jamakkol</b><span>${esc(wd)} ${esc(t)}</span><span>${jam}</span><span>Hora ${esc(r.hora)}</span></div></div></div>`;
+    }
+    return `<div class="jkseg" role="group" aria-label="Chart style"><button type="button" data-style="south" aria-pressed="${style !== 'north'}">South</button><button type="button" data-style="north" aria-pressed="${style === 'north'}">North</button></div>
+      <div class="jkwrap" role="img" aria-label="Jamakkol chart: Udayam ${esc(r.udayam.sign)}, Arudam ${esc(r.arudam.sign)}, Kavippu ${esc(r.kavippu.sign)}">
+        ${band('t', 'jkrow')}${band('l', 'jkcol')}${inner}${band('r', 'jkcol')}${band('b', 'jkrow')}</div>
+      ${style === 'north' ? `<p class="jkn">${esc(wd)} ${esc(t)} · ${jam} · Hora ${esc(r.hora)}</p>` : ''}
+      <p class="jkl">Outer ring: <em>jama planets</em> with their degree · inside: planets in the sky now ((Sa) = retrograde), Md = Maandi, ARU = Arudam, KAV = Kavippu</p>`;
+  }
+  function jkDrawNorth(r) {
+    const el = document.getElementById('jk-north'); if (!el || !window.drawNorth) return;
+    const byH = {}, U = r.udayam.sign_index;
+    for (let i = 0; i < 12; i++) byH[(i - U + 12) % 12] = jkInside(r, i);
+    window.drawNorth(el, U, byH, null, 'UDAYAM');
+  }
+  const dms = lon => { const s = Math.floor(lon / 30), d = lon - s * 30, D = Math.floor(d), m = (d - D) * 60, M = Math.floor(m), S = Math.floor((m - M) * 60);
+    return `${String(s).padStart(2, '0')}s ${String(D).padStart(2, '0')}° ${String(M).padStart(2, '0')}′ ${String(S).padStart(2, '0')}″`; };
+  function jkTables(r) {
+    const rows = [['Udayam', r.udayam], ['Arudam', r.arudam], ['Kavippu (Chatra)', r.kavippu],
+      ...['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'].map(p => [p + (r.transit[p].retrograde && p !== 'Rahu' && p !== 'Ketu' ? ' ℞' : ''), r.transit[p]]), ['Maandi', r.maandi]];
+    return `<p class="jkh">Positions</p><table class="jktab pos"><colgroup><col><col><col></colgroup><thead><tr><th>Point</th><th>Longitude</th><th>Star</th></tr></thead><tbody>${
+      rows.map(([n, x]) => `<tr><td>${esc(n)}</td><td class="n">${dms(x.lon)}</td><td>${esc(x.star)}</td></tr>`).join('')}</tbody></table>
+      <p class="jkh">Prashna confirmation</p><table class="jktab cf"><colgroup><col><col></colgroup><tbody>${r.confirmation.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</tbody></table>`;
   }
 
   async function post(url, body) {
@@ -94,6 +125,7 @@
         <button type="button" class="btn" id="jk-go">Cast now</button>
         <div class="hq-place">Cast for <b id="jk-where">${esc(jkHere ? (jkHere.name || 'where you are') : place)}</b> · <button type="button" class="linkbtn" id="jk-loc">Use where I am now</button></div>
         <div id="jk-out" aria-live="polite"></div>
+        <div id="jk-asks"></div>
       </section>`;
 
     let days = 30;
@@ -138,32 +170,87 @@
         $('jk-where').textContent = 'where you are now';
       }, () => { $('jk-where').textContent = place + ' (location blocked)'; }, { timeout: 10000 });
     };
-    $('jk-go').onclick = async () => {
+    const pid = ctx.id;  // a saved chart: each question is kept (ask once for 81 days, then "did it happen?")
+    const jkTitle = k => (jkinds.find(x => x.kind === k) || {}).title || k;
+    const dmy = iso => new Date(iso.length > 10 ? iso : iso + 'T12:00:00Z').toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+    const OUT = { happened: 'It happened', partly: 'Partly', not: 'It didn’t happen' };
+    async function call(url, opts) {
+      const res = await fetch(url, opts), j = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, j };
+    }
+    function jkShow(r, q) {
+      const out = $('jk-out'), g = r.reading;
+      const li = xs => xs.map(x => `<li>${esc(x)}</li>`).join('');
+      const ask = `I asked a Jamakkol Prashna about ${g.question.title.toLowerCase()}${q ? `: "${q}"` : ''}. ` +
+        `The Arudam is ${g.arudam_house} from the Udayam and the Kavippu is ${g.kavippu_house} from the Udayam. The result was "${g.label}". ` +
+        `${[...g.obstacles, ...g.for, ...g.against].join(' ')} Please explain simply what this means for me and what I should do.`;
+      out.innerHTML = `<div class="hqv ${VERDICT[g.verdict]}"><span>Answer${r.ask && r.ask.asked_at ? ` · asked ${esc(dmy(r.ask.asked_at))}` : ''}</span><b>${esc(g.label)}</b></div>
+        <div id="jk-chart">${jkChart(r, jkStyle())}</div>
+        ${jkTables(r)}
+        <p class="jkh">Reading</p>
+        <ul class="hqr">${li([g.about, ...g.focus, `Next to reach the Udayam: ${g.approaching.planet} (${g.approaching.about}).`, ...g.confirm])}</ul>
+        <p class="jkh warn">Hidden obstacle (Kavippu)</p><ul class="hqr">${li([...g.obstacles, ...g.kavippu_notes])}</ul>
+        ${g.for.length ? `<p class="jkh good">In favour</p><ul class="hqr">${li(g.for)}</ul>` : ''}
+        ${g.against.length ? `<p class="jkh">Against</p><ul class="hqr">${li(g.against)}</ul>` : ''}
+        ${g.strengths.length ? `<p class="jkh">Planet strengths now</p><ul class="hqr">${li(g.strengths)}</ul>` : ''}
+        <p class="hint">${esc(g.lords.text)}</p>
+        ${g.timing ? `<p class="hint">${esc(g.timing.text)}</p>` : ''}
+        ${jkWorking(r)}
+        <button type="button" class="btn ghost" id="jk-ask">Ask Astropositivism to explain</button>
+        <p class="hint">Jamakkol answers the question as you hold it right now, for 81 days${r.ask ? ` (until ${esc(dmy(r.ask.valid_until))})` : ''}. Ask each question once.</p>`;
+      $('jk-ask').onclick = () => window.askSukh && window.askSukh(ask);
+      const paint = () => { $('jk-chart').innerHTML = jkChart(r, jkStyle()); jkDrawNorth(r); };
+      jkDrawNorth(r);
+      $('jk-chart').addEventListener('click', e => {
+        const b = e.target.closest('[data-style]'); if (!b) return;
+        try { localStorage.setItem('sj_jk_style', b.dataset.style); } catch (err) {}
+        paint();
+      });
+    }
+    async function jkList() {
+      const box = $('jk-asks'); if (!pid || !box) return;
+      const r = await call(`/profiles/${pid}/jamakkol`); if (!r.ok) return;
+      box.innerHTML = r.j.length ? `<p class="jkh">Your Jamakkol questions</p><ul class="jkq">${r.j.slice(0, 12).map(a => `<li data-id="${a.id}">
+          <div><b>${esc(jkTitle(a.kind))}</b>${a.question ? ` · “${esc(a.question)}”` : ''}<small>${esc(dmy(a.asked_at))} · ${esc(a.label)}</small></div>
+          ${a.outcome ? `<small class="jko">${OUT[a.outcome]} · <button type="button" class="linkbtn" data-act="redo">change</button></small>`
+            : a.due ? `<div class="jkd"><span>81 days are up. Did it happen?</span>${Object.entries(OUT).map(([k, v]) => `<button type="button" class="sbtn" data-out="${k}">${v.replace('It ', '').replace('didn’t happen', 'No').replace('happened', 'Yes')}</button>`).join('')}</div>`
+            : `<small>Answer stands until ${esc(dmy(a.valid_until))} · <button type="button" class="linkbtn" data-act="see">see it</button> · <button type="button" class="linkbtn" data-act="early">it already happened?</button></small>`}
+        </li>`).join('')}</ul>` : '';
+    }
+    $('jk-asks') && $('jk-asks').addEventListener('click', async e => {
+      const li = e.target.closest('li[data-id]'); if (!li) return;
+      const id = li.dataset.id, o = e.target.closest('[data-out]'), act = e.target.closest('[data-act]');
+      if (o) { await call(`/profiles/${pid}/jamakkol/${id}/outcome`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ outcome: o.dataset.out }) }); return jkList(); }
+      if (act && act.dataset.act === 'see') { const r = await call(`/profiles/${pid}/jamakkol/${id}`); if (r.ok) { jkShow(r.j, r.j.ask.question); $('jk-out').scrollIntoView({ block: 'start' }); } return; }
+      if (act && (act.dataset.act === 'early' || act.dataset.act === 'redo')) {
+        const d = li.querySelector('.jkd, .jko, small:last-child');
+        d.outerHTML = `<div class="jkd"><span>Did it happen?</span>${Object.entries(OUT).map(([k, v]) => `<button type="button" class="sbtn" data-out="${k}">${v.replace('It ', '').replace('didn’t happen', 'No').replace('happened', 'Yes')}</button>`).join('')}</div>`;
+      }
+    });
+    async function jkCast(again) {
       const out = $('jk-out'), btn = $('jk-go');
       btn.disabled = true; out.innerHTML = '<p class="hint">Casting the Jamakkol chart for this minute…</p>';
       const at = jkHere || { lat: req.lat, lon: req.lon, tz_name: req.tz_name };
+      const q = $('jk-text').value.trim(), body = { kind: $('jk-kind').value, lat: at.lat, lon: at.lon, tz_name: at.tz_name };
       try {
-        const r = await post('/jamakkol', { kind: $('jk-kind').value, lat: at.lat, lon: at.lon, tz_name: at.tz_name });
-        const g = r.reading, q = $('jk-text').value.trim();
-        const li = xs => xs.map(x => `<li>${esc(x)}</li>`).join('');
-        const ask = `I asked a Jamakkol Prashna about ${g.question.title.toLowerCase()}${q ? `: "${q}"` : ''}. ` +
-          `The Arudam is ${g.arudam_house} from the Udayam and the Kavippu is ${g.kavippu_house} from the Udayam. The result was "${g.label}". ` +
-          `${[...g.obstacles, ...g.for, ...g.against].join(' ')} Please explain simply what this means for me and what I should do.`;
-        out.innerHTML = `<div class="hqv ${VERDICT[g.verdict]}"><span>Answer</span><b>${esc(g.label)}</b></div>
-          ${jkGrid(r)}
-          <ul class="hqr">${li([g.about, ...g.focus, `Next to reach the Udayam: ${g.approaching.planet} (${g.approaching.about}).`, ...g.confirm])}</ul>
-          <p class="jkh warn">Hidden obstacle (Kavippu)</p><ul class="hqr">${li([...g.obstacles, ...g.kavippu_notes])}</ul>
-          ${g.for.length ? `<p class="jkh good">In favour</p><ul class="hqr">${li(g.for)}</ul>` : ''}
-          ${g.against.length ? `<p class="jkh">Against</p><ul class="hqr">${li(g.against)}</ul>` : ''}
-          ${g.strengths.length ? `<p class="jkh">Planet strengths now</p><ul class="hqr">${li(g.strengths)}</ul>` : ''}
-          ${g.timing ? `<p class="hint">${esc(g.timing.text)}</p>` : ''}
-          ${jkWorking(r)}
-          <button type="button" class="btn ghost" id="jk-ask">Ask Astropositivism to explain</button>
-          <p class="hint">Jamakkol answers the question as you hold it right now, for about 81 days. Ask each question once.</p>`;
-        $('jk-ask').onclick = () => window.askSukh && window.askSukh(ask);
+        if (!pid) { jkShow(await post('/jamakkol', body), q); }
+        else {
+          const r = await call(`/profiles/${pid}/jamakkol`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, question: q || null, again: !!again }) });
+          if (r.status === 409 && r.j.detail && r.j.detail.code === 'asked') {
+            const a = r.j.detail.ask;
+            out.innerHTML = `<div class="qagate jkonce"><b>You asked about ${esc(jkTitle(a.kind).toLowerCase())} on ${esc(dmy(a.asked_at))}.</b>
+              <span>Jamakkol answers a question once. That answer (“${esc(a.label)}”) stands until ${esc(dmy(a.valid_until))}; asking again only blurs it.</span>
+              <div class="pgacts"><button type="button" class="btn" id="jk-see">See that answer</button><button type="button" class="btn ghost" id="jk-new">It’s a different question</button></div></div>`;
+            $('jk-see').onclick = async () => { const x = await call(`/profiles/${pid}/jamakkol/${a.id}`); if (x.ok) jkShow(x.j, a.question); };
+            $('jk-new').onclick = () => jkCast(true);
+          } else if (!r.ok) throw new Error(typeof r.j.detail === 'string' ? r.j.detail : 'Something went wrong');
+          else { jkShow(r.j, q); jkList(); }
+        }
       } catch (e) { out.innerHTML = `<p class="hint err">Couldn’t cast the chart: ${esc(e.message)}</p>`; }
       btn.disabled = false;
-    };
+    }
+    $('jk-go').onclick = () => jkCast(false);
+    jkList();
 
     $('hq-num').addEventListener('keydown', e => { if (e.key === 'Enter') $('hq-go').click(); });
     $('hq-go').onclick = async () => {

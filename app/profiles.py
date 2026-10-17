@@ -378,6 +378,83 @@ def events_delete(profile_id: int, event_id: int, request: Request) -> dict:
     return _events_view(p)
 
 
+# ----- Jamakkol from a chart: ask each question once (81 days), then "did it happen?" -----
+JK_VALID_DAYS = 81
+
+
+class JamakkolAsk(BaseModel):
+    kind: str
+    question: str | None = Field(default=None, max_length=160)
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    tz_name: str = Field(min_length=1, max_length=64)
+    again: bool = False  # "it's a different question": cast even though this kind was asked lately
+
+
+def _jk_view(a: dict) -> dict:
+    from datetime import datetime, timedelta, timezone
+    asked = datetime.fromisoformat(a["asked_at"])
+    until = asked + timedelta(days=JK_VALID_DAYS)
+    return {**a, "valid_until": until.date().isoformat(), "due": datetime.now(timezone.utc) >= until}
+
+
+@router.get("/{profile_id}/jamakkol")
+def jamakkol_asks(profile_id: int, request: Request) -> list[dict]:
+    _require(profile_id, request)
+    return [_jk_view(a) for a in storage.jk_list(profile_id)]
+
+
+@router.post("/{profile_id}/jamakkol")
+def jamakkol_ask(profile_id: int, req: JamakkolAsk, request: Request) -> dict:
+    """Cast now and keep the question; the same kind asked within 81 days answers 409 with the earlier one."""
+    from datetime import datetime, timezone
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+    from core import jamakkol
+    _require(profile_id, request)
+    try:
+        ZoneInfo(req.tz_name)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="Unknown time zone") from exc
+    if req.kind not in jamakkol.QUESTIONS:
+        raise HTTPException(status_code=422, detail="Unknown question kind")
+    if not req.again:
+        recent = next((a for a in map(_jk_view, storage.jk_list(profile_id))
+                       if a["kind"] == req.kind and not a["due"]), None)
+        if recent:
+            raise HTTPException(status_code=409, detail={"code": "asked", "ask": recent})
+    when = datetime.now(timezone.utc)
+    r = jamakkol.jamakkol(req.kind, when, req.lat, req.lon, req.tz_name)
+    q = (req.question or "").strip() or None
+    a = storage.jk_add(profile_id, req.kind, q, when.isoformat(), req.lat, req.lon, req.tz_name,
+                       r["reading"]["verdict"], r["reading"]["label"])
+    return {**r, "ask": _jk_view(a)}
+
+
+@router.get("/{profile_id}/jamakkol/{ask_id}")
+def jamakkol_again(profile_id: int, ask_id: int, request: Request) -> dict:
+    """The earlier chart, cast again for the moment and place it was asked (the same answer)."""
+    from datetime import datetime
+    from core import jamakkol
+    _require(profile_id, request)
+    a = storage.jk_get(profile_id, ask_id)
+    if not a:
+        raise HTTPException(status_code=404, detail="Question not found")
+    r = jamakkol.jamakkol(a["kind"], datetime.fromisoformat(a["asked_at"]), a["lat"], a["lon"], a["tz_name"])
+    return {**r, "ask": _jk_view(a)}
+
+
+class JamakkolOutcome(BaseModel):
+    outcome: str | None = Field(default=None, pattern="^(happened|partly|not)$")
+
+
+@router.put("/{profile_id}/jamakkol/{ask_id}/outcome")
+def jamakkol_outcome(profile_id: int, ask_id: int, req: JamakkolOutcome, request: Request) -> dict:
+    _require(profile_id, request)
+    if not storage.jk_outcome(profile_id, ask_id, req.outcome):
+        raise HTTPException(status_code=404, detail="Question not found")
+    return _jk_view(storage.jk_get(profile_id, ask_id))
+
+
 @router.get("/{profile_id}/upcoming")
 def upcoming_changes(profile_id: int, request: Request, tz: str | None = None) -> dict:
     """Coming up for you: the next Dasha period changes and the sky changes that matter to this chart."""

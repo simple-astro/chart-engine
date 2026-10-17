@@ -130,6 +130,10 @@ def _connect() -> sqlite3.Connection:
         " valence INTEGER NOT NULL, feelings TEXT NOT NULL, causes TEXT NOT NULL, note TEXT, scope TEXT NOT NULL,"
         " snapshot TEXT NOT NULL)"
     )
+    # Jamakkol questions asked from a chart (core/jamakkol.py): ask each once (81 days), then "did it happen?".
+    conn.execute("CREATE TABLE IF NOT EXISTS jamakkol_asks (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER"
+                 " NOT NULL, kind TEXT NOT NULL, question TEXT, asked_at TEXT NOT NULL, lat REAL NOT NULL, lon REAL NOT"
+                 " NULL, tz_name TEXT NOT NULL, verdict TEXT NOT NULL, label TEXT NOT NULL, outcome TEXT, outcome_at TEXT)")
     # Life events the person entered (app/life_events.py): checked against their chart, and the real-life backtest.
     conn.execute(
         "CREATE TABLE IF NOT EXISTS life_events ("
@@ -228,6 +232,7 @@ def delete(profile_id: int, owner: str | None = None) -> bool:
         conn.execute("DELETE FROM answer_cache WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM mood_logs WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM life_events WHERE profile_id = ?", (profile_id,))
+        conn.execute("DELETE FROM jamakkol_asks WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM prep_done WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM settings WHERE key = ?", (f"mood_share:{profile_id}",))
         return conn.execute("DELETE FROM profiles WHERE id = ?", (profile_id,)).rowcount > 0
@@ -923,3 +928,37 @@ def factcheck_rate(days: int = 30) -> dict:
                             (since,)).fetchall()
     caught = sum(1 for r in rows if (json.loads(r["factcheck"]) or {}).get("found"))
     return {"answers": len(rows), "caught": caught}
+
+
+# ----- Jamakkol questions; callers check the profile belongs to the person first -----
+def jk_add(profile_id: int, kind: str, question: str | None, asked_at: str, lat: float, lon: float, tz_name: str,
+           verdict: str, label: str) -> dict:
+    with _lock, _connect() as conn:
+        cur = conn.execute("INSERT INTO jamakkol_asks (profile_id, kind, question, asked_at, lat, lon, tz_name, verdict,"
+                           " label) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                           (profile_id, kind, question, asked_at, lat, lon, tz_name, verdict, label))
+        return dict(conn.execute("SELECT * FROM jamakkol_asks WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def jk_list(profile_id: int) -> list[dict]:
+    with _lock, _connect() as conn:
+        return [dict(r) for r in conn.execute("SELECT * FROM jamakkol_asks WHERE profile_id = ? ORDER BY id DESC",
+                                              (profile_id,))]
+
+
+def jk_get(profile_id: int, ask_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM jamakkol_asks WHERE profile_id = ? AND id = ?", (profile_id, ask_id)).fetchone()
+    return dict(r) if r else None
+
+
+def jk_outcome(profile_id: int, ask_id: int, outcome: str | None) -> bool:
+    with _lock, _connect() as conn:
+        return conn.execute("UPDATE jamakkol_asks SET outcome = ?, outcome_at = ? WHERE profile_id = ? AND id = ?",
+                            (outcome, _now() if outcome else None, profile_id, ask_id)).rowcount > 0
+
+
+def jk_outcomes() -> list[dict]:
+    """Every answered Jamakkol question (verdict and outcome only), for Studio › Quality."""
+    with _lock, _connect() as conn:
+        return [dict(r) for r in conn.execute("SELECT kind, verdict, outcome FROM jamakkol_asks WHERE outcome IS NOT NULL")]

@@ -887,6 +887,9 @@ def quality_home(request: Request) -> dict:
             if v in ("pass", "fail"):
                 checks.setdefault(names.get(k, k), [0, 0])[v == "fail"] += 1
     runs = storage.runs(30)
+    jk = storage.jk_outcomes()
+    matched = lambda v, o: ((v in ("yes", "likely") and o in ("happened", "partly")) or (v == "no" and o == "not")
+                            or (v == "mixed" and o == "partly"))
     return {
         "test_set": [{k: t[k] for k in ("id", "topic", "question", "text", "status", "profile_name", "author")}
                      for t in tests],
@@ -898,6 +901,7 @@ def quality_home(request: Request) -> dict:
             "reviews": len(done),
             "checks": [{"name": n, "pass": p, "fail": f} for n, (p, f) in checks.items()],
             "tags": Counter(t for r in done for t in r["tags"]).most_common(6),
+            "jamakkol": {"answered": len(jk), "matched": sum(matched(x["verdict"], x["outcome"]) for x in jk)},
             "scores": [{"id": r["id"], "at": r["created_at"], "score": (r["scores"] or {}).get("overall", {}).get("live"),
                         "version": r["teach_version"]} for r in reversed(runs)
                        if r["kind"] == "run" and r["status"] == "done"],

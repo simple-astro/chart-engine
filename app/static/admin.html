@@ -1378,7 +1378,8 @@ async function loadQuality() {
       [last ? sc(last.score) : '–', last ? `Latest live score${prev ? ' · ' + diff(prev.score, last.score) + ' since the run before' : ''}` : 'No live run yet'],
       [d.factcheck.answers ? Math.round(100 * d.factcheck.caught / d.factcheck.answers) + '%' : '–', `of answers had a fact-check catch (${d.factcheck.caught} of ${d.factcheck.answers}, 30 days)`],
       [String(QA.test_set.length), 'test questions (aim for 30–50)'],
-      [String(d.reviews), 'answers reviewed']].map(([v, l]) => `<div class="qatile"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+      [String(d.reviews), 'answers reviewed'],
+      [d.jamakkol.answered ? `${d.jamakkol.matched}/${d.jamakkol.answered}` : '–', d.jamakkol.answered ? 'Jamakkol answers matched what happened' : 'Jamakkol: no outcomes reported yet']].map(([v, l]) => `<div class="qatile"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
     const bars = d.checks.map(c => { const n = c.pass + c.fail, p = n ? Math.round(100 * c.pass / n) : 0;
       return `<div class="qabar"><span>${esc(c.name)}</span><span class="t" role="img" aria-label="${p}% passed"><i style="width:${p}%"></i></span><span class="n">${p}%</span></div>`; }).join('');
     $('qa-dash').innerHTML = `<div><span class="lbl">Reviews: share passed per check</span>${bars || '<p class="pgmeta">No reviews yet.</p>'}</div>

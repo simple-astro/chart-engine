@@ -6,11 +6,17 @@ Three points and eight "jama" planets are worked out from the clock, the Sun and
   twelve signs between sunrise and sunset, each sign taking a twelfth of the daylight. At night the same again, from
   the Sun's degree at sunset to the next sunrise (checked against jamakkolprasannam.com's chart at 00:15 IST).
 - Arudam (the intention behind the question): from the minute hand only. Each 5 minutes is one sign from Aries.
-- Kavippu (the hidden obstacle): the Sun's sign gives a veedhi (Taurus, Aries or Gemini). Count from the Arudam to
-  the veedhi, and the same count from the Udayam gives the Kavippu.
+- Kavippu (the hidden obstacle, also called Chatra): the Sun's sign gives a veedhi (Taurus, Aries or Gemini). Count
+  from the Arudam to the veedhi, and the same count from the Udayam gives the Kavippu's sign; its degree mirrors the
+  Arudam's (30° minus the Arudam's degree), as three Jamakkol programs show. It moves backwards: the first planet
+  below it is the one it is "catching".
 - Jama planets (the outer planets): Sun, Mars, Jupiter, Mercury, Venus, Saturn, Moon and Paambu (the snake), 45°
   apart in that order. They turn backwards through the zodiac at 45° per jamam of 1½ hours. At 6:00 on the clock
   the weekday's lord stands at the very end of Pisces. Each is in the sign of its degree.
+- Maandi: the Sun's degree now, plus 12°, plus 24° for each part of the day (or night) before Gulika's part
+  (by day Saturday is the 1st part … Sunday the 7th; by night Tuesday the 1st … Wednesday the 7th), plus 180° at
+  night. Matches jamakkolprasannam.com to 0.01° (it uses Lahiri; ours is KP, about 0.1° apart). Shown as a point
+  to take care around, never read for death.
 The transit planets (the inner planets) are the real sky at that moment; they decide strength. The reading rules
 below are deterministic: they never invent a fact, and the AI only explains what they found.
 """
@@ -38,6 +44,12 @@ SUBHA_ARUDAM = {10, 11, 0, 1, 2, 3}      # Aquarius to Cancer: the Moon's half
 # Planets in the Udayam by how they rise: head first (success), back first (failure), both ways (delay).
 PLANET_RISE = {"Mercury": "head", "Jupiter": "head", "Venus": "head", "Rahu": "head", "Paambu": "head",
                "Sun": "back", "Mars": "back", "Saturn": "back", "Moon": "both", "Ketu": "both"}
+GULIKA_PART_DAY = {0: 7, 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1}    # Vedic weekday (Sunday = 0) -> part of the day
+GULIKA_PART_NIGHT = {0: 3, 1: 2, 2: 1, 3: 7, 4: 6, 5: 5, 6: 4}
+MOOLATRIKONA = {"Sun": 4, "Moon": 1, "Mars": 0, "Mercury": 5, "Jupiter": 8, "Venus": 6, "Saturn": 10}
+STRENGTH = {"exalted": 4, "moolatrikona": 3, "own": 2, "debilitated": 0}  # anything else 1
+CHALDEAN = ["Saturn", "Jupiter", "Mars", "Sun", "Venus", "Mercury", "Moon"]
+DAY_LORD = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]  # Vedic weekday, Sunday = 0
 TAMIL_MONTH = ["Chithirai", "Vaikasi", "Aani", "Aadi", "Aavani", "Purattasi", "Aippasi", "Karthigai", "Margazhi",
                "Thai", "Maasi", "Panguni"]  # by the Sun's sidereal sign, Aries first
 
@@ -86,7 +98,8 @@ def _house(from_sign: int, sign: int) -> int:
 
 def _point(lon: float) -> dict:
     lon %= 360
-    return {"lon": round(lon, 2), "sign_index": _sign(lon), "sign": C.SIGNS[_sign(lon)], "deg": round(lon % 30, 2)}
+    return {"lon": round(lon, 4), "sign_index": _sign(lon), "sign": C.SIGNS[_sign(lon)], "deg": round(lon % 30, 4),
+            "star": C.NAKSHATRAS[int(lon // C.NAKSHATRA_ARC) % 27]}
 
 
 def _day_bounds(when: datetime, lat: float, lon: float, tz: str) -> tuple[str, datetime, datetime, float]:
@@ -137,14 +150,77 @@ def cast(when: datetime, lat: float, lon: float, tz: str) -> dict:
     veedhi = VEEDHI[sun_sign]
     kav_sign = (udayam["sign_index"] + (veedhi - arudam["sign_index"]) % 12) % 12
     count = (veedhi - arudam["sign_index"]) % 12 + 1
-    kavippu = {"sign_index": kav_sign, "sign": C.SIGNS[kav_sign], "veedhi": C.SIGNS[veedhi], "count": count,
-               "sun_sign": C.SIGNS[sun_sign], "tamil_month": TAMIL_MONTH[sun_sign]}
+    kavippu = {**_point(kav_sign * 30 + min(30 - arudam["deg"], 29.9999)), "veedhi": C.SIGNS[veedhi],
+               "count": count, "sun_sign": C.SIGNS[sun_sign], "tamil_month": TAMIL_MONTH[sun_sign]}
     transit = {n: {**_point(g.longitude), "retrograde": g.retrograde, "dignity": dignity(n, g.sign_index)}
                for n, g in grahas.items()}
+    hora_i = min(11, int(frac * 12)) + (12 if period == "night" else 0)
+    vedic_wd = (start.astimezone(ZoneInfo(tz)).weekday() + 1) % 7  # the day (or night) began at this sunrise/sunset
+    part = (GULIKA_PART_DAY if period == "day" else GULIKA_PART_NIGHT)[vedic_wd]
+    maandi = _point(grahas["Sun"].longitude + (180 if period == "night" else 0) + 12 + 24 * (part - 1))
+    hora = CHALDEAN[(CHALDEAN.index(DAY_LORD[vedic_wd]) + hora_i) % 7]
     return {"asked_at": when.isoformat(), "place": {"lat": lat, "lon": lon, "tz_name": tz}, "period": period,
             "period_start": start.isoformat(), "period_end": end.isoformat(),
-            "udayam": udayam, "arudam": arudam, "kavippu": kavippu, "jama": jama_positions(when, tz),
-            "transit": transit}
+            "udayam": udayam, "arudam": arudam, "kavippu": kavippu, "maandi": maandi, "jama": jama_positions(when, tz),
+            "transit": transit, "hora": hora, "vedic_weekday":
+            ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][vedic_wd]}
+
+
+def _exchanges(a_signs: dict, b_signs: dict, same: bool) -> list[str]:
+    """Parivarthana: planet a sits in b's sign while b sits in a's (a from one set, b from the other)."""
+    out = []
+    for a, sa in a_signs.items():
+        for b, sb in b_signs.items():
+            if a == b or (same and a > b):
+                continue
+            if C.SIGN_LORDS[sa] == b and C.SIGN_LORDS[sb] == a:
+                out.append(f"{a}–{b}")
+    return out
+
+
+def confirmation(chart: dict) -> list[list[str]]:
+    """The Prashna confirmation checklist (as Jamakkol programs list it): what touches the Udayam, the houses of the
+    Arudam and Kavippu, strong and weak planets in both layers, the 10th lord, exchanges, what the Kavippu catches."""
+    U, A, K = chart["udayam"], chart["arudam"], chart["kavippu"]
+    jama, sky = chart["jama"]["planets"], chart["transit"]
+    seven = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]
+    ahead = {p: (x["lon"] - U["lon"]) % 360 for p, x in jama.items()}
+    dig = lambda p, si: dignity(p, si)
+    names = lambda xs: ", ".join(xs) if xs else "–"
+    tl = C.SIGN_LORDS[(U["sign_index"] + 9) % 12]
+    pts = {**{f"{p} (jama)": x["lon"] for p, x in jama.items()}, **{p: x["lon"] for p, x in sky.items()}}
+    behind = {n: (K["lon"] - lon) % 360 for n, lon in pts.items() if (K["lon"] - lon) % 360 > 1e-6}
+    js = {p: x["sign_index"] for p, x in jama.items() if p in seven}
+    ss = {p: sky[p]["sign_index"] for p in seven}
+    return [
+        ["Jama planet that crossed the Udayam", max(ahead, key=ahead.get)],
+        ["Jama planet approaching the Udayam", min(ahead, key=ahead.get)],
+        ["Sky planets in the Udayam", names([p for p, x in sky.items() if x["sign_index"] == U["sign_index"]])],
+        ["Jama planets in the Udayam", names([p for p, x in jama.items() if x["sign_index"] == U["sign_index"]])],
+        ["Udayam to Arudam (house)", str(_house(U["sign_index"], A["sign_index"]))],
+        ["Udayam to Kavippu (house)", str(_house(U["sign_index"], K["sign_index"]))],
+        ["Exalted sky planets", names([p for p in sky if sky[p]["dignity"] == "exalted"])],
+        ["Exalted jama planets", names([p for p in seven if dig(p, jama[p]["sign_index"]) == "exalted"])],
+        ["Debilitated sky planets", names([p for p in sky if sky[p]["dignity"] == "debilitated"])],
+        ["Debilitated jama planets", names([p for p in seven if dig(p, jama[p]["sign_index"]) == "debilitated"])],
+        ["Same sign, sky and jama", names([p for p in seven if jama[p]["sign_index"] == sky[p]["sign_index"]]
+                                          + (["Paambu"] if jama["Paambu"]["sign_index"] == sky["Rahu"]["sign_index"] else []))],
+        ["10th lord from the Udayam", f"{tl}: sky in house {_house(U['sign_index'], sky[tl]['sign_index'])}, "
+                                      f"jama in house {_house(U['sign_index'], jama[tl]['sign_index'])}"],
+        ["Exchanges among sky planets", names(_exchanges(ss, ss, True))],
+        ["Exchanges among jama planets", names(_exchanges(js, js, True))],
+        ["Exchanges, sky with jama", names(_exchanges(ss, js, False))],
+        ["Kavippu is catching", min(behind, key=behind.get) if behind else "–"],
+        ["Maandi from the Udayam (house)", str(_house(U["sign_index"], chart["maandi"]["sign_index"]))],
+        ["Hora", chart["hora"]],
+    ]
+
+
+def _power(planet: str, transit: dict) -> tuple[int, str]:
+    """Strength score of a sign lord in the sky: exalted 4, moolatrikona 3, own 2, debilitated 0, otherwise 1."""
+    x = transit[planet]
+    d = "moolatrikona" if MOOLATRIKONA.get(planet) == x["sign_index"] and x["dignity"] != "exalted" else x["dignity"]
+    return STRENGTH.get(d, 1), d
 
 
 def _strength(planet: str, transit: dict) -> str:
@@ -238,6 +314,13 @@ def read(chart: dict, kind: str) -> dict:
         elif U not in SUBHA_UDAYAM and A not in SUBHA_ARUDAM:
             neg.append("Both the Udayam and the Arudam fall in inauspicious halves.")
 
+    M = chart["maandi"]["sign_index"]
+    if M == U:
+        neg.append("Maandi sits on the Udayam: take extra care, and expect delays.")
+    elif _house(U, M) in houses:
+        neg.append(f"Maandi sits in house {_house(U, M)} from the Udayam, the house of this matter: take care, "
+                   "and expect delays.")
+
     score = len(pos) - len(neg)
     if block:
         verdict, label = "no", "Not favourable now"
@@ -276,9 +359,25 @@ def read(chart: dict, kind: str) -> dict:
             good = x["dignity"] == "exalted"
             strengths.append(f"{p} is {'exalted' if good else 'weak (debilitated)'}: {ABOUT[p]} "
                              f"{'prosper' if good else 'struggle'}" + (" (but it is with the Kavippu)" if good and p in in_kavippu else "") + ".")
+    # Double confirmation: a planet that matters here whose jama and sky positions share a sign.
+    matters = set(karakas) | set(in_udayam) | set(in_kavippu) | {approaching}
+    doubled = [p for p in JAMA if p != "Paambu" and p in matters and jama[p]["sign_index"] == transit[p]["sign_index"]]
+    if jama["Paambu"]["sign_index"] == transit["Rahu"]["sign_index"] and ({"Paambu", "Rahu"} & matters):
+        doubled.append("Paambu")
+    confirm += [f"{p} is doubled (its jama and sky positions share {C.SIGNS[jama[p]['sign_index']]}): its signal "
+                "here is confirmed." for p in doubled]
+    # Arudam lord against Kavippu lord (shown for the astrologer's judgement; it does not change the answer).
+    al, kl = C.SIGN_LORDS[A], C.SIGN_LORDS[K]
+    (ap, ad), (kp, kd) = _power(al, transit), _power(kl, transit)
+    side = ("the hidden side (Kavippu) is stronger" if kp > ap else "the intention (Arudam) is stronger" if ap > kp
+            else "they are evenly matched")
+    lords = {"arudam_lord": al, "arudam_power": ap, "arudam_dignity": ad, "kavippu_lord": kl, "kavippu_power": kp,
+             "kavippu_dignity": kd,
+             "text": f"Arudam lord {al} ({ad}, {ap}) against Kavippu lord {kl} ({kd}, {kp}): {side}."}
     return {
         "question": {"kind": kind, "title": title, "houses": houses, "karakas": karakas},
-        "confirm": confirm, "kavippu_notes": kav_notes, "strengths": strengths,
+        "confirm": confirm, "kavippu_notes": kav_notes, "strengths": strengths, "lords": lords, "doubled": doubled,
+        "maandi_house": _house(U, M),
         "verdict": verdict, "label": label, "about": about,
         "focus": [f"{p} is in the Udayam: the question touches {ABOUT[p]}." for p in dict.fromkeys(in_udayam)][:3]
                  or [f"The Udayam is empty: no urgency; the Udayam lord {lord} shows the matter."],
@@ -291,7 +390,7 @@ def read(chart: dict, kind: str) -> dict:
 
 def jamakkol(kind: str, when: datetime, lat: float, lon: float, tz: str) -> dict:
     chart = cast(when, lat, lon, tz)
-    return {**chart, "reading": read(chart, kind)}
+    return {**chart, "confirmation": confirmation(chart), "reading": read(chart, kind)}
 
 
 def kinds() -> list[dict]:

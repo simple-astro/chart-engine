@@ -119,3 +119,54 @@ def test_book_rules_and_the_working():
     tl = r["jama"]["timeline"]
     assert len(tl) == 16 and tl[0] == {"n": 1, "ruler": "Saturn", "start": "06:00", "end": "07:30"}
     assert tl[3]["ruler"] == "Jupiter" and tl[8]["ruler"] == "Saturn"     # jamam 4 and night's first
+
+
+def test_maandi_matches_the_calculator():
+    # jamakkolprasannam.com (Thiruvarur): Sunday day 12:00 Pisces 6°40', Sunday night 23:00 Gemini 1°07',
+    # Wednesday night 23:00 Virgo 10°06', Saturday day 12:00 Libra 18°37'; it uses Lahiri, we use KP (~0.1° apart)
+    TVR = (10.7661, 79.6384, "Asia/Kolkata")
+    for (d, h), want in ((("2026-10-18", 12), 336.67), (("2026-10-18", 23), 61.12), (("2026-10-21", 23), 160.1),
+                         (("2026-10-24", 12), 198.62), (("2026-10-18", 0), 84.17)):
+        y, mo, da = map(int, d.split("-"))
+        got = J.cast(at(y, mo, da, h, 15 if h == 0 else 0, 19 if h == 0 else 0, tz="Asia/Kolkata"), *TVR)["maandi"]["lon"]
+        assert abs((got - want + 180) % 360 - 180) < 0.2, (d, h, got, want)
+
+
+def test_lords_and_double_confirmation_are_information_only():
+    c = J.cast(at(2026, 10, 17, 11, 35, 52), *WPG)
+    g = J.read(c, "career")
+    assert g["lords"]["arudam_lord"] == "Mars" and 0 <= g["lords"]["kavippu_power"] <= 4
+    assert "against Kavippu lord" in g["lords"]["text"]
+    assert all(p in J.JAMA for p in g["doubled"])
+
+
+def test_ask_once_and_did_it_happen(tmp_path, monkeypatch):
+    import sqlite3
+    from datetime import timedelta
+    monkeypatch.setenv("CHART_DB_PATH", str(tmp_path / "p.db"))
+    c = TestClient(app)
+    pid = c.post("/profiles", json={"name": "Asha", "dob": "1990-05-15", "tob": "14:30:00", "lat": 28.6139,
+                                    "lon": 77.209, "tz_name": "Asia/Kolkata"}).json()["id"]
+    body = {"kind": "career", "question": "Will I get the bank job?", "lat": 49.9, "lon": -97.1, "tz_name": "America/Winnipeg"}
+    first = c.post(f"/profiles/{pid}/jamakkol", json=body)
+    assert first.status_code == 200 and first.json()["ask"]["due"] is False
+    ask = first.json()["ask"]
+    again = c.post(f"/profiles/{pid}/jamakkol", json=body)
+    assert again.status_code == 409 and again.json()["detail"]["ask"]["id"] == ask["id"]
+    assert c.post(f"/profiles/{pid}/jamakkol", json={**body, "again": True}).status_code == 200
+    assert c.post(f"/profiles/{pid}/jamakkol", json={**body, "kind": "money"}).status_code == 200
+    seen = c.get(f"/profiles/{pid}/jamakkol/{ask['id']}").json()                # the same chart again
+    assert seen["udayam"] == first.json()["udayam"] and seen["reading"]["label"] == ask["label"]
+    # 90 days on: the question is due for "did it happen?"
+    con = sqlite3.connect(tmp_path / "p.db")
+    old = (datetime.fromisoformat(ask["asked_at"]) - timedelta(days=90)).isoformat()
+    con.execute("UPDATE jamakkol_asks SET asked_at = ? WHERE id = ?", (old, ask["id"])); con.commit()
+    due = next(a for a in c.get(f"/profiles/{pid}/jamakkol").json() if a["id"] == ask["id"])
+    assert due["due"] is True
+    r = c.put(f"/profiles/{pid}/jamakkol/{ask['id']}/outcome", json={"outcome": "happened"})
+    assert r.status_code == 200 and r.json()["outcome"] == "happened"
+    assert c.put(f"/profiles/{pid}/jamakkol/{ask['id']}/outcome", json={"outcome": "maybe"}).status_code == 422
+    from app import storage
+    assert storage.jk_outcomes() == [{"kind": "career", "verdict": ask["verdict"], "outcome": "happened"}]
+    c.delete(f"/profiles/{pid}")
+    assert storage.jk_list(pid) == []
