@@ -131,7 +131,7 @@ def test_still_wrong_sentences_are_removed(monkeypatch, tmp_path):
 def test_clean_draft_costs_no_extra_call(monkeypatch, tmp_path):
     r, calls, _ = _run(monkeypatch, tmp_path, ["Mercury rules your 10th house."])
     assert len(calls) == 1 and r["reply"] == "Mercury rules your 10th house."
-    assert storage.recent_queries(1)[0]["factcheck"] == {"found": [], "revised": False, "removed": []}
+    assert storage.recent_queries(1)[0]["factcheck"] == {"found": [], "revised": False, "removed": [], "style": []}
 
 
 def test_cached_answer_failing_the_check_is_not_reused(monkeypatch, tmp_path):

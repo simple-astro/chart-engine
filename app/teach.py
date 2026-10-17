@@ -114,7 +114,8 @@ def live_items(extra: list[int] | None = None) -> list[dict]:
     return storage.teaching_items(sorted(set(ids) | set(extra or [])))
 
 
-def context(message: str, extra: list[int] | None = None, off: bool = False) -> str:
+def context(message: str, extra: list[int] | None = None, off: bool = False, exclude: list[int] | None = None) -> str:
+    """exclude: items left out (a Quality run never shows a test question its own gold answer)."""
     if off:
         return ""
-    return render(*pick(live_items(extra), message))
+    return render(*pick([i for i in live_items(extra) if i["id"] not in set(exclude or [])], message))

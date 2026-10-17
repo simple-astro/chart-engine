@@ -65,14 +65,16 @@ SYSTEM = (
     "Length: HARD LIMIT of {words} words per reply, counting headings and bullets; aim well under it. "
     "Lead with the direct answer, then Do's, Don'ts and an upaya; skip exhaustive lists, and offer to go deeper "
     "on one point instead of covering everything.\n"
-    "Style: warm and conversational, never stiff; clear short bullets when helpful. Frame outcomes as tendencies, "
+    "Style: warm and conversational, never stiff; clear short bullets when helpful. Always ground the answer in this "
+    "person's own placements (name the planet, house, nakshatra or dasha behind it), and never use stock phrases "
+    "like 'the cosmos', 'the universe has a plan' or 'the stars say'. Frame outcomes as tendencies, "
     "never certainties; do not give medical, legal or financial advice, and for a high-stakes or sensitive "
     "decision say a review with the founding astrologer is worth it. If the question is unrelated to astrology or "
     "the chart, politely steer back. Today's date is given in the data.\n\nCHART DATA (JSON):\n"
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "kp-13"
+CONTEXT_VERSION = "kp-14"
 
 TOOLS = [
     {"name": "get_transits",
@@ -349,7 +351,7 @@ def teach_context(message: str) -> str:
     the KP verdicts so the cached system prompt stays the same."""
     from app import teach
     t = _TEST.get() or {}
-    return teach.context(message, extra=t.get("drafts"), off=bool(t.get("no_teaching")))
+    return teach.context(message, extra=t.get("drafts"), off=bool(t.get("no_teaching")), exclude=t.get("exclude"))
 
 
 def _word_limit() -> int:
@@ -401,17 +403,20 @@ def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs
                                                      if t.get("name") == "get_kp_prediction"}
     kp = {t: kp_predict.predict(profile["chart"], t) for t in topics if t in kp_predict.TOPICS}
     facts = factcheck.facts_from(synthesis.build(profile), profile["chart"], [t["data"] for t in tool_outs], kp)
-    issues = factcheck.check(text, facts)
-    report = {"found": [f"{i['claim']} → {i['truth']}" for i in issues], "revised": False, "removed": []}
+    issues, style = factcheck.check(text, facts), factcheck.style_check(text)
+    report = {"found": [f"{i['claim']} → {i['truth']}" for i in issues], "revised": False, "removed": [],
+              "style": [s["detail"] for s in style]}
     use = None
-    if issues:
+    if issues or style:
         yield {"type": "status", "text": "Double-checking against your chart…"}
         try:
-            fixed, use = revise(profile, history, message, text, factcheck.correction_note(issues, _word_limit()), model)
+            fixed, use = revise(profile, history, message, text,
+                                factcheck.correction_note(issues, _word_limit(), style), model)
         except Exception:  # if the correction call fails, fall back to removing the wrong sentences
             fixed = ""
         if fixed:
             report["revised"] = True
+            report["style_left"] = [s["detail"] for s in factcheck.style_check(fixed)]  # logged, never stripped
             text, issues = fixed, factcheck.check(fixed, facts)
         if issues:
             report["removed"] = [i["sentence"] for i in issues]

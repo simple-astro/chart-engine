@@ -318,11 +318,46 @@ def verdict_checks(sent: str, facts: dict, flag) -> None:
                  f"the KP engine rates it {main} ({rated})")
 
 
-def correction_note(issues: list[dict], words: int | None = None) -> str:
+# ----- style checks: cheap, in code, no extra AI call unless one fires (then the same single rewrite) -----
+GENERIC = re.compile(r"\b(the cosmos|cosmic (?:forces?|energ\w*|plan|timing)|celestial energ\w*|the universe (?:is|has|wants|will)\w*"
+                     r"|universe has a plan|the stars (?:say|are|have|align\w*|want)|stars align\w*|the planets are (?:telling|asking)"
+                     r"|divine timing|everything happens for a reason|trust the process|written in the stars)\b", re.I)
+SPECIFIC = re.compile(r"\b(" + "|".join(PLANETS + SIGNS) + r"|lagna|ascendant|house|bhava|dasha|daśā|antardasha|mahadasha"
+                      r"|bhukti|nakshatra|sub ?lord|star ?lord|lord)\b", re.I)
+ACTION = re.compile(r"\b(do'?s|don'?ts?|upaya?|remed(?:y|ies)|try|avoid|wear|donate|offer|feed|serve|plan|keep|start|focus|"
+                    r"apply|practi[cs]e|spend|visit|light|help|save|speak|talk|write|wait|prepare|consider|choose|book)\b", re.I)
+STYLE_MIN_WORDS = 60  # short replies (a greeting, a redirect, a one-line fact) are left alone
+
+
+def style_check(text: str) -> list[dict]:
+    """Stock phrases, an answer that never names the person's own placements, and one with nothing to do."""
+    out = []
+    for sent in sentences(text):
+        if m := GENERIC.search(sent):
+            out.append({"kind": "generic", "sentence": sent, "detail": f"stock phrase “{m.group(0)}”"})
+    if len(text.split()) >= STYLE_MIN_WORDS:
+        if not SPECIFIC.search(text):
+            out.append({"kind": "specific", "detail": "names none of their actual placements (planet, house, sign, "
+                                                       "nakshatra or dasha)"})
+        if not ACTION.search(text):
+            out.append({"kind": "actionable", "detail": "gives nothing concrete to do and no upaya"})
+    return out
+
+
+def correction_note(issues: list[dict], words: int | None = None, style: list[dict] | None = None) -> str:
     lines = "\n".join(f"- You wrote \"{i['claim']}\" but {i['truth']}." for i in issues)
+    fixes = {"generic": "Replace each stock phrase ({}) with the actual chart reason from the data.",
+             "specific": "Name at least one of this person's actual placements from the chart data (a planet with "
+                         "its house or sign, the nakshatra, or the running dasha) and say why it matters here.",
+             "actionable": "End with something concrete to do: a short Do / Don't and one simple upaya."}
+    style = style or []
+    generic = ", ".join(dict.fromkeys(s["detail"].split("“")[-1].rstrip("”") for s in style if s["kind"] == "generic"))
+    style_lines = "\n".join(f"- {fixes[k].format(generic)}" for k in dict.fromkeys(s["kind"] for s in style))
     limit = f"Stay within {words} words in total. " if words else ""
-    return ("Your draft contradicts the computed chart data:\n" + lines +
-            "\nRewrite the whole answer, fixing only these points and keeping everything else. Do not add any new "
+    head = (("Your draft contradicts the computed chart data:\n" + lines + "\n") if issues else "") + \
+           (("Your draft also needs these changes:\n" if issues else "Your draft needs these changes:\n") + style_lines + "\n"
+            if style else "")
+    return (head + "Rewrite the whole answer, fixing only these points and keeping everything else. Do not add any new "
             "astrological facts, dates or yogas that are not in the chart data. Start directly with the corrected "
             "answer: no apology and no 'here is the corrected answer'. Keep every section, including the Do and "
             "Don't lists. " + limit + "If it runs long, shorten the explanation, never the Do and Don't lists.")

@@ -53,6 +53,11 @@ def _cost(rows: list[dict]) -> float:
     return round(sum(config.cost(r["model"], r["inp"], r["out"], r["cr"], r["cw"]) or 0 for r in rows), 4)
 
 
+def _studio_cost(today_only: bool) -> float:
+    """What Studio experiments cost: Playground answers, model comparisons and Quality runs."""
+    return round(_cost(storage.token_totals(today_only, ("playground", "compare"))) + storage.eval_costs(today_only), 4)
+
+
 @router.get("/me")
 def me(request: Request) -> dict:
     role = "owner" if request.state.admin else getattr(request.state, "role", None)
@@ -79,8 +84,8 @@ def overview(request: Request) -> dict:
         "models": config.MODELS,
         "providers": config.providers_status(),
         "gated": access.enabled(),
-        "today": {"paid_questions": sum(r["n"] for r in today), "cost": _cost(today)},
-        "all_time": {"paid_questions": sum(r["n"] for r in ever), "cost": _cost(ever)},
+        "today": {"paid_questions": sum(r["n"] for r in today), "cost": _cost(today), "studio_cost": _studio_cost(True)},
+        "all_time": {"paid_questions": sum(r["n"] for r in ever), "cost": _cost(ever), "studio_cost": _studio_cost(False)},
         "charts": sum(t["charts"] for t in testers),
         "testers": [{**t, "label": _tester(t["owner"], labels), "owner": None} for t in testers],
     }
@@ -707,10 +712,14 @@ def studio_teach(request: Request) -> dict:
 
 
 @router.post("/admin/api/studio/drafts/{draft_id}/{action}")
-def studio_publish(draft_id: int, action: str, request: Request) -> dict:
-    """Publish a draft (or a retired item) into the live teaching, or retire a published one: owner and Admin."""
-    from app import teach
+async def studio_publish(draft_id: int, action: str, request: Request) -> dict:
+    """Publish a draft (or a retired item) into the live teaching, or retire a published one: owner and Admin.
+    Publishing first needs a Quality gate run when its topic has test questions (app/quality.py): 409 with
+    code "needs_gate" until one has run, and code "drop" when the score fell, unless confirm_drop is sent."""
+    from app import quality, teach
     _require_role(request, "mentor")
+    body = (await request.json()) if (await request.body()) else {}
+    confirm_drop = bool(isinstance(body, dict) and body.get("confirm_drop"))
     if action not in ("publish", "retire"):
         raise HTTPException(status_code=404, detail="Not found")
     d = storage.get_draft(draft_id)
@@ -722,6 +731,18 @@ def studio_publish(draft_id: int, action: str, request: Request) -> dict:
             raise HTTPException(status_code=409, detail="Already published")
         if problems := teach.check(d["text"]):
             raise HTTPException(status_code=422, detail="Please change this first: " + " ".join(problems))
+        tests = [g for g in quality.test_items(quality.topics_for(d)) if g["id"] != draft_id]
+        if tests:
+            gate = quality.latest_gate(draft_id)
+            if not gate:
+                raise HTTPException(status_code=409, detail={
+                    "code": "needs_gate", "questions": len(tests), "estimate": quality.estimate(2 * len(tests)),
+                    "message": f"Test it first: {len(tests)} test question{'s' if len(tests) != 1 else ''} on this "
+                               "topic, answered with and without it."})
+            if (fell := quality.drops(gate["scores"])) and not confirm_drop:
+                raise HTTPException(status_code=409, detail={
+                    "code": "drop", "run": gate["id"], "topics": fell, "scores": gate["scores"],
+                    "message": "The score drops with this on " + ", ".join(fell) + ". Publish anyway?"})
         items = live + [draft_id]
     else:
         if d["status"] != "published":
@@ -731,7 +752,8 @@ def studio_publish(draft_id: int, action: str, request: Request) -> dict:
     done = {"publish": "published", "retire": "retired"}[action]
     v = storage.set_teaching(items, f"{done} {_kind(d['kind'])} #{draft_id}", name)
     _audit(request, f"{done} a {_kind(d['kind'])}", d["topic"],
-           f"{d['text'][:120]} (teaching version {v['id']})")
+           f"{d['text'][:120]} (teaching version {v['id']})" + (" — published although the score dropped"
+                                                                if confirm_drop else ""))
     return _teach_summary(v)
 
 
@@ -839,6 +861,141 @@ def reviews_done(request: Request) -> list[dict]:
     # checks_done: what the reviewer marked; checks: the list it was marked against (reading or remedy)
     return [{**r, "tester": _tester(r.pop("owner"), labels), "checks_done": r["checks"]} | _checks(r["question"])
             for r in storage.reviews()]
+
+
+# ----- Studio quality (app/quality.py) -----
+def _run_view(r: dict) -> dict:
+    from app import quality
+    return {**r, "drops": quality.drops(r["scores"]) if r["kind"] != "run" else [],
+            "model_label": config.label(r["model"]), "judge_label": config.label(r["judge_model"])}
+
+
+@router.get("/admin/api/quality")
+def quality_home(request: Request) -> dict:
+    """The test set, what a run would cost, recent runs and the quality dashboard."""
+    from collections import Counter
+    from app import quality, review
+    _require_role(request, "mentor", "astrologer")
+    tests = storage.test_set()
+    candidates = [d for d in storage.drafts() if d["kind"] == "gold" and d["status"] == "published"
+                  and not d["in_test_set"] and d.get("question") and d.get("profile_id")]
+    done = storage.reviews(500)
+    checks: dict[str, list[int]] = {}
+    for r in done:
+        names = dict(review.check_set(r["question"])[1])
+        for k, v in r["checks"].items():
+            if v in ("pass", "fail"):
+                checks.setdefault(names.get(k, k), [0, 0])[v == "fail"] += 1
+    runs = storage.runs(30)
+    return {
+        "test_set": [{k: t[k] for k in ("id", "topic", "question", "text", "status", "profile_name", "author")}
+                     for t in tests],
+        "candidates": [{k: d[k] for k in ("id", "topic", "question")} for d in candidates],
+        "estimate": quality.estimate(len(tests)), "max_questions": quality.MAX_QUESTIONS,
+        "running": quality.busy(), "runs": [_run_view(r) for r in runs],
+        "dashboard": {
+            "factcheck": storage.factcheck_rate(30),
+            "reviews": len(done),
+            "checks": [{"name": n, "pass": p, "fail": f} for n, (p, f) in checks.items()],
+            "tags": Counter(t for r in done for t in r["tags"]).most_common(6),
+            "scores": [{"id": r["id"], "at": r["created_at"], "score": (r["scores"] or {}).get("overall", {}).get("live"),
+                        "version": r["teach_version"]} for r in reversed(runs)
+                       if r["kind"] == "run" and r["status"] == "done"],
+        },
+    }
+
+
+@router.post("/admin/api/quality/test-set/{draft_id}")
+async def quality_test_set(draft_id: int, request: Request) -> dict:
+    _require_role(request, "mentor")
+    body = await request.json()
+    on = bool(isinstance(body, dict) and body.get("on"))
+    d = storage.get_draft(draft_id)
+    if not d or d["kind"] != "gold":
+        raise HTTPException(status_code=404, detail="Gold answer not found")
+    if on and (d["status"] != "published" or not d.get("question") or not d.get("profile_id")):
+        raise HTTPException(status_code=422, detail="Only a published gold answer with its question and chart can be a "
+                                                    "test question")
+    out = storage.set_test_set(draft_id, on)
+    _audit(request, "added a test question" if on else "removed a test question", d["topic"], (d["question"] or "")[:120])
+    return out
+
+
+@router.post("/admin/api/quality/runs", status_code=201)
+async def quality_run(request: Request) -> dict:
+    """Start a run: every test question (or one topic's) with the live setup, or live and with drafts."""
+    from app import quality
+    _require_role(request, "mentor")
+    body = (await request.json()) if (await request.body()) else {}
+    body = body if isinstance(body, dict) else {}
+    if quality.busy():
+        raise HTTPException(status_code=409, detail="A run is already going. Wait for it to finish.")
+    topic = body.get("topic") or None
+    drafts = body.get("drafts") or []
+    if not isinstance(drafts, list) or not all(isinstance(x, int) for x in drafts):
+        raise HTTPException(status_code=422, detail="drafts must be a list of draft ids")
+    gold = quality.test_items([topic] if topic else None)
+    if not gold:
+        raise HTTPException(status_code=422, detail="No test questions yet" + (f" on {topic}" if topic else ""))
+    if len(gold) * (2 if drafts else 1) > quality.MAX_QUESTIONS:
+        raise HTTPException(status_code=422, detail=f"That is more than {quality.MAX_QUESTIONS} answers. Pick a topic.")
+    name, _ = _actor(request)
+    run = quality.start("compare" if drafts else "run", gold, drafts, name, [topic] if topic else None)
+    est = quality.estimate(run["total"])
+    _audit(request, "started a quality run", topic or "all topics", f"{run['total']} answers, about ${est['cost']}")
+    return _run_view(run)
+
+
+@router.post("/admin/api/quality/gate/{draft_id}", status_code=201)
+def quality_gate(draft_id: int, request: Request) -> dict:
+    """Before publishing: this draft's topic answered live and with it."""
+    from app import quality
+    _require_role(request, "mentor")
+    d = storage.get_draft(draft_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="Draft not found")
+    if quality.busy():
+        raise HTTPException(status_code=409, detail="A run is already going. Wait for it to finish.")
+    gold = [g for g in quality.test_items(quality.topics_for(d)) if g["id"] != draft_id][:quality.MAX_QUESTIONS // 2]
+    if not gold:
+        raise HTTPException(status_code=422, detail="No test questions on this topic")
+    name, _ = _actor(request)
+    run = quality.start("gate", gold, [draft_id], name, quality.topics_for(d))
+    _audit(request, "tested a draft before publishing", d["topic"], f"{len(gold)} test questions")
+    return _run_view(run)
+
+
+@router.get("/admin/api/quality/runs/{run_id}")
+def quality_run_view(run_id: int, request: Request) -> dict:
+    from app import review
+    _require_role(request, "mentor", "astrologer")
+    r = storage.get_run(run_id)
+    if not r:
+        raise HTTPException(status_code=404, detail="Run not found")
+    items = storage.eval_items(run_id)
+    golds = {g["id"]: g for g in storage.teaching_items(sorted({i["gold_id"] for i in items}))}
+    for i in items:
+        i["gold"] = (golds.get(i["gold_id"]) or {}).get("text")
+        i["checks"] = [{"key": k, "name": n} for k, n in review.check_set(i["question"])[1]]
+    return {**_run_view(r), "items": items}
+
+
+@router.post("/admin/api/quality/items/{item_id}/grade")
+async def quality_grade(item_id: int, request: Request) -> dict:
+    """An astrologer's own marks on a test answer, shown next to the judge's."""
+    from app import review
+    _require_role(request, "mentor", "astrologer")
+    item = storage.get_eval_item(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Not found")
+    body = await request.json()
+    try:
+        checks, _, note = review.clean({**(body if isinstance(body, dict) else {}), "tags": []}, item["question"])
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc).replace("a problem tag or ", "")) from exc
+    name, _ = _actor(request)
+    storage.grade_eval_item(item_id, {"checks": checks, "note": note}, name)
+    return {"ok": True}
 
 
 @router.put("/admin/api/limits")

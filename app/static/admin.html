@@ -191,6 +191,23 @@
   .rlbody{margin-top:8px;font-size:.86rem;line-height:1.5} .rlbody ul{margin:4px 0;padding-left:18px}
   .rlbody .k{color:var(--mut);font-size:.76rem;text-transform:uppercase;letter-spacing:.6px;display:block;margin-top:6px}
   .rlacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .qatiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+  .qatile{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg2)}
+  .qatile .v{font-size:1.4rem;font-weight:700;font-variant-numeric:tabular-nums} .qatile .l{font-size:.76rem;color:var(--mut)}
+  .qadash{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));margin-bottom:8px}
+  .qabar{display:grid;grid-template-columns:minmax(0,1fr) 120px 44px;gap:8px;align-items:center;font-size:.8rem;margin:4px 0}
+  .qabar .t{height:8px;border-radius:4px;background:var(--line);overflow:hidden;display:flex}
+  .qabar .t i{display:block;height:100%;background:var(--ok);border-radius:4px 0 0 4px}
+  .qabar .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--mut)}
+  .qah{margin:16px 0 8px;font-size:.95rem} .qah small{font-weight:400;color:var(--mut);font-size:.78rem}
+  .qaprog{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:6px 0} .qaprog i{display:block;height:100%;background:var(--g2)}
+  .qadiff.up{color:var(--ok)} .qadiff.down{color:var(--bad)}
+  .qarows{display:grid;margin:6px 0 10px} .qarow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.86rem}
+  .qarow span:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .qarow small{color:var(--mut)}
+  .qarow.head{font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:var(--mut)} .qarow.all{font-weight:700;border-bottom:0}
+  .qaside{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+  .qaside>div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:.86rem;min-width:0}
+  .qagate{border:1px dashed var(--g2);border-radius:10px;padding:8px 10px;display:grid;gap:6px;font-size:.86rem}
   .rlprop{border:1px dashed var(--g2);border-radius:10px;padding:8px 10px;margin-top:8px}
   .rlprop ul{margin:4px 0;padding-left:18px}
   .raform{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));margin-top:10px}
@@ -225,7 +242,7 @@
     <div class="tile"><div class="label">AI questions today</div><div class="value" id="k-today">–</div>
       <div class="meter" id="k-meter" role="meter" aria-label="Share of today's overall limit used" aria-valuemin="0"><i style="width:0"></i></div>
       <div class="hint" id="k-today-hint">&nbsp;</div></div>
-    <div class="tile"><div class="label">Estimated cost today</div><div class="value" id="k-cost-today">–</div><div class="hint">Anthropic API, before tax</div></div>
+    <div class="tile"><div class="label">Estimated cost today</div><div class="value" id="k-cost-today">–</div><div class="hint" id="k-cost-today-hint">Testers' answers, before tax</div></div>
     <div class="tile"><div class="label">Estimated cost, all time</div><div class="value" id="k-cost-all">–</div><div class="hint" id="k-all-hint">&nbsp;</div></div>
     <div class="tile"><div class="label">Testers</div><div class="value" id="k-testers">–</div><div class="hint" id="k-active">&nbsp;</div></div>
     <div class="tile"><div class="label">Charts saved</div><div class="value" id="k-charts">–</div><div class="hint">Across all testers</div></div>
@@ -297,6 +314,25 @@
     <span class="status" id="rl-st" role="status"></span>
       <div id="rl-list" class="rllist"><p class="empty">Loading…</p></div>
       </div>
+      </div>
+      <div class="fhead"><h3 class="ush">Quality <small>is Astropositivism getting better? test questions scored against gold answers</small></h3><button class="sbtn" type="button" data-fold="qa-body" aria-expanded="true" aria-controls="qa-body">Collapse</button></div>
+      <div id="qa-body">
+      <div class="qatiles" id="qa-tiles"></div>
+      <div class="qadash" id="qa-dash"></div>
+      <h4 class="qah">Test questions <small id="qa-tsub"></small></h4>
+      <div class="drlist" id="qa-tests"></div>
+      <div class="pggo" data-roles="owner mentor" id="qa-addwrap"><select id="qa-add" aria-label="Published gold answer to add"></select><button class="sbtn" type="button" id="qa-addbtn">Add as a test question</button><span class="status" id="qa-addst" role="status"></span></div>
+      <h4 class="qah">Run</h4>
+      <div data-roles="owner mentor">
+        <div class="pgform">
+          <div><label for="qa-topic">Questions</label><select id="qa-topic"></select></div>
+          <div class="pgins"><span class="lbl">Compare with drafts turned on <span class="opt">optional</span></span><div class="pgdrafts" id="qa-drafts"></div></div>
+          <div class="pggo"><button class="btn" type="button" id="qa-run">Run</button><span class="status" id="qa-est" role="status"></span></div>
+        </div>
+      </div>
+      <div id="qa-live"></div>
+      <div class="drlist" id="qa-runs"></div>
+      <div id="qa-detail"></div>
       </div>
     </div>
     <div data-roles="owner mentor">
@@ -485,7 +521,8 @@ function renderOverview(o) {
   $('k-today-hint').textContent = cap ? `of ${cap.toLocaleString()} allowed today` + (pct >= 100 ? ' · limit reached' : '') : 'Chat is paused (limit 0)';
   $('k-cost-today').textContent = money(o.today.cost);
   $('k-cost-all').textContent = money(o.all_time.cost);
-  $('k-all-hint').textContent = `${o.all_time.paid_questions.toLocaleString()} AI questions so far`;
+  $('k-all-hint').textContent = `${o.all_time.paid_questions.toLocaleString()} AI questions so far` + (o.all_time.studio_cost ? ` · Studio ${money(o.all_time.studio_cost)} more` : '');
+  $('k-cost-today-hint').textContent = "Testers' answers, before tax" + (o.today.studio_cost ? ` · Studio experiments ${money(o.today.studio_cost)} more` : '');
   $('k-testers').textContent = o.testers.length.toLocaleString();
   const active = o.testers.filter(t => t.questions_today > 0).length;
   $('k-active').textContent = `${active} asked something today`;
@@ -551,6 +588,7 @@ function toggle(tr) {
     <div><b>Question</b><div>${esc(r.question)}</div></div>
     <div><b>Answer</b><div class="ans">${r.answer ? md(r.answer) : '<span style="color:var(--mut)">Not recorded (asked before answer logging was added).</span>'}</div></div>
     ${r.factcheck && r.factcheck.found.length ? `<div><b>Fact check</b><div style="font-size:.88rem">Caught in the draft and ${r.factcheck.revised ? 'corrected by a rewrite' : 'removed'}:<ul style="margin:4px 0">${r.factcheck.found.map(x => `<li>${esc(x)}</li>`).join('')}</ul>${r.factcheck.removed.length ? `<div style="color:var(--bad)">Still wrong after the rewrite, so removed: ${r.factcheck.removed.map(esc).join(' | ')}</div>` : ''}</div></div>` : ''}
+    ${styleNote(r.factcheck) ? `<div><b>Style</b><div style="font-size:.88rem">${styleNote(r.factcheck)}</div></div>` : ''}
     <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><b>Admin notes</b>
     <div style="display:flex;gap:8px;align-items:flex-start">
     <textarea id="rem-${r.id}" style="flex:1;min-height:60px;padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--bg2);color:var(--ink)" placeholder="Add a private note to personalize future responses (admin only)">${esc(r.admin_remarks || '')}</textarea>
@@ -594,6 +632,12 @@ $('filter').addEventListener('input', () => {
   $('q-export').textContent = f ? 'Export matches' : 'Export CSV';
 });
 // The answer as the tester sees it: headings, **bold**, bullets and paragraphs.
+// The style check (stock phrases, no own placements, nothing to do): what it caught and whether the rewrite fixed it.
+function styleNote(fc) {
+  if (!fc || !fc.style || !fc.style.length) return '';
+  const left = fc.style_left || [];
+  return `Style check: ${esc(fc.style.join(' | '))}${fc.revised ? (left.length ? ' · still after the rewrite: ' + esc(left.join(' | ')) : ' (fixed by a rewrite)') : ''}`;
+}
 function md(t) {
   const inl = x => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`(.+?)`/g, '<code>$1</code>');
   let html = '', inList = false;
@@ -1199,9 +1243,14 @@ $('dr-list').addEventListener('click', async e => {
     try { await api(`/admin/api/studio/drafts/${d.id}`, {method: 'DELETE'}); await loadDrafts(); if (ROLE !== 'astrologer') await loadAudit(); } catch (err) { fail(err); }
     return;
   }
-  if (b && (b.dataset.act === 'publish' || b.dataset.act === 'retire')) {
+  if (b && b.dataset.act === 'publish') {
     b.disabled = true;
-    try { await api(`/admin/api/studio/drafts/${d.id}/${b.dataset.act}`, {method: 'POST'}); await loadDrafts(); await loadAudit(); }
+    try { await publishDraft(d, item); } catch (err) { fail(err); }
+    if (b.isConnected) b.disabled = false;
+  }
+  if (b && b.dataset.act === 'retire') {
+    b.disabled = true;
+    try { await api(`/admin/api/studio/drafts/${d.id}/retire`, {method: 'POST'}); await loadDrafts(); await loadAudit(); loadQuality(); }
     catch (err) { fail(err); b.disabled = false; }
   }
 });
@@ -1213,7 +1262,7 @@ function pgCard(r, i) {
   return `<div class="pgcard" data-i="${i}">
     <h4>${esc(r.label)}</h4>
     <div class="pgmeta">${esc(r.label === 'Live' ? 'Live settings' : 'Test settings')} · ${esc(r.label && r.model ? (PG.models.find(m => m.id === r.model) || {}).label || r.model : '')} · ${r.words} words · ${r.seconds} s · ${money(r.cost)}</div>
-    <div class="pgmeta">${fc && fc.found && fc.found.length ? `Fact check caught ${fc.found.length}: ${esc(fc.found.join(' | '))}${fc.revised ? ' (corrected by a rewrite)' : ''}${fc.removed && fc.removed.length ? ' · still wrong, so removed: ' + esc(fc.removed.join(' | ')) : ''}` : 'Fact check: nothing wrong found.'}</div>
+    <div class="pgmeta">${fc && fc.found && fc.found.length ? `Fact check caught ${fc.found.length}: ${esc(fc.found.join(' | '))}${fc.revised ? ' (corrected by a rewrite)' : ''}${fc.removed && fc.removed.length ? ' · still wrong, so removed: ' + esc(fc.removed.join(' | ')) : ''}` : 'Fact check: nothing wrong found.'}${styleNote(fc) ? '<br>' + styleNote(fc) : ''}</div>
     <div class="pgans">${md(r.text || '')}</div>
     <details class="pgseen"><summary>What the AI saw</summary>
       <p class="pgmeta">Word limit ${s.word_limit}${s.instruction ? ' · Extra instruction: ' + esc(s.instruction) : ''}</p>
@@ -1275,7 +1324,7 @@ async function openReview(item) {
         <span><b>Dasha when asked</b> ${ch.dasha.map(d => `${{maha: 'Maha', antar: 'Antar', praty: 'Pratyantar'}[d.level]} ${esc(d.lord)} (${d.start} – ${d.end})`).join(' › ') || '–'}</span>` : '<span>The chart was deleted.</span>'}
         <span class="drmeta">${esc(c.model_label || '')}${c.words ? ' · ' + c.words + ' words' : ''}</span></div>
       <div class="pgans">${md(c.answer || '')}</div>
-      <div class="pgmeta">${fc && fc.found && fc.found.length ? `Fact check caught ${fc.found.length}: ${esc(fc.found.join(' | '))}${fc.revised ? ' (corrected by a rewrite)' : ''}${fc.removed && fc.removed.length ? ' · still wrong, so removed: ' + esc(fc.removed.join(' | ')) : ''}` : 'Fact check: nothing wrong found.'}</div>
+      <div class="pgmeta">${fc && fc.found && fc.found.length ? `Fact check caught ${fc.found.length}: ${esc(fc.found.join(' | '))}${fc.revised ? ' (corrected by a rewrite)' : ''}${fc.removed && fc.removed.length ? ' · still wrong, so removed: ' + esc(fc.removed.join(' | ')) : ''}` : 'Fact check: nothing wrong found.'}${styleNote(fc) ? '<br>' + styleNote(fc) : ''}</div>
       ${ch ? `<details class="pgseen"><summary>What Astropositivism is given</summary>
         ${ch.kp ? `<p class="pgmeta">KP verdicts added to this question:</p><pre>${esc(ch.kp)}</pre>` : ''}
         <p class="pgmeta">Chart facts (worked out again now: the chart is the same, today's sky may differ):</p><pre>${esc(facts)}</pre></details>` : ''}
@@ -1309,6 +1358,149 @@ async function openReview(item) {
 }
 $('rv-list').addEventListener('click', e => { const item = e.target.closest('.rvitem'); if (item) openReview(item); });
 $('rv-list').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('rvitem')) { e.preventDefault(); openReview(e.target); } });
+
+// ----- Studio quality -----
+let QA = null, QAPOLL = null;
+const sc = v => v == null ? '–' : `${v}/10`;
+const diff = (a, b) => a == null || b == null ? '' : `<span class="qadiff ${b > a ? 'up' : b < a ? 'down' : ''}">${b > a ? '+' : ''}${(b - a).toFixed(1)}</span>`;
+function qaTopicsTable(scores, cmp) {
+  const row = (name, n, r, strong) => `<div class="qarow${strong ? ' all' : ''}"><span>${esc(name)}${n ? ` <small>${n} question${n === 1 ? '' : 's'}</small>` : ''}</span>
+    <span>${cmp ? `${sc(r.live)} → ${sc(r.draft)} ${diff(r.live, r.draft)}` : sc(r.live)}</span></div>`;
+  return `<div class="qarows">${cmp ? '<div class="qarow head"><span>Topic</span><span>Live → with drafts</span></div>' : ''}${
+    Object.entries(scores.topics || {}).map(([t, r]) => row(t, r.n, r)).join('')}${row('All topics', 0, scores.overall, true)}</div>`;
+}
+const RUNKIND = {run: 'Live run', compare: 'Live vs drafts', gate: 'Before publishing'};
+async function loadQuality() {
+  try {
+    QA = await api('/admin/api/quality');
+    const d = QA.dashboard, last = d.scores[d.scores.length - 1], prev = d.scores[d.scores.length - 2];
+    $('qa-tiles').innerHTML = [
+      [last ? sc(last.score) : '–', last ? `Latest live score${prev ? ' · ' + diff(prev.score, last.score) + ' since the run before' : ''}` : 'No live run yet'],
+      [d.factcheck.answers ? Math.round(100 * d.factcheck.caught / d.factcheck.answers) + '%' : '–', `of answers had a fact-check catch (${d.factcheck.caught} of ${d.factcheck.answers}, 30 days)`],
+      [String(QA.test_set.length), 'test questions (aim for 30–50)'],
+      [String(d.reviews), 'answers reviewed']].map(([v, l]) => `<div class="qatile"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+    const bars = d.checks.map(c => { const n = c.pass + c.fail, p = n ? Math.round(100 * c.pass / n) : 0;
+      return `<div class="qabar"><span>${esc(c.name)}</span><span class="t" role="img" aria-label="${p}% passed"><i style="width:${p}%"></i></span><span class="n">${p}%</span></div>`; }).join('');
+    $('qa-dash').innerHTML = `<div><span class="lbl">Reviews: share passed per check</span>${bars || '<p class="pgmeta">No reviews yet.</p>'}</div>
+      <div><span class="lbl">Most common problems</span>${d.tags.length ? `<div class="uschips">${d.tags.map(([t, n]) => `<span class="tag">${esc(t)} · ${n}</span>`).join('')}</div>` : '<p class="pgmeta">None tagged yet.</p>'}
+      ${d.scores.length ? `<span class="lbl" style="margin-top:10px">Live score over time</span><div class="pgmeta">${d.scores.slice(-8).map(x => `${when(x.at)}: <b>${sc(x.score)}</b> (teaching v${x.version})`).join(' · ')}</div>` : ''}</div>`;
+    $('qa-tsub').textContent = QA.test_set.length ? `${QA.test_set.length} · each scored against its gold answer` : '';
+    $('qa-tests').innerHTML = QA.test_set.length ? QA.test_set.map(t => `<div class="dritem" data-id="${t.id}"><div class="drhead"><span class="tag">${esc(t.topic)}</span>${t.status !== 'published' ? `<span class="tag off">${esc(t.status)}</span>` : ''}</div>
+      <div class="rvq">${esc(t.question)}</div><div class="drmeta">Chart ${esc(t.profile_name || 'deleted')} · gold answer by ${esc(t.author)}</div>
+      ${APPROVER() ? '<div class="pgacts"><button class="sbtn" type="button" data-qrm>Remove from the test set</button></div>' : ''}</div>`).join('')
+      : '<p class="empty">No test questions yet. Publish gold answers (Teaching), then add them here.</p>';
+    $('qa-add').innerHTML = QA.candidates.length ? QA.candidates.map(c => `<option value="${c.id}">${esc(c.topic)} · ${esc(c.question.slice(0, 70))}</option>`).join('') : '<option value="">No published gold answers to add</option>';
+    $('qa-addbtn').disabled = !QA.candidates.length;
+    const topics = [...new Set(QA.test_set.map(t => t.topic))];
+    const keep = $('qa-topic').value;
+    $('qa-topic').innerHTML = `<option value="">All topics (${QA.test_set.length})</option>` + topics.map(t => `<option value="${esc(t)}">${esc(t)} (${QA.test_set.filter(x => x.topic === t).length})</option>`).join('');
+    if (topics.includes(keep)) $('qa-topic').value = keep;
+    const off = DRAFTS.filter(x => x.status !== 'published');
+    $('qa-drafts').innerHTML = off.length ? off.map(x => `<label><input type="checkbox" value="${x.id}"> <span>${TKIND(x.kind)} · ${esc(x.topic)}: ${esc(x.text.slice(0, 80))}${x.text.length > 80 ? '…' : ''}</span></label>`).join('') : '<span class="pgmeta">No drafts to compare.</span>';
+    qaEstimate();
+    $('qa-runs').innerHTML = QA.runs.length ? QA.runs.map(r => `<div class="dritem rvitem" data-run="${r.id}" tabindex="0" role="button">
+      <div class="drhead"><span class="tag ai">${RUNKIND[r.kind]}</span><span class="tag">${r.topics ? esc(r.topics.join(', ')) : 'All topics'}</span><span class="tag ${r.status === 'done' ? 'on' : r.status === 'failed' ? 'off' : ''}">${r.status === 'running' ? `${r.done} of ${r.total}` : esc(r.status)}</span>${r.drops && r.drops.length ? '<span class="tag off">Score dropped</span>' : ''}</div>
+      <div class="rvq">${r.scores ? `Live ${sc(r.scores.overall.live)}${r.scores.overall.draft !== undefined ? ` · with drafts ${sc(r.scores.overall.draft)} ${diff(r.scores.overall.live, r.scores.overall.draft)}` : ''}` : r.error ? esc(r.error) : 'Running…'}</div>
+      <div class="drmeta">#${r.id} · ${esc(r.actor)} · ${when(r.created_at)} · ${r.total} answers · ${money(r.cost)} · teaching v${r.teach_version}</div></div>`).join('') : '';
+    qaLive(QA.running);
+  } catch (e) { $('qa-tiles').innerHTML = `<p class="pgmeta">Couldn't load Quality: ${esc(e.message)}</p>`; }
+}
+function qaPicked() { return [...$('qa-drafts').querySelectorAll('input:checked')].map(x => +x.value); }
+function qaEstimate() {
+  if (!QA) return;
+  const n = QA.test_set.filter(t => !$('qa-topic').value || t.topic === $('qa-topic').value).length * (qaPicked().length ? 2 : 1);
+  const e = QA.estimate, cost = (e.per_answer * n).toFixed(2), mins = Math.max(1, Math.round(n * 20 / 3 / 60));
+  $('qa-est').className = 'status'; $('qa-est').textContent = n ? `${n} answers · about $${cost} · about ${mins} min on ${e.label}` : 'No test questions to run.';
+  $('qa-run').disabled = !n || !!QA.running || n > QA.max_questions; $('qa-run').classList.remove('arm'); $('qa-run').textContent = 'Run';
+}
+function qaLive(r) {
+  clearTimeout(QAPOLL);
+  if (!r) { $('qa-live').innerHTML = ''; return; }
+  $('qa-live').innerHTML = `<div class="pgmeta">${RUNKIND[r.kind]} #${r.id} running: ${r.done} of ${r.total} answers · ${money(r.cost)} so far</div><div class="qaprog"><i style="width:${r.total ? Math.round(100 * r.done / r.total) : 0}%"></i></div>`;
+  QAPOLL = setTimeout(async () => {
+    try { const x = await api('/admin/api/quality/runs/' + r.id); if (x.status === 'running') qaLive(x); else { await loadQuality(); qaOpen(x.id); } } catch (e) {}
+  }, 3000);
+}
+async function qaOpen(id) {
+  const r = await api('/admin/api/quality/runs/' + id), cmp = r.kind !== 'run';
+  $('qa-detail').innerHTML = `<h4 class="qah">${RUNKIND[r.kind]} #${r.id} <small>${when(r.created_at)} · ${money(r.cost)} · ${esc(r.model_label || r.model)} answering, ${esc(r.judge_label || r.judge_model)} judging</small></h4>
+    ${r.scores ? qaTopicsTable(r.scores, cmp) : `<p class="pgmeta">${esc(r.error || 'Still running.')}</p>`}
+    <div class="drlist">${r.items.map(i => `<div class="dritem" data-item="${i.id}">
+      <div class="drhead"><span class="tag">${esc(i.topic)}</span>${cmp ? `<span class="tag ai">${i.variant === 'live' ? 'Live' : 'With drafts'}</span>` : ''}<span class="tag ${i.score == null ? 'off' : i.score >= 8 ? 'on' : ''}">${i.error ? 'Error' : sc(i.score)}</span></div>
+      <div class="rvq">${esc(i.question)}</div>
+      ${i.error ? `<p class="pgmeta">${esc(i.error)}</p>` : `<div class="pgmeta">Judge: ${i.checks.map(k => `${i.judge.checks[k.key] === 'pass' ? '✓' : i.judge.checks[k.key] === 'fail' ? '✗' : '–'} ${esc(k.name)}`).join(' · ')}${i.judge.note ? ' · “' + esc(i.judge.note) + '”' : ''}${i.factcheck && i.factcheck.found && i.factcheck.found.length ? ' · fact check caught ' + i.factcheck.found.length : ''}</div>
+      ${i.human ? `<div class="pgmeta">${esc(i.human_by)}: ${i.checks.map(k => `${i.human.checks[k.key] === 'pass' ? '✓' : i.human.checks[k.key] === 'fail' ? '✗' : '–'} ${esc(k.name)}`).join(' · ')}${i.human.note ? ' · “' + esc(i.human.note) + '”' : ''}</div>` : ''}
+      <details class="pgseen"><summary>Side by side${i.human ? '' : ' · add your marks'}</summary>
+        <div class="qaside"><div><span class="lbl">Gold answer</span><div class="pgans">${md(i.gold || '')}</div></div><div><span class="lbl">This answer</span><div class="pgans">${md(i.answer || '')}</div></div></div>
+        <form class="rvchk" data-grade="${i.id}">${i.checks.map(k => `<div class="rvrow"><span>${esc(k.name)}</span><span class="seg" role="radiogroup" aria-label="${esc(k.name)}">${
+          Object.entries(RESULT).map(([v, t]) => `<label class="${v}"><input type="radio" name="${k.key}" value="${v}"${i.human && i.human.checks[k.key] === v ? ' checked' : ''}><span>${t}</span></label>`).join('')}</span></div>`).join('')}
+          <textarea rows="2" maxlength="1000" placeholder="Note (needed when something fails)">${esc((i.human && i.human.note) || '')}</textarea>
+          <div class="pggo"><button class="btn" type="submit">Save my marks</button><span class="status" role="status"></span></div></form></details>`}
+    </div>`).join('')}</div>`;
+  $('qa-detail').querySelectorAll('form[data-grade]').forEach(f => f.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const st = f.querySelector('.status'), item = r.items.find(x => x.id === +f.dataset.grade), checks = {};
+    item.checks.forEach(k => { const x = f.querySelector(`input[name="${k.key}"]:checked`); checks[k.key] = x ? x.value : null; });
+    try {
+      await api(`/admin/api/quality/items/${item.id}/grade`, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({checks, note: f.querySelector('textarea').value.trim()})});
+      st.className = 'status ok'; st.textContent = 'Saved.';
+    } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+  }));
+}
+$('qa-topic').addEventListener('change', qaEstimate);
+$('qa-drafts').addEventListener('change', qaEstimate);
+$('qa-run').addEventListener('click', async () => {
+  const b = $('qa-run');
+  if (!b.classList.contains('arm')) { b.classList.add('arm'); b.textContent = 'Tap again to start (' + $('qa-est').textContent.split(' · ')[1] + ')'; return; }
+  b.disabled = true;
+  try {
+    const r = await api('/admin/api/quality/runs', {method: 'POST', headers: {'content-type': 'application/json'},
+      body: JSON.stringify({topic: $('qa-topic').value || null, drafts: qaPicked()})});
+    loadAudit().catch(() => {}); await loadQuality(); qaLive(r);
+  } catch (e) { $('qa-est').className = 'status err'; $('qa-est').textContent = e.message; b.disabled = false; }
+});
+$('qa-runs').addEventListener('click', e => { const it = e.target.closest('[data-run]'); if (it) qaOpen(+it.dataset.run); });
+$('qa-runs').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.dataset.run) { e.preventDefault(); qaOpen(+e.target.dataset.run); } });
+async function qaSet(id, on, st) {
+  try { await api('/admin/api/quality/test-set/' + id, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({on})}); await loadQuality(); loadAudit().catch(() => {}); }
+  catch (e) { st.className = 'status err'; st.textContent = e.message; }
+}
+$('qa-addbtn').addEventListener('click', () => { if ($('qa-add').value) qaSet(+$('qa-add').value, true, $('qa-addst')); });
+$('qa-tests').addEventListener('click', e => { const b = e.target.closest('[data-qrm]'); if (b) qaSet(+b.closest('[data-id]').dataset.id, false, $('qa-addst')); });
+
+// Publishing with the Quality gate: when its topic has test questions, test it (live vs with it) first,
+// and ask a second time if the score drops.
+async function publishDraft(d, item, confirmDrop) {
+  const st = item.querySelector('.pgacts .status');
+  const r = await fetch(`/admin/api/studio/drafts/${d.id}/publish`, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({confirm_drop: !!confirmDrop})});
+  const j = await r.json().catch(() => ({}));
+  if (r.ok) { await loadDrafts(); await loadAudit(); loadQuality(); return; }
+  const det = j.detail || {}, box = item.querySelector('.dredit');
+  if (det.code === 'needs_gate') {
+    box.hidden = false;
+    box.innerHTML = `<div class="qagate"><span>${esc(det.message)} About $${det.estimate.cost} and ${det.estimate.minutes} min.</span>
+      <div class="pgacts"><button class="btn" type="button" data-gate>Test it now</button><button class="sbtn" type="button" data-act="cancel">Not now</button><span class="status" role="status"></span></div></div>`;
+    box.querySelector('[data-gate]').onclick = async ev => {
+      ev.stopPropagation(); const s2 = box.querySelector('.status'); ev.target.disabled = true;
+      try {
+        const run = await api('/admin/api/quality/gate/' + d.id, {method: 'POST'});
+        const tick = async () => {
+          const x = await api('/admin/api/quality/runs/' + run.id);
+          if (x.status === 'running') { s2.className = 'status'; s2.textContent = `Testing… ${x.done} of ${x.total}`; setTimeout(tick, 3000); return; }
+          if (x.status === 'failed') { s2.className = 'status err'; s2.textContent = x.error || 'The test failed.'; return; }
+          s2.className = 'status ok'; s2.textContent = `Tested: live ${sc(x.scores.overall.live)}, with it ${sc(x.scores.overall.draft)}.`;
+          await publishDraft(d, item, false);
+        };
+        tick();
+      } catch (err) { s2.className = 'status err'; s2.textContent = err.message; ev.target.disabled = false; }
+    };
+  } else if (det.code === 'drop') {
+    box.hidden = false;
+    box.innerHTML = `<div class="qagate"><b>${esc(det.message)}</b>${qaTopicsTable(det.scores, true)}
+      <div class="pgacts"><button class="btn" type="button" data-force>Publish anyway</button><button class="sbtn" type="button" data-act="cancel">Keep it as a draft</button></div></div>`;
+    box.querySelector('[data-force]').onclick = ev => { ev.stopPropagation(); publishDraft(d, item, true); };
+  } else if (st) { st.className = 'status err'; st.textContent = typeof det === 'string' ? det : (det.message || r.statusText); }
+}
 
 // "Save as gold answer" / "Turn into a lesson": a small form under an answer (Playground and Review).
 function draftForm(box, gold, answer, topic) {
@@ -1347,7 +1539,7 @@ $('lim-form').addEventListener('submit', async e => {
 
 async function loadAll() {
   try {
-    await loadPlayground(); await loadDrafts(); await loadReview(); await loadRL();
+    await loadPlayground(); await loadDrafts(); await loadReview(); await loadRL(); await loadQuality();
     if (ROLE !== 'astrologer') { renderOverview(await api('/admin/api/overview')); await loadUsage(); await loadTeam(); await loadAudit(); }
     if (ROLE === 'owner') { await loadCodes(); await loadEvents(); await loadBackups(); }
     await loadQueries(true);

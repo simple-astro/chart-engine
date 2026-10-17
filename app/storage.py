@@ -103,6 +103,19 @@ def _connect() -> sqlite3.Connection:
     conn.execute("CREATE TABLE IF NOT EXISTS reviews (id INTEGER PRIMARY KEY AUTOINCREMENT, usage_id INTEGER NOT NULL"
                  " UNIQUE, reviewer TEXT NOT NULL, reviewer_code INTEGER, checks TEXT NOT NULL, tags TEXT NOT NULL,"
                  " note TEXT, created_at TEXT NOT NULL)")
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(studio_drafts)")}
+    if "in_test_set" not in cols:  # a published gold answer the Quality runs score answers against
+        conn.execute("ALTER TABLE studio_drafts ADD COLUMN in_test_set INTEGER NOT NULL DEFAULT 0")
+    # Quality runs (app/quality.py): each test-set question answered (live, or live and with drafts), judged
+    # against its gold answer. kind: run (live) | compare (live vs drafts) | gate (before publishing a draft).
+    conn.execute("CREATE TABLE IF NOT EXISTS eval_runs (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL,"
+                 " status TEXT NOT NULL, topics TEXT, drafts TEXT, teach_version INTEGER, model TEXT, judge_model TEXT,"
+                 " total INTEGER NOT NULL DEFAULT 0, done INTEGER NOT NULL DEFAULT 0, cost REAL NOT NULL DEFAULT 0,"
+                 " scores TEXT, error TEXT, actor TEXT NOT NULL, created_at TEXT NOT NULL, finished_at TEXT)")
+    conn.execute("CREATE TABLE IF NOT EXISTS eval_items (id INTEGER PRIMARY KEY AUTOINCREMENT, run_id INTEGER NOT NULL,"
+                 " gold_id INTEGER NOT NULL, variant TEXT NOT NULL, topic TEXT NOT NULL, question TEXT NOT NULL,"
+                 " answer TEXT, factcheck TEXT, judge TEXT, score REAL, cost REAL, error TEXT, human TEXT, human_by TEXT,"
+                 " created_at TEXT NOT NULL)")
     # Every publish, retire or rollback makes a new teaching version: the full set of published item ids.
     # The live version is the newest row; rolling back = a new version with an older set.
     conn.execute("CREATE TABLE IF NOT EXISTS teach_versions (id INTEGER PRIMARY KEY AUTOINCREMENT, items TEXT NOT NULL,"
@@ -320,14 +333,16 @@ def recent_queries(limit: int = 50, before_id: int | None = None) -> list[dict]:
     return out
 
 
-def token_totals(today_only: bool) -> list[dict]:
-    """Paid-token sums per model, for cost estimates."""
+def token_totals(today_only: bool, kinds: tuple[str, ...] = ("llm",)) -> list[dict]:
+    """Paid-token sums per model, for cost estimates (testers' answers; or other kinds, e.g. Studio experiments)."""
     where, args = ("AND substr(ts, 1, 10) = ?", (_today(),)) if today_only else ("", ())
+    where = f"AND kind IN ({','.join('?' * len(kinds))}) " + where
+    args = (*kinds, *args)
     with _lock, _connect() as conn:
         rows = conn.execute(
             "SELECT model, COUNT(*) n, COALESCE(SUM(input_tokens),0) inp, COALESCE(SUM(output_tokens),0) out,"
             " COALESCE(SUM(cache_read_tokens),0) cr, COALESCE(SUM(cache_write_tokens),0) cw"
-            f" FROM usage_log WHERE kind = 'llm' {where} GROUP BY model", args).fetchall()
+            f" FROM usage_log WHERE 1=1 {where} GROUP BY model", args).fetchall()
     return [dict(r) for r in rows]
 
 
@@ -803,3 +818,108 @@ def reviews(limit: int = 50) -> list[dict]:
                             " LEFT JOIN usage_log u ON u.id = r.usage_id LEFT JOIN profiles p ON p.id = u.profile_id"
                             " ORDER BY r.id DESC LIMIT ?", (limit,)).fetchall()
     return [_review(r) for r in rows]
+
+
+# ----- Studio quality runs -----
+def set_test_set(draft_id: int, on: bool) -> dict:
+    with _lock, _connect() as conn:
+        conn.execute("UPDATE studio_drafts SET in_test_set = ? WHERE id = ?", (int(on), draft_id))
+        return dict(conn.execute("SELECT * FROM studio_drafts WHERE id = ?", (draft_id,)).fetchone())
+
+
+def test_set() -> list[dict]:
+    with _lock, _connect() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT d.*, p.name AS profile_name FROM studio_drafts d LEFT JOIN profiles p ON p.id = d.profile_id"
+            " WHERE d.in_test_set = 1 ORDER BY d.topic, d.id")]
+
+
+def _run(r) -> dict:
+    d = dict(r)
+    for k in ("topics", "drafts", "scores"):
+        d[k] = json.loads(d[k]) if d.get(k) else None
+    return d
+
+
+def add_run(kind: str, topics: list[str] | None, drafts: list[int], teach_version: int, model: str,
+            judge_model: str, total: int, actor: str) -> dict:
+    with _lock, _connect() as conn:
+        cur = conn.execute("INSERT INTO eval_runs (kind, status, topics, drafts, teach_version, model, judge_model, total,"
+                           " actor, created_at) VALUES (?, 'running', ?, ?, ?, ?, ?, ?, ?, ?)",
+                           (kind, json.dumps(topics) if topics else None, json.dumps(drafts), teach_version, model,
+                            judge_model, total, actor, _now()))
+        return _run(conn.execute("SELECT * FROM eval_runs WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def get_run(run_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM eval_runs WHERE id = ?", (run_id,)).fetchone()
+    return _run(r) if r else None
+
+
+def runs(limit: int = 30) -> list[dict]:
+    with _lock, _connect() as conn:
+        return [_run(r) for r in conn.execute("SELECT * FROM eval_runs ORDER BY id DESC LIMIT ?", (limit,))]
+
+
+def running_run() -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM eval_runs WHERE status = 'running' ORDER BY id DESC LIMIT 1").fetchone()
+    return _run(r) if r else None
+
+
+def add_eval_item(run_id: int, item: dict) -> None:
+    with _lock, _connect() as conn:
+        conn.execute("INSERT INTO eval_items (run_id, gold_id, variant, topic, question, answer, factcheck, judge, score,"
+                     " cost, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                     (run_id, item["gold_id"], item["variant"], item["topic"], item["question"], item.get("answer"),
+                      json.dumps(item.get("factcheck")) if item.get("factcheck") is not None else None,
+                      json.dumps(item.get("judge")) if item.get("judge") is not None else None, item.get("score"),
+                      item.get("cost") or 0, item.get("error"), _now()))
+        conn.execute("UPDATE eval_runs SET done = done + 1, cost = cost + ? WHERE id = ?", (item.get("cost") or 0, run_id))
+
+
+def finish_run(run_id: int, scores: dict | None, error: str | None = None) -> None:
+    with _lock, _connect() as conn:
+        conn.execute("UPDATE eval_runs SET status = ?, scores = ?, error = ?, finished_at = ? WHERE id = ?",
+                     ("failed" if error else "done", json.dumps(scores) if scores else None, error, _now(), run_id))
+
+
+def eval_items(run_id: int) -> list[dict]:
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT * FROM eval_items WHERE run_id = ? ORDER BY gold_id, variant DESC", (run_id,)).fetchall()
+    out = []
+    for r in rows:
+        d = dict(r)
+        for k in ("factcheck", "judge", "human"):
+            d[k] = json.loads(d[k]) if d.get(k) else None
+        out.append(d)
+    return out
+
+
+def get_eval_item(item_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM eval_items WHERE id = ?", (item_id,)).fetchone()
+    return dict(r) if r else None
+
+
+def grade_eval_item(item_id: int, human: dict, by: str) -> None:
+    with _lock, _connect() as conn:
+        conn.execute("UPDATE eval_items SET human = ?, human_by = ? WHERE id = ?", (json.dumps(human), by, item_id))
+
+
+def eval_costs(today_only: bool) -> float:
+    with _lock, _connect() as conn:
+        where = " WHERE substr(created_at, 1, 10) = ?" if today_only else ""
+        return conn.execute(f"SELECT COALESCE(SUM(cost), 0) FROM eval_runs{where}",
+                            (_today(),) if today_only else ()).fetchone()[0]
+
+
+def factcheck_rate(days: int = 30) -> dict:
+    """Of the AI answers testers got in the last ``days``, how many the fact check caught something in."""
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT factcheck FROM usage_log WHERE kind = 'llm' AND ts >= ? AND factcheck IS NOT NULL",
+                            (since,)).fetchall()
+    caught = sum(1 for r in rows if (json.loads(r["factcheck"]) or {}).get("found"))
+    return {"answers": len(rows), "caught": caught}
