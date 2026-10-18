@@ -7,7 +7,7 @@ from datetime import date, datetime, timezone
 from pydantic import BaseModel, Field
 
 from app import muhurat, storage, today as today_mod
-from app.routes import chart as compute_chart
+from app.routes import chart as compute_chart, with_extras
 from app.schemas import ChartRequest
 from core import horary, jamakkol, lalkitab, matchmaking
 
@@ -97,6 +97,112 @@ def lal_kitab(req: ChartRequest) -> dict:
 def match(req: MatchRequest, request: Request) -> dict:
     return match_for(req.groom_id, req.bride_id, request.state.owner)
 
+
+
+# ----- married life (app/marriage.py): ratings, what helps, talk days and patience days -----
+class CoupleUpdate(BaseModel):
+    married: bool | None = None
+    ratings: dict[str, int] | None = None
+    trend: str | None = None
+    plan: str | None = None      # "start" or "stop" the 43-day plan
+    tick: bool | None = None     # mark today's habit done
+
+
+def _couple_pair(groom_id: int, bride_id: int, owner):
+    groom, bride = storage.get(groom_id, owner), storage.get(bride_id, owner)
+    if not groom or not bride or groom_id == bride_id:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return groom, bride
+
+
+def _today(tz: str | None, fallback: str) -> tuple[date, str]:
+    from zoneinfo import ZoneInfo
+    try:
+        z = tz or fallback
+        return datetime.now(ZoneInfo(z)).date(), z
+    except Exception:
+        return datetime.now(ZoneInfo(fallback)).date(), fallback
+
+
+def couple_view(groom: dict, bride: dict, owner, tz: str | None) -> dict:
+    from app import marriage
+    from app.remedies import library
+    c = storage.couple_get(owner, groom["id"], bride["id"]) or {"married": 0, "ratings": {}, "trend": None,
+                                                                  "plan_start": None, "ticks": []}
+    m = matchmaking.compute_match(groom["chart"], bride["chart"])
+    cmp = marriage.compare(m, c["ratings"])
+    today, tz = _today(tz, groom["request"].get("tz_name") or "UTC")
+    first = lambda p: (p.get("name") or "").split(" ")[0] or "You"
+    names = (first(groom), first(bride))
+    wed = [e["date"] for pid in (groom["id"], bride["id"]) for e in storage.event_list(pid) if e["kind"] == "married"]
+    wedding = date.fromisoformat(min(wed)) if wed else None
+    habits = marriage.habits(cmp["rows"], library.served("couple"))
+    day = marriage.plan_day(c["plan_start"], today)
+    return {"married": bool(c["married"]), "ratings": c["ratings"], "trend": c["trend"], "trends": marriage.TRENDS,
+            "areas": [{"key": k, "label": l, "koota": ko} for k, l, ko in marriage.AREAS], "compare": cmp,
+            "habits": habits, "names": names, "today": today.isoformat(),
+            "days": marriage.days(groom["chart"], bride["chart"], today, 28, tz, names),
+            "wedding": wedding.isoformat() if wedding else None,
+            "early_years": marriage.early_years([(names[0], with_extras(groom["chart"])),
+                                                 (names[1], with_extras(bride["chart"]))], wedding),
+            "plan": {"day": day, "of": marriage.PLAN_DAYS, "habit": habits[0] if habits else None,
+                     "done_today": today.isoformat() in c["ticks"],
+                     "done": len([t for t in c["ticks"] if c["plan_start"] and t >= c["plan_start"]])} if day else None}
+
+
+@router.get("/couples/{groom_id}/{bride_id}")
+def couple_get(groom_id: int, bride_id: int, request: Request, tz: str | None = None) -> dict:
+    groom, bride = _couple_pair(groom_id, bride_id, request.state.owner)
+    return couple_view(groom, bride, request.state.owner, tz)
+
+
+@router.put("/couples/{groom_id}/{bride_id}")
+def couple_put(groom_id: int, bride_id: int, req: CoupleUpdate, request: Request, tz: str | None = None) -> dict:
+    from app import marriage
+    owner = request.state.owner
+    groom, bride = _couple_pair(groom_id, bride_id, owner)
+    keys = {k for k, _, _ in marriage.AREAS}
+    fields = {}
+    if req.married is not None:
+        fields["married"] = int(req.married)
+    if req.ratings is not None:
+        if set(req.ratings) - keys or any(not 1 <= v <= 5 for v in req.ratings.values()):
+            raise HTTPException(status_code=422, detail="Ratings are 1 to 5 for the six areas")
+        fields["ratings"] = req.ratings
+    if req.trend is not None:
+        if req.trend not in marriage.TRENDS:
+            raise HTTPException(status_code=422, detail="Unknown trend")
+        fields["trend"] = req.trend
+    today, _ = _today(tz, groom["request"].get("tz_name") or "UTC")
+    if req.plan == "start":
+        fields.update(plan_start=today.isoformat(), ticks=[])
+    elif req.plan == "stop":
+        fields["plan_start"] = None
+    if req.tick:
+        c = storage.couple_get(owner, groom_id, bride_id) or {"ticks": []}
+        fields["ticks"] = sorted(set(c["ticks"]) | {today.isoformat()})
+    storage.couple_save(owner, groom_id, bride_id, **fields)
+    return couple_view(groom, bride, owner, tz)
+
+
+@router.get("/profiles/{profile_id}/couple-day")
+def couple_day(profile_id: int, request: Request, tz: str | None = None) -> dict:
+    """Today's and tomorrow's talk or patience day for each married couple this chart is part of (for Today)."""
+    from app import marriage
+    owner = request.state.owner
+    if not storage.get(profile_id, owner):
+        raise HTTPException(status_code=404, detail="Profile not found")
+    out = []
+    for c in storage.couples_for(owner, profile_id):
+        groom, bride = storage.get(c["groom_id"], owner), storage.get(c["bride_id"], owner)
+        if not groom or not bride:
+            continue
+        today, z = _today(tz, groom["request"].get("tz_name") or "UTC")
+        first = lambda p: (p.get("name") or "").split(" ")[0] or "You"
+        d = marriage.days(groom["chart"], bride["chart"], today, 2, z, (first(groom), first(bride)))
+        out.append({"groom_id": c["groom_id"], "bride_id": c["bride_id"], "names": [first(groom), first(bride)],
+                    "today": d[0], "tomorrow": d[1]})
+    return {"couples": out}
 
 
 @router.post("/horary")

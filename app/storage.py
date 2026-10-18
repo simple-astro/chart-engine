@@ -64,6 +64,17 @@ def _connect() -> sqlite3.Connection:
         " send_time TEXT NOT NULL DEFAULT '08:00', active INTEGER NOT NULL DEFAULT 1, last_sent TEXT,"
         " live_lat REAL, live_lon REAL, live_tz TEXT, live_place TEXT, created_at TEXT NOT NULL)"
     )
+    # "How did it go?" (app/checkins.py): a question that named a day ahead, asked about once afterwards.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS checkins (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER NOT NULL,"
+        " usage_id INTEGER, question TEXT NOT NULL, said TEXT, event_date TEXT NOT NULL, due_date TEXT NOT NULL,"
+        " topic TEXT, answer TEXT, answered_at TEXT, created_at TEXT NOT NULL)")
+    # Married life (app/marriage.py): one row per person and couple (groom and bride are saved charts).
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS couples (id INTEGER PRIMARY KEY AUTOINCREMENT, owner TEXT, groom_id INTEGER NOT NULL,"
+        " bride_id INTEGER NOT NULL, married INTEGER NOT NULL DEFAULT 0, ratings TEXT NOT NULL DEFAULT '{}', trend TEXT,"
+        " plan_start TEXT, ticks TEXT NOT NULL DEFAULT '[]', updated_at TEXT NOT NULL,"
+        " UNIQUE (owner, groom_id, bride_id))")
     ucols = {r["name"] for r in conn.execute("PRAGMA table_info(usage_log)")}
     if "rating" not in ucols:  # 👍 (1) / 👎 (-1) from the person who asked, with an optional reason
         conn.execute("ALTER TABLE usage_log ADD COLUMN rating INTEGER")
@@ -310,6 +321,93 @@ def rate_answer(profile_id: int, usage_id: int, rating: int, reason: str | None 
         cur = conn.execute("UPDATE usage_log SET rating = ?, rating_reason = ? WHERE id = ? AND profile_id = ?"
                            " AND answer IS NOT NULL", (rating, reason, usage_id, profile_id))
         return cur.rowcount == 1
+
+
+def checkin_add(profile_id: int, usage_id: int | None, question: str, said: str, event_date: str, due_date: str,
+                topic: str | None) -> dict | None:
+    """One check-in per chart per event day (asking twice about the same day makes one)."""
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with _lock, _connect() as conn:
+        if conn.execute("SELECT 1 FROM checkins WHERE profile_id = ? AND event_date = ?", (profile_id, event_date)).fetchone():
+            return None
+        cur = conn.execute("INSERT INTO checkins (profile_id, usage_id, question, said, event_date, due_date, topic,"
+                           " created_at) VALUES (?,?,?,?,?,?,?,?)",
+                           (profile_id, usage_id, question, said, event_date, due_date, topic, now))
+        return dict(conn.execute("SELECT * FROM checkins WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def checkin_get(profile_id: int, checkin_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM checkins WHERE id = ? AND profile_id = ?", (checkin_id, profile_id)).fetchone()
+    return dict(r) if r else None
+
+
+def checkin_due(profile_id: int, today: str) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM checkins WHERE profile_id = ? AND answer IS NULL AND due_date <= ?"
+                         " ORDER BY due_date, id LIMIT 1", (profile_id, today)).fetchone()
+    return dict(r) if r else None
+
+
+def checkin_answer(profile_id: int, checkin_id: int, answer: str) -> bool:
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with _lock, _connect() as conn:
+        return conn.execute("UPDATE checkins SET answer = ?, answered_at = ? WHERE id = ? AND profile_id = ?",
+                            (answer, now, checkin_id, profile_id)).rowcount == 1
+
+
+def checkin_snooze(profile_id: int, checkin_id: int, due_date: str) -> bool:
+    with _lock, _connect() as conn:
+        return conn.execute("UPDATE checkins SET due_date = ? WHERE id = ? AND profile_id = ? AND answer IS NULL",
+                            (due_date, checkin_id, profile_id)).rowcount == 1
+
+
+def checkin_counts(since: str) -> dict:
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT answer, COUNT(*) AS n FROM checkins WHERE created_at >= ? GROUP BY answer",
+                            (since,)).fetchall()
+    out = {(r["answer"] or "waiting"): r["n"] for r in rows}
+    return {"asked": sum(out.values()), **out}
+
+
+def _couple(r) -> dict:
+    d = dict(r)
+    d["ratings"], d["ticks"] = json.loads(d["ratings"] or "{}"), json.loads(d["ticks"] or "[]")
+    return d
+
+
+def couple_get(owner: str | None, groom_id: int, bride_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM couples WHERE owner IS ? AND groom_id = ? AND bride_id = ?",
+                         (owner, groom_id, bride_id)).fetchone()
+    return _couple(r) if r else None
+
+
+def couple_save(owner: str | None, groom_id: int, bride_id: int, **fields) -> dict:
+    allowed = {"married", "ratings", "trend", "plan_start", "ticks"}
+    bad = set(fields) - allowed
+    if bad:
+        raise ValueError(f"unknown couple fields: {bad}")
+    for k in ("ratings", "ticks"):
+        if k in fields:
+            fields[k] = json.dumps(fields[k])
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with _lock, _connect() as conn:
+        conn.execute("INSERT OR IGNORE INTO couples (owner, groom_id, bride_id, updated_at) VALUES (?,?,?,?)",
+                     (owner, groom_id, bride_id, now))
+        if fields:
+            cols = ", ".join(f"{k} = ?" for k in fields)
+            conn.execute(f"UPDATE couples SET {cols}, updated_at = ? WHERE owner IS ? AND groom_id = ? AND bride_id = ?",
+                         (*fields.values(), now, owner, groom_id, bride_id))
+    return couple_get(owner, groom_id, bride_id)
+
+
+def couples_for(owner: str | None, profile_id: int) -> list[dict]:
+    """Married couples this chart belongs to (for the talk and patience days on Today)."""
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT * FROM couples WHERE owner IS ? AND married = 1 AND (groom_id = ? OR bride_id = ?)",
+                            (owner, profile_id, profile_id)).fetchall()
+    return [_couple(r) for r in rows]
 
 
 def rating_counts(since: str) -> dict:

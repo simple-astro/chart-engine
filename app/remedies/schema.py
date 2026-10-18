@@ -2,7 +2,8 @@
 
 Kinds: ``graha`` (the 9-planet correspondence table), ``remedy``, ``rule`` (a prohibition or contraindication:
 when a planet sits in a house / sign / dignity, some remedy types or materials are blocked for that person),
-``rin`` (Lal Kitab karmic debts), ``home_audit`` and ``prep`` (a "get ready" checklist for an upcoming change:
+``rin`` (Lal Kitab karmic debts), ``home_audit``, ``couple`` (a habit for married life, for the area of the match it
+helps: temperament, closeness…) and ``prep`` (a "get ready" checklist for an upcoming change:
 practical, no-regret steps before it starts, on the day, and during it). Items are validated on import and on
 every edit.
 """
@@ -11,7 +12,10 @@ from __future__ import annotations
 import re
 
 GRAHAS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]
-KINDS = ("graha", "remedy", "rule", "rin", "home_audit", "prep")
+KINDS = ("graha", "remedy", "rule", "rin", "home_audit", "prep", "couple")
+# Married life (app/marriage.py): each koota is one area of a marriage; "general" habits suit every couple.
+COUPLE_AREAS = ("gana", "bhakoot", "maitri", "yoni", "vashya", "nadi", "general")
+COUPLE_WHO = ("each", "both")
 TYPES = ("aacharan", "seva", "daan", "jal_pravah", "ahar", "vastra_rang", "vanaspati", "griha", "mantra", "vrat",
          "yantra_puja", "ratna")
 SOURCES = ("parashari", "lal_kitab", "vastu", "folk")
@@ -163,7 +167,18 @@ def _prep(item: dict) -> None:
         raise Invalid("keep it short: at most 6 steps before and 4 during")
 
 
-CHECK = {"graha": _graha, "remedy": _remedy, "rule": _rule, "rin": _rin, "home_audit": _home, "prep": _prep}
+def _couple(item: dict) -> None:
+    _need(item, "area", "who", "title", "text")
+    _one_of(item, "area", COUPLE_AREAS)
+    _one_of(item, "who", COUPLE_WHO)
+    if len(item["text"]) > 240:
+        raise Invalid("keep the habit short: at most 240 characters")
+    if re.search(r"\b(divorce|separat\w*|leave (him|her|your))\b", _text(item), re.I):
+        raise Invalid("married-life habits never talk about separation")
+
+
+CHECK = {"graha": _graha, "remedy": _remedy, "rule": _rule, "rin": _rin, "home_audit": _home, "prep": _prep,
+         "couple": _couple}
 
 
 def validate(kind: str, item: dict) -> dict:

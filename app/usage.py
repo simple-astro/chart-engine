@@ -37,6 +37,8 @@ CATALOGUE = [
                 ("kundli/akv", "Ashtakavarga"), ("kundli/nadi", "Nadi amsha"), ("kundli/xchg", "Lord exchange"),
                 ("kundli/jaimini", "Jaimini"), ("kundli/bnn", "BNN"), ("kundli/lal", "Lal Kitab"),
                 ("kundli/about", "About you"), ("lifeevents", "Life events added")]),
+    ("Match making", [("match/married", "Said they are married"), ("match/rated", "Rated their marriage"),
+                      ("match/plan", "Started a 43-day couple plan")]),
     ("Find", [("find/open", "Find opened")]),
 ]
 LABEL = {k: label for _, items in CATALOGUE for k, label in items}
@@ -169,6 +171,7 @@ def report(now: datetime | None = None) -> dict:
         "topics": topic_rows,
         "other_questions": other_questions,
         "ratings": storage.rating_counts(iso(30)),
+        "checkins": storage.checkin_counts(iso(30)),
         "journey": journey,
         "testers": testers,
     }

@@ -307,7 +307,7 @@
         <div class="rlrow"><button class="btn" type="button" id="ra-save">Add for review</button><span class="status" id="ra-st" role="status"></span></div>
       </details>
       <div class="rlfilters">
-      <div><label for="rl-kind">Show</label><select id="rl-kind"><option value="">Everything</option><option value="remedy">Remedies</option><option value="graha">Planet correspondences</option><option value="rule">Prohibition rules</option><option value="rin">Rin (debts)</option><option value="home_audit">Home audit</option><option value="prep">Get-ready checklists</option></select></div>
+      <div><label for="rl-kind">Show</label><select id="rl-kind"><option value="">Everything</option><option value="remedy">Remedies</option><option value="graha">Planet correspondences</option><option value="rule">Prohibition rules</option><option value="rin">Rin (debts)</option><option value="home_audit">Home audit</option><option value="prep">Get-ready checklists</option><option value="couple">Married-life habits</option></select></div>
       <div><label for="rl-status">Status</label><select id="rl-status"><option value="pending_astrologer">Waiting for review</option><option value="approved">Approved</option><option value="retired">Retired</option><option value="proposal">Has a suggested change</option><option value="">All</option></select></div>
       <div><label for="rl-planet">Planet</label><select id="rl-planet"><option value="">All planets</option></select></div>
       <div class="rlbtns"><button class="sbtn" type="button" id="rl-export" data-roles="owner mentor">Export</button><button class="sbtn" type="button" id="rl-approve-all" hidden>Approve all shown</button></div>
@@ -766,6 +766,7 @@ function rlTitle(i) {
   if (i.kind === 'graha') return [`${i.planet} correspondences`, `${i.weekday || ''} · ${(i.colors || []).join(', ')} · japa ${i.japa_count}`];
   if (i.kind === 'rule') return [i.reason, `${i.planet} · when ${Object.entries(i.when).map(([k, v]) => k + ' ' + v).join(', ')}`];
   if (i.kind === 'rin') return [i.name, i.when.any_of.map(c => `${c.planet} in ${c.houses.join('/')}`).join(' · ')];
+  if (i.kind === 'couple') return [i.title, `${{gana: 'Temperament (Gana)', bhakoot: 'Emotional closeness (Bhakoot)', maitri: 'Understanding (Graha Maitri)', yoni: 'Physical closeness (Yoni)', vashya: 'Who leads (Vashya)', nadi: 'Health and family (Nadi)', general: 'Every couple'}[i.area]} · for ${i.who === 'each' ? 'each partner' : 'both together'}`];
   if (i.kind === 'prep') return [i.title, `For: ${i.situation.replace(/_/g, ' ')} · ${i.before.length} steps before${(i.during || []).length ? ` · ${i.during.length} during` : ''}`];
   return [i.prompt, `${i.zone} · ${i.planet} · ${i.suggested_action}`];
 }
@@ -783,6 +784,8 @@ function rlBody(i) {
     add('Remedy', li(i.remedy_steps)); add('Why (template)', esc(i.why_template));
   } else if (i.kind === 'home_audit') {
     add('Explanation', esc(i.explanation));
+  } else if (i.kind === 'couple') {
+    add('Habit', esc(i.text)); add('Why', esc(i.why));
   } else if (i.kind === 'prep') {
     add('Before it starts', li(i.before)); add('On the day', esc(i.on_the_day)); add('During', li(i.during));
   } else {
@@ -1047,7 +1050,9 @@ function renderUsage(u) {
   const base = u.journey[0].testers || 0;
   $('us-journey').innerHTML = base ? u.journey.map(j => `<tr><td>${esc(j.step)}</td><td class="num">${j.testers}</td><td class="num">${Math.round(100 * j.testers / base)}%</td></tr>`).join('') : none(3, 'No tester activity yet.');
   const R = u.ratings || {};
-  $('us-rate').textContent = `Answers rated in 30 days: 👍 ${R.up || 0} · 👎 ${R.down || 0}. Answers marked 👎 go to the top of Studio › Review.`;
+  const K = u.checkins || {};
+  $('us-rate').textContent = `Answers rated in 30 days: 👍 ${R.up || 0} · 👎 ${R.down || 0}. Answers marked 👎 go to the top of Studio › Review. ` +
+    `"How did it go?" in 30 days: ${K.asked || 0} made · went well ${K.well || 0} · mixed ${K.mixed || 0} · didn't go well ${K.poor || 0} · waiting ${K.waiting || 0}.`;
   const O = u.other_questions || [];
   $('us-other-h').textContent = `Questions no topic matched (${O.length}${O.length === 40 ? '+' : ''})`;
   $('us-other').innerHTML = O.length ? O.map(o => `<li><small>${esc(o.ts.slice(0, 10))}</small> ${esc(o.question)}</li>`).join('') : '<li>None — every question matched a topic.</li>';

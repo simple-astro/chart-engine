@@ -206,6 +206,24 @@
   .rate{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;font-size:.82rem;color:var(--mut)}
   .rate button{border:1px solid var(--line);background:var(--bg2);border-radius:999px;padding:4px 10px;font:inherit;cursor:pointer;color:var(--ink);min-height:32px}
   .rate .rwhy{font-size:.8rem}
+  .ckin p{margin:6px 0} .ckin .ksaid{color:var(--mut);font-size:.88rem} .ckbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .mlife h4{margin:16px 0 8px;font:600 1rem var(--serif)} .mlife h5{margin:14px 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+  .lhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px} .lhead h3{margin:0} .lmar{width:auto}
+  .lsteps{display:flex;gap:4px;margin:12px 0 4px} .lsteps span{flex:1;height:4px;border-radius:2px;background:var(--line)} .lsteps span.on{background:var(--acc)}
+  .lrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)} .lrow:first-child{border-top:0}
+  .ldots{display:flex;gap:4px} .ldots button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit;cursor:pointer}
+  .ldots button.on{background:var(--acc);border-color:var(--acc);color:var(--bg);font-weight:600}
+  .lchips{display:flex;flex-wrap:wrap;gap:6px} .lnav{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:14px}
+  .lcmp td,.lcmp th{padding:6px 8px} .lmatch{margin:8px 0 0;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--ok) 14%,transparent);font-size:.88rem}
+  .learly{margin:4px 0 0;padding-left:1.1em;font-size:.88rem} .learly li{margin:4px 0}
+  .lhab{padding:8px 0;border-top:1px solid var(--line)} .lhab:first-child{border-top:0} .lhab p{margin:4px 0}
+  .lcal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px} .lcal div{text-align:center;padding:4px 0;border-radius:8px;background:var(--bg2);font-size:.82rem;font-variant-numeric:tabular-nums}
+  .lcal small{display:block;font-size:.62rem;color:var(--mut)} .lcal .talk{background:color-mix(in srgb,var(--ok) 22%,transparent);font-weight:600} .lcal .patience{background:color-mix(in srgb,var(--acc) 26%,transparent);font-weight:600}
+  .lkey{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font-size:.78rem;color:var(--mut)} .lkey i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+  .lkey i.talk{background:color-mix(in srgb,var(--ok) 40%,transparent)} .lkey i.patience{background:color-mix(in srgb,var(--acc) 45%,transparent)}
+  .lplan{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .mmprom.mmmarried .badge{display:none} .mmprom.mmmarried::after{content:'You’re married: see Married life below';font-size:.8rem;color:var(--mut)}
+  .gcouple p{margin:0;line-height:1.6}
   .kpay{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--acc) 40%,transparent);background:color-mix(in srgb,var(--acc) 10%,transparent);font-size:.86rem;line-height:1.5}
   .kpay.ok{border-color:color-mix(in srgb,var(--ok) 45%,transparent);background:color-mix(in srgb,var(--ok) 10%,transparent)}
   .kpbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px} .kpbtns button{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:.84rem;font-weight:600;cursor:pointer;min-height:36px}
@@ -1149,6 +1167,8 @@
 
     <!-- Today: the daily card, how you feel, today's good and difficult times -->
     <div class="scr" id="s-today" data-scr="today">
+      <section class="card gcard ckin" id="gcheckin" hidden></section>
+      <section class="card gcard gcouple" id="gcouple" hidden></section>
       <section class="card gcard" id="gtoday"><h3>Today for you</h3><div class="hint">Checking today’s panchang…</div></section>
       <section class="card gcard" id="gmood"></section>
       <h3 class="gh">Today in detail · plan the week</h3>
@@ -1817,6 +1837,25 @@ $('askf').addEventListener('submit',async e=>{
   $('askbtn').disabled=false;$('q').focus();
 });
 
+// "How did it go?" (app/checkins.py): one card on Today when a question about a day ahead is two days past.
+const CK_ANS={well:'Went well',mixed:'Mixed',poor:'Didn’t go well',notyet:'Not yet'},CK_KIND={job:'Started a job',married:'Got married',engaged:'Got engaged',promotion:'Promotion or raise',business:'Started a business',home:'Bought a home or property',vehicle:'Bought a vehicle',moved:'Moved house',abroad:'Moved or went abroad',degree:'Degree or exam passed',child:'Child born',court_win:'Won a court case'};
+let CK=null;
+async function loadCheckin(pid){const box=$('gcheckin');box.hidden=true;CK=null;if(pid==null)return;
+  try{const d=await (await fetch('/profiles/'+pid+'/checkin')).json();if(pid!==currentId||!d.checkin)return;CK={...d.checkin,pid};paintCheckin()}catch(e){}}
+function paintCheckin(step){const box=$('gcheckin'),c=CK;if(!c){box.hidden=true;return}box.hidden=false;
+  const when=new Date(c.event_date+'T12:00').toLocaleDateString(undefined,{day:'numeric',month:'short'});
+  if(step==='well'&&c.event_kind)box.innerHTML='<h3>Wonderful 🙏</h3><p>Add it to Your life so far? It helps us know your chart better.</p><div class="ckbtns"><button type="button" class="btn" data-ck="add">Add: '+esc(CK_KIND[c.event_kind])+', '+when+'</button><button type="button" class="btn ghost" data-ck="close">No thanks</button></div>';
+  else if(step)box.innerHTML='<h3>Thank you 🙏</h3><p>'+(step==='notyet'?'We’ll ask again in a few days.':step==='added'?'Added to Your life so far.':'We use your answer to check our timing against real life.')+'</p>';
+  else box.innerHTML='<h3>How did it go?</h3><p>You asked us about <b>'+when+'</b>: <em>'+esc(c.question)+'</em></p>'+(c.said?'<p class="ksaid">We said: '+esc(c.said)+'</p>':'')+
+    '<div class="ckbtns">'+Object.entries(CK_ANS).map(([k,t])=>'<button type="button" class="btn ghost" data-ck="'+k+'">'+t+'</button>').join('')+'</div>'}
+$('gcheckin').addEventListener('click',async e=>{const b=e.target.closest('[data-ck]');if(!b||!CK)return;const k=b.dataset.ck,c=CK;
+  if(k==='close'){CK=null;paintCheckin();return}
+  if(k==='add'){await fetch('/profiles/'+c.pid+'/events',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({kind:c.event_kind,year:+c.event_date.slice(0,4),month:+c.event_date.slice(5,7),day:+c.event_date.slice(8,10)})});
+    paintCheckin('added');if($('gevents'))window.renderEvents($('gevents'),c.pid);setTimeout(()=>{CK=null;paintCheckin()},4000);return}
+  b.disabled=true;const r=await fetch('/profiles/'+c.pid+'/checkin/'+c.id,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({answer:k})});
+  if(!r.ok){b.disabled=false;return}
+  paintCheckin(k);if(!(k==='well'&&c.event_kind))setTimeout(()=>{CK=null;paintCheckin()},4000)});
+
 // 👍 / 👎 under each new answer; a 👎 asks why (one tap) and goes to the astrologers' review queue.
 const RATE_WHY=['Facts look wrong','Not clear','Too general','Didn’t answer my question','Other'];
 $('log').addEventListener('click',async e=>{const b=e.target.closest('.rate button');if(!b)return;const box=b.closest('.rate');
@@ -2083,7 +2122,7 @@ $('mgo').onclick=async()=>{
   try{
     const r=await fetch('/matchmaking',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({groom_id:g,bride_id:b})});
     const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);
-    renderMatch(d);$('mhint').textContent='';
+    MPAIR={g,b};renderMatch(d);$('mhint').textContent='';LIFE={step:null};loadLife();
   }catch(err){$('mhint').textContent='Error: '+err.message}
   $('mgo').disabled=false;
 };
@@ -2100,7 +2139,7 @@ function renderMatch(d){
     '<div class="mmrow"><span>Mangal dosha</span><span class="badge '+(m.effective==='none'?'good':m.effective==='mild'?'':'warn')+'">'+
       (m.manglik&&m.effective==='none'?(m.cancelled?'Cancelled':'Eased'):ML[m.effective])+'</span></div>'+
     '<small class="hint">Mars '+mars(m)+(m.exceptions.length?' — '+esc(m.exceptions.join('; ')):'')+'</small>'+
-    (pr?'<div class="mmrow"><span>Marriage promise</span><span class="badge '+PB[pr.verdict]+'">'+esc(pr.verdict)+'</span></div>'+
+    (pr?'<div class="mmrow mmprom"><span>Marriage promise</span><span class="badge '+PB[pr.verdict]+'">'+esc(pr.verdict)+'</span></div>'+
       '<small class="hint">7th cusp sub lord <b>'+esc(pr.cusp_sub_lord)+'</b> (star lord '+esc(pr.star_lord)+') signifies houses '+pr.signifies.join(', ')+
       ' — for: '+(pr.for.join(', ')||'none')+'; against: '+(pr.against.join(', ')||'none')+'.</small>':'')+'</div>'};
   $('mres').innerHTML=
@@ -2114,12 +2153,78 @@ function renderMatch(d){
     '<div class="mmrow mmm"><span><b>Manglik match</b><small class="hint">'+esc(d.manglik.text)+'</small></span><span class="badge '+MS[d.manglik.status]+'">'+
       ({none:'no concern',balanced:'balanced',minor:'minor',concern:'needs care'})[d.manglik.status]+'</span></div></div>'+
     '<div class="twocol">'+['groom','bride'].map(k=>'<div class="card mini">'+person(d[k],k==='groom'?'Groom':'Bride')+'</div>').join('')+'</div>'+
+    '<section class="card mmsec mlife" id="mlife"></section>'+
     '<details class="card mmsec mmdet"><summary><b>Guna Milan details</b><small class="hint">8 kootas · '+fmt(d.total)+'/36</small></summary><div class="scroll"><table id="mtable"></table></div></details>'+
     '<p class="hint">'+esc(d.disclaimer)+'</p>';
   table($('mtable'),['Koota','Groom','Bride','Score','','What it looks at'],d.kootas.map(k=>
     ['<b>'+k.name+'</b>',esc(k.groom),esc(k.bride),'<b>'+fmt(k.got)+'</b> / '+k.max,'<div class="bar"><i style="width:'+(k.got/k.max*100)+'%"></i></div>',esc(k.meaning)]));
   $('mres').hidden=false;$('mres').scrollIntoView({behavior:'smooth'});
 }
+
+// ----- married life (app/marriage.py): first time three short steps (rate, compare, what helps), then one page -----
+let MPAIR=null,LIFE={step:null},LD=null;
+const lifeTz=()=>encodeURIComponent((MU.here&&MU.here.tz_name)||Intl.DateTimeFormat().resolvedOptions().timeZone);
+const LV={high:['good','Easy'],mid:['','Okay'],low:['warn','Hard']},CV={high:['good','Strong'],mid:['','Middle'],low:['warn','Low']};
+async function loadLife(){if(!MPAIR)return;
+  try{const r=await fetch('/couples/'+MPAIR.g+'/'+MPAIR.b+'?tz='+lifeTz());LD=await r.json();if(!r.ok)throw new Error(LD.detail||r.statusText)}
+  catch(e){$('mlife').innerHTML='<p class="hint err">Couldn’t load married life: '+esc(e.message)+'</p>';return}
+  if(LD.married&&LIFE.step===null&&!Object.keys(LD.ratings).length)LIFE.step=1;paintLife()}
+async function saveLife(body){const r=await fetch('/couples/'+MPAIR.g+'/'+MPAIR.b+'?tz='+lifeTz(),{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();if(r.ok)LD=d;return r.ok}
+function lifeRatings(){return '<div class="lrate">'+LD.areas.map(a=>'<div class="lrow"><span>'+esc(a.label)+'</span><div class="ldots" role="radiogroup" aria-label="'+esc(a.label)+'">'+[1,2,3,4,5].map(v=>
+  '<button type="button" role="radio" aria-checked="'+(LD.ratings[a.key]===v)+'" class="'+(LD.ratings[a.key]===v?'on':'')+'" data-lr="'+a.key+'" data-v="'+v+'">'+v+'</button>').join('')+'</div></div>').join('')+'</div>'}
+function lifeCompare(){const C=LD.compare;return '<div class="scroll"><table class="lcmp"><thead><tr><th>Area</th><th>You said</th><th>Charts</th></tr></thead><tbody>'+C.rows.map(r=>
+  '<tr><td>'+esc(r.label)+'<small class="hint"> '+esc(r.koota)+' '+r.got+'/'+r.max+'</small></td><td>'+(r.you?'<span class="badge '+LV[r.you][0]+'">'+LV[r.you][1]+'</span>':'—')+'</td><td><span class="badge '+CV[r.chart][0]+'">'+CV[r.chart][1]+'</span></td></tr>').join('')+'</tbody></table></div>'+
+  (C.text?'<p class="lmatch">'+esc(C.text)+'</p>':'')}
+function lifeEarly(){const E=LD.early_years,f=d=>new Date(d+'T12:00').toLocaleDateString(undefined,{month:'short',year:'numeric'});
+  if(!LD.wedding)return '<p class="hint">Add “Got married” to Your life so far (in either chart) to see how your first years line up with your periods.</p>';
+  return '<p class="hint">Married '+f(LD.wedding)+(LD.trend?' · you said: '+esc(LD.trends[LD.trend])+'':'')+'. Your first years, read for marriage:</p><ul class="learly">'+E.map(x=>
+    '<li><b>'+esc(x.who)+'</b> · '+esc(x.period)+' <small class="hint">'+f(x.start)+' – '+f(x.end)+'</small> <span class="badge '+({Supportive:'good',Mixed:'',Demanding:'warn'})[x.label]+'">'+x.label+'</span></li>').join('')+'</ul>'}
+function lifeHabits(){return LD.habits.length?LD.habits.map(h=>'<div class="lhab"><b>'+esc(h.title)+'</b> <small class="hint">'+esc(h.area_label)+(h.koota?' · '+esc(h.koota):'')+' · '+(h.who==='each'?'for each of you':'together')+'</small><p>'+esc(h.text)+'</p>'+(h.why?'<small class="hint">'+esc(h.why)+'</small>':'')+'</div>').join(''):'<p class="hint">Habits are being prepared by our astrologers.</p>'}
+function lifeDays(){const f=d=>new Date(d+'T12:00');return '<div class="lcal">'+LD.days.map(x=>{const d=f(x.date);
+  return '<div class="'+(x.kind||'')+'" title="'+(x.kind==='talk'?'Talk day':x.kind==='patience'?'Patience day for '+x.who.join(' and '):'')+'"><small>'+d.toLocaleDateString(undefined,{weekday:'narrow'})+'</small>'+d.getDate()+'</div>'}).join('')+'</div>'+
+  '<div class="lkey"><span><i class="talk"></i>Talk day: good for an important conversation</span><span><i class="patience"></i>Patience day: keep things light</span></div>'}
+function lifePlan(){const P=LD.plan;if(!P)return '<button type="button" class="btn" data-life="plan">Start a 43-day plan together</button>';
+  return '<div class="lplan"><b>Day '+P.day+' of '+P.of+'</b>'+(P.habit?' · '+esc(P.habit.title):'')+' <small class="hint">'+P.done+(P.done===1?' day':' days')+' done</small> '+
+    (P.done_today?'<span class="badge good">Done today</span>':'<button type="button" class="btn" data-life="tick">Done today</button>')+' <button type="button" class="linkbtn" data-life="stop">Stop the plan</button></div>'}
+const LSAFE='<p class="hint">Habits first; remedies only from the approved library. For deeper issues, a marriage counsellor helps; astrology works best alongside. If you ever feel unsafe at home, please reach out to someone you trust or a helpline.</p>';
+function paintLife(){const box=$('mlife');if(!box||!LD)return;const s=LIFE.step,N=LD.names;
+  document.querySelectorAll('#mres .mmprom').forEach(r=>r.classList.toggle('mmmarried',LD.married));
+  const head='<div class="lhead"><h3>Married life</h3><div class="seg lmar" role="radiogroup" aria-label="Married already?"><button type="button" data-life="m1" class="'+(LD.married?'on':'')+'">We’re married</button><button type="button" data-life="m0" class="'+(LD.married?'':'on')+'">Not yet</button></div></div>';
+  if(!LD.married){box.innerHTML=head+'<p class="hint">Already married? Tell us and we’ll show how your experience compares with the match, what helps, and the days to talk and to be patient.</p>';return}
+  const bar='<div class="lsteps">'+[1,2,3].map(i=>'<span class="'+(i<=s?'on':'')+'"></span>').join('')+'</div>';
+  if(s===1)box.innerHTML=head+bar+'<h4>Step 1 of 3 · How has it felt?</h4><p class="hint">Private to you, not shown to '+esc(N[1])+'. 1 = hard, 5 = easy.</p>'+lifeRatings()+
+    '<h5>Over the years it has been</h5><div class="lchips">'+Object.entries(LD.trends).map(([k,t])=>'<button type="button" class="mdchip'+(LD.trend===k?' on':'')+'" data-lt="'+k+'">'+esc(t)+'</button>').join('')+'</div>'+
+    '<div class="lnav"><span></span><button type="button" class="btn" data-life="next">Next</button></div>';
+  else if(s===2)box.innerHTML=head+bar+'<h4>Step 2 of 3 · What your charts say</h4>'+lifeCompare()+'<h5>Your first years</h5>'+lifeEarly()+
+    '<div class="lnav"><button type="button" class="btn ghost" data-life="back">Back</button><button type="button" class="btn" data-life="next">See what helps</button></div>';
+  else if(s===3)box.innerHTML=head+bar+'<h4>Step 3 of 3 · What helps</h4>'+lifeHabits()+'<h5>The next 4 weeks</h5>'+lifeDays()+
+    '<div class="lnav"><button type="button" class="btn ghost" data-life="back">Back</button><button type="button" class="btn" data-life="done">Done</button></div>'+LSAFE;
+  else box.innerHTML=head+'<h4>Your plan</h4>'+lifePlan()+'<h4>What helps</h4>'+lifeHabits()+'<h4>Talk days and patience days</h4>'+lifeDays()+
+    '<h4>Your experience and your charts</h4>'+lifeCompare()+'<h4>Your first years</h4>'+lifeEarly()+
+    '<p><button type="button" class="linkbtn" data-life="edit">Change my ratings</button></p>'+LSAFE}
+document.addEventListener('click',async e=>{const box=$('mlife');if(!box||!box.contains(e.target)||!LD)return;
+  const r=e.target.closest('[data-lr]');if(r){LD.ratings={...LD.ratings,[r.dataset.lr]:+r.dataset.v};paintLife();return}
+  const t=e.target.closest('[data-lt]');if(t){LD.trend=t.dataset.lt;paintLife();return}
+  const b=e.target.closest('[data-life]');if(!b)return;const k=b.dataset.life;
+  if(k==='m1'||k==='m0'){await saveLife({married:k==='m1'});LIFE.step=k==='m1'&&!Object.keys(LD.ratings).length?1:null;if(k==='m1')track('match/married');paintLife()}
+  else if(k==='next'){if(LIFE.step===1){if(Object.keys(LD.ratings).length<LD.areas.length){b.insertAdjacentHTML('beforebegin','<small class="hint err">Rate all six areas first. </small>');return}
+      await saveLife({ratings:LD.ratings,...(LD.trend?{trend:LD.trend}:{})});track('match/rated')}LIFE.step++;paintLife()}
+  else if(k==='back'){LIFE.step--;paintLife()}
+  else if(k==='done'){LIFE.step=null;paintLife()}
+  else if(k==='edit'){LIFE.step=1;paintLife()}
+  else if(k==='plan'){await saveLife({plan:'start'});track('match/plan');paintLife()}
+  else if(k==='tick'){await saveLife({tick:true});paintLife()}
+  else if(k==='stop'){await saveLife({plan:'stop'});paintLife()}
+  $('mlife').scrollIntoView({block:'start'})});
+
+// Today: a one-line note when today or tomorrow is a talk day or a patience day for a married couple.
+async function loadCoupleDay(pid){const box=$('gcouple');box.hidden=true;if(pid==null)return;
+  try{const d=await (await fetch('/profiles/'+pid+'/couple-day?tz='+lifeTz())).json();if(pid!==currentId||!d.couples)return;
+    const lines=[];d.couples.forEach(c=>{const both=esc(c.names.join(' and '));
+      const say=(x,when)=>x.kind==='talk'?when+' is a <b>talk day</b> for '+both+': good for an important conversation.':x.kind==='patience'?when+' is a <b>patience day</b> for '+esc(x.who.join(' and '))+': keep things light.':null;
+      [say(c.today,'Today'),say(c.tomorrow,'Tomorrow')].filter(Boolean).forEach(l=>lines.push(l))});
+    if(lines.length){box.innerHTML='<p>💞 '+lines.join('<br>💞 ')+'</p>';box.hidden=false}}catch(e){}}
 
 // KP tables (Planets, Houses & cusps). Each lord shows the house it sits in and the houses it rules by cusp sign
 // (Bhava Chalit); Rahu and Ketu act for the lord of their sign. `other`: the same chart under another ayanamsha,
@@ -2344,7 +2449,7 @@ function render(c,req){
     '<div class="bnnc">'+B.circuits.map(k=>'<div class="jai"><small>'+esc(k.role)+'</small><b>'+esc(k.karaka)+' <span class="bnns">in '+esc(k.sign)+'</span></b>'+
       k.text.map(x=>'<p>'+esc(x)+'</p>').join('')+'</div>').join('')+'</div>';
   window.renderExchange($('xbody'),c);window.renderAshtakavarga($('akvbody'),c);
-  const gr=window.guideReading(c);gr.jaimini=c.jaimini;window.renderGuide($('guide'),gr,(req&&req.name)||m.name,$('gremedies'));loadToday();window.renderMood($('gmood'),currentId);window.renderEvents($('gevents'),currentId);window.renderUpcoming($('gupcoming'),currentId);
+  const gr=window.guideReading(c);gr.jaimini=c.jaimini;window.renderGuide($('guide'),gr,(req&&req.name)||m.name,$('gremedies'));loadToday();window.renderMood($('gmood'),currentId);loadCheckin(currentId);loadCoupleDay(currentId);window.renderEvents($('gevents'),currentId);window.renderUpcoming($('gupcoming'),currentId);
   if(req)window.renderTools($('gtools'),{req,chart:c,id:currentId,prashnaEl:$('gprashna')});
 
   const now=Date.now(),fd=s=>new Date(s).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
