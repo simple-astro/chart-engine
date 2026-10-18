@@ -29,7 +29,7 @@ CATALOGUE = [
                  ("studies/jaimini", "Jaimini"), ("studies/lal", "Lal Kitab"), ("studies/prashna", "Prashna"),
                  ("studies/chara", "Chara Dasha"), ("timing/chara", "Chara Dasha (when it was in Timing)"),
                  ("kundli", "Kundli screen (before Studies)"), ("links/place", "Placement arrows"), ("links/asp", "Aspect arrows"),
-                ("links/conj", "Conjunctions"), ("house/tap", "Tap a house"), ("chart/chalit", "Bhava Chalit view"), ("chart/moon", "Moon chart view"), ("chart/gochar", "Gochar chart view"), ("chart/gochar-day", "Gochar: changed the day"), ("chart/style-south", "Chart style: South Indian"), ("chart/time-try", "Tried another birth time"), ("chart/time-saved", "Saved a new birth time"), ("chart/style-north", "Chart style: North Indian"), ("vargas/moon", "Divisional chart from the Moon"),
+                ("links/conj", "Conjunctions"), ("house/tap", "Tap a house"), ("chart/chalit", "Bhava Chalit view"), ("chart/moon", "Moon chart view"), ("chart/gochar", "Gochar chart view"), ("chart/gochar-day", "Gochar: changed the day"), ("chart/gochar-play", "Gochar: pressed Play"), ("chart/style-south", "Chart style: South Indian"), ("chart/time-try", "Tried another birth time"), ("chart/time-saved", "Saved a new birth time"), ("chart/style-north", "Chart style: North Indian"), ("vargas/moon", "Divisional chart from the Moon"),
                 ("kp/show-standard", "KP table: showed KP ayanamsa"), ("kp/make-default", "KP table: made KP the setting"),
                 ("studies/yogini", "Yogini Dasha"),
                 ("chart/alul", "AL · UL on the chart"), ("kundli/planets", "Planets"), ("kundli/yogas", "Yogas"),
