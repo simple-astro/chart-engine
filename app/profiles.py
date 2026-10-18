@@ -370,6 +370,20 @@ def events_add(profile_id: int, req: EventRequest, request: Request) -> dict:
     return _events_view(p)
 
 
+@router.get("/{profile_id}/events/birth-time")
+def events_birth_time(profile_id: int, request: Request) -> dict:
+    """Which birth times, an hour either side of the saved one, best explain the person's events."""
+    from app import life_events as L
+    p = _require(profile_id, request)
+    req, events = p["request"], storage.event_list(profile_id)
+    if req.get("tob_unknown"):
+        raise HTTPException(status_code=422, detail="Add a birth time first; rectification refines a known time.")
+    if len(events) < 3:
+        raise HTTPException(status_code=422, detail="Add at least 3 events to rectify your birth time.")
+    at = lambda tob: with_extras(compute_chart(ChartRequest(**{**req, "tob": tob})))
+    return L.birth_time_check(req, events, at, chat.local_today(p))
+
+
 @router.delete("/{profile_id}/events/{event_id}")
 def events_delete(profile_id: int, event_id: int, request: Request) -> dict:
     p = _require(profile_id, request)

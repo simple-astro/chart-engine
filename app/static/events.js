@@ -7,7 +7,7 @@
   let S = {}, EL = null;
 
   window.renderEvents = async function (el, pid) {
-    EL = el; S = { pid, data: null, adding: false, kind: null, more: false, open: null, err: '', busy: false };
+    EL = el; S = { pid, data: null, adding: false, kind: null, more: false, open: null, err: '', busy: false, bt: null, btConfirm: false };
     if (pid == null) { el.innerHTML = '<h3>Your life so far</h3><p class="hint">Save this chart to add your life events.</p>'; return; }
     el.innerHTML = '<h3>Your life so far</h3><div class="hint">Loading…</div>';
     try {
@@ -40,12 +40,60 @@
     </div>`;
   }
 
+  // Birth time rectification: the same events judged against birth times an hour either side of the saved one.
+  const t12 = t => { const [h, m] = t.split(':').map(Number); return `${(h + 11) % 12 + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+  const AYN = { lahiri: 'Lahiri', pushya: 'Pushya', raman: 'Raman', fagan: 'Fagan-Bradley', tropical: 'Tropical' };
+  function birthTime() {
+    const b = S.bt;
+    if (!b) return '<button type="button" class="linkbtn evbt" id="evbt">Birth time rectification →</button>';
+    if (b.loading) return '<div class="btbox"><p class="hint">Rectifying: checking your events against nearby birth times…</p></div>';
+    if (b.err) return `<div class="btbox"><p class="hint err">${esc(b.err)}</p></div>`;
+    const [lo, hi] = b.window, inWin = r => r.tob >= lo && r.tob <= hi && r.fits === b.best;
+    const STR = { weak: ['', 'Only a hint'], some: ['', 'Useful hint'], good: ['good', 'Good sign'] }[b.strength];
+    return `<div class="btbox">
+      <div class="bthead"><h4>Birth time rectification</h4><span class="badge ${STR[0]}">${STR[1]}</span></div>
+      <p>${esc(b.text)}</p>
+      <p class="hint">${esc(b.note)}${b.ayanamsha !== 'krishnamurti' ? ` Worked out with the ${esc(AYN[b.ayanamsha] || b.ayanamsha)} ayanamsa, as your chart is set; KP can give a different answer.` : ''}</p>
+      <ol class="btrows" aria-label="Events that fit at each birth time">${b.rows.map(r => `<li class="${r.yours ? 'yours' : ''}${inWin(r) ? ' best' : ''}">
+          <span class="bttime">${t12(r.tob)}${r.yours ? ' <em>yours</em>' : ''}</span>
+          <span class="btbar" aria-hidden="true"><i style="width:${Math.round(r.fits / b.events * 100)}%"></i></span>
+          <span class="btn2">${r.fits}/${b.events}</span>
+          <span class="btdots" aria-hidden="true">${r.marks.map((m, i) => `<i class="${m}" title="${esc(b.labels[i])}: ${m === 'fits' ? 'fits' : m === 'partly' ? 'partly' : 'doesn’t fit'}"></i>`).join('')}</span></li>`).join('')}</ol>
+      <p class="hint">Each dot is one of your events, in order: ${b.labels.map(esc).join(' · ')}. Filled = fits.</p>
+      ${b.suggest ? (S.btConfirm
+        ? `<div class="btconfirm"><p>Change your saved birth time from <b>${t12(b.rows.find(r => r.yours).tob)}</b> to <b>${t12(b.suggest)}</b>? Your chart, periods and readings will all update. You can change it back any time.</p>
+            <button type="button" class="btn" id="btyes">Yes, use ${t12(b.suggest)}</button><button type="button" class="btn ghost" id="btno">Cancel</button></div>`
+        : `<button type="button" class="btn ghost" id="btuse">Use ${t12(b.suggest)}</button>`) : ''}
+      <button type="button" class="linkbtn" id="bthide">Hide rectification</button>
+    </div>`;
+  }
+  async function loadBirthTime() {
+    S.bt = { loading: true }; paint();
+    try {
+      const r = await fetch(`/profiles/${S.pid}/events/birth-time`), d = await r.json();
+      if (!r.ok) throw new Error(d.detail || r.statusText);
+      S.bt = d;
+    } catch (e) { S.bt = { err: 'Couldn’t run the rectification: ' + e.message }; }
+    paint();
+  }
+  async function useTime() {
+    const tob = S.bt.suggest + ':00';
+    try {
+      const p = await (await fetch(`/profiles/${S.pid}`)).json();
+      const r = await fetch(`/profiles/${S.pid}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...p.request, tob }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || r.statusText);
+      if (window.loadProfile) await window.loadProfile(S.pid);
+    } catch (e) { S.bt = { ...S.bt, err: 'Couldn’t change the time: ' + e.message }; S.btConfirm = false; paint(); }
+  }
+
   function paint() {
     const d = S.data, s = d.summary;
     EL.innerHTML = `<h3>Your life so far</h3>
       <p class="gsub">Add things that happened in your life. We check each one against your chart — the more you add, the better we know your chart.</p>
       ${s && s.events < 3 ? `<p class="hint evhint">Add ${3 - s.events} more to see how well your chart explains your life.</p>` : ''}
       ${s && s.events >= 3 ? `<div class="evsum"><b>${s.fits}<small> of ${s.events}</small></b><div><p>${esc(s.text)}</p>${s.note ? `<small>${esc(s.note)}</small>` : ''}</div></div>` : ''}
+      ${s && s.events >= 3 ? birthTime() : ''}
       ${d.events.length ? `<ul class="evlist">${d.events.map(e => {
         const f = FIT[e.check.fit], open = S.open === e.id;
         return `<li><button type="button" class="evrow" data-open="${e.id}" aria-expanded="${open}">
@@ -62,6 +110,11 @@
     if (!t) return;
     const keep = () => ({ y: (EL.querySelector('#evy') || {}).value, m: (EL.querySelector('#evm') || {}).value, d: (EL.querySelector('#evd') || {}).value });
     const restore = v => { if (!v) return; ['y', 'm', 'd'].forEach(k => { const f = EL.querySelector('#ev' + k); if (f) f.value = v[k] || ''; }); };
+    if (t.id === 'evbt') { loadBirthTime(); return; }
+    if (t.id === 'bthide') { S.bt = null; S.btConfirm = false; paint(); return; }
+    if (t.id === 'btuse') { S.btConfirm = true; paint(); return; }
+    if (t.id === 'btno') { S.btConfirm = false; paint(); return; }
+    if (t.id === 'btyes') { t.disabled = true; useTime(); return; }
     if (t.id === 'evadd') { S.adding = true; S.err = ''; paint(); EL.querySelector('[data-kind]').focus(); }
     else if (t.id === 'evcancel') { Object.assign(S, { adding: false, kind: null, more: false, err: '' }); paint(); }
     else if (t.id === 'evmore') { const v = keep(); S.more = true; paint(); restore(v); }
@@ -69,7 +122,7 @@
     else if (t.dataset.open) { S.open = S.open === +t.dataset.open ? null : +t.dataset.open; paint(); }
     else if (t.dataset.del) {
       const r = await fetch(`/profiles/${S.pid}/events/${t.dataset.del}`, { method: 'DELETE' });
-      if (r.ok) { S.data = await r.json(); S.open = null; paint(); }
+      if (r.ok) { S.data = await r.json(); S.open = null; S.bt = null; paint(); }
     } else if (t.id === 'evsave') {
       const v = keep();
       if (!S.kind) { S.err = 'Choose what happened.'; paint(); restore(v); return; }
@@ -80,7 +133,7 @@
           body: JSON.stringify({ kind: S.kind, year: +v.y, month: v.m ? +v.m : null, day: v.d ? +v.d : null }) });
         const d = await r.json();
         if (!r.ok) throw new Error(Array.isArray(d.detail) ? d.detail.map(x => x.msg).join('; ') : d.detail || r.statusText);
-        Object.assign(S, { data: d, adding: false, kind: null, more: false, busy: false });
+        Object.assign(S, { data: d, adding: false, kind: null, more: false, busy: false, bt: null, btConfirm: false });
         paint();
       } catch (err) { S.busy = false; S.err = err.message; paint(); restore(v); }
     }
