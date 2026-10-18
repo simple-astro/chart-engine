@@ -202,6 +202,10 @@
   .chk{display:flex;align-items:center;gap:9px} .chk input{width:auto;accent-color:var(--g2)}
   .chk label{margin:0;font-weight:500;text-transform:none;letter-spacing:0;font-size:.85rem;line-height:1.35;color:var(--mut)}
   .hint{font-size:.81rem;color:var(--mut);margin-top:6px}
+  .kpay{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--acc) 40%,transparent);background:color-mix(in srgb,var(--acc) 10%,transparent);font-size:.86rem;line-height:1.5}
+  .kpay.ok{border-color:color-mix(in srgb,var(--ok) 45%,transparent);background:color-mix(in srgb,var(--ok) 10%,transparent)}
+  .kpbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px} .kpbtns button{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:.84rem;font-weight:600;cursor:pointer;min-height:36px}
+  small.kpl{display:block;color:var(--mut);font-size:.74rem;white-space:nowrap} mark.kpch{background:var(--acc);color:var(--bg);border-radius:4px;padding:0 4px}
   .ok{color:var(--ok)} .err{color:var(--bad)}
   .sugg{border:1px solid var(--line);border-radius:12px;margin-top:8px;overflow:hidden;background:var(--solid);box-shadow:var(--shadow)}
   .sugg div{padding:10px 14px;cursor:pointer;font-size:.92rem;transition:.14s} .sugg div:hover{background:var(--soft);color:var(--acc)}
@@ -821,6 +825,9 @@
   .upbody{min-width:0;display:flex;flex-direction:column;gap:5px} .upbody p{margin:0;font-size:.92rem}
   .upmeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px} .upmeta .badge{margin:0} .upmeta small{color:var(--mut);font-size:.78rem}
   .upconf{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--mut)}
+  .upmeta .badge.tr{background:color-mix(in srgb,var(--acc2) 18%,transparent);color:var(--ink)}
+  .upchips{display:flex;gap:6px;margin:4px 0 10px} .upchips button{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:999px;padding:6px 14px;font:inherit;font-size:.85rem;min-height:34px;cursor:pointer}
+  .upchips button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg);font-weight:600}
   .uptitle{font-weight:600;line-height:1.3}
   .upprep{background:var(--bg2);border-radius:10px;padding:8px 11px;font-size:.88rem!important}
   .upprep span{display:block;font-size:.64rem;text-transform:uppercase;letter-spacing:1px;color:var(--acc);font-weight:700}
@@ -1236,8 +1243,8 @@
         <div class="pane" id="t-planets"><div class="scroll"><table id="grahas"></table></div></div>
         <div class="pane" id="t-yogas" hidden><div id="yogabody"></div>
           <div class="hint">Each yoga is checked three ways: is it <b>strong</b> (its planets not combust, weakly placed or joined by a pure 6th/8th/12th lord), is it <b>active</b> (it gives results mainly in the Dasha of its planets), and is it <b>cancelled</b> by the classical rules. Traditional guidance, not certainty.</div></div>
-        <div class="pane" id="t-houses" hidden><div class="scroll"><table id="houses"></table></div>
-          <div class="hint">KP (Placidus) cusps. “→ H#” is the house that lord currently sits in.</div></div>
+        <div class="pane" id="t-houses" hidden><div class="kpay" id="kpay" hidden></div><div class="scroll"><table id="houses"></table></div>
+          <div class="hint">KP (Placidus) cusps. Under each lord: <b>in</b> = the house it sits in, <b>rules</b> = the houses whose cusp falls in its sign (Bhava Chalit). Rahu and Ketu rule no sign; they act for the lord of the sign they sit in.</div></div>
         <div class="pane" id="t-vargas" hidden><div id="vtabs" class="vt"></div><div class="seg vfrom" id="vfrom" role="radiogroup" aria-label="Count houses from"><button type="button" role="radio" aria-checked="true" class="on" data-f="lagna">From lagna</button><button type="button" role="radio" aria-checked="false" data-f="moon">From Moon</button></div><div class="vchart"><h4 id="vtitle"></h4><div id="vchart" class="chart"></div></div><div class="scroll"><table id="vtable"></table></div></div>
         <div class="pane" id="t-akv" hidden><div id="akvbody"></div></div>
         <div class="pane" id="t-nadi" hidden><div class="scroll"><table id="nadi"></table></div>
@@ -2087,6 +2094,47 @@ function renderMatch(d){
   $('mres').hidden=false;$('mres').scrollIntoView({behavior:'smooth'});
 }
 
+// KP tables (Planets, Houses & cusps). Each lord shows the house it sits in and the houses it rules by cusp sign
+// (Bhava Chalit); Rahu and Ketu act for the lord of their sign. `other`: the same chart under another ayanamsha,
+// whose differing star and sub lords are highlighted.
+let KPALT=null;
+function drawKpTables(c,other){
+  const own=n=>c.houses.filter(h=>h.sign_lord===n).map(h=>h.house),
+    rules=n=>{if(n==='Rahu'||n==='Ketu'){const d=c.grahas[n].kp.sign_lord;return 'as '+d+' ('+(own(d).join(', ')||'—')+')'}
+      const o=own(n);return o.length?'rules '+o.join(', '):'rules —'},
+    at=(n,diff)=>n?(diff?'<mark class="kpch">'+n+'</mark>':n)+'<small class="kpl">in '+(c.grahas[n]?c.grahas[n].house:'?')+' · '+rules(n)+'</small>':'',
+    df=(a,b)=>other&&a!==b;
+  table($('grahas'),['Planet','Sign','Degree','Nakshatra','Pada','House','Sign lord','Star lord','Sub lord','Notes'],
+    Object.entries(c.grahas).map(([n,g])=>{const o=other&&other.grahas[n].kp;return [n,g.sign,dms(g.degrees_in_sign),g.nakshatra,g.pada,'H'+g.house,
+      at(g.kp.sign_lord),at(g.kp.star_lord,o&&df(g.kp.star_lord,o.star_lord)),at(g.kp.sub_lord,o&&df(g.kp.sub_lord,o.sub_lord)),
+      [g.retrograde?'Retrograde':'',g.combust?'Combust':'',((c.vargas||{}).D9||{})[n]&&c.vargas.D9[n].sign_index===g.sign_index?'Vargottama':''].filter(Boolean).join(', ')]}));
+  table($('houses'),['House','Sign','Planets in house','House lord','Star lord','Sub lord'],
+    c.houses.map((x,i)=>{const inH=Object.entries(c.grahas).filter(([,g])=>g.house===x.house).map(([n])=>n),o=other&&other.houses[i].kp;
+      return ['<b>H'+x.house+'</b>',x.sign+' <small>'+dms(x.degrees_in_sign)+'</small>',inH.join(', ')||'—',
+        at(x.sign_lord),at(x.kp.star_lord,o&&df(x.kp.star_lord,o.star_lord)),at(x.kp.sub_lord,o&&df(x.kp.sub_lord,o.sub_lord))]}));
+  paintKpAy(c);
+}
+// A chart on another ayanamsha: say so above the KP table, with a one-tap look at the KP standard and a way to keep it.
+function paintKpAy(shown){const box=$('kpay'),base=lastChart,ay=base&&base.meta.ayanamsha;
+  if(!base||ay==='krishnamurti'){box.hidden=true;return}
+  const LBL={lahiri:'Lahiri',pushya:'Pushya'},name=LBL[ay]||ay,kp=shown!==base;
+  const n=base.houses.filter((h,i)=>KPALT&&(h.kp.sub_lord!==KPALT.houses[i].kp.sub_lord||h.kp.star_lord!==KPALT.houses[i].kp.star_lord)).length;
+  box.hidden=false;box.classList.toggle('ok',kp);
+  box.innerHTML=kp?'<b>Showing KP standard (Krishnamurti ayanamsa).</b> Your chart is still saved with '+esc(name)+'. Highlighted lords differ from your setting.'+
+      '<div class="kpbtns"><button type="button" data-kp="back">Back to my setting</button>'+(currentId!=null?'<button type="button" data-kp="save">Make KP my setting</button>':'')+'</div>'
+    :'<b>Worked out with the '+esc(name)+' ayanamsa.</b> Standard KP uses Krishnamurti'+(KPALT?', which changes '+n+' of these 12 cusp lords.':', which can change sub lords.')+
+      '<div class="kpbtns"><button type="button" data-kp="show">Show with KP ayanamsa</button></div>'}
+$('kpay').addEventListener('click',async e=>{const b=e.target.closest('[data-kp]');if(!b||!lastChart||!lastReq)return;const k=b.dataset.kp;
+  if(k==='back'){drawKpTables(lastChart,KPALT);return}
+  const req={...lastReq,ayanamsha:'krishnamurti'};b.disabled=true;
+  try{if(k==='show'){track('kp/show-standard');
+      if(!KPALT){const r=await fetch('/chart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(req)});
+        const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);KPALT=d}
+      drawKpTables(KPALT,lastChart)}
+    else if(k==='save'){track('kp/make-default');
+      const r=await fetch('/profiles/'+currentId,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(req)});
+      const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);await loadProfile(currentId)}}
+  catch(err){b.disabled=false;alert('Couldn’t switch: '+err.message)}});
 function table(el,head,rows){
   el.innerHTML='<thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+
     rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody>';
@@ -2180,15 +2228,7 @@ function render(c,req){
   table($('nadi'),['Point','Sign','Degree','Nadi #','Nadi range in sign'],
     [nadiRow('Lagna',l.sign,l.ascendant%30)].concat(Object.entries(c.grahas).map(([n,g])=>nadiRow(n,g.sign,g.degrees_in_sign))));
 
-  const H=n=>c.grahas[n]?c.grahas[n].house:'?', at=n=>n?n+' <small>→ H'+H(n)+'</small>':'';
-  table($('grahas'),['Planet','Sign','Degree','Nakshatra','Pada','House','Sign lord','Star lord','Sub lord','Notes'],
-    Object.entries(c.grahas).map(([n,g])=>[n,g.sign,dms(g.degrees_in_sign),g.nakshatra,g.pada,'H'+g.house,
-      at(g.kp.sign_lord),at(g.kp.star_lord),at(g.kp.sub_lord),
-      [g.retrograde?'Retrograde':'',g.combust?'Combust':'',((c.vargas||{}).D9||{})[n]&&c.vargas.D9[n].sign_index===g.sign_index?'Vargottama':''].filter(Boolean).join(', ')]));
-  table($('houses'),['House','Sign','Planets in house','House lord','Star lord','Sub lord'],
-    c.houses.map(x=>{const inH=Object.entries(c.grahas).filter(([,g])=>g.house===x.house).map(([n])=>n);
-      return ['<b>H'+x.house+'</b>',x.sign+' <small>'+dms(x.degrees_in_sign)+'</small>',inH.join(', ')||'—',
-        at(x.sign_lord),at(x.kp.star_lord),at(x.kp.sub_lord)]}));
+  KPALT=null;drawKpTables(c);
 
   $('interpbody').innerHTML=window.interpret(c).map(sec=>'<details class="sec" open><summary><b>'+sec.title+'</b></summary><ul>'+sec.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></details>').join('');
   const secs=(list,openAll)=>list.map(s=>'<details class="sec'+(s.sub?' subsec':'')+(s.past?' past':'')+'"'+(openAll||s.open?' open':'')+'><summary><b>'+s.title+'</b>'+(s.badge?' '+s.badge:'')+'</summary><ul>'+s.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></details>').join('');
