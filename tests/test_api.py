@@ -91,3 +91,11 @@ def test_chart_with_pushya_paksha_ayanamsha():
     assert abs(shift - 1.13) < 0.02
     assert len({round(h["longitude"] % 30, 3) for h in p["houses"]}) > 1  # Placidus cusps, not whole-sign
     assert client.post("/chart", json={**body, "ayanamsha": "made_up"}).status_code == 422
+
+
+def test_old_time_zone_names_still_work():
+    """Android reports Asia/Calcutta; the tzdata package keeps such aliases working on slim servers."""
+    import importlib.util
+    assert importlib.util.find_spec("tzdata") is not None
+    body = {"dob": "1990-05-15", "tob": "14:30:00", "lat": 28.6139, "lon": 77.209, "tz_name": "Asia/Calcutta"}
+    assert client.post("/chart", json=body).status_code == 200

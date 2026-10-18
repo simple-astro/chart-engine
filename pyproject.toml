@@ -15,6 +15,10 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic>=2.7",
     "pyyaml>=6.0",
+    # The IANA database as a Python package, with the old alias names (Asia/Calcutta, which Android still
+    # reports). The slim Debian image keeps aliases in the separate tzdata-legacy package, so without this
+    # those visitors got "No time zone found with key Asia/Calcutta".
+    "tzdata>=2024.1",
 ]
 
 [project.optional-dependencies]
