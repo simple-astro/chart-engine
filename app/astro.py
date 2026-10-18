@@ -205,6 +205,28 @@ def couple_day(profile_id: int, request: Request, tz: str | None = None) -> dict
     return {"couples": out}
 
 
+# ----- birth summary, special points and lagna times (app/birth_extras.py) -----
+@router.post("/birth-extras")
+def birth_extras(req: ChartRequest) -> dict:
+    """Avakhada chakra and special points for a birth (saved or not)."""
+    from app import birth_extras as B
+    r = req.model_dump(mode="json")
+    c = compute_chart(req)
+    return {"avakhada": B.avakhada(c, r), "special": B.special_points(c, r)}
+
+
+@router.get("/lagna-times")
+def lagna_times(lat: float, lon: float, tz: str, on: date | None = None, ayanamsha: str = "krishnamurti") -> dict:
+    """When each sign rises on a local day (for planning a muhurat by lagna)."""
+    from zoneinfo import ZoneInfo
+    from app import birth_extras as B
+    try:
+        day = on or datetime.now(ZoneInfo(tz)).date()
+    except Exception:
+        raise HTTPException(status_code=422, detail="Unknown time zone")
+    return {"date": day.isoformat(), "rises": B.lagna_times(day, lat, lon, tz, ayanamsha)}
+
+
 @router.post("/horary")
 def kp_horary(req: HoraryRequest) -> dict:
     when = req.asked_at or datetime.now(timezone.utc)

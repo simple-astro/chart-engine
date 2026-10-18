@@ -235,6 +235,16 @@
   .gacc p{margin:0;line-height:1.6} .accnot{color:var(--mut)}
   .evfind{width:100%;margin:2px 0 6px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit}
   .evgrp{margin:10px 0 6px;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
+  .avk{margin:0 0 12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg2)} .avk summary{cursor:pointer}
+  .avk dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px;margin:10px 0 0} .avk dt{font-size:.72rem;color:var(--mut);text-transform:uppercase;letter-spacing:.05em} .avk dd{margin:2px 0 0;font-weight:600}
+  .mlagna{margin-top:10px} .mlh{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)} .mlt td,.mlt th{padding:5px 10px}
+  .chstyle{width:min(260px,100%)} .chstyle button{font-size:.8rem}
+  svg.south .southmid{fill:color-mix(in srgb,var(--acc) 6%,transparent);stroke:none} svg.south .southasc{stroke:var(--acc);stroke-width:2.5}
+  svg.south .southh{font-size:9px;fill:var(--mut)} svg.south .southnote{font-size:9px}
+  .tslide,.accsheet{flex:1 1 100%;width:100%;min-width:0;max-width:100%} .tslide{margin-top:10px} .tsprev{overflow:hidden} .tsprev .scroll{overflow-x:auto} .tstab{width:100%} .tsrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0}
+  .tsbtns{display:inline-flex;gap:4px} .tsbtns button{min-width:40px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+  .tsprev{border:1px solid color-mix(in srgb,var(--acc) 45%,transparent);border-radius:12px;padding:10px 12px;background:color-mix(in srgb,var(--acc) 8%,transparent)}
+  .tstab td,.tstab th{padding:5px 8px;font-size:.86rem} .tstab tr.chg td{color:var(--acc);font-weight:700}
   .kpay{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--acc) 40%,transparent);background:color-mix(in srgb,var(--acc) 10%,transparent);font-size:.86rem;line-height:1.5}
   .kpay.ok{border-color:color-mix(in srgb,var(--ok) 45%,transparent);background:color-mix(in srgb,var(--ok) 10%,transparent)}
   .kpbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px} .kpbtns button{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:.84rem;font-weight:600;cursor:pointer;min-height:36px}
@@ -1240,7 +1250,7 @@
     <div class="scr" id="s-chart" data-scr="chart" hidden>
     <div class="card banner">
       <div><h2 id="bname"></h2><div class="meta" id="bmeta"></div></div>
-      <div class="stats" id="summary"></div><div class="accsheet" id="accsheet" hidden></div>
+      <div class="stats" id="summary"></div><div class="accsheet" id="accsheet" hidden></div><div class="tslide" id="tslide"></div>
     </div>
     <!-- Studies: one card per tradition; each opens a page with only its own sections -->
     <div class="sthub" id="sthub" role="list" aria-label="Studies">
@@ -1254,6 +1264,7 @@
       <span class="stjump" id="stjump"></span></nav>
     <div class="grid" id="stgrid">
       <aside class="card chartcard"><div class="chhead"><h3 id="charttitle">Rasi chart (D1) · North Indian</h3>
+        <div class="seg chstyle" role="radiogroup" aria-label="Chart style"><button type="button" role="radio" data-style="north">North Indian</button><button type="button" role="radio" data-style="south">South Indian</button></div>
         <div class="seg chseg" role="radiogroup" aria-label="Chart view"><button type="button" role="radio" aria-checked="true" class="on" data-v="lagna">Lagna</button><button type="button" role="radio" aria-checked="false" data-v="chalit">Bhava Chalit</button><button type="button" role="radio" aria-checked="false" data-v="moon" title="Chandra Lagna: houses counted from the Moon">Moon</button><button type="button" role="radio" aria-checked="false" data-v="gochar" title="Where the planets are today, in houses from your lagna">Gochar</button></div>
         <div class="gstep" id="gstep" hidden><button type="button" data-d="-1" aria-label="Previous day">−</button><label><span id="gday"></span><input type="date" id="gdate" aria-label="Pick a date"></label><button type="button" data-d="1" aria-label="Next day">+</button><button type="button" class="linkbtn" data-d="0" id="gnow">Today</button></div>
         <div class="gdasha" id="gdasha" hidden></div>
@@ -1288,7 +1299,7 @@
           <button type="button" role="tab" data-pane="bnn" data-branch="nadi"><b>BNN</b><small>Nadi trines</small></button>
           <button type="button" role="tab" data-pane="lal" data-branch="lal"><b>Lal Kitab</b><small>Houses and debts</small></button>
         </div>
-        <div class="pane" id="t-planets"><div class="scroll"><table id="grahas"></table></div></div>
+        <div class="pane" id="t-planets"><div class="avak" id="avak"></div><div class="scroll"><table id="grahas"></table></div><div id="special"></div></div>
         <div class="pane" id="t-yogas" hidden><div id="yogabody"></div>
           <div class="hint">Each yoga is checked three ways: is it <b>strong</b> (its planets not combust, weakly placed or joined by a pure 6th/8th/12th lord), is it <b>active</b> (it gives results mainly in the Dasha of its planets), and is it <b>cancelled</b> by the classical rules. Traditional guidance, not certainty.</div></div>
         <div class="pane" id="t-houses" hidden><div class="kpay" id="kpay" hidden></div><div class="scroll"><table id="houses"></table></div>
@@ -1519,6 +1530,9 @@ const FIND=[
   ['Nadi amsha','nadi amsha 150','chart/nadi','Nadi'],
   ['BNN (Nadi trines)','bnn bhrigu nandi nadi trines karaka','chart/bnn','Nadi'],
   ['Your life so far','life events past log so far fits','chart/events','Nadi'],
+  ['Birth summary (Avakhada chakra)','avakhada birth summary varna vashya yoni gana nadi paya tatva naming letter tithi at birth','chart/planets','Vedic'],
+  ['Special points','special points bhrigu bindu indu lagna hora lagna ghati lagna bhava lagna mandi gulika pushkara navamsha','chart/planets','Vedic'],
+  ['When each lagna rises','lagna rising times ascendant table sign rises today muhurat griha pravesh fixed sign','today/muhurat'],
   ['Birth time rectification','rectification rectify birth time correct exact time minutes tob janam samay sahi','chart/rectify','Nadi'],
   ['Gochar chart (transits on your chart)','gochar transit chart today planets day dasha prana sookshma','chart/gochar','Vedic'],
   ['Married life','married marriage couple wife husband spouse rate improve talk day patience chandrashtama habits shaadi','match/life'],
@@ -1749,7 +1763,7 @@ async function loadProfile(id){
   const r=await fetch('/profiles/'+encodeURIComponent(id)); if(!r.ok)return;
   const p=await r.json(),q=p&&p.request; if(!q)return;
   fillForm(q);
-  currentId=p.id;paintPill();render(p.chart,q);setAsk();showResults();
+  currentId=p.id;TS={base:null,baseChart:null,off:0};paintPill();render(p.chart,q);setAsk();showResults();
 }
 
 // ----- chat popup -----
@@ -1912,7 +1926,11 @@ let drawN=0;
 const HOUSE_POLY=['200,0 300,100 200,200 100,100','0,0 200,0 100,100','0,0 100,100 0,200','0,200 100,100 200,200 100,300',
   '0,200 100,300 0,400','0,400 100,300 200,400','200,400 100,300 200,200 300,300','200,400 300,300 400,400',
   '400,400 300,300 400,200','400,200 300,300 200,200 300,100','400,200 300,100 400,0','400,0 300,100 200,0'];
+// Chart style: North Indian (houses fixed, signs move) or South Indian (signs fixed, the lagna is marked).
+// Bhava Chalit (houseSigns) is always North Indian: its houses do not line up with signs.
+let CHART_STYLE='north';try{CHART_STYLE=localStorage.getItem('sj-chart-style')||'north'}catch(e){}
 function drawNorth(el,lagnaIdx,byH,houseSigns,ascLabel){
+  if(CHART_STYLE==='south'&&!houseSigns)return drawSouth(el,lagnaIdx,byH,ascLabel);
   const P=[[200,95],[100,45],[45,100],[95,200],[45,300],[100,355],[200,305],[300,355],[355,300],[305,200],[355,100],[300,45]];
   const gid='ag'+(++drawN);
   let v='<svg viewBox="-2 -2 404 404" xmlns="http://www.w3.org/2000/svg">'+
@@ -1936,6 +1954,31 @@ function drawNorth(el,lagnaIdx,byH,houseSigns,ascLabel){
   });
   el.innerHTML=v+'</svg>';
 }
+// South Indian: a fixed ring of 12 sign boxes (Pisces top left, then clockwise); the lagna's box gets a corner line.
+const SOUTH_CELL=[[1,0],[2,0],[3,0],[3,1],[3,2],[3,3],[2,3],[1,3],[0,3],[0,2],[0,1],[0,0]];  // by sign, Aries first
+const SIGN_AB=['Ari','Tau','Gem','Can','Leo','Vir','Lib','Sco','Sag','Cap','Aqu','Pis'];
+function drawSouth(el,lagnaIdx,byH,ascLabel){
+  const W=100,centres=[];
+  const lab=p=>typeof p==='string'?p:p.jp?'<tspan class="jp">'+p.t+'</tspan>':'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
+    (p.d?'<tspan class="dg" dx="1.5">'+p.d+'</tspan>':'')+(p.b||[]).map(k=>'<tspan class="bd '+BD[k][1]+'" dx="1">'+BD[k][0]+'</tspan>').join('')+
+    (p.lv?'<tspan class="dlv" dx="1.5" dy="-5">'+p.lv+'</tspan><tspan dy="5"> </tspan>':'')+'</tspan>';
+  let v='<svg viewBox="-2 -2 404 404" xmlns="http://www.w3.org/2000/svg" class="south"><rect class="bgsq" x="0" y="0" width="400" height="400"/>'+
+    '<path class="ln" d="M0 100H400M0 300H400M100 0V400M300 0V400M0 200H100M300 200H400M200 0V100M200 300V400"/>'+
+    '<rect class="southmid" x="100" y="100" width="200" height="200"/>'+
+    '<text class="asclbl" x="200" y="196" text-anchor="middle">'+(ascLabel||'LAGNA')+' · '+esc(SIGNS[lagnaIdx])+'</text>'+
+    '<text class="sn southnote" x="200" y="214" text-anchor="middle">South Indian</text>';
+  for(let h=0;h<12;h++){const sg=(lagnaIdx+h)%12,[cx,cy]=SOUTH_CELL[sg],x=cx*W,y=cy*W,pls=byH[h]||[];
+    centres.push([x+W/2,y+W/2]);
+    v+='<polygon class="hz" data-h="'+(h+1)+'" points="'+x+','+y+' '+(x+W)+','+y+' '+(x+W)+','+(y+W)+' '+x+','+(y+W)+'"><title>House '+(h+1)+' · '+SIGNS[sg]+'</title></polygon>';
+    if(h===0)v+='<path class="southasc" d="M'+x+' '+(y+26)+'L'+(x+26)+' '+y+'"/>';
+    v+='<text class="sn" x="'+(x+W-6)+'" y="'+(y+14)+'" text-anchor="end">'+SIGN_AB[sg]+'</text><text class="southh" x="'+(x+6)+'" y="'+(y+W-6)+'">'+(h+1)+'</text>';
+    const per=pls.length>3?2:1,rows=Math.ceil(pls.length/per),lh=15,top=y+W/2-(rows-1)*lh/2+5;
+    for(let r=0;r<rows;r++)v+='<text class="pl'+(per===2?' sm':'')+'" x="'+(x+W/2)+'" y="'+(top+r*lh)+'" text-anchor="middle">'+pls.slice(r*per,r*per+per).map(lab).join(' ')+'</text>'}
+  el.innerHTML=v+'</svg>';el.querySelector('svg').dataset.centres=JSON.stringify(centres);
+}
+function setChartStyle(s){CHART_STYLE=s;try{localStorage.setItem('sj-chart-style',s)}catch(e){}
+  document.querySelectorAll('.chstyle button').forEach(b=>{const on=b.dataset.style===s;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))});
+  track('chart/style-'+s);if(RERENDER)RERENDER();const v=document.querySelector('#vtabs button.on');if(v)v.click()}
 // ----- main chart: planet tooltip + key highlight -----
 // Vimshottari to five levels: the chart stores three (maha, antar, praty); Sookshma and Prana split the
 // period above them in the same order and proportions (lord's years / 120), starting from that period's lord.
@@ -1988,6 +2031,8 @@ $('gstep').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(
 $('gdate').addEventListener('change',e=>{if(!e.target.value)return;const t=new Date();t.setHours(0,0,0,0);
   GDAY=Math.round((new Date(e.target.value+'T00:00')-t)/864e5);if(RERENDER)RERENDER()});
 $('gdate').addEventListener('click',e=>{try{e.target.showPicker()}catch(_){}});
+document.querySelector('.chstyle').addEventListener('click',e=>{const b=e.target.closest('[data-style]');if(b&&b.dataset.style!==CHART_STYLE)setChartStyle(b.dataset.style)});
+document.querySelectorAll('.chstyle button').forEach(b=>{const on=b.dataset.style===CHART_STYLE;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))});
 document.querySelector('.chseg').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b||b.dataset.v===CHART_VIEW)return;
   CHART_VIEW=b.dataset.v;if(CHART_VIEW!=='lagna')track('chart/'+CHART_VIEW);document.querySelectorAll('.chseg button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-checked',String(x===b))});
   focusPlanet(null);if(RERENDER)RERENDER()});
@@ -2261,6 +2306,50 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-acc]');if(
   const bd=e.target.closest('#accbadge');if(bd&&ACC){const s=$('accsheet'),open=s.hidden;s.hidden=!open;bd.setAttribute('aria-expanded',String(open));
     if(open)s.innerHTML='<div class="acccard">'+accLadder(ACC)+'<p class="hint">'+esc(ACC.why)+'</p>'+accNext(ACC)+'</div>'}});
 
+// Birth-time slider: nudge the time and see what changes (a preview; nothing is saved unless asked).
+let TS={base:null,baseChart:null,off:0};
+const tobMin=t=>{const [h,m]=t.split(':').map(Number);return h*60+m},minTob=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')+':00';
+const t12s=t=>{const [h,m]=t.split(':').map(Number);return (h%12||12)+':'+String(m).padStart(2,'0')+(h<12?' AM':' PM')};
+function nowLords(c){const t=Date.now(),f=l=>(l||[]).find(d=>t>=new Date(d.start)&&t<new Date(d.end));const a=f(c.dasha),b=a&&f(a.children),p=b&&f(b.children);return [a,b,p].filter(Boolean).map(x=>x.lord).join(' › ')}
+function paintSlide(c,req){const box=$('tslide');if(!box)return;if(!req||req.tob_unknown){box.innerHTML='';return}
+  const btn=d=>'<button type="button" data-ts="'+d+'">'+(d>0?'+':'−')+Math.abs(d)+'</button>';
+  if(!TS.off){box.innerHTML='<div class="tsrow"><span>Try another birth time</span><span class="tsbtns">'+btn(-4)+btn(-1)+btn(1)+btn(4)+'</span><small class="hint">minutes</small></div>';return}
+  const B=TS.baseChart,cu=(x,i)=>x.houses[i].kp.sub_lord,row=(k,a,b)=>'<tr'+(a!==b?' class="chg"':'')+'><td>'+k+'</td><td>'+esc(a)+'</td><td>'+esc(b)+'</td></tr>';
+  const lg=x=>x.lagna.sign+' '+dms(x.lagna.ascendant%30);
+  box.innerHTML='<div class="tsprev"><div class="tsrow"><b>Preview: '+t12s(req.tob)+'</b><small class="hint">'+(TS.off>0?'+':'−')+Math.abs(TS.off)+' min from '+t12s(TS.base.tob)+' · not saved</small><span class="tsbtns">'+btn(-4)+btn(-1)+btn(1)+btn(4)+'</span></div>'+
+    '<div class="scroll"><table class="tstab"><thead><tr><th></th><th>Saved</th><th>Preview</th></tr></thead><tbody>'+
+    row('Lagna',lg(B),lg(c))+row('Moon',B.grahas.Moon.nakshatra+' '+B.grahas.Moon.pada,c.grahas.Moon.nakshatra+' '+c.grahas.Moon.pada)+
+    row('1st cusp sub lord',cu(B,0),cu(c,0))+row('7th cusp sub lord',cu(B,6),cu(c,6))+row('10th cusp sub lord',cu(B,9),cu(c,9))+
+    row('Dasha now',nowLords(B),nowLords(c))+'</tbody></table></div>'+
+    '<div class="tsrow">'+(currentId!=null?'<button type="button" class="btn" data-ts="save">Save '+t12s(req.tob)+'</button>':'')+'<button type="button" class="btn ghost" data-ts="back">Back to '+t12s(TS.base.tob)+'</button></div>'+
+    '<p class="hint">Highlighted rows change with the new time. Every page shows the preview until you go back or save.</p></div>'}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-ts]');if(!b||!lastChart||!lastReq)return;const k=b.dataset.ts;
+  if(k==='back'){const B=TS.baseChart,R=TS.base;TS={base:null,baseChart:null,off:0};render(B,R);return}
+  if(k==='save'){b.disabled=true;const r=await fetch('/profiles/'+currentId,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(lastReq)});
+    if(r.ok){track('chart/time-saved');await loadProfile(currentId)}else b.disabled=false;return}
+  if(!TS.base){TS.base=lastReq;TS.baseChart=lastChart}
+  const off=TS.off+(+k),n=tobMin(TS.base.tob)+off;if(n<0||n>=1440)return;
+  if(off===0){const B=TS.baseChart,R=TS.base;TS={base:null,baseChart:null,off:0};render(B,R);return}
+  b.disabled=true;const req={...TS.base,tob:minTob(n)};
+  try{const r=await fetch('/chart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(req)});const c=await r.json();if(!r.ok)throw 0;
+    TS.off=off;track('chart/time-try');render(c,req)}catch(err){b.disabled=false}});
+
+// Avakhada chakra and special points (app/birth_extras.py), for the chart on screen (saved or not).
+let BX_REQ=null;
+async function loadBirthExtras(req){$('avak').innerHTML='';$('special').innerHTML='';if(!req)return;BX_REQ=req;
+  try{const r=await fetch('/birth-extras',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(req)});const d=await r.json();if(!r.ok||BX_REQ!==req)return;
+    $('avak').innerHTML='<details class="avk" open><summary><b>Birth summary</b> <small class="hint">Avakhada chakra</small></summary><dl>'+d.avakhada.rows.map(x=>'<div><dt>'+esc(x.label)+'</dt><dd>'+esc(x.value)+'</dd></div>').join('')+'</dl></details>';
+    const S=d.special;$('special').innerHTML='<h4 class="jaih" style="font-size:1rem;margin-top:16px">Special points</h4><div class="scroll"><table id="sptable"></table></div>'+
+      '<p class="hint">'+(S.pushkara.length?'In a Pushkara navamsha (an especially nourishing part of a sign): <b>'+S.pushkara.map(esc).join(', ')+'</b>. ':'No planet sits in a Pushkara navamsha. ')+'Indu Lagna is a whole sign, so it has no degree.</p>';
+    table($('sptable'),['Point','Sign','Degree','House','What it shows'],S.points.map(p=>['<b>'+esc(p.name)+'</b>',esc(p.sign),p.degrees_in_sign==null?'—':dms(p.degrees_in_sign),'H'+p.house,esc(p.meaning)]))}catch(e){}}
+// Full panchang: when each lagna rises on that day, where the person is.
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-lagna]');if(!b)return;const box=b.closest('.mlagna');
+  const loc=MU.here||(lastReq&&{lat:lastReq.lat,lon:lastReq.lon,tz_name:lastReq.tz_name});if(!loc)return;b.disabled=true;track('today/lagna-times');
+  try{const q=new URLSearchParams({lat:loc.lat,lon:loc.lon,tz:loc.tz_name,on:box.dataset.date,ayanamsha:(lastChart&&lastChart.meta.ayanamsha)||'krishnamurti'});
+    const d=await (await fetch('/lagna-times?'+q)).json();const t12=s=>{if(s==='24:00')return 'midnight';const [h,m]=s.split(':').map(Number);return (h%12||12)+':'+String(m).padStart(2,'0')+(h<12?' AM':' PM')};
+    box.innerHTML='<h5 class="mlh">When each lagna rises</h5><div class="scroll"><table class="mlt"><thead><tr><th>Lagna</th><th>From</th><th>To</th></tr></thead><tbody>'+d.rises.map(x=>'<tr><td>'+esc(x.sign)+'</td><td>'+t12(x.start)+'</td><td>'+t12(x.end)+'</td></tr>').join('')+'</tbody></table></div><p class="hint">Fixed signs (Taurus, Leo, Scorpio, Aquarius) are traditionally chosen for lasting beginnings, like a griha pravesh.</p>'}
+  catch(err){b.disabled=false}});
+
 // Today: a one-line note when today or tomorrow is a talk day or a patience day for a married couple.
 async function loadCoupleDay(pid){const box=$('gcouple');box.hidden=true;if(pid==null)return;
   try{const d=await (await fetch('/profiles/'+pid+'/couple-day?tz='+lifeTz())).json();if(pid!==currentId||!d.couples)return;
@@ -2380,7 +2469,7 @@ function render(c,req){
   renderLinks(c);
   HOUSE_OF=Object.fromEntries(Object.entries(c.grahas).map(e=>[e[0],houseOf(e)]));
   $('chartkey').querySelectorAll('.gk').forEach(k=>{const x=k.querySelector('.gkx b');if(x)x.textContent='House '+(HOUSE_OF[k.dataset.p]+1)});  // follows the view
-  $('charttitle').textContent=chalit?'Nirayana Bhava Chalit · North Indian':V==='moon'?'Moon chart (Chandra Lagna)':V==='gochar'?'Gochar (transit)':'Rasi chart (D1) · North Indian';
+  $('charttitle').textContent=chalit?'Nirayana Bhava Chalit · North Indian':V==='moon'?'Moon chart (Chandra Lagna)':V==='gochar'?'Gochar (transit)':'Rasi chart (D1) · '+(CHART_STYLE==='south'?'South':'North')+' Indian';
   $('charthint').textContent=V==='gochar'?(GO?'Where the planets are in the sky on this day (at noon), in houses from your lagna ('+l.sign+'). Use − and + to move a day, or tap the date to jump. For the full reading, open Timing › Transits.':currentId==null?'Save this chart to see the transits on it.':'Loading the sky…')
     :V==='moon'?'Houses counted from the Moon’s sign ('+c.grahas.Moon.sign+'). Used for the mind, Sade Sati and transits. Asc marks your lagna.'
     :chalit?'Each house starts at its cusp (numbers are the cusp signs). Nadi predictions read every planet’s position and lordship from this chart.'
@@ -2409,7 +2498,7 @@ function render(c,req){
   table($('nadi'),['Point','Sign','Degree','Nadi #','Nadi range in sign'],
     [nadiRow('Lagna',l.sign,l.ascendant%30)].concat(Object.entries(c.grahas).map(([n,g])=>nadiRow(n,g.sign,g.degrees_in_sign))));
 
-  KPALT=null;drawKpTables(c);
+  KPALT=null;drawKpTables(c);loadBirthExtras(req);paintSlide(c,req);
 
   $('interpbody').innerHTML=window.interpret(c).map(sec=>'<details class="sec" open><summary><b>'+sec.title+'</b></summary><ul>'+sec.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></details>').join('');
   const secs=(list,openAll)=>list.map(s=>'<details class="sec'+(s.sub?' subsec':'')+(s.past?' past':'')+'"'+(openAll||s.open?' open':'')+'><summary><b>'+s.title+'</b>'+(s.badge?' '+s.badge:'')+'</summary><ul>'+s.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></details>').join('');

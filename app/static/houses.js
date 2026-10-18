@@ -71,8 +71,11 @@
 
   // Highlight house h and draw curved arrows from each aspecting planet's house (green = benefic, red = malefic).
   const CENTRE = [[200, 95], [100, 45], [45, 100], [95, 200], [45, 300], [100, 355], [200, 305], [300, 355], [355, 300], [305, 200], [355, 100], [300, 45]];
+  // A South Indian chart puts its own house centres on the svg (data-centres); North Indian uses CENTRE.
+  const centres = svg => (svg && svg.dataset.centres ? JSON.parse(svg.dataset.centres) : CENTRE);
   window.drawHouseFocus = function (svg, c, h) {
     if (!svg) return;
+    const CENTRE = centres(svg);
     svg.querySelectorAll('.hz').forEach(z => z.classList.toggle('sel', h != null && +z.dataset.h === h));
     let g = svg.querySelector('#harrows');
     if (g) g.remove();
@@ -188,6 +191,7 @@
     let defs = svg.querySelector('defs') || svg.insertBefore(document.createElementNS(NS, 'defs'), svg.firstChild);
     if (!svg.querySelector('#lk-good')) defs.insertAdjacentHTML('beforeend', ['good', 'bad', 'mix'].map(k =>
       `<marker id="lk-${k}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="lkhead ${k}"/></marker>`).join(''));
+    const CENTRE = centres(svg);
     const sn = [...svg.querySelectorAll('text.sn')].map(t => [+t.getAttribute('x'), +t.getAttribute('y') - 4]);
     const pos = p => {
       const t = svg.querySelector(`.pg[data-p="${p}"]`);

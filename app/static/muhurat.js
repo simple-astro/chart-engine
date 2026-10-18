@@ -89,7 +89,7 @@
         ${cell('Naming letters', P.naming.letters.map((x, i) => i + 1 === P.naming.pada ? `<u>${esc(x)}</u>` : esc(x)).join(' · '), `pada ${P.naming.pada} at sunrise is underlined`)}
         ${cell('Brahma muhurta', span(w.brahma))}
         ${cell('Sunrise · sunset', `${t(w.sunrise)} · ${t(w.sunset)}`)}
-      </div></details>`;
+      </div><div class="mlagna" data-date="${esc(day.date)}"><button type="button" class="linkbtn" data-lagna>When each lagna rises today →</button></div></details>`;
     }
 
     const grid = `<div class="scroll"><table class="mgrid"><thead><tr><th>Activity</th>${days.map((d, i) =>
