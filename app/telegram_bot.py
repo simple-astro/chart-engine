@@ -368,6 +368,8 @@ def handle_callback(chat_id: int, u: dict | None, data: str) -> None:
     elif data == "set:birth":
         storage.tg_save(chat_id, step="date", draft={})
         send(chat_id, "Let’s update your birth details.\n\n**1 of 3 — your date of birth?**\nFor example: 1990-05-17 · 17.05.1990")
+    elif kind == "ci":
+        _checkin_reply(chat_id, u, val)
     elif data == "set:rem":
         send(chat_id, "Which coming-up reminders would you like?\n\nI send them on the day of each change, and 3 days "
                       "before a Dasha change.", [[(REM_LABEL[k], f"rem:{k}")] for k in ("all", "dasha", "off")])
@@ -541,11 +543,55 @@ def reminder_tick(now_utc: datetime | None = None) -> int:
         except Exception as e:
             print(f"Reminders failed for {u['chat_id']}: {e!r}")
             continue
+        sent += _checkin_tick(u, profile, local.date())
         for lead, it in reminders_due(items, local.date(), u.get("reminders") or "all"):
             if storage.tg_claim_reminder(u["chat_id"], f"{it['date']}|{lead}|{it['title']}"):
                 send(u["chat_id"], reminder_text(lead, it), [[("📅 Reminder settings", "set:rem")]])
                 sent += 1
     return sent
+
+
+def _checkin_tick(u: dict, profile: dict, today: date) -> int:
+    """'How did it go?' on Telegram: the one check-in due today, asked once (again after a 'Not yet')."""
+    from app import checkins
+    c = checkins.due(profile["id"], today)
+    if not c or not storage.tg_claim_reminder(u["chat_id"], f"checkin|{c['id']}|{today.isoformat()}"):
+        return 0
+    when = date.fromisoformat(c["event_date"]).strftime("%-d %b")
+    send(u["chat_id"], f"🙏 **How did it go?**\nYou asked me about {when}: _{c['question']}_"
+                       + (f"\n\nI said: {c['said']}" if c.get("said") else ""),
+         [[(checkins.ANSWERS[k], f"ci:{c['id']}:{k}") for k in ("well", "mixed")],
+          [(checkins.ANSWERS[k], f"ci:{c['id']}:{k}") for k in ("poor", "notyet")]])
+    return 1
+
+
+def _checkin_reply(chat_id: int, u: dict, val: str) -> None:
+    from app import checkins
+    from app.life_events import KINDS
+    cid, _, key = val.partition(":")
+    profile = _profile(u)
+    if not profile or not cid.isdigit():
+        return
+    if key == "add":
+        c = storage.checkin_get(profile["id"], int(cid))
+        kind = c and checkins.event_kind(c["question"])
+        if kind:
+            storage.event_add(profile["id"], kind, c["event_date"], "day")
+            send(chat_id, f"Added to Your life so far: {KINDS[kind][0]}, {c['event_date']}. It helps me know your chart better 🙏")
+        return
+    _, _, tz, _ = _where(u, profile)
+    if not checkins.answer(profile["id"], int(cid), key, datetime.now(ZoneInfo(tz)).date()):
+        return
+    if key == "notyet":
+        send(chat_id, f"No problem — I’ll ask again in {checkins.AGAIN_DAYS} days.")
+        return
+    c = storage.checkin_get(profile["id"], int(cid))
+    kind = c and checkins.event_kind(c["question"])
+    if key == "well" and kind:
+        send(chat_id, "Wonderful 🙏 Shall I add it to Your life so far? It helps me know your chart better.",
+             [[(f"Add: {KINDS[kind][0]}", f"ci:{cid}:add")]])
+    else:
+        send(chat_id, "Thank you for telling me 🙏 I use this to check my timing against real life.")
 
 
 def _scheduler() -> None:

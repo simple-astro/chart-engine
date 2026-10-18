@@ -198,3 +198,20 @@ def test_answers_use_the_city_set_in_settings(bot, monkeypatch):
     storage.tg_save(CHAT, live_lat=49.9, live_lon=-97.14, live_tz="America/Winnipeg", live_place="Winnipeg, Manitoba, Canada")
     say("When is Rahu Kalam today?")
     assert seen[-1]["viewer"] == {"lat": 49.9, "lon": -97.14, "tz_name": "America/Winnipeg", "name": "Winnipeg"}
+
+
+def test_how_did_it_go_on_telegram(bot, monkeypatch):
+    from app import checkins, upcoming
+    _, say, tap, calls, _ = bot
+    onboard(say, tap)
+    storage.tg_save(CHAT, send_time="08:00")
+    pid = storage.tg_get(CHAT)["profile_id"]
+    monkeypatch.setattr(upcoming, "upcoming", lambda *a: {"items": []})
+    ck = checkins.from_question(pid, 1, "My joining date is 20 Oct, is it good?", "The morning looks good.", date(2026, 10, 14))
+    assert tb.reminder_tick(datetime(2026, 10, 22, 2, 45, tzinfo=timezone.utc)) == 1
+    assert "How did it go?" in texts(calls)[-1] and f"ci:{ck['id']}:well" in buttons(calls)
+    assert tb.reminder_tick(datetime(2026, 10, 22, 3, 0, tzinfo=timezone.utc)) == 0      # once a day
+    tap(f"ci:{ck['id']}:well")
+    assert "add it to Your life so far" in texts(calls)[-1] and f"ci:{ck['id']}:add" in buttons(calls)
+    tap(f"ci:{ck['id']}:add")
+    assert storage.event_list(pid)[0]["kind"] == "job"

@@ -184,6 +184,27 @@ def delete_profile(profile_id: int, request: Request) -> dict:
     return {"deleted": profile_id}
 
 
+class CheckinAnswer(BaseModel):
+    answer: str = Field(pattern="^(well|mixed|poor|notyet)$")
+
+
+@router.get("/{profile_id}/checkin")
+def checkin_due(profile_id: int, request: Request) -> dict:
+    """The one "How did it go?" waiting today, if any (app/checkins.py)."""
+    from app import checkins
+    p = _require(profile_id, request)
+    return {"checkin": checkins.due(profile_id, chat.local_today(p))}
+
+
+@router.post("/{profile_id}/checkin/{checkin_id}")
+def checkin_answer(profile_id: int, checkin_id: int, req: CheckinAnswer, request: Request) -> dict:
+    from app import checkins
+    p = _require(profile_id, request)
+    if not checkins.answer(profile_id, checkin_id, req.answer, chat.local_today(p)):
+        raise HTTPException(status_code=404, detail="Check-in not found")
+    return {"ok": True}
+
+
 class RatingRequest(BaseModel):
     rating: int = Field(ge=-1, le=1)
     reason: str | None = Field(default=None, max_length=60)

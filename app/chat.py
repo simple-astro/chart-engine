@@ -544,6 +544,7 @@ def chat_events(profile: dict, message: str):
         storage.add_message(pid, "assistant", cached)
         uid = storage.log_usage(pid, "cache", message, words=len(cached.split()), owner=profile.get("owner"),
                                 answer=cached)
+        _checkin(profile, uid, message, cached)
         yield {"type": "delta", "text": cached}
         yield {"type": "done", "mode": "cache", "usage_id": uid}
         return
@@ -601,7 +602,17 @@ def chat_events(profile: dict, message: str):
                       answer=text, factcheck=report)
     if mode == "llm" and key:
         storage.cache_put(pid, key, today, text)
+    _checkin(profile, uid, message, text)
     yield {"type": "done", "mode": mode, "usage_id": uid}
+
+
+def _checkin(profile: dict, uid: int, question: str, answer: str) -> None:
+    """Remember a question about a day ahead, to ask "How did it go?" afterwards (app/checkins.py)."""
+    try:
+        from app import checkins
+        checkins.from_question(profile["id"], uid, question, answer, local_today(profile))
+    except Exception as e:  # a check-in is a nicety; the answer matters more
+        print(f"Check-in not saved: {e!r}")
 
 
 def chat(profile: dict, message: str) -> dict:
