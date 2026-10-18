@@ -72,6 +72,15 @@
     paint();
   }
 
+  // Telegram reminders: on the day of each change, and 3 days before a Dasha change (app/telegram_bot.py).
+  function tgLine() {
+    const t = S.data.telegram || {};
+    if (t.linked && t.reminders !== 'off')
+      return `<p class="uptg">🔔 Telegram reminders are on${t.reminders === 'dasha' ? ' for Dasha changes' : ''}: on the day of each change, and 3 days before a Dasha change. Change this in the bot’s /settings.</p>`;
+    if (t.linked) return '<p class="uptg">🔕 Telegram reminders are off. Turn them on in the bot’s /settings.</p>';
+    return '<p class="uptg"><button type="button" class="linkbtn" id="uptg">Get these as Telegram reminders →</button></p>';
+  }
+
   function paint() {
     // One list in date order; the chips narrow it to Dasha changes or transits. Indexes stay those of S.data.items.
     const all = S.data.items.map((it, i) => [it, i]), kinds = new Set(S.data.items.map(it => it.kind));
@@ -82,6 +91,7 @@
       ${items.length ? `<ul class="uplist">${shown.map(([it, i]) => item(it, i)).join('')}</ul>
         ${items.length > 5 ? `<button type="button" class="linkbtn upmore" id="upmore">${S.all ? 'Show less' : `Show all ${items.length}`}</button>` : ''}`
         : '<p class="gsub">No big changes in the next three months — a steady stretch. Use the good days below.</p>'}
+      ${tgLine()}
       <p class="hint">${esc(S.data.note)}</p>`;
   }
 
@@ -106,6 +116,7 @@
     if (!EL || !EL.contains(e.target) || !S.data) return;
     const t = e.target.closest('button');
     if (!t) return;
+    if (t.id === 'uptg') { const b = document.getElementById('tgbtn'); if (b) b.click(); return; }
     if (t.dataset.upk) { S.kind = t.dataset.upk; S.all = false; paint(); }
     else if (t.id === 'upmore') { S.all = !S.all; paint(); }
     else if (t.dataset.ready !== undefined) { const i = +t.dataset.ready; S.open.has(i) ? S.open.delete(i) : S.open.add(i); paint(); }

@@ -203,6 +203,9 @@
   .chk label{margin:0;font-weight:500;text-transform:none;letter-spacing:0;font-size:.85rem;line-height:1.35;color:var(--mut)}
   .hint{font-size:.81rem;color:var(--mut);margin-top:6px}
   .dsel{width:min(320px,100%);margin:0 auto 12px}
+  .rate{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;font-size:.82rem;color:var(--mut)}
+  .rate button{border:1px solid var(--line);background:var(--bg2);border-radius:999px;padding:4px 10px;font:inherit;cursor:pointer;color:var(--ink);min-height:32px}
+  .rate .rwhy{font-size:.8rem}
   .kpay{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--acc) 40%,transparent);background:color-mix(in srgb,var(--acc) 10%,transparent);font-size:.86rem;line-height:1.5}
   .kpay.ok{border-color:color-mix(in srgb,var(--ok) 45%,transparent);background:color-mix(in srgb,var(--ok) 10%,transparent)}
   .kpbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px} .kpbtns button{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:.84rem;font-weight:600;cursor:pointer;min-height:36px}
@@ -838,6 +841,7 @@
   #bthide{align-self:flex-start}
   .upconf{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--mut)}
   .upmeta .badge.tr{background:color-mix(in srgb,var(--acc2) 18%,transparent);color:var(--ink)}
+  .uptg{margin:12px 0 0;font-size:.86rem;color:var(--mut)} .uptg .linkbtn{font-weight:600;text-decoration:none}
   .upchips{display:flex;gap:6px;margin:4px 0 10px} .upchips button{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:999px;padding:6px 14px;font:inherit;font-size:.85rem;min-height:34px;cursor:pointer}
   .upchips button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--bg);font-weight:600}
   .uptitle{font-weight:600;line-height:1.3}
@@ -1785,7 +1789,7 @@ $('askf').addEventListener('submit',async e=>{
   const id=currentId,empty=$('log').querySelector('.empty');if(empty)empty.remove();
   deeper(null);addUser(q);$('q').value='';$('q').style.height='auto';$('chips').hidden=true;$('askbtn').disabled=true;
   const bot=addBot();bot.innerHTML=THINK;
-  let text='',mode='llm',failed=false,started=false;
+  let text='',mode='llm',failed=false,started=false,uid=null;
   const paint=()=>{const stick=nearBottom();bot.innerHTML=md(text)+(started?'':'');bot.classList.add('cursor');if(stick)toBottom()};
   try{
     const r=await fetch('/profiles/'+id+'/chat/stream',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q,here:MU.here||null})});
@@ -1800,17 +1804,26 @@ $('askf').addEventListener('submit',async e=>{
         if(ev.type==='status'){if(!text){const st=bot.querySelector('.st');if(st)st.textContent=ev.text}}
         else if(ev.type==='delta'){text+=ev.text;if(text.trim()){started=true;paint()}}
         else if(ev.type==='replace')text=ev.text;
-        else if(ev.type==='done')mode=ev.mode;
+        else if(ev.type==='done'){mode=ev.mode;uid=ev.usage_id||null}
         else if(ev.type==='error'){failed=true;text=ev.detail}
       }
     }
   }catch(err){failed=true;text=err.message}
   bot.classList.remove('cursor');
   if(failed){bot.innerHTML='<p>⚠ '+esc(text||'Something went wrong.')+'</p>'}
-  else{bot.innerHTML=md(text)+(mode==='lookup'?'<small class="src">from your chart data</small>':mode==='cache'?'<small class="src">reused from an earlier answer today</small>':'')}
+  else{bot.innerHTML=md(text)+(mode==='lookup'?'<small class="src">from your chart data</small>':mode==='cache'?'<small class="src">reused from an earlier answer today</small>':'')+
+    (uid?'<div class="rate" data-u="'+uid+'" data-p="'+id+'"><span>Was this helpful?</span><button type="button" data-r="1" aria-label="Helpful">👍</button><button type="button" data-r="-1" aria-label="Not helpful">👎</button></div>':'')}
   if(id===currentId){await paintAskMeta();if(!failed){deeper(q);toBottom()}}
   $('askbtn').disabled=false;$('q').focus();
 });
+
+// 👍 / 👎 under each new answer; a 👎 asks why (one tap) and goes to the astrologers' review queue.
+const RATE_WHY=['Facts look wrong','Not clear','Too general','Didn’t answer my question','Other'];
+$('log').addEventListener('click',async e=>{const b=e.target.closest('.rate button');if(!b)return;const box=b.closest('.rate');
+  const send=(rating,reason)=>fetch('/profiles/'+box.dataset.p+'/answers/'+box.dataset.u+'/rating',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({rating,reason:reason||null})});
+  if(b.dataset.why!==undefined){await send(-1,b.dataset.why);box.innerHTML='<span>Thank you. An astrologer will look at this answer.</span>';track('answer/down');return}
+  if(b.dataset.r==='1'){await send(1);box.innerHTML='<span>Thank you 🙏</span>';track('answer/up');return}
+  await send(-1);box.innerHTML='<span>What was wrong?</span>'+RATE_WHY.map(w=>'<button type="button" class="rwhy" data-why="'+esc(w)+'">'+esc(w)+'</button>').join('')});
 
 // ----- submit -----
 $('f').addEventListener('submit',async e=>{

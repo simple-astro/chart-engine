@@ -80,9 +80,12 @@ def _check_quota(request: Request) -> None:
     owner = _owner(request)
     per_tester = _tester_limit(owner)
     total = config.get("daily_limit_total")
-    if storage.llm_requests_today(owner) >= per_tester or storage.llm_requests_today() >= total:
-        raise HTTPException(status_code=429, detail="You've reached today's question limit for the test version. "
-                                                    "Please come back tomorrow.")
+    mine = storage.llm_requests_today(owner) >= per_tester
+    if mine or storage.llm_requests_today() >= total:
+        raise HTTPException(status_code=429, detail=(
+            (f"You've used today's {per_tester} questions. They refill tomorrow. " if mine else
+             "Astropositivism has answered all it can for today in this test version. Questions refill tomorrow. ")
+            + "Meanwhile Today, Timing, your charts and remedies are all free to explore."))
 
 
 @router.post("")
@@ -179,6 +182,20 @@ def delete_profile(profile_id: int, request: Request) -> dict:
     if not storage.delete(profile_id, _owner(request)):
         raise HTTPException(status_code=404, detail="Profile not found")
     return {"deleted": profile_id}
+
+
+class RatingRequest(BaseModel):
+    rating: int = Field(ge=-1, le=1)
+    reason: str | None = Field(default=None, max_length=60)
+
+
+@router.post("/{profile_id}/answers/{usage_id}/rating")
+def rate_answer(profile_id: int, usage_id: int, req: RatingRequest, request: Request) -> dict:
+    """👍 / 👎 on an answer to this chart (0 clears it). A 👎 puts the answer in the Studio review queue."""
+    _require(profile_id, request)
+    if not storage.rate_answer(profile_id, usage_id, req.rating or None, req.reason if req.rating == -1 else None):
+        raise HTTPException(status_code=404, detail="Answer not found")
+    return {"ok": True}
 
 
 @router.get("/{profile_id}/chat")
@@ -478,6 +495,8 @@ def upcoming_changes(profile_id: int, request: Request, tz: str | None = None) -
     tz_name = _transit_tz(p, tz)
     out = upcoming.upcoming({**p, "chart": with_extras(p["chart"])}, _transit_day(p, None, tz_name), tz_name)
     upcoming.attach_checklists(out["items"], storage.prep_done(profile_id))
+    tg = storage.tg_for_profile(profile_id)
+    out["telegram"] = {"linked": bool(tg), "reminders": tg["reminders"] if tg else None}
     return out
 
 

@@ -85,6 +85,7 @@ def facts_from(synth: dict, chart: dict, extra: list | None = None, kp: dict | N
                        "label": f"{w['antar']}/{w['praty']}"} for w in r["windows"]] for t, r in (kp or {}).items()}
     return {"kp": kp_windows, "kp_kind": {t: r.get("kind", "event") for t, r in (kp or {}).items()}, "spans": spans, "today": date.fromisoformat(synth["today"]), "planets": P, "lagna": synth["lagna"]["sign"], "months": months, "yogas": yogas,
             "sade_sati": "sade_sati" in synth["transits_now"],
+            "place": (synth.get("user_location") or {}).get("place", ""),
             "maha": (d.get("maha") or {}).get("lord"), "antar": (d.get("antar") or {}).get("lord")}
 
 
@@ -177,6 +178,8 @@ def check(text: str, facts: dict) -> list[dict]:
             if not _in_life(ym, facts["months"]):
                 flag(sent, raw, "this date falls outside the native's daśā span")
         period_checks(sent, facts, flag)
+        day_checks(sent, facts, flag)
+        place_checks(sent, facts, flag)
         if facts.get("kp"):
             verdict_checks(sent, facts, flag)
     return issues
@@ -207,6 +210,43 @@ def _overlap(s1: date, e1: date, s2: date, e2: date) -> int:
     return max(0, (min(e1, e2) - max(s1, s2)).days)
 
 
+WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+DAY_WORD = re.compile(r"\b(today|tomorrow|yesterday)\b[^.?!]{0,30}?\b(" + "|".join(WEEKDAYS) + r")\b", re.I)
+DAY_DATE = re.compile(r"\b(today|tomorrow|yesterday)\b[^.?!]{0,30}?\b(?:" + MON + r"\s+(\d{1,2})\b|(\d{1,2})\s+" + MON + r")", re.I)
+CLOCK = re.compile(r"\b\d{1,2}[:.]\d{2}\s*(?:am|pm|a\.m\.|p\.m\.)", re.I)
+TIMES_FOR = re.compile(r"\b([A-Z][a-zA-Z]+)(?:'s|’s)?\s+(?:local\s+)?(?:times?|timings?|sunrise|sunset|clock)\b|"
+                       r"\b(?:times?|timings?)\s+(?:for|in)\s+([A-Z][a-zA-Z]+)")
+NOT_PLACES = {"Your", "These", "Those", "The", "Local", "Indian", "Today", "Tomorrow", "Good", "Best", "Kala", "Rahu",
+              "Gulika", "Yamaganda", "Abhijit", "Brahma", "Amrit", "Hora", "Sunrise", "Sunset", "Muhurat", "Here", "All"} \
+    | {d.title() for d in WEEKDAYS}
+
+
+def day_checks(sent: str, facts: dict, flag) -> None:
+    """'Today is Saturday', 'tomorrow, 19 October': the weekday and date where the person is."""
+    from datetime import timedelta
+    shift = {"today": 0, "tomorrow": 1, "yesterday": -1}
+    for m in DAY_WORD.finditer(sent):
+        d = facts["today"] + timedelta(days=shift[m.group(1).lower()])
+        if WEEKDAYS[d.weekday()] != m.group(2).lower():
+            flag(sent, f"{m.group(1)} is {m.group(2)}", f"{m.group(1).lower()} is {d:%A, %-d %B} where the person is")
+    for m in DAY_DATE.finditer(sent):
+        d = facts["today"] + timedelta(days=shift[m.group(1).lower()])
+        mon, day = (m.group(2), m.group(3)) if m.group(2) else (m.group(5), m.group(4))
+        if (MONTHS[mon.lower()[:3]], int(day)) != (d.month, d.day):
+            flag(sent, f"{m.group(1)} is {day} {mon}", f"{m.group(1).lower()} is {d:%-d %B} where the person is")
+
+
+def place_checks(sent: str, facts: dict, flag) -> None:
+    """Clock times may only be presented as times for the place they were computed for."""
+    place = facts.get("place") or ""
+    if not place or not CLOCK.search(sent):
+        return
+    for m in TIMES_FOR.finditer(sent):
+        city = m.group(1) or m.group(2)
+        if city not in NOT_PLACES and city.lower() not in place.lower():
+            flag(sent, f"times for {city}", f"these times were worked out for {place}, not {city}")
+
+
 def period_checks(sent: str, facts: dict, flag) -> None:
     """Dates and windows tied to a named daśā period must match that period."""
     S, low, dates = facts["spans"], sent.lower(), _dates(sent)
@@ -227,9 +267,11 @@ def period_checks(sent: str, facts: dict, flag) -> None:
             flag(sent, f"{a}{'-' + b if b else ''} {m.group(3)}", f"there is no such {level} period in this chart")
             continue
         before, after = low[max(0, ds - 12):ds], low[de:de + 6]
-        if re.search(r"(\bto|\buntil|\btill|\bthrough|\bends?|–|-)\s*$", before):
+        before = low[max(0, ds - 24):ds]
+        if re.search(r"(\bto|\buntil|\btill|\bthrough|\bends?|\bended|\bending|–|-)\s*(?:in|on|around)?\s*$", before):
             ok, what = any(abs(n(d) - x["b"]) <= 1 for x in mine), "ends"
-        elif re.search(r"\bfrom\s*$|\bstarts?\s*$|\bbegins?\s*$", before) or re.match(r"\s*(to\b|–|-)", after):
+        elif re.search(r"\b(?:from|since|starts?|started|starting|begins?|began|beginning|commenced?)\s*(?:in|on|around)?\s*$",
+                       before) or re.match(r"\s*(to\b|–|-)", after):
             ok, what = any(abs(n(d) - x["a"]) <= 1 for x in mine), "starts"
         else:
             ok, what = any(x["a"] - 1 <= n(d) <= x["b"] + 1 for x in mine), "runs"

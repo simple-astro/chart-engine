@@ -22,13 +22,16 @@ CATALOGUE = [
     ("Timing", [("timing/now", "Now & next"), ("timing/comingup", "Coming up"),
                 ("getready", "Get-ready steps ticked"), ("timing/transits", "Transits"),
                 ("timing/matter", "By matter (KP timing)"), ("timing/dates", "Good dates")]),
-    ("Ask Astropositivism", [("ask", "Ask Astropositivism screen"), ("asked", "Questions asked")]),
+    ("Ask Astropositivism", [("ask", "Ask Astropositivism screen"), ("asked", "Questions asked"),
+                             ("answer/up", "Answers marked 👍"), ("answer/down", "Answers marked 👎 (with a reason)")]),
     ("Remedies", [("remedies", "Remedies screen")]),
     ("Studies", [("studies", "Studies hub"), ("studies/vedic", "Vedic"), ("studies/nadi", "Nadi (KP)"),
                  ("studies/jaimini", "Jaimini"), ("studies/lal", "Lal Kitab"), ("studies/prashna", "Prashna"),
                  ("studies/chara", "Chara Dasha"), ("timing/chara", "Chara Dasha (when it was in Timing)"),
                  ("kundli", "Kundli screen (before Studies)"), ("links/place", "Placement arrows"), ("links/asp", "Aspect arrows"),
-                ("links/conj", "Conjunctions"), ("house/tap", "Tap a house"), ("chart/chalit", "Bhava Chalit view"), ("chart/moon", "Moon chart view"), ("chart/gochar", "Gochar chart view"), ("vargas/moon", "Divisional chart from the Moon"),
+                ("links/conj", "Conjunctions"), ("house/tap", "Tap a house"), ("chart/chalit", "Bhava Chalit view"), ("chart/moon", "Moon chart view"), ("chart/gochar", "Gochar chart view"), ("chart/gochar-day", "Gochar: changed the day"), ("vargas/moon", "Divisional chart from the Moon"),
+                ("kp/show-standard", "KP table: showed KP ayanamsa"), ("kp/make-default", "KP table: made KP the setting"),
+                ("studies/yogini", "Yogini Dasha"),
                 ("chart/alul", "AL · UL on the chart"), ("kundli/planets", "Planets"), ("kundli/yogas", "Yogas"),
                 ("kundli/houses", "Houses & cusps"), ("kundli/vargas", "Divisional charts"),
                 ("kundli/akv", "Ashtakavarga"), ("kundli/nadi", "Nadi amsha"), ("kundli/xchg", "Lord exchange"),
@@ -43,17 +46,27 @@ MAX_BATCH = 50
 
 # Question topics: a question can count under more than one.
 TOPICS = [
-    ("Career & job", r"\b(job|career|promotion|work|office|boss|interview|salary|employ\w*)\b"),
+    ("Career & job", r"\b(job|career|promotion|work|office|boss|interview|salary|employ\w*|naukri|kaam)\b"),
     ("Business", r"\b(business|shop|startup|partnership|client\w*|customer\w*)\b"),
-    ("Money", r"\b(money|wealth|financ\w*|income|debt|loan|invest\w*|saving\w*|rich|profit)\b"),
-    ("Marriage & love", r"\b(marr\w*|wedding|spouse|husband|wife|love|relationship|girlfriend|boyfriend|partner)\b"),
-    ("Health", r"\b(health|ill\w*|disease|sick|surgery|pain|sleep|stress|anxiety|energy)\b"),
-    ("Abroad & visa", r"\b(abroad|foreign|visa|pr|permanent residency|immigra\w*|canada|usa|uk|australia|settle\w*|overseas)\b"),
-    ("Children", r"\b(child\w*|son|daughter|pregnan\w*|baby|kids?)\b"),
-    ("Education", r"\b(stud\w*|exam\w*|education|college|admission|course|degree)\b"),
-    ("Property & home", r"\b(property|house|home|land|flat|vehicle|car)\b"),
-    ("Remedies", r"\b(remed\w*|upaya|gem\w*|stone\w*|mantra|puja|donat\w*)\b"),
-    ("Timing & muhurat", r"\b(when|today|tomorrow|muhurat|date|transit\w*|dasha|period|this (week|month|year))\b"),
+    ("Money", r"\b(money|wealth|financ\w*|income|debt|loan|invest\w*|saving\w*|rich|profit|paisa|paise|dhan)\b"),
+    ("Marriage & love", r"\b(marr\w*|wedding|spouse|husband|wife|love|relationship|girlfriend|boyfriend|partner|"
+                        r"shaadi|shadi|vivah|rishta|match\w*|kundli milan)\b"),
+    ("Health", r"\b(health|ill\w*|disease|sick|surgery|pain|sleep|stress|anxiety|energy|sehat|swasthya)\b"),
+    ("Abroad & visa", r"\b(abroad|foreign|visa|pr|permanent residency|immigra\w*|canada|usa|uk|australia|settle\w*|"
+                      r"overseas|videsh|bahar)\b"),
+    ("Children", r"\b(child\w*|son|daughter|pregnan\w*|baby|kids?|santan|bachch?\w*)\b"),
+    ("Education", r"\b(stud\w*|exam\w*|education|college|admission|course|degree|padhai)\b"),
+    ("Property & home", r"\b(property|house|home|land|flat|vehicle|car|ghar|makaan|makan|zameen)\b"),
+    ("Remedies", r"\b(remed\w*|upaya?|gem\w*|stone\w*|mantra|puja|donat\w*|totka)\b"),
+    ("Timing & muhurat", r"\b(when|today|tomorrow|muhurat|date|transit\w*|dasha|period|this (week|month|year)|kab|"
+                         r"sade ?sati|gochar)\b"),
+    # Added 2026-10-18 after "Other" was the biggest topic: questions about the chart itself, family, the mind.
+    ("My chart overall", r"\b(overview|my (chart|kundli|horoscope|birth chart)|read (my|the) chart|personality|"
+                         r"nature|strength\w*|weakness\w*|lagna|ascendant|rashi|moon sign|nakshatra|yoga\w*|"
+                         r"planets?|house)\b"),
+    ("Family", r"\b(mother|father|parents?|brother|sister|family|in-?laws?|mummy|papa|maa)\b"),
+    ("Mind & mood", r"\b(mood|feel\w*|sad|depress\w*|lonely|worr\w*|peace|happy|happiness|confus\w*|mind)\b"),
+    ("About the app", r"\b(who are you|what can you|how does (this|it) work|are you (ai|real|human))\b"),
 ]
 _TOPICS = [(name, re.compile(rx, re.I)) for name, rx in TOPICS]
 
@@ -123,6 +136,9 @@ def report(now: datetime | None = None) -> dict:
     t7, t30 = topics([q["question"] for q in qs if q["ts"] >= iso(7)]), topics([q["question"] for q in qs])
     topic_rows = [{"topic": t, "week": t7[t], "month": t30[t]} for t in [n for n, _ in TOPICS] + ["Other"]]
     topic_rows.sort(key=lambda r: (-r["month"], -r["week"]))
+    # The questions no topic matched (newest first), so the owner can read what people really ask.
+    other_questions = [{"ts": q["ts"], "question": (q["question"] or "")[:300]} for q in reversed(qs)
+                       if q["question"] and not topics([q["question"]]).keys() - {"Other"}][:40]
 
     # Activity per tester over 30 days: every event, question, mood log, life event, tick and new chart.
     days, last, top, asked = defaultdict(set), {}, defaultdict(Counter), Counter()
@@ -151,6 +167,8 @@ def report(now: datetime | None = None) -> dict:
         "searches": {"empty": [{"query": q, "count": n} for q, n in empty.most_common(15) if q],
                      "picked": [{"search": q, "count": n} for q, n in picked.most_common(15) if q]},
         "topics": topic_rows,
+        "other_questions": other_questions,
+        "ratings": storage.rating_counts(iso(30)),
         "journey": journey,
         "testers": testers,
     }

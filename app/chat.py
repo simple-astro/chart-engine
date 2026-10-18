@@ -359,8 +359,18 @@ def _word_limit() -> int:
     return (t or {}).get("word_limit") or config.word_limit()
 
 
+def _now_line(profile: dict) -> str:
+    """Today's date and weekday where the person is, and the one place every time is computed for."""
+    w, d = where(profile), local_today(profile)
+    how = ("in Telegram, /settings then 📍 Where I live" if profile.get("channel") == "telegram"
+           else "the location button in the app")
+    return (f"\n\n[NOW: today is {d:%A, %-d %B %Y} for the person, in {w['place']} ({w['tz_name']}). Every clock time "
+            f"from the tools is for {w['place']}; never present them as times for another place. If they want times "
+            f"for another city, tell them to set it ({how}).]")
+
+
 def _system_text(profile: dict) -> str:
-    text = SYSTEM.format(words=_word_limit()) + ask.llm_context(profile)
+    text = SYSTEM.format(words=_word_limit()) + ask.llm_context(profile) + _now_line(profile)
     remarks = storage.tester_remarks(profile.get("owner"))
     if remarks:
         text += f"\n\n[CONTEXT NOTE: {remarks}]"
@@ -532,10 +542,10 @@ def chat_events(profile: dict, message: str):
     if cached:
         storage.add_message(pid, "user", message)
         storage.add_message(pid, "assistant", cached)
-        storage.log_usage(pid, "cache", message, words=len(cached.split()), owner=profile.get("owner"),
-                          answer=cached)
+        uid = storage.log_usage(pid, "cache", message, words=len(cached.split()), owner=profile.get("owner"),
+                                answer=cached)
         yield {"type": "delta", "text": cached}
-        yield {"type": "done", "mode": "cache"}
+        yield {"type": "done", "mode": "cache", "usage_id": uid}
         return
 
     history = storage.get_messages(pid)
@@ -585,13 +595,13 @@ def chat_events(profile: dict, message: str):
     yield {"type": "delta", "text": text}
     storage.add_message(pid, "user", message)
     storage.add_message(pid, "assistant", text)
-    storage.log_usage(pid, mode, message, model=use["model"], input_tokens=use["input"],
+    uid = storage.log_usage(pid, mode, message, model=use["model"], input_tokens=use["input"],
                       output_tokens=use["output"], cache_read=use["cache_read"], cache_write=use["cache_write"],
                       tool_rounds=use["rounds"], words=len(text.split()), owner=profile.get("owner"),
                       answer=text, factcheck=report)
     if mode == "llm" and key:
         storage.cache_put(pid, key, today, text)
-    yield {"type": "done", "mode": mode}
+    yield {"type": "done", "mode": mode, "usage_id": uid}
 
 
 def chat(profile: dict, message: str) -> dict:

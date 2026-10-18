@@ -2,7 +2,7 @@
 
 Queue, highest priority first; an answer leaves it once reviewed:
 1. answers the fact check caught;
-2. (later) answers users marked 👎, once 👍/👎 ships;
+2. answers the person marked 👎;
 3. the first answer on a topic no one has reviewed yet;
 4. a steady random 10% sample (the same answers stay sampled).
 """
@@ -19,9 +19,9 @@ REMEDY_CHECKS = [("fits", "Fits this chart"), ("safe", "Safe"), ("habits", "Habi
 REMEDY_TAGS = ["Not for this chart", "Unsafe", "Japa suggested", "Gem without substitute", "Fear word", "Too long",
                "Other"]
 RESULTS = ("pass", "fail", "na")
-REASONS = {"caught": "The fact check caught something", "new_topic": "First answer on a topic not reviewed yet",
-           "sample": "Random sample"}
-_ORDER = {"caught": 0, "new_topic": 1, "sample": 2}
+REASONS = {"caught": "The fact check caught something", "down": "The person marked it 👎",
+           "new_topic": "First answer on a topic not reviewed yet", "sample": "Random sample"}
+_ORDER = {"caught": 0, "down": 1, "new_topic": 2, "sample": 3}
 
 
 def _topics(question: str | None) -> list[str]:
@@ -56,10 +56,11 @@ def queue(rows: list[dict]) -> list[dict]:
         if r["review_id"]:
             continue
         fc = r.get("factcheck") or {}
-        reason = ("caught" if fc.get("found") else "new_topic" if r["id"] in new_topic
+        reason = ("caught" if fc.get("found") else "down" if r.get("rating") == -1 else "new_topic" if r["id"] in new_topic
                   else "sample" if sampled(r["id"]) else None)
         if reason:
-            out.append({**r, "reason": reason, "reason_text": REASONS[reason], "topics": _topics(r["question"])})
+            text = REASONS[reason] + (f": {r['rating_reason']}" if reason == "down" and r.get("rating_reason") else "")
+            out.append({**r, "reason": reason, "reason_text": text, "topics": _topics(r["question"])})
     return sorted(out, key=lambda r: (_ORDER[r["reason"]], -r["id"]))
 
 

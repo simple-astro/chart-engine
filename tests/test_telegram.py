@@ -160,3 +160,41 @@ def test_parse_time(text, want):
 
 def test_to_html_escapes_and_formats():
     assert tb.to_html("## Career\n- **Do** <this> & *that*") == "<b>Career</b>\n• <b>Do</b> &lt;this&gt; &amp; <i>that</i>"
+
+
+def test_coming_up_reminders_on_the_day_and_3_days_before_a_dasha_change(bot, monkeypatch):
+    from app import upcoming
+    _, say, tap, calls, _ = bot
+    onboard(say, tap)
+    storage.tg_save(CHAT, send_time="08:00")
+    at = datetime(2026, 10, 30, 2, 45, tzinfo=timezone.utc)  # 08:15 IST on 30 Oct
+    items = [{"kind": "sky", "date": "2026-10-30", "title": "Jupiter moves into your 10th house", "meaning": "Career gets support.",
+              "prepare": "Learn something."},
+             {"kind": "period", "date": "2026-11-02", "title": "A new stretch: the Ketu sub-period begins",
+              "meaning": "Good for studies.", "prepare": "Finish pending work."},
+             {"kind": "sky", "date": "2026-11-02", "title": "Mercury turns direct", "meaning": "x", "prepare": "y"}]
+    monkeypatch.setattr(upcoming, "upcoming", lambda *a: {"items": items})
+    assert tb.reminder_tick(datetime(2026, 10, 30, 1, 0, tzinfo=timezone.utc)) == 0  # before the morning window
+    assert tb.reminder_tick(at) == 2
+    sent = texts(calls)[-2:]
+    assert "Today · Transit" in sent[0] and "Jupiter" in sent[0]
+    assert "In 3 days" in sent[1] and "Ketu" in sent[1]          # Dasha change early; the 2 Nov transit waits
+    assert tb.reminder_tick(at) == 0                              # each once
+    storage.tg_save(CHAT, active=0)                               # pausing the guide keeps reminders
+    tap("rem:dasha")
+    assert storage.tg_get(CHAT)["reminders"] == "dasha"
+    assert tb.reminders_due(items, date(2026, 11, 2), "dasha") == [("today", items[1])]
+    tap("rem:off")
+    assert tb.reminder_tick(datetime(2026, 11, 2, 2, 45, tzinfo=timezone.utc)) == 0
+
+
+def test_answers_use_the_city_set_in_settings(bot, monkeypatch):
+    _, say, tap, calls, _ = bot
+    onboard(say, tap)
+    seen = []
+    monkeypatch.setattr(tb.chat, "chat", lambda prof, text: seen.append(prof) or {"reply": "ok"})
+    say("When is Rahu Kalam today?")
+    assert "viewer" not in seen[-1] and seen[-1]["channel"] == "telegram"   # no city set: the birthplace
+    storage.tg_save(CHAT, live_lat=49.9, live_lon=-97.14, live_tz="America/Winnipeg", live_place="Winnipeg, Manitoba, Canada")
+    say("When is Rahu Kalam today?")
+    assert seen[-1]["viewer"] == {"lat": 49.9, "lon": -97.14, "tz_name": "America/Winnipeg", "name": "Winnipeg"}

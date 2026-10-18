@@ -116,7 +116,7 @@ def test_daily_cap_per_tester(gated, monkeypatch):
     profile = a.get(f"/profiles/{pid}").json()
     storage.log_usage(pid, "llm", "q", owner=profile["owner"])
     r = a.post(f"/profiles/{pid}/chat/stream", json={"message": "How is my career?"})
-    assert r.status_code == 429 and "limit" in r.json()["detail"]
+    assert r.status_code == 429 and "refill tomorrow" in r.json()["detail"]
     b_pid = b.post("/profiles", json=BODY).json()["id"]  # another tester is unaffected
     assert b.post(f"/profiles/{b_pid}/chat", json={"message": "Where is my Moon?"}).status_code == 200
 

@@ -64,6 +64,16 @@ def _connect() -> sqlite3.Connection:
         " send_time TEXT NOT NULL DEFAULT '08:00', active INTEGER NOT NULL DEFAULT 1, last_sent TEXT,"
         " live_lat REAL, live_lon REAL, live_tz TEXT, live_place TEXT, created_at TEXT NOT NULL)"
     )
+    ucols = {r["name"] for r in conn.execute("PRAGMA table_info(usage_log)")}
+    if "rating" not in ucols:  # 👍 (1) / 👎 (-1) from the person who asked, with an optional reason
+        conn.execute("ALTER TABLE usage_log ADD COLUMN rating INTEGER")
+        conn.execute("ALTER TABLE usage_log ADD COLUMN rating_reason TEXT")
+    if "reminders" not in {r["name"] for r in conn.execute("PRAGMA table_info(tg_users)")}:
+        # Coming-up reminders on Telegram: all (transits and Dasha changes), dasha (Dasha changes only) or off.
+        conn.execute("ALTER TABLE tg_users ADD COLUMN reminders TEXT NOT NULL DEFAULT 'all'")
+    # One row per reminder sent, so each goes out once (key: event date, lead time and title).
+    conn.execute("CREATE TABLE IF NOT EXISTS tg_reminders (chat_id INTEGER NOT NULL, key TEXT NOT NULL,"
+                 " sent_at TEXT NOT NULL, PRIMARY KEY (chat_id, key))")
     for table, col in (("profiles", "owner"), ("usage_log", "owner"), ("usage_log", "answer"), ("usage_log", "admin_remarks"), ("usage_log", "factcheck")):
         cols = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
         if col not in cols:
@@ -280,16 +290,33 @@ def cache_put(profile_id: int, qkey: str, day: str, answer: str) -> None:
 
 def log_usage(profile_id: int, kind: str, question: str, *, model: str | None = None, input_tokens: int = 0,
               output_tokens: int = 0, cache_read: int = 0, cache_write: int = 0, tool_rounds: int = 0,
-              words: int = 0, owner: str | None = None, answer: str | None = None, factcheck: dict | None = None) -> None:
+              words: int = 0, owner: str | None = None, answer: str | None = None, factcheck: dict | None = None) -> int:
+    """Log one answer; returns its id (the 👍/👎 buttons refer to it)."""
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     with _lock, _connect() as conn:
-        conn.execute(
+        cur = conn.execute(
             "INSERT INTO usage_log (ts, profile_id, kind, model, input_tokens, output_tokens, cache_read_tokens,"
             " cache_write_tokens, tool_rounds, words, question, owner, answer, factcheck)"
             " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (now, profile_id, kind, model, input_tokens, output_tokens, cache_read, cache_write, tool_rounds,
              words, question[:2000], owner, answer[:6000] if answer else None,
              json.dumps(factcheck) if factcheck else None))
+        return cur.lastrowid
+
+
+def rate_answer(profile_id: int, usage_id: int, rating: int, reason: str | None = None) -> bool:
+    """Record the asker's 👍/👎 on one of the answers to this chart; False if the answer isn't theirs."""
+    with _lock, _connect() as conn:
+        cur = conn.execute("UPDATE usage_log SET rating = ?, rating_reason = ? WHERE id = ? AND profile_id = ?"
+                           " AND answer IS NOT NULL", (rating, reason, usage_id, profile_id))
+        return cur.rowcount == 1
+
+
+def rating_counts(since: str) -> dict:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT SUM(rating = 1) AS up, SUM(rating = -1) AS down FROM usage_log WHERE ts >= ?",
+                         (since,)).fetchone()
+    return {"up": r["up"] or 0, "down": r["down"] or 0}
 
 
 def llm_requests_today(owner: str | None = None) -> int:
@@ -512,7 +539,7 @@ def tester_remarks(owner: str | None) -> str | None:
 
 # ----- Telegram users: onboarding state, morning-guide schedule -----
 TG_FIELDS = {"owner", "profile_id", "first_name", "step", "draft", "send_time", "active", "last_sent",
-             "live_lat", "live_lon", "live_tz", "live_place"}
+             "live_lat", "live_lon", "live_tz", "live_place", "reminders"}
 
 
 def tg_get(chat_id: int) -> dict | None:
@@ -553,6 +580,30 @@ def tg_claim_send(chat_id: int, day: str) -> bool:
         cur = conn.execute("UPDATE tg_users SET last_sent = ? WHERE chat_id = ? AND (last_sent IS NULL OR last_sent <> ?)",
                            (day, chat_id, day))
         return cur.rowcount == 1
+
+
+def tg_reminder_users() -> list[dict]:
+    """Onboarded users with reminders switched on (independent of pausing the morning guide)."""
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT * FROM tg_users WHERE step = 'done' AND profile_id IS NOT NULL"
+                            " AND reminders <> 'off'").fetchall()
+    return [dict(r) for r in rows]
+
+
+def tg_claim_reminder(chat_id: int, key: str) -> bool:
+    """Atomically record a reminder as sent; False if it already was."""
+    with _lock, _connect() as conn:
+        cur = conn.execute("INSERT OR IGNORE INTO tg_reminders (chat_id, key, sent_at) VALUES (?, ?, ?)",
+                           (chat_id, key, datetime.now(timezone.utc).isoformat(timespec="seconds")))
+        return cur.rowcount == 1
+
+
+def tg_for_profile(profile_id: int) -> dict | None:
+    """The Telegram link for a chart, if any (for the Coming up card)."""
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT reminders FROM tg_users WHERE profile_id = ? AND step = 'done' LIMIT 1",
+                         (profile_id,)).fetchone()
+    return dict(r) if r else None
 
 
 # ----- state of mind (mood logs); callers check the profile belongs to the person first -----
@@ -774,6 +825,7 @@ def review_candidates(limit: int = 3000) -> list[dict]:
     with _lock, _connect() as conn:
         rows = conn.execute(
             "SELECT u.id, u.ts, u.profile_id, u.question, u.answer, u.factcheck, u.owner, u.model, u.words,"
+            " u.rating, u.rating_reason,"
             " p.name AS profile_name, r.id AS review_id FROM usage_log u LEFT JOIN profiles p ON p.id = u.profile_id"
             " LEFT JOIN reviews r ON r.usage_id = u.id WHERE u.kind = 'llm' AND u.answer IS NOT NULL"
             " ORDER BY u.id DESC LIMIT ?", (limit,)).fetchall()

@@ -257,6 +257,15 @@ def _quota_left(owner: str | None) -> int:
     return max(0, limit - storage.llm_requests_today(owner))
 
 
+def _with_live(u: dict | None, profile: dict) -> dict:
+    """The chart plus where the person is now (📍 Where I live), so times and "today" are for that city."""
+    if u and u.get("live_tz") and u.get("live_lat") is not None:
+        viewer = {"lat": u["live_lat"], "lon": u["live_lon"], "tz_name": u["live_tz"],
+                  "name": (u.get("live_place") or "").split(",")[0] or "where you live"}
+        return {**profile, "viewer": viewer, "channel": "telegram"}
+    return {**profile, "channel": "telegram"}
+
+
 def _ask(chat_id: int, profile: dict, text: str) -> None:
     if _quota_left(profile.get("owner")) <= 0:
         send(chat_id, "You’ve used today’s questions with me 🙏 Your morning guide still comes as usual — ask again tomorrow. "
@@ -280,6 +289,7 @@ def _settings(chat_id: int, u: dict) -> None:
         [(f"📍 Where I live: {u.get('live_place') or 'my birthplace'}", "set:live")],
         [("🎂 Change birth details", "set:birth")],
         [("🔕 Pause morning guide", "set:pause") if on else ("🔔 Resume morning guide", "set:resume")],
+        [(f"📅 Coming-up reminders: {REM_LABEL[u.get('reminders') or 'all']}", "set:rem")],
     ])
 
 
@@ -358,6 +368,14 @@ def handle_callback(chat_id: int, u: dict | None, data: str) -> None:
     elif data == "set:birth":
         storage.tg_save(chat_id, step="date", draft={})
         send(chat_id, "Let’s update your birth details.\n\n**1 of 3 — your date of birth?**\nFor example: 1990-05-17 · 17.05.1990")
+    elif data == "set:rem":
+        send(chat_id, "Which coming-up reminders would you like?\n\nI send them on the day of each change, and 3 days "
+                      "before a Dasha change.", [[(REM_LABEL[k], f"rem:{k}")] for k in ("all", "dasha", "off")])
+    elif kind == "rem" and val in REM_LABEL:
+        storage.tg_save(chat_id, reminders=val)
+        send(chat_id, {"all": "📅 Done — I’ll remind you of transits and Dasha changes.",
+                       "dasha": "📅 Done — I’ll remind you of Dasha changes only.",
+                       "off": "📅 Coming-up reminders are off."}[val])
     elif data in ("set:pause", "set:resume"):
         storage.tg_save(chat_id, active=int(data == "set:resume"))
         send(chat_id, "🔔 Morning guide is back on." if data == "set:resume" else "🔕 Morning guide paused.")
@@ -394,7 +412,7 @@ def handle_text(chat_id: int, u: dict | None, text: str) -> None:
         if not profile:
             send(chat_id, "I couldn’t find your chart — send /start to set it up again.")
             return
-        _ask(chat_id, profile, text)
+        _ask(chat_id, _with_live(u, profile), text)
 
 
 def handle_update(update: dict) -> None:
@@ -478,12 +496,68 @@ def morning_tick(now_utc: datetime | None = None) -> int:
     return sent
 
 
+# ----- coming-up reminders: a separate message on the day of each change, and 3 days before a Dasha change -----
+REM_LABEL = {"all": "Transits and Dasha changes", "dasha": "Dasha changes only", "off": "Off"}
+EARLY_DAYS = 3
+
+
+def reminders_due(items: list[dict], today: date, pref: str) -> list[tuple[str, dict]]:
+    """(lead, item) pairs to send today: lead is "today" or "soon" (a Dasha change in EARLY_DAYS days)."""
+    out = []
+    for it in items:
+        if pref == "off" or (pref == "dasha" and it["kind"] != "period"):
+            continue
+        d = date.fromisoformat(it["date"])
+        if d == today:
+            out.append(("today", it))
+        elif it["kind"] == "period" and d == today + timedelta(days=EARLY_DAYS):
+            out.append(("soon", it))
+    return out
+
+
+def reminder_text(lead: str, it: dict) -> str:
+    kind = "Dasha change" if it["kind"] == "period" else "Transit"
+    head = "Today" if lead == "today" else f"In {EARLY_DAYS} days ({date.fromisoformat(it['date']).strftime('%-d %b')})"
+    return (f"🔔 **{head} · {kind}**\n**{it['title']}**\n{it['meaning']}\n\n_Prepare:_ {it['prepare']}"
+            + ("" if it["kind"] == "period" else "\n\nTransits are hints; the period you are in matters more."))
+
+
+def reminder_tick(now_utc: datetime | None = None) -> int:
+    """Send due coming-up reminders, each once, in the person's morning window (after their guide time)."""
+    from app import upcoming
+    from app.routes import with_extras
+    now_utc = now_utc or datetime.now(timezone.utc)
+    sent = 0
+    for u in storage.tg_reminder_users():
+        profile = _profile(u)
+        if not profile:
+            continue
+        _, _, tz, _ = _where(u, profile)
+        local = now_utc.astimezone(ZoneInfo(tz))
+        if not due({**u, "last_sent": None}, now_utc, tz):
+            continue  # only inside the morning window, so reminders never arrive at night
+        try:
+            items = upcoming.upcoming({**profile, "chart": with_extras(profile["chart"])}, local.date(), tz)["items"]
+        except Exception as e:
+            print(f"Reminders failed for {u['chat_id']}: {e!r}")
+            continue
+        for lead, it in reminders_due(items, local.date(), u.get("reminders") or "all"):
+            if storage.tg_claim_reminder(u["chat_id"], f"{it['date']}|{lead}|{it['title']}"):
+                send(u["chat_id"], reminder_text(lead, it), [[("📅 Reminder settings", "set:rem")]])
+                sent += 1
+    return sent
+
+
 def _scheduler() -> None:
     while True:
         try:
             morning_tick()
         except Exception as e:
             print(f"Morning scheduler error: {e!r}")
+        try:
+            reminder_tick()
+        except Exception as e:
+            print(f"Reminder scheduler error: {e!r}")
         time.sleep(60)
 
 
