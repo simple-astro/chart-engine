@@ -382,7 +382,9 @@ def _events_view(p: dict) -> dict:
               for e in storage.event_list(p["id"])]
     summ = L.summary(chart, events, birth, today)
     rectified = bool(storage.get_setting(f"rectified_{p['id']}_{p['request'].get('tob', '')[:5]}"))
-    return {"kinds": [{"key": k, "label": v[0]} for k, v in L.KINDS.items()], "events": events, "summary": summ,
+    group = {k: g for g, ks in L.GROUPS for k in ks}
+    return {"kinds": [{"key": k, "label": v[0], "group": group.get(k, "Other")} for k, v in L.KINDS.items()],
+            "groups": [g for g, _ in L.GROUPS], "events": events, "summary": summ,
             "accuracy": L.accuracy(chart, events, summ, bool(p["request"].get("tob_unknown")), rectified)}
 
 

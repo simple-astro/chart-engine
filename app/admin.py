@@ -1069,7 +1069,7 @@ def events_backtest(request: Request) -> dict:
         chart = with_extras(e["chart"])
         c = L.check(chart, e["kind"], date.fromisoformat(e["date"]), e["precision"])
         base = L._base_rate(chart, c["topic"], date.fromisoformat(e["request"]["dob"]), today)
-        t = by.setdefault(c["topic"], {"topic": c["topic"], "title": L.K.TOPICS[c["topic"]][0], "events": 0, "fits": 0, "expected": 0.0})
+        t = by.setdefault(c["topic"], {"topic": c["topic"], "title": L.K.ALL_TOPICS[c["topic"]][0], "events": 0, "fits": 0, "expected": 0.0})
         t["events"] += 1
         t["fits"] += c["fit"] == "fits"
         t["expected"] += base

@@ -13,32 +13,55 @@ from datetime import date, timedelta
 
 from core import kp_predict as K
 
-# kind: (what the person sees, the life matter it tests)
+# kind: (what the person sees, the life matter it tests). Matters in K.LOOKBACK are read for past events only.
 KINDS = {
     "married": ("Got married", "marriage"),
     "engaged": ("Got engaged", "marriage"),
+    "love": ("Started a love affair", "love"),
     "child": ("Child born", "children"),
     "job": ("Started a job", "career"),
     "promotion": ("Promotion or raise", "career"),
     "job_change": ("Changed job", "job_change"),
     "job_loss": ("Lost a job or business loss", "career_loss"),
     "business": ("Started a business", "business"),
+    "money_earned": ("Received a large sum: earned", "money"),
+    "windfall": ("Received a large sum: unexpected (inheritance, windfall)", "windfall"),
+    "debt_cleared": ("Cleared a big loan or debt", "money"),
+    "money_loss": ("Lost money, theft or fraud", "money_loss"),
     "home": ("Bought a home or property", "property"),
     "sold": ("Sold a property", "property_sale"),
     "vehicle": ("Bought a vehicle", "vehicle"),
     "moved": ("Moved house", "residence"),
+    "away": ("Started living away from home", "residence"),
     "abroad": ("Moved or went abroad", "foreign"),
+    "long_journey": ("A long journey", "long_journey"),
+    "family_trip": ("A family trip or holiday", "pleasure_trip"),
+    "school": ("Finished school (10th or 12th)", "education"),
     "degree": ("Degree or exam passed", "education"),
     "award": ("Award or recognition", "awards"),
     "court_win": ("Won a court case", "litigation_win"),
+    "pilgrimage": ("A major shrine visit or pilgrimage", "pilgrimage"),
+    "initiation": ("Spiritual initiation (deeksha, a guru)", "spiritual"),
     "illness": ("Illness or surgery", "illness"),
     "accident": ("Accident or injury", "accident"),
+    "parent_illness": ("A parent's major illness or surgery", None),
     "separation": ("Separation or divorce", "divorce"),
     # Recorded with care but never read against the chart: the app makes no predictions about death, so loss has
     # no life matter in the timing engine and is left out of the fit score, accuracy and rectification.
     "loss": ("Loss of a family member", None),
 }
 NOTED = "Recorded with care. We don't read the chart for loss, so this event isn't checked against it."
+NOTED_PARENT = ("Recorded with care. A parent's health is read from their own chart, so this event isn't checked "
+                "against yours.")
+# How the "What happened?" choices are grouped in the form.
+GROUPS = [("Relationships", ["married", "engaged", "love", "separation"]),
+          ("Work and money", ["job", "promotion", "job_change", "job_loss", "business", "money_earned", "windfall",
+                              "debt_cleared", "money_loss", "court_win"]),
+          ("Home and travel", ["home", "sold", "vehicle", "moved", "away", "abroad", "long_journey", "family_trip"]),
+          ("Studies", ["school", "degree", "award"]),
+          ("Health", ["illness", "accident"]),
+          ("Spiritual", ["pilgrimage", "initiation"]),
+          ("Family", ["child", "parent_illness", "loss"])]
 
 
 def checked(events: list[dict]) -> list[dict]:
@@ -100,7 +123,8 @@ def check(chart: dict, kind: str, d: date, precision: str) -> dict:
     """Did the chart's periods support this event when it happened?"""
     label, topic = KINDS[kind]
     if topic is None:
-        return {"topic": None, "fit": "noted", "share": None, "period": None, "why": NOTED, "rough": False}
+        return {"topic": None, "fit": "noted", "share": None, "period": None, "rough": False,
+                "why": NOTED_PARENT if kind == "parent_illness" else NOTED}
     lo, hi = span(d, precision)
     spans = K.verdict_spans(chart, topic, lo, hi)
     share = _share(spans, lo, hi)
@@ -112,8 +136,8 @@ def check(chart: dict, kind: str, d: date, precision: str) -> dict:
         names = [at["maha"], at["antar"], at["praty"]]
         helpers = list(dict.fromkeys(j["lord"] for j in at["lords"].values() if j["verdict"] in LORD_OK))
         period = "–".join(names)
-        risk = K.TOPICS[topic][6] == "risk"
-        what = K.TOPICS[topic][0].lower()
+        risk = K.ALL_TOPICS[topic][6] == "risk"
+        what = K.ALL_TOPICS[topic][0].lower()
         verb = "point" if len(helpers) > 1 else "points"
         if not helpers:
             why = f"{period} period: none of these lords is strong enough for {what}" + _held_back(at)
@@ -122,6 +146,8 @@ def check(chart: dict, kind: str, d: date, precision: str) -> dict:
                 " — your chart showed a time to take care" if risk else "")
         else:
             why = f"{period} period: only {', '.join(helpers)} {verb} to {what}, not enough on its own"
+    if why and topic in K.PENDING_REVIEW:
+        why += " (the houses for this kind of event are waiting for our astrologers' review)"
     return {"topic": topic, "fit": fit, "share": round(share, 2), "period": at and "–".join([at["maha"], at["antar"], at["praty"]]),
             "why": why, "rough": precision == "year"}
 

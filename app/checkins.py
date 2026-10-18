@@ -37,6 +37,8 @@ EVENT_WORDS = [
     ("degree", r"\b(exam|result|degree|admission)\b"),
     ("child", r"\b(delivery|due date|baby (is )?due)\b"),
     ("court_win", r"\b(court|hearing|verdict|case)\b"),
+    ("pilgrimage", r"\b(yatra|pilgrimage|darshan|shrine|tirth\w*)\b"),
+    ("family_trip", r"\b(holiday|vacation|family trip)\b"),
 ]
 
 

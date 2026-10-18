@@ -56,6 +56,19 @@ TOPICS = {
     "divorce": ("Separation or divorce", 7, {1, 6, 10}, {2, 7, 11}, SEPARATIVES, True, "risk"),
     "litigation": ("Getting into a dispute or court case", 6, {6, 8, 12}, {11}, {"Rahu", "Ketu", "Saturn"}, True, "risk"),
 }
+# Matters read only when checking past life events (Your life so far), never timed or predicted: their houses
+# are the developer's first proposal and wait for an astrologer's review (PENDING_REVIEW). A windfall stays
+# look-back only even after review, so the app never suggests "money is coming" (no gambling nudges).
+LOOKBACK = {
+    "windfall": ("A windfall or inheritance", 11, {2, 8, 11}, {6, 12}, {"Jupiter", "Rahu"}, False, "event"),
+    "long_journey": ("A long journey", 9, {3, 9, 12}, {2, 4, 11}, set(), False, "event"),
+    "pleasure_trip": ("A holiday or family trip", 5, {3, 5, 11}, {6, 8, 12}, {"Venus"}, False, "event"),
+    "pilgrimage": ("A pilgrimage or shrine visit", 9, {3, 9, 12}, {6, 8}, {"Jupiter", "Ketu"}, False, "event"),
+    "spiritual": ("Spiritual initiation", 9, {5, 9, 12}, {6, 8}, {"Jupiter", "Ketu"}, False, "event"),
+    "money_loss": ("Losing money", 2, {5, 8, 12}, {2, 11}, set(), False, "risk"),
+}
+PENDING_REVIEW = set(LOOKBACK)
+ALL_TOPICS = {**TOPICS, **LOOKBACK}
 # Houses the book calls facilitators: they help the combination when it is present (and, for marriage,
 # 5 and 9 always help). Property/vehicle: 6 = on loan, 8 = through PF/insurance; 3 helps vehicles.
 FACILITATORS = {"marriage": {5, 8, 9, 12}, "children": {9}, "property": {6, 8}, "vehicle": {3, 6, 8},
@@ -214,7 +227,7 @@ def periods_in(chart: dict, start: date, end: date) -> list[dict]:
 
 def lord_verdict(chart: dict, topic: str, p: str) -> dict:
     """How one period lord judges one life matter at planet / star / sub level (natural significator included)."""
-    _, _, good, bad, _, _, kind = TOPICS[topic]
+    _, _, good, bad, _, _, kind = ALL_TOPICS[topic]
     j = judge_lord(chart, p, good, bad, RISK_RULES.get(topic, {}) if kind == "risk" else None, FACILITATORS.get(topic))
     if NATURAL.get(topic) == p and VALUE[j["verdict"]] < VALUE["leans good"]:
         j = {**j, "verdict": "leans good", "note": f"{p} is the natural significator"}
@@ -252,7 +265,7 @@ def dba_verdict(js: dict, required: bool, kar, karakas) -> tuple[str, str | None
 def verdict_spans(chart: dict, topic: str, start: date, end: date) -> list[dict]:
     """Each period's verdict for a life matter between two dates, without the transit notes (fast enough for
     decades: used to check past events against the chart and against chance)."""
-    _, _, _, _, karakas, required, _ = TOPICS[topic]
+    _, _, _, _, karakas, required, _ = ALL_TOPICS[topic]
     cache: dict[str, dict] = {}
 
     def lord(p):

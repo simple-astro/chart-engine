@@ -59,3 +59,17 @@ def test_a_loss_is_recorded_but_never_read_against_the_chart(tmp_path, monkeypat
     assert loss["label"] == "Loss of a family member" and loss["check"]["fit"] == "noted"
     assert v["summary"]["events"] == 3                                   # not counted in the fit score
     assert len(c.get(f"/profiles/{pid}/events/birth-time").json()["labels"]) == 3   # nor in rectification
+
+
+def test_new_past_events_use_look_back_matters_only():
+    from datetime import date
+    from app import life_events as L
+    from core import kp_predict as K
+    c = with_extras(compute_chart(ChartRequest(**REQ)))
+    for kind in ("love", "money_earned", "windfall", "long_journey", "family_trip", "pilgrimage", "initiation",
+                 "school", "away", "debt_cleared", "money_loss"):
+        r = L.check(c, kind, date(2015, 6, 1), "month")
+        assert r["fit"] in ("fits", "partly", "no") and r["why"], kind
+    assert "waiting for our astrologers' review" in L.check(c, "pilgrimage", date(2015, 6, 1), "month")["why"]
+    assert not set(K.LOOKBACK) & set(K.TOPICS)          # never timed or predicted
+    assert L.check(c, "parent_illness", date(2015, 6, 1), "month")["fit"] == "noted"

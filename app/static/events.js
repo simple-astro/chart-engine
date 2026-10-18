@@ -23,12 +23,18 @@
   };
 
   function form() {
-    const kinds = S.data.kinds, shown = S.more ? kinds : kinds.filter(k => COMMON.includes(k.key));
-    const y = new Date().getFullYear();
+    const kinds = S.data.kinds, y = new Date().getFullYear();
+    const chip = k => `<button type="button" class="mdchip${S.kind === k.key ? ' on' : ''}" data-kind="${k.key}" aria-pressed="${S.kind === k.key}">${esc(k.label)}</button>`;
+    // The common ones first; "More…" shows every kind in its group, with a search for long lists.
+    const f = (S.find || '').trim().toLowerCase(), hit = k => !f || k.label.toLowerCase().includes(f);
+    const groups = (S.data.groups || ['Other']).map(g => [g, kinds.filter(k => (k.group || 'Other') === g && hit(k))]).filter(([, ks]) => ks.length);
+    const picker = S.more
+      ? `<input id="evfind" class="evfind" type="search" placeholder="Search, e.g. trip, money, school" value="${esc(S.find || '')}" aria-label="Search events">
+         ${groups.length ? groups.map(([g, ks]) => `<h6 class="evgrp">${esc(g)}</h6><div class="mdchips">${ks.map(chip).join('')}</div>`).join('') : '<p class="hint">No match. Try another word.</p>'}`
+      : `<div class="mdchips">${kinds.filter(k => COMMON.includes(k.key)).map(chip).join('')}<button type="button" class="mdchip evmore" id="evmore">More…</button></div>`;
     return `<div class="evform">
       <h5>What happened?</h5>
-      <div class="mdchips">${shown.map(k => `<button type="button" class="mdchip${S.kind === k.key ? ' on' : ''}" data-kind="${k.key}" aria-pressed="${S.kind === k.key}">${esc(k.label)}</button>`).join('')}
-        ${S.more ? '' : '<button type="button" class="mdchip evmore" id="evmore">More…</button>'}</div>
+      ${picker}
       <h5>When?</h5>
       <div class="evdate">
         <div><label for="evy">Year</label><input id="evy" type="number" inputmode="numeric" min="1900" max="${y}" placeholder="${y - 5}"></div>
@@ -105,6 +111,13 @@
       ${S.adding ? form() : `<button type="button" class="btn ghost evadd" id="evadd">+ Add a past event</button>`}`;
   }
 
+  document.addEventListener('input', e => {
+    if (e.target.id !== 'evfind' || !EL || !EL.contains(e.target)) return;
+    const keep = { y: (EL.querySelector('#evy') || {}).value, m: (EL.querySelector('#evm') || {}).value, d: (EL.querySelector('#evd') || {}).value };
+    S.find = e.target.value; paint();
+    ['y', 'm', 'd'].forEach(k => { const x = EL.querySelector('#ev' + k); if (x) x.value = keep[k] || ''; });
+    const f = EL.querySelector('#evfind'); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
+  });
   document.addEventListener('click', async e => {
     if (!EL || !EL.contains(e.target)) return;
     const t = e.target.closest('button');
@@ -117,7 +130,7 @@
     if (t.id === 'btno') { S.btConfirm = false; paint(); return; }
     if (t.id === 'btyes') { t.disabled = true; useTime(); return; }
     if (t.id === 'evadd') { S.adding = true; S.err = ''; paint(); EL.querySelector('[data-kind]').focus(); }
-    else if (t.id === 'evcancel') { Object.assign(S, { adding: false, kind: null, more: false, err: '' }); paint(); }
+    else if (t.id === 'evcancel') { Object.assign(S, { adding: false, kind: null, more: false, err: '', find: '' }); paint(); }
     else if (t.id === 'evmore') { const v = keep(); S.more = true; paint(); restore(v); }
     else if (t.dataset.kind) { const v = keep(); S.kind = t.dataset.kind; paint(); restore(v); }
     else if (t.dataset.open) { S.open = S.open === +t.dataset.open ? null : +t.dataset.open; paint(); }
