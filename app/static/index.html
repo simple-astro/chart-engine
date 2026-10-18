@@ -1098,7 +1098,7 @@
         <div class="full"><label for="tz">Timezone (IANA)</label><input id="tz" placeholder="Asia/Kolkata" required></div>
         <details class="adv full"><summary>Advanced options</summary>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
-            <div><label for="ayan">Ayanamsha</label><select id="ayan"><option value="krishnamurti">Krishnamurti (KP)</option><option value="lahiri">Lahiri</option><option value="pushya">Pushya Paksha</option></select></div>
+            <div><label for="ayan">Ayanamsha</label><select id="ayan"><option value="krishnamurti">Krishnamurti (KP)</option><option value="lahiri">Lahiri</option><option value="pushya">Pushya Paksha</option><option value="raman">Raman</option><option value="fagan">Fagan-Bradley</option><option value="tropical">Tropical (no ayanamsha)</option></select></div>
             <div><label for="node">Rahu/Ketu</label><select id="node"><option value="mean">Mean node</option><option value="true">True node</option></select></div>
           </div></details>
         <div class="full chk"><input id="save" type="checkbox" checked><label for="save">Save this profile so I can chat about it later</label></div>
@@ -2117,7 +2117,7 @@ function drawKpTables(c,other){
 // A chart on another ayanamsha: say so above the KP table, with a one-tap look at the KP standard and a way to keep it.
 function paintKpAy(shown){const box=$('kpay'),base=lastChart,ay=base&&base.meta.ayanamsha;
   if(!base||ay==='krishnamurti'){box.hidden=true;return}
-  const LBL={lahiri:'Lahiri',pushya:'Pushya'},name=LBL[ay]||ay,kp=shown!==base;
+  const LBL={lahiri:'Lahiri',pushya:'Pushya',raman:'Raman',fagan:'Fagan-Bradley',tropical:'Tropical'},name=LBL[ay]||ay,kp=shown!==base;
   const n=base.houses.filter((h,i)=>KPALT&&(h.kp.sub_lord!==KPALT.houses[i].kp.sub_lord||h.kp.star_lord!==KPALT.houses[i].kp.star_lord)).length;
   box.hidden=false;box.classList.toggle('ok',kp);
   box.innerHTML=kp?'<b>Showing KP standard (Krishnamurti ayanamsa).</b> Your chart is still saved with '+esc(name)+'. Highlighted lords differ from your setting.'+

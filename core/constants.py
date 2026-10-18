@@ -9,6 +9,11 @@ AYANAMSHA_MODES = {
     "lahiri": swe.SIDM_LAHIRI,
     # Pushya-paksha (PVR Narasimha Rao): the star Pushya (delta Cancri) fixed at 16 deg Cancer. Swiss Ephemeris "True Pushya".
     "pushya": swe.SIDM_TRUE_PUSHYA,
+    "raman": swe.SIDM_RAMAN,                     # B.V. Raman
+    "fagan": swe.SIDM_FAGAN_BRADLEY,             # Fagan-Bradley (Western sidereal)
+    # Tropical (sayana): no ayanamsha. Swiss Ephemeris has no "zero" mode, so ephemeris.set_sidereal_mode pins a
+    # user-defined ayanamsha of 0 at the very moment being computed.
+    "tropical": swe.SIDM_USER,
 }
 DEFAULT_AYANAMSHA = "krishnamurti"
 
@@ -17,6 +22,9 @@ HOUSE_SYSTEM_FOR_AYANAMSHA = {
     "krishnamurti": "placidus",   # KP mode
     "lahiri": "whole_sign",       # classical mode
     "pushya": "placidus",         # Placidus cusps, so the KP / Nadi sub-lord predictions still work
+    "raman": "whole_sign",        # classical, like Lahiri
+    "fagan": "placidus",
+    "tropical": "placidus",
 }
 
 # --- Rashis (signs), 0-indexed from Aries ---

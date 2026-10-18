@@ -36,12 +36,15 @@ def swe_version() -> str:
     return swe.version
 
 
-def set_sidereal_mode(ayanamsha: str) -> None:
+def set_sidereal_mode(ayanamsha: str, jd: float | None = None) -> None:
     """Apply the sidereal (ayanamsha) mode globally in Swiss Ephemeris.
 
     Public because callers using ``swe`` directly (e.g. house computation) must
     ensure the sidereal frame is set before their call.
     """
+    if ayanamsha == "tropical":  # an ayanamsha of exactly 0 at ``jd`` (precession would drift it away from t0)
+        swe.set_sid_mode(swe.SIDM_USER, jd if jd is not None else 2451545.0, 0.0)
+        return
     try:
         swe.set_sid_mode(AYANAMSHA_MODES[ayanamsha])
     except KeyError:
@@ -63,12 +66,12 @@ def julian_day(dt_utc: datetime) -> float:
 
 def get_ayanamsha(jd: float, ayanamsha: str) -> float:
     """Ayanamsha value in degrees at the given Julian day."""
-    _set_ayanamsha(ayanamsha)
+    _set_ayanamsha(ayanamsha, jd)
     return swe.get_ayanamsa_ut(jd)
 
 
 def sidereal_longitude(jd: float, swe_planet_id: int, ayanamsha: str) -> tuple[float, float]:
     """Return (sidereal ecliptic longitude, longitude speed deg/day)."""
-    _set_ayanamsha(ayanamsha)
+    _set_ayanamsha(ayanamsha, jd)
     values, _retflag = swe.calc_ut(jd, swe_planet_id, _BASE_FLAGS)
     return values[0], values[3]

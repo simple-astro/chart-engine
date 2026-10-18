@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-Ayanamsha = Literal["krishnamurti", "lahiri", "pushya"]
+Ayanamsha = Literal["krishnamurti", "lahiri", "pushya", "raman", "fagan", "tropical"]
 NodeType = Literal["mean", "true"]
 
 

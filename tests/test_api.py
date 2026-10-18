@@ -90,4 +90,4 @@ def test_chart_with_pushya_paksha_ayanamsha():
     shift = (p["grahas"]["Sun"]["longitude"] - l["grahas"]["Sun"]["longitude"]) % 360
     assert abs(shift - 1.13) < 0.02
     assert len({round(h["longitude"] % 30, 3) for h in p["houses"]}) > 1  # Placidus cusps, not whole-sign
-    assert client.post("/chart", json={**body, "ayanamsha": "fagan"}).status_code == 422
+    assert client.post("/chart", json={**body, "ayanamsha": "made_up"}).status_code == 422

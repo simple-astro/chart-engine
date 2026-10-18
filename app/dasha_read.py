@@ -45,7 +45,8 @@ DIGNITY = {"exalted": "is exalted: it can give its best results.",
            "enemy": "sits in an unfriendly sign: its results come with some effort.",
            "debilitated": "is debilitated: its results need patience and steady effort."}
 LEVELS = ["Mahadasha", "Antardasha", "Pratyantar"]
-AYAN_LABEL = {"krishnamurti": "KP (Krishnamurti)", "lahiri": "Lahiri", "pushya": "Pushya Paksha"}
+AYAN_LABEL = {"krishnamurti": "KP (Krishnamurti)", "lahiri": "Lahiri", "pushya": "Pushya Paksha", "raman": "Raman",
+              "fagan": "Fagan-Bradley", "tropical": "Tropical (no ayanamsha)"}
 # Tara Bala: the nine-star cycle counted from the birth star (the Moon's nakshatra) to the period lord's star.
 # Traditional names with gentle meanings; the 7th star is named by its number only.
 TARA = {1: ("Janma Tara", "the same star group as your Moon, so this period is personal and inward-looking"),
@@ -195,7 +196,7 @@ def ayanamsha_note(chart: dict, md: dict) -> dict:
     try:
         lahiri = get_ayanamsha(meta["julian_day"], "lahiri")
     finally:
-        set_sidereal_mode(name)                    # leave Swiss Ephemeris in the chart's own frame
+        set_sidereal_mode(name, meta["julian_day"])  # leave Swiss Ephemeris in the chart's own frame
     moon = (chart["grahas"]["Moon"]["longitude"] + meta["ayanamsha_value"] - lahiri) % 360
     same = next((p for p in vim.vimshottari_tree(moon, _birth(chart), max_level=1) if p.lord == md["lord"]), None)
     if same:

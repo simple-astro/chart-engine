@@ -45,7 +45,7 @@ def _make_cusp(house: int, longitude: float) -> Cusp:
 
 
 def compute_houses(jd: float, lat: float, lon: float, ayanamsha: str) -> Houses:
-    set_sidereal_mode(ayanamsha)
+    set_sidereal_mode(ayanamsha, jd)
     system = C.HOUSE_SYSTEM_FOR_AYANAMSHA[ayanamsha]
 
     # Placidus cusps come from Swiss Ephemeris in the sidereal frame.
