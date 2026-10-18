@@ -153,3 +153,19 @@ def test_chara_dasha_reading_explains_the_sign_as_a_temporary_lagna():
     assert "Upapada sign" in " ".join(r["sub"]["points"])            # Aquarius is the Upapada (from the earlier test)
     bad = ("death", "ruin", "disaster", "danger", "doom")
     assert not any(w in " ".join(" ".join(x["points"]) for x in r.values() if x).lower() for w in bad)
+
+
+def test_yogini_dasha_starts_from_the_birth_nakshatra():
+    from datetime import datetime, timezone
+    from core import yogini
+    c = client.post("/chart", json=OWNER_LIKE).json()
+    assert c["grahas"]["Moon"]["nakshatra"] == "Jyeshtha"  # 18 + 3 = 21 -> 5th yogini, Bhadrika
+    ps = yogini.yogini_dasha(c["grahas"]["Moon"]["longitude"], datetime(1987, 9, 1, 8, 50, tzinfo=timezone.utc))
+    assert ps[0]["yogini"] == "Bhadrika" and ps[0]["start"] < "1987-09-01"
+    assert [p["yogini"] for p in ps[:8]] == ["Bhadrika", "Ulka", "Siddha", "Sankata", "Mangala", "Pingala",
+                                             "Dhanya", "Bhramari"]
+    assert ps[8]["yogini"] == "Bhadrika"  # the 36-year cycle repeats
+    assert abs(sum(s["years"] for s in ps[1]["sub"]) - ps[1]["years"]) < 1e-9 and ps[1]["sub"][0]["yogini"] == "Ulka"
+    y = yogini.summary(c, datetime(2026, 10, 12, tzinfo=timezone.utc))
+    assert y["current"]["yogini"] == "Bhadrika" and y["next"]["yogini"] == "Ulka"
+    assert all(w not in p["text"].lower() for p in ps for w in ("death", "ruin", "disaster"))  # gentle wording
