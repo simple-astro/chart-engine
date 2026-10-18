@@ -121,15 +121,13 @@ def test_book_rules_and_the_working():
     assert tl[3]["ruler"] == "Jupiter" and tl[8]["ruler"] == "Saturn"     # jamam 4 and night's first
 
 
-def test_maandi_matches_the_calculator():
-    # jamakkolprasannam.com (Thiruvarur): Sunday day 12:00 Pisces 6°40', Sunday night 23:00 Gemini 1°07',
-    # Wednesday night 23:00 Virgo 10°06', Saturday day 12:00 Libra 18°37'; it uses Lahiri, we use KP (~0.1° apart)
-    TVR = (10.7661, 79.6384, "Asia/Kolkata")
-    for (d, h), want in ((("2026-10-18", 12), 336.67), (("2026-10-18", 23), 61.12), (("2026-10-21", 23), 160.1),
-                         (("2026-10-24", 12), 198.62), (("2026-10-18", 0), 84.17)):
-        y, mo, da = map(int, d.split("-"))
-        got = J.cast(at(y, mo, da, h, 15 if h == 0 else 0, 19 if h == 0 else 0, tz="Asia/Kolkata"), *TVR)["maandi"]["lon"]
-        assert abs((got - want + 180) % 360 - 180) < 0.2, (d, h, got, want)
+def test_maandi_is_the_degree_rising_when_maandi_rises():
+    # Divya Chakshu, Bhopal, Saturday night 18 Oct 2026 01:46: Maandi 90°54′ (Cancer), Udayam Taurus, so house 3.
+    # Saturday night Maandi rises 14 ghatis (of 30) after sunset; within about 1° (sunrise conventions differ).
+    c = J.cast(at(2026, 10, 18, 1, 46, tz="Asia/Kolkata"), 23.2599, 77.4126, "Asia/Kolkata")
+    assert c["maandi"]["sign"] == "Cancer" and abs(c["maandi"]["lon"] - 90.91) < 1.2, c["maandi"]
+    assert c["maandi"]["rises"] == "23:40"
+    assert dict(map(tuple, J.confirmation(c)))["Maandi from the Udayam (house)"] == "3"
 
 
 def test_lords_and_double_confirmation_are_information_only():

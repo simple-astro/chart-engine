@@ -13,9 +13,10 @@ Three points and eight "jama" planets are worked out from the clock, the Sun and
 - Jama planets (the outer planets): Sun, Mars, Jupiter, Mercury, Venus, Saturn, Moon and Paambu (the snake), 45°
   apart in that order. They turn backwards through the zodiac at 45° per jamam of 1½ hours. At 6:00 on the clock
   the weekday's lord stands at the very end of Pisces. Each is in the sign of its degree.
-- Maandi: the Sun's degree now, plus 12°, plus 24° for each part of the day (or night) before Gulika's part
-  (by day Saturday is the 1st part … Sunday the 7th; by night Tuesday the 1st … Wednesday the 7th), plus 180° at
-  night. Matches jamakkolprasannam.com to 0.01° (it uses Lahiri; ours is KP, about 0.1° apart). Shown as a point
+- Maandi: the degree rising on the eastern horizon when Maandi rises, the classical (Prashna Marga) way. Each day
+  and night is split into 30 ghatis; Maandi rises a set number of ghatis after sunrise (by day) or sunset (by
+  night) for each weekday. This is what Divya Chakshu shows (checked within about 1° at Bhopal, Saturday night
+  01:46); the quicker "Sun + 12° + 24° per part" shortcut some websites use can land a sign early. Shown as a point
   to take care around, never read for death.
 The transit planets (the inner planets) are the real sky at that moment; they decide strength. The reading rules
 below are deterministic: they never invent a fact, and the AI only explains what they found.
@@ -29,6 +30,7 @@ from core import constants as C
 from core.dignity import dignity
 from core.ephemeris import julian_day
 from core.grahas import compute_grahas
+from core.houses import compute_houses
 from core.panchang import _sidereal_sun_moon, compute_panchang
 
 JAMA = ["Sun", "Mars", "Jupiter", "Mercury", "Venus", "Saturn", "Moon", "Paambu"]
@@ -44,8 +46,8 @@ SUBHA_ARUDAM = {10, 11, 0, 1, 2, 3}      # Aquarius to Cancer: the Moon's half
 # Planets in the Udayam by how they rise: head first (success), back first (failure), both ways (delay).
 PLANET_RISE = {"Mercury": "head", "Jupiter": "head", "Venus": "head", "Rahu": "head", "Paambu": "head",
                "Sun": "back", "Mars": "back", "Saturn": "back", "Moon": "both", "Ketu": "both"}
-GULIKA_PART_DAY = {0: 7, 1: 6, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1}    # Vedic weekday (Sunday = 0) -> part of the day
-GULIKA_PART_NIGHT = {0: 3, 1: 2, 2: 1, 3: 7, 4: 6, 5: 5, 6: 4}
+MAANDI_GHATI_DAY = {0: 26, 1: 22, 2: 18, 3: 14, 4: 10, 5: 6, 6: 2}   # Vedic weekday (Sunday = 0) -> ghatis of 30
+MAANDI_GHATI_NIGHT = {0: 10, 1: 6, 2: 2, 3: 26, 4: 22, 5: 18, 6: 14}
 MOOLATRIKONA = {"Sun": 4, "Moon": 1, "Mars": 0, "Mercury": 5, "Jupiter": 8, "Venus": 6, "Saturn": 10}
 STRENGTH = {"exalted": 4, "moolatrikona": 3, "own": 2, "debilitated": 0}  # anything else 1
 CHALDEAN = ["Saturn", "Jupiter", "Mars", "Sun", "Venus", "Mercury", "Moon"]
@@ -156,8 +158,10 @@ def cast(when: datetime, lat: float, lon: float, tz: str) -> dict:
                for n, g in grahas.items()}
     hora_i = min(11, int(frac * 12)) + (12 if period == "night" else 0)
     vedic_wd = (start.astimezone(ZoneInfo(tz)).weekday() + 1) % 7  # the day (or night) began at this sunrise/sunset
-    part = (GULIKA_PART_DAY if period == "day" else GULIKA_PART_NIGHT)[vedic_wd]
-    maandi = _point(grahas["Sun"].longitude + (180 if period == "night" else 0) + 12 + 24 * (part - 1))
+    ghati = (MAANDI_GHATI_DAY if period == "day" else MAANDI_GHATI_NIGHT)[vedic_wd]
+    rises = start + (end - start) * ghati / 30
+    maandi = {**_point(compute_houses(julian_day(rises), lat, lon, AYANAMSHA).ascendant),
+              "rises": rises.astimezone(ZoneInfo(tz)).strftime("%H:%M")}
     hora = CHALDEAN[(CHALDEAN.index(DAY_LORD[vedic_wd]) + hora_i) % 7]
     return {"asked_at": when.isoformat(), "place": {"lat": lat, "lon": lon, "tz_name": tz}, "period": period,
             "period_start": start.isoformat(), "period_end": end.isoformat(),
