@@ -2,11 +2,11 @@
 (function () {
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const LABEL = { period: ['Period change', 'good'], sky: ['Sky change', ''] };
+  const LABEL = { period: ['Dasha change', 'good'], sky: ['Transit', 'tr'] };
   let S = {}, EL = null;
 
   window.renderUpcoming = async function (el, pid) {
-    EL = el; S = { pid, data: null, all: false, open: new Set(), days: {} };
+    EL = el; S = { pid, data: null, all: false, kind: 'all', open: new Set(), days: {} };
     if (pid == null) { el.hidden = true; return; }
     el.hidden = false;
     el.innerHTML = '<h3>Coming up for you</h3><div class="hint">Looking ahead…</div>';
@@ -73,10 +73,14 @@
   }
 
   function paint() {
-    const items = S.data.items, shown = S.all ? items : items.slice(0, 3);
+    // One list in date order; the chips narrow it to Dasha changes or transits. Indexes stay those of S.data.items.
+    const all = S.data.items.map((it, i) => [it, i]), kinds = new Set(S.data.items.map(it => it.kind));
+    const items = all.filter(([it]) => S.kind === 'all' || it.kind === S.kind), shown = S.all ? items : items.slice(0, 5);
+    const chip = (k, t) => `<button type="button" data-upk="${k}" aria-pressed="${S.kind === k}">${t}</button>`;
     EL.innerHTML = `<h3>Coming up for you</h3>
-      ${items.length ? `<ul class="uplist">${shown.map(item).join('')}</ul>
-        ${items.length > 3 ? `<button type="button" class="linkbtn upmore" id="upmore">${S.all ? 'Show less' : `Show all ${items.length}`}</button>` : ''}`
+      ${kinds.size > 1 ? `<div class="upchips" role="group" aria-label="Show">${chip('all', 'All')}${chip('period', 'Dasha')}${chip('sky', 'Transit')}</div>` : ''}
+      ${items.length ? `<ul class="uplist">${shown.map(([it, i]) => item(it, i)).join('')}</ul>
+        ${items.length > 5 ? `<button type="button" class="linkbtn upmore" id="upmore">${S.all ? 'Show less' : `Show all ${items.length}`}</button>` : ''}`
         : '<p class="gsub">No big changes in the next three months — a steady stretch. Use the good days below.</p>'}
       <p class="hint">${esc(S.data.note)}</p>`;
   }
@@ -102,7 +106,8 @@
     if (!EL || !EL.contains(e.target) || !S.data) return;
     const t = e.target.closest('button');
     if (!t) return;
-    if (t.id === 'upmore') { S.all = !S.all; paint(); }
+    if (t.dataset.upk) { S.kind = t.dataset.upk; S.all = false; paint(); }
+    else if (t.id === 'upmore') { S.all = !S.all; paint(); }
     else if (t.dataset.ready !== undefined) { const i = +t.dataset.ready; S.open.has(i) ? S.open.delete(i) : S.open.add(i); paint(); }
     else if (t.dataset.days !== undefined) { findDays(+t.dataset.days); }
     else if (t.dataset.ask !== undefined) { window.askSukh && window.askSukh(S.data.items[+t.dataset.ask].ask); }

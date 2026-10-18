@@ -4,9 +4,10 @@ Two kinds, labelled honestly:
 - Period changes ("strong"): the next Dasha sub-periods, and any Antardasha / Mahadasha change within a year.
   For each we say which life matters the new period supports, by the same Promise -> Dasha rules the dated-event
   backtest supports (core.kp_predict).
-- Sky changes ("hint"): in the next 90 days, only the slow-planet moves that matter to this person — Saturn and
-  Jupiter changing sign (read from the natal Moon: Sade Sati, Ashtama Shani, Jupiter's gochara), and their
-  Dasha lords changing sign or turning direct. Exact-day transit timing tested at chance, so these stay hints.
+- Transit changes ("hint"): in the next 90 days, Jupiter, Saturn, Rahu and Ketu changing sign (read by house from the
+  Lagna, and Saturn and Jupiter also from the natal Moon: Sade Sati, Ashtama Shani, Jupiter's gochara), Jupiter and
+  Saturn turning direct, and the person's Dasha, Bhukti and Antar lords (any planet but the Moon) changing sign or
+  direction. Exact-day transit timing tested at chance, so these stay hints.
 """
 from __future__ import annotations
 
@@ -14,7 +15,10 @@ from datetime import date, datetime, time, timedelta, timezone
 from functools import lru_cache
 from zoneinfo import ZoneInfo
 
+
 from core import kp_predict as K
+from core.ephemeris import julian_day
+from core.grahas import compute_grahas
 from core.transit_scan import scan_events
 
 GOOD_FOR = {  # life matter -> (how people say it, what to do in a good stretch)
@@ -56,7 +60,12 @@ JUPITER_GOOD = {2, 5, 7, 9, 11}  # Jupiter's classical good houses from the Moon
 SKY_DO = {"Saturn": "take on less, finish what you start, and help someone who works hard for little",
           "Jupiter": "learn something, ask a mentor, and respect teachers and elders",
           "Rahu": "avoid shortcuts and too much screen time; stay grounded",
-          "Ketu": "simplify and let go of what's done"}
+          "Ketu": "simplify and let go of what's done",
+          "Mercury": "check papers and messages twice, and keep promises small",
+          "Venus": "keep relationships kind and spending sensible",
+          "Mars": "channel energy into work and exercise, and avoid quarrels",
+          "Sun": "respect seniors and keep your word at work"}
+SLOW = ("Jupiter", "Saturn", "Rahu", "Ketu")
 
 
 def _ord(n: int) -> str:
@@ -140,26 +149,50 @@ def period_items(chart: dict, today: date, horizon_days: int = 90, chapter_days:
 def _sky(start: date, days: int, ayanamsha: str, node_type: str) -> tuple:
     """The slow-planet events for everyone in a window (same for all charts with these settings)."""
     evs = scan_events(datetime.combine(start, time(0), timezone.utc), days=days, ayanamsha=ayanamsha, node_type=node_type)
-    return tuple(e for e in evs if e.planet in ("Jupiter", "Saturn", "Rahu", "Ketu") and e.type in ("ingress", "station"))
+    return tuple(e for e in evs if e.planet != "Moon" and e.type in ("ingress", "station"))
 
 
-def sky_items(chart: dict, today: date, lords: dict, tz: ZoneInfo, days: int = 90) -> list[dict]:
+def sky_items(chart: dict, today: date, lords, tz: ZoneInfo, days: int = 90) -> list[dict]:
+    """``lords``: {level: lord}, or a function giving them for a moment (so a later event uses that day's periods)."""
     L, moon = chart["lagna"]["sign_index"], chart["grahas"]["Moon"]["sign_index"]
-    role = {lords[k]: n for k, n in (("antar", "Antardasha"), ("maha", "Mahadasha")) if lords.get(k)}
+    ay, nodes = chart["meta"].get("ayanamsha", "krishnamurti"), chart["meta"].get("node_type", "mean")
+    def roles_at(t) -> dict[str, list[str]]:
+        lv, out = (lords(t) if callable(lords) else lords), {}
+        for k, n in (("maha", "Dasha"), ("antar", "Bhukti"), ("praty", "Antar")):
+            if lv.get(k):
+                out.setdefault(lv[k], []).append(n)
+        return out
+    events = [e for e in _sky(today, days, ay, nodes) if e.exact_at_utc.astimezone(tz).date() > today]
+    # Rahu and Ketu always change sign together: one item for the pair.
+    node_days = {e.exact_at_utc.date() for e in events if e.type == "ingress" and e.planet == "Ketu"}
     items = []
-    for e in _sky(today, days, chart["meta"].get("ayanamsha", "krishnamurti"), chart["meta"].get("node_type", "mean")):
-        when = e.exact_at_utc.astimezone(tz).date()
-        if when <= today:
-            continue
-        p, mine = e.planet, role.get(e.planet)
+    for e in events:
+        p = e.planet
+        if p == "Ketu" and e.type == "ingress" and e.exact_at_utc.date() in node_days and any(
+                x.planet == "Rahu" and x.type == "ingress" and x.exact_at_utc.date() == e.exact_at_utc.date() for x in events):
+            continue  # told with Rahu
+        when, roles = e.exact_at_utc.astimezone(tz).date(), roles_at(e.exact_at_utc)
+        mine = " and ".join(roles.get(p, [])) or None
+        if not mine and p not in SLOW:
+            continue  # a fast planet matters here only as a period lord
         lord_of = f"{p}, your {mine} lord," if mine else p
-        area = None
+        area, situation = None, None
         if e.type == "station":
-            if not mine or e.detail["direction"] != "direct":
+            d = e.detail["direction"]
+            if p in ("Rahu", "Ketu"):
+                continue
+            if d == "retrograde" and (p in ("Jupiter", "Saturn") or not mine):
                 continue  # a retrograde Jupiter or Saturn carries no transit meaning (Taneja); its return does
-            title = f"{p}, your {mine} lord, turns direct"
-            meaning = "Its pause ends and its effects in your life move forward again."
-            situation = "lord_moves"
+            h = (compute_grahas(julian_day(e.exact_at_utc), ay, nodes)[p].sign_index - L) % 12 + 1
+            area = HOUSE[h]
+            if d == "direct":
+                title = f"{lord_of} turns direct"
+                meaning = (f"Its pause ends: {HOUSE[h]} (your {_ord(h)} house) move forward again." if not mine
+                           else "Its pause ends and its effects in your life move forward again.")
+            else:
+                title = f"{lord_of} turns retrograde"
+                meaning = (f"Go over {HOUSE[h]} (your {_ord(h)} house) twice for a few weeks: delays, not denials.")
+            situation = "lord_moves" if mine else None
         else:
             to = e.detail["to_sign_index"]
             h, hm = (to - L) % 12 + 1, (to - moon) % 12 + 1
@@ -168,19 +201,27 @@ def sky_items(chart: dict, today: date, lords: dict, tz: ZoneInfo, days: int = 9
                 title, meaning = SATURN_MOON[hm]
                 meaning = meaning[0].upper() + meaning[1:] + "."
                 situation = {12: "sade_sati_begins", 1: "sade_sati_middle", 2: "sade_sati_last", 8: "ashtama_shani"}.get(hm)
-            elif p == "Jupiter" and (mine or hm == 1 or hm in JUPITER_GOOD):
+            elif p == "Jupiter":
                 title = f"{lord_of} moves into your {_ord(h)} house"
                 meaning = (f"{HOUSE[h][0].upper() + HOUSE[h][1:]} get Jupiter's {'protection' if h in (6, 8, 12) else 'support'}"
                            + (" — and it is a good position from your Moon." if hm in JUPITER_GOOD else
                               " — Jupiter passes over your Moon: a year of growth, keep your weight and spending in check." if hm == 1
                               else "."))
                 situation = "jupiter_over_moon" if hm == 1 else "jupiter_moves"
+            elif p == "Rahu":
+                hk = (to + 6 - L) % 12 + 1
+                title = f"{lord_of} moves into your {_ord(h)} house, Ketu into your {_ord(hk)}"
+                meaning = (f"For about 18 months, {HOUSE[h]} pull at you while {HOUSE[hk]} ask you to let go."
+                           + (" Ketu is one of your period lords too." if roles.get("Ketu") else ""))
+                situation = "lord_moves" if mine else None
             elif mine:
                 title = f"{lord_of} moves into your {_ord(h)} house"
-                meaning = f"Your {mine.lower()} lord now works through {HOUSE[h]}."
+                meaning = f"Your {mine} lord now works through {HOUSE[h]}."
                 situation = "lord_moves"
-            else:
-                continue
+            else:  # Saturn elsewhere, or Ketu alone
+                title = f"{p} moves into your {_ord(h)} house"
+                meaning = (f"{HOUSE[h][0].upper() + HOUSE[h][1:]} need patience and steady work for about 2½ years."
+                           if p == "Saturn" else f"{HOUSE[h][0].upper() + HOUSE[h][1:]} ask you to simplify and let go.")
             if e.detail.get("direction") == "retrograde" and p not in ("Rahu", "Ketu"):  # the nodes always move backwards
                 meaning += " It is moving backwards, so this settles when it turns direct."
         items.append({"kind": "sky", "confidence": "hint", "date": when.isoformat(), "planet": p, "title": title,
@@ -221,11 +262,11 @@ def attach_checklists(items: list[dict], done: set[str]) -> None:
 def upcoming(profile: dict, today: date, tz_name: str) -> dict:
     from app.transit_view import dasha_on
     chart, tz = profile["chart"], ZoneInfo(tz_name)
-    lords = {x["level"]: x["lord"] for x in dasha_on(chart, datetime.combine(today, time(12), tz))}
     dob = (profile.get("request") or {}).get("dob")
     age = (today - date.fromisoformat(dob)).days / 365.25 if dob else None
-    items = period_items(chart, today, age=age) + sky_items(chart, today, lords, tz)
+    lords_at = lambda t: {x["level"]: x["lord"] for x in dasha_on(chart, t)}
+    items = period_items(chart, today, age=age) + sky_items(chart, today, lords_at, tz)
     items.sort(key=lambda x: (x["date"], x["kind"] != "period"))
     return {"today": today.isoformat(), "items": items,
-            "note": "Period changes follow your Dasha (well supported in our tests). Sky changes are hints: exact days "
-                    "matter less than the period you are in."}
+            "note": "Dasha changes are strong signals (well supported in our tests). Transits are hints: the period you "
+                    "are in matters more than the exact day."}

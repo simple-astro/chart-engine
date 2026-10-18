@@ -74,7 +74,7 @@ def test_saturn_from_the_moon_reads_as_sade_sati_and_nodes_never_turn_direct():
     titles = [i["title"] for i in its]
     assert "Sade Sati begins" in titles
     rahu = next(i for i in its if i["planet"] == "Rahu")
-    assert "Mahadasha lord" in rahu["title"] and "backwards" not in rahu["meaning"]
+    assert "Dasha lord" in rahu["title"] and "Ketu into" in rahu["title"] and "backwards" not in rahu["meaning"]
     assert not any(i["planet"] == "Mars" for i in its)  # not a dasha lord, not a slow planet
 
 
@@ -130,3 +130,30 @@ def test_good_days_inside_a_window(client):
     assert r.status_code == 200 and len(r.json()["dates"]) <= 3
     assert all(d["verdict"] in ("excellent", "good") for d in r.json()["dates"])
     assert client.get(f"/profiles/{pid}/upcoming/days?activity=lottery&start=2026-11-01").status_code == 422
+
+
+def test_transits_cover_period_lords_and_every_slow_planet():
+    from datetime import datetime, timezone
+    from zoneinfo import ZoneInfo
+    from core.transit_scan import TransitEvent
+    c = with_extras(TestClient(app).post("/chart", json=H1).json())
+    t = datetime(2027, 1, 1, tzinfo=timezone.utc)
+    fake = (TransitEvent("station", "Mercury", t, {"direction": "retrograde"}),        # Bhukti lord: shown
+            TransitEvent("station", "Venus", t, {"direction": "retrograde"}),          # not a lord: skipped
+            TransitEvent("station", "Jupiter", t, {"direction": "retrograde"}),        # Jupiter retrograde: skipped
+            TransitEvent("station", "Saturn", t, {"direction": "direct"}),             # slow planet: shown
+            TransitEvent("ingress", "Rahu", t, {"to_sign_index": 9, "direction": "retrograde"}),
+            TransitEvent("ingress", "Ketu", t, {"to_sign_index": 3, "direction": "retrograde"}))
+    old = upcoming._sky
+    upcoming._sky = lambda *a: fake
+    try:
+        its = upcoming.sky_items(c, date(2026, 10, 11), lambda when: {"maha": "Saturn", "antar": "Mercury"},
+                                 ZoneInfo("UTC"))
+    finally:
+        upcoming._sky = old
+    titles = [i["title"] for i in its]
+    assert "Mercury, your Bhukti lord, turns retrograde" in titles
+    assert any(t.startswith("Saturn, your Dasha lord, turns direct") for t in titles)
+    assert not any(i["planet"] in ("Venus", "Jupiter") for i in its)
+    nodes = [i for i in its if i["planet"] in ("Rahu", "Ketu")]
+    assert len(nodes) == 1 and "Ketu into your" in nodes[0]["title"]  # the pair is one item
