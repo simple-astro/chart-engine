@@ -122,19 +122,6 @@
     if (stel.length) flags.push(`${list(stel)} share a house with their star lord, which strongly links their results to that house.`);
     out.push({ title: 'Strengths & points to note', items: flags.length ? flags : ['No standout flags.'] });
 
-    // 6. Current daśā
-    const now = Date.now(), cur = (c.dasha || []).find(d => now >= new Date(d.start) && now < new Date(d.end));
-    if (cur) {
-      const sub = (cur.children || []).find(d => now >= new Date(d.start) && now < new Date(d.end));
-      const desc = n => {
-        const sig = (sg.by_planet[n] || {}).houses || [], own = ownedBy(n);
-        return `${n} (${PLANET[n]}) — placed in H${g[n].house}, rules H${own.join(', H') || '—'}, signifies ${sig.map(x => 'H' + x).join(', ') || '—'}.`;
-      };
-      const fd = s => new Date(s).toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
-      const items = [`<b>Mahā daśā ${cur.lord}</b> (${fd(cur.start)} – ${fd(cur.end)}): ${desc(cur.lord)} Themes of those houses dominate this period.`];
-      if (sub) items.push(`<b>Antar daśā ${sub.lord}</b> (${fd(sub.start)} – ${fd(sub.end)}): ${desc(sub.lord)} Expect the sub-period's events to blend ${cur.lord} and ${sub.lord} themes.`);
-      out.push({ title: 'Current period (Vimśottarī daśā)', items });
-    }
     return out;
   };
 })();

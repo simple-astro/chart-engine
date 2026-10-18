@@ -17,7 +17,7 @@
   const SHORT = ['Very low', 'Low', 'A bit low', 'Okay', 'A bit good', 'Good', 'Very good'];
   const group = v => v < 0 ? 'unpleasant' : v > 0 ? 'pleasant' : 'neutral';
   const SCALE = ['Very unpleasant', 'Unpleasant', 'Slightly unpleasant', 'Neutral', 'Slightly pleasant', 'Pleasant', 'Very pleasant'];
-  let S = {}, EL = null;
+  let S = {}, EL = null, OPEN = false;  // the card starts collapsed; it stays open once the user opens it
 
   const fresh = pid => ({ pid, opts: null, v: null, feelings: [], causes: [], scope: 'now', note: '', logs: [], share: false,
     reply: null, pat: null, showPat: false, busy: false, err: '' });
@@ -106,7 +106,8 @@
 
   function paint(keepFocus) {
     if (!EL) return;
-    EL.innerHTML = `<h3>How are you feeling? <small>state of mind</small></h3>
+    EL.innerHTML = `<details class="mdbox"${OPEN ? ' open' : ''}><summary><h3>How are you feeling? <small>state of mind</small></h3>
+      ${S.logs.length ? `<span class="mdlast">${S.logs.length} logged</span>` : ''}</summary>
       ${S.reply ? replyView() : form()}
       ${strip()}
       <div class="mdfoot">
@@ -114,7 +115,8 @@
         ${patView()}
         <label class="mdshare"><input type="checkbox" id="mdshare"${S.share ? ' checked' : ''}> Let Astropositivism use my mood log in chat</label>
         <small class="hint">Your mood log is private to you.${S.logs.length ? ' <button type="button" class="linkbtn" id="mddel">Delete my mood log</button>' : ''}</small>
-      </div>`;
+      </div></details>`;
+    EL.querySelector('.mdbox').addEventListener('toggle', e => { OPEN = e.target.open; });
     if (keepFocus) { const f = EL.querySelector('#' + keepFocus); if (f) f.focus(); }
   }
 

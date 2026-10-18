@@ -454,8 +454,6 @@
           : `${weak} rules an area of your life that needs care right now.`;
       remedies.push({ planet: weak, title: `To strengthen ${weak}`, why, text: REMEDY[weak] });
     }
-    remedies.push({ planet: lag, title: 'Your life stone', why: `${lag} rules your ${sign} ascendant — it protects your health, confidence and direction.`,
-      text: `${lk.gem}, worn on the ${lk.wear}. Try it for a few days first and consult before buying a costly stone.` });
 
     return { period, areas: lifeAreas, remedies, lucky: { day: lk.day, color: lk.color, num: lk.num }, rising: sign, moon: x.g.Moon.sign };
   };
@@ -470,7 +468,6 @@
       ['Lucky number', String(lk.num), helpers.length ? 'Also good: ' + helpers.map(p => LUCK[p].num).join(', ') : ''],
       ['Lucky day', lk.day, helpers.length ? 'Also good: ' + [...new Set(helpers.map(p => LUCK[p].day))].join(', ') : ''],
       ['Lucky colour', lk.color, helpers.length ? 'Also: ' + helpers.map(p => LUCK[p].color).join('; ') : ''],
-      ['Life stone', lk.gem.split(' (')[0], `For ${lag}, your ascendant lord`],
     ];
     const gems = [
       `<b>Life stone — ${lk.gem}</b> for ${lag}, ruler of your ${sign} ascendant: supports health, confidence and overall direction. Wear on the ${lk.wear}.`,

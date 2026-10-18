@@ -23,10 +23,10 @@
     const p = g.period;
     const hero = `<section class="card sukh">
         <div class="sukh-id"><img src="/static/sun.svg" alt="" width="52" height="52"><div><b>Astropositivism</b><span class="ai">AI Jyotishi</span>
-          <small>Built on the Nadi method</small></div></div>
+          <small>Trained by the Astropositivism Team</small></div></div>
         <h2>Namaste, ${first}.</h2>
         ${p ? `<p class="lead">You are in your <b>${p.md} period</b> until ${p.until} <span class="badge ${p.verdict.cls}">${p.verdict.label}</span></p>
-          <p>${esc(p.text)} ${esc(p.now)}</p>
+          <p><button type="button" class="linkbtn" data-goto="dasha">What this period means for you →</button></p>
           ${p.focus.length ? `<div class="focusrow"><span>In focus now</span>${p.focus.map(f => `<span class="fchip">${esc(f)}</span>`).join('')}</div>` : ''}`
         : '<p class="lead">Here is what your chart says, and what you can do about it.</p>'}
         <div class="cta"><button type="button" class="btn" data-ask="">Ask Astropositivism anything</button>
@@ -70,6 +70,7 @@
         <div class="dd tdd"><div><h5 class="ok">Do today</h5><ul>${li(d.do)}</ul></div><div><h5 class="bad">Avoid today</h5><ul>${li(d.avoid)}</ul></div></div>
       </div><div class="tcol">
         <div class="gtimes">${best}<span class="tbad"><small>Rahu Kaal — avoid</small><b>${t(d.rahu_kalam[0])} – ${t(d.rahu_kalam[1])}</b></span></div>
+        <button type="button" class="linkbtn tall" data-goto="times">All of today’s times and the week ahead →</button>
         <div class="tchips">
           <div title="${esc(c.why)}"><small>Wear</small><b><i class="tsw" style="background:${c.hex}"></i>${esc(cap(c.name))}</b>${(c.avoid_list || []).length ? `<em>avoid ${esc(c.avoid_list.map(x => x.name).join(', '))}</em>` : ''}</div>
           <div title="Traditional number of ${esc(d.number.planet)}"><small>Number</small><b>${d.number.value}</b><em>${esc(d.number.planet)}</em></div>
@@ -79,8 +80,6 @@
       </div></div>
       <div class="tfoot"><small class="hint">Times for ${esc(opt.place)}. Colour, number and direction are traditional associations, not promises.</small>
         <button type="button" class="linkbtn" id="tloc">${opt.here ? 'Use birthplace times' : 'Use my current location'}</button></div>
-      ${opt.week && opt.week.length > 1 ? `<div class="gweek"><h5>This week</h5><div class="gwd">${opt.week.map((w, i) => `<button type="button" data-goto="muhurat" title="${esc(w.weekday)}: ${esc(w.overall.label)}">
-        <span>${i ? esc(w.weekday.slice(0, 3)) : 'Today'}</span><b>${+w.date.slice(8)}</b><span class="mdot ${w.overall.verdict}"></span></button>`).join('')}</div>
-        <button type="button" class="linkbtn" data-goto="muhurat">See the best days for travel, property, marriage…</button></div>` : ''}`;
+`;
   };
 })();

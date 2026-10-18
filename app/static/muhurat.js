@@ -19,6 +19,8 @@
 
   window.renderMuhurat = function (el, data, state) {
     const tz = data.tz_name, days = data.days, day = days[state.sel] || days[0];
+    // Today's colours and star are already in "Today for you" above; other days show them here.
+    const isToday = state.sel === 0 && state.today;
     const t = iso => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: tz });
     const span = w => w ? `${t(w[0])} – ${t(w[1])}` : '';
     const dShort = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString([], { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -37,6 +39,8 @@
         <ul>${a.why.map(w => `<li class="${w.good ? 'ok' : w.bad ? 'bad' : ''}"><i>${w.good ? '✓' : w.bad ? '✕' : '•'}</i>${esc(w.text)}</li>`).join('')}</ul>
         ${a.note ? `<p class="mnote">${esc(a.note)}</p>` : ''}</details>`).join('');
 
+    // When every activity gets the same verdict, one line says it; the rows open on request.
+    const same = day.activities.length > 1 && day.activities.every(a => a.verdict === day.activities[0].verdict) ? day.activities[0] : null;
     const w = day.windows, rise = +new Date(w.sunrise), set = +new Date(w.sunset), len = set - rise;
     const pct = iso => Math.max(0, Math.min(100, (+new Date(iso) - rise) / len * 100));
     const bars = w.choghadiya.map(c => `<span class="cg ${c.quality}" title="${esc(c.name)} · ${esc(CHOG[c.quality])} · ${span([c.start, c.end])}"></span>`).join('');
@@ -85,7 +89,7 @@
         ${cell('Naming letters', P.naming.letters.map((x, i) => i + 1 === P.naming.pada ? `<u>${esc(x)}</u>` : esc(x)).join(' · '), `pada ${P.naming.pada} at sunrise is underlined`)}
         ${cell('Brahma muhurta', span(w.brahma))}
         ${cell('Sunrise · sunset', `${t(w.sunrise)} · ${t(w.sunset)}`)}
-      </div><p class="mnote">Worked out with the KP ayanamsa, like the rest of the app. Printed panchangs use Lahiri, so their Nakshatra and Yoga can end 10–20 minutes later.</p></details>`;
+      </div></details>`;
     }
 
     const grid = `<div class="scroll"><table class="mgrid"><thead><tr><th>Activity</th>${days.map((d, i) =>
@@ -101,14 +105,18 @@
       <section class="msum">
         <div class="msum-h"><h3>${esc(dLong(day.date))}</h3><span class="badge ${BADGE[day.overall.verdict]}">Overall: ${esc(day.overall.label)}</span></div>
         <div class="mpan">${limb('Tithi', day.tithi.name, 'tithi')}${limb('Nakshatra', day.nakshatra, 'nakshatra')}${limb('Yoga', day.yoga, 'yoga')}${limb('Karana', day.karana, 'karana')}</div>
-        ${personal.length ? `<div class="mpers">${personal.join('<span class="sepdot">·</span>')}</div>` : ''}
-        ${day.colours ? `<div class="mcol"><div><small>Wear</small><span class="mcc"><i style="background:${day.colours.wear.hex}"></i><b>${esc(day.colours.wear.name)}</b></span>
+        ${personal.length && !isToday ? `<div class="mpers">${personal.join('<span class="sepdot">·</span>')}</div>` : ''}
+        ${day.colours && !isToday ? `<div class="mcol"><div><small>Wear</small><span class="mcc"><i style="background:${day.colours.wear.hex}"></i><b>${esc(day.colours.wear.name)}</b></span>
             ${day.colours.also_good.length ? `<em>also good: ${day.colours.also_good.map(c => esc(c.name)).join(', ')}</em>` : ''}<em>${esc(day.colours.wear.why)}</em></div>
           ${day.colours.avoid.length ? `<div><small>Avoid</small>${day.colours.avoid.map(c => `<span class="mcc" title="${esc(c.why)}"><i style="background:${c.hex}"></i>${esc(c.name)}</span><em>${esc(c.why)}</em>`).join('')}</div>` : ''}</div>` : ''}
       </section>
-      <h3 class="mh3">${state.sel === 0 && state.today ? 'Is today' : 'Is this day'} good for…</h3><div class="macts">${acts}</div>
-      <h3 class="mh3">Best and worst times of the day</h3>${timeline}
+      <h3 class="mh3">${state.sel === 0 && state.today ? 'Is today' : 'Is this day'} good for…</h3>${same ? `<details class="mall"><summary><span class="badge ${BADGE[same.verdict]}">${esc(same.label)}</span>
+        <span>${same.verdict === 'avoid' ? 'Not a day to start any of these' : 'The same for all of these'}: ${esc(day.activities.map(a => a.name.toLowerCase()).join(', '))}.</span>
+        <em>Show each</em></summary><div class="macts">${acts}</div></details>` : `<div class="macts">${acts}</div>`}
+      <h3 class="mh3" id="mtimes">Best and worst times of the day</h3>${timeline}
       ${full}
-      <h3 class="mh3">Find a good day this week</h3>${grid}`;
+      <details class="mfull mweek" ${el.dataset.week === '1' ? 'open' : ''}><summary>Find a good day this week</summary>${grid}</details>`;
+    // Closed until tapped; stays open while the user picks days from it (each pick re-renders).
+    el.querySelector('.mweek').addEventListener('toggle', e => { el.dataset.week = e.target.open ? '1' : ''; });
   };
 })();

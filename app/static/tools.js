@@ -1,4 +1,4 @@
-// "Plan & decide" tools on the guidance page: Muhurat Finder, KP Prashna (yes/no by number) and Jamakkol Prashna.
+// "Plan & decide" tools: Muhurat Finder (Timing › Good dates), KP Prashna and Jamakkol Prashna (Studies › Prashna).
 (function () {
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -96,7 +96,7 @@
     const jkSaved = () => { try { const h = JSON.parse(localStorage.getItem('sj_jk_place') || 'null'); return h && isFinite(h.lat) && h.tz_name ? h : null; } catch (e) { return null; } };
     let jkHere = jkSaved() || herePlace();
 
-    el.innerHTML = `<section class="card gcard tool">
+    const finder = `<section class="card gcard tool">
         <h3>Find a good date</h3>
         <p class="gsub">Pick what you’re planning — I’ll check every day ahead against your chart.</p>
         <label class="tl-lab" for="ff-act">I’m planning</label>
@@ -105,8 +105,8 @@
           `<button type="button" role="radio" aria-checked="${!i}" class="${i ? '' : 'on'}" data-days="${d}">${d} days</button>`).join('')}</div>
         <button type="button" class="btn" id="ff-go">Find dates</button>
         <div id="ff-out" aria-live="polite"></div>
-      </section>
-      <section class="card gcard tool">
+      </section>`;
+    const prashna = `<section class="card gcard tool">
         <h3>Yes or no? <small>KP Prashna</small></h3>
         <p class="gsub">Hold your question in mind, then type the first number from 1 to 249 that comes to you.</p>
         <label class="tl-lab" for="hq-kind">My question is about</label>
@@ -134,12 +134,14 @@
         <div id="jk-out" aria-live="polite"></div>
         <div id="jk-asks"></div>
       </section>`;
+    // The date finder lives in Timing; the two Prashna tools in Studies › Prashna (or all here if no second place)
+    if (ctx.prashnaEl) { el.innerHTML = finder; ctx.prashnaEl.innerHTML = prashna; } else el.innerHTML = finder + prashna;
 
     let days = 30;
-    el.querySelector('.seg').addEventListener('click', e => {
+    $('ff-go').closest('section').querySelector('.seg').addEventListener('click', e => {
       const b = e.target.closest('[data-days]'); if (!b) return;
       days = +b.dataset.days;
-      el.querySelectorAll('.seg button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', String(x === b)); });
+      $('ff-go').closest('section').querySelectorAll('.seg button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', String(x === b)); });
     });
 
     $('ff-go').onclick = async () => {
