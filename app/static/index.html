@@ -2355,7 +2355,8 @@ let TS={base:null,baseChart:null,off:0};
 const tobMin=t=>{const [h,m]=t.split(':').map(Number);return h*60+m},minTob=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')+':00';
 const t12s=t=>{const [h,m]=t.split(':').map(Number);return (h%12||12)+':'+String(m).padStart(2,'0')+(h<12?' AM':' PM')};
 function nowLords(c){const t=Date.now(),f=l=>(l||[]).find(d=>t>=new Date(d.start)&&t<new Date(d.end));const a=f(c.dasha),b=a&&f(a.children),p=b&&f(b.children);return [a,b,p].filter(Boolean).map(x=>x.lord).join(' › ')}
-function paintSlide(c,req){const box=$('tslide');if(!box)return;if(!req||req.tob_unknown){box.innerHTML='';return}
+const TS_ON=false;  // switched off for now (owner, 2026-10-18); flip to true to bring the slider back
+function paintSlide(c,req){const box=$('tslide');if(!box)return;if(!TS_ON||!req||req.tob_unknown){box.innerHTML='';return}
   const btn=d=>'<button type="button" data-ts="'+d+'">'+(d>0?'+':'−')+Math.abs(d)+'</button>';
   if(!TS.off){box.innerHTML='<div class="tsrow"><span>Try another birth time</span><span class="tsbtns">'+btn(-4)+btn(-1)+btn(1)+btn(4)+'</span><small class="hint">minutes</small></div>';return}
   const B=TS.baseChart,cu=(x,i)=>x.houses[i].kp.sub_lord,row=(k,a,b)=>'<tr'+(a!==b?' class="chg"':'')+'><td>'+k+'</td><td>'+esc(a)+'</td><td>'+esc(b)+'</td></tr>';
