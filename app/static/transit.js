@@ -81,7 +81,7 @@
         <section id="trev" class="trev" aria-live="polite"></section>
         <div class="trmain">
           <div><h4 class="trh">Transits over your chart</h4><div class="chart trchart" id="trchart"></div>
-            <p class="hint">Houses counted from your ${esc(d.lagna_sign)} lagna. Highlighted planets run your daśā. R = retrograde.</p></div>
+            <p class="hint">Inner chart: your birth planets. Outer ring: the planets on this day, in the same houses from your ${esc(d.lagna_sign)} lagna. Gold numbers mark your running daśā lords (1 Mahadasha, 2 Antardasha, 3 Pratyantar). ᴿ = retrograde.</p></div>
           <div><h4 class="trh">How it lines up with your chart</h4><ul class="trnotes">${notes}</ul></div>
         </div>
         <h4 class="trh">Planetary transits</h4>
@@ -90,7 +90,16 @@
           <th class="c" title="Ashtakavarga score of that sign (28+ strong)">SAV</th><th>Natal contact</th></tr></thead><tbody>${rows}</tbody></table></div>
         <p class="hint">Positions at ${esc(d.time)} (${esc(d.tz)}). House columns: from your lagna, from your Moon, and in the Bhava Chalit (cusp) chart.</p>
         <section id="trsig"></section>`;
-      window.drawNorth(body.querySelector('#trchart'), d.lagna_index, byH);
+      // The composite chart (birth chart inside, transits around it), when this chart's birth data is on screen.
+      const natal = typeof lastChart !== 'undefined' && lastChart && String(currentId) === String(profileId) ? lastChart : null;
+      if (natal && window.drawComposite) {
+        const inner = {}, outer = {}, L = d.lagna_index;
+        Object.entries(natal.grahas).forEach(([n, g]) => { const h = (g.sign_index - L + 12) % 12;
+          (inner[h] = inner[h] || []).push({ t: ABBR[n], d: Math.floor(g.degrees_in_sign) + '°', p: n, r: g.retrograde && n !== 'Rahu' && n !== 'Ketu' }); });
+        const lv = s => [['Maha', 1], ['Antar', 2], ['Pratyantar', 3]].filter(([k]) => (s || '').includes(k)).map(([, n]) => n).join(',');
+        d.planets.forEach(p => { (outer[p.h_lagna - 1] = outer[p.h_lagna - 1] || []).push({ t: ABBR[p.planet], d: Math.floor(p.deg) + '°', r: p.retrograde, lv: lv(p.dasha) }); });
+        window.drawComposite(body.querySelector('#trchart'), L, inner, outer, null);
+      } else window.drawNorth(body.querySelector('#trchart'), d.lagna_index, byH);
     }
 
     const STATUS = { strong: 'good', open: 'good', not_now: 'mute', not_promised: 'warn' };

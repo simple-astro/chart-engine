@@ -1532,7 +1532,7 @@ const FIND=[
   ['Placement, aspects and conjunctions','placement aspects drishti conjunctions arrows lords links','chart/links','Vedic'],
   ['Planets','planets positions nakshatra degree star lord sun moon mars mercury jupiter venus saturn rahu ketu','chart/planets','Vedic'],
   ['Yogas','yoga yogas raja dhana combinations','chart/yogas','Vedic'],
-  ['Divisional charts','divisional varga d9 navamsa d10 dasamsa','chart/vargas','Vedic'],
+  ['Divisional charts (D2–D60, from lagna or Moon)','divisional varga d9 navamsa d10 dasamsa d2 d3 d7 d12 d16 d20 d24 d27 d30 d40 d45 d60 from the moon','chart/vargas','Vedic'],
   ['Ashtakavarga','ashtakavarga points bindu sav','chart/akv','Vedic'],
   ['Lord exchange','lord exchange parivartana','chart/xchg','Vedic'],
   ['Your life areas','life areas career money love marriage health home family lesson','chart/about','Vedic'],
@@ -1545,7 +1545,10 @@ const FIND=[
   ['Special points','special points bhrigu bindu indu lagna hora lagna ghati lagna bhava lagna mandi gulika pushkara navamsha','chart/planets','Vedic'],
   ['When each lagna rises','lagna rising times ascendant table sign rises today muhurat griha pravesh fixed sign','today/muhurat'],
   ['Birth time rectification','rectification rectify birth time correct exact time minutes tob janam samay sahi','chart/rectify','Nadi'],
-  ['Gochar chart (transits on your chart)','gochar transit chart today planets day dasha prana sookshma','chart/gochar','Vedic'],
+  ['Composite chart: birth chart + transit (Gochar)','composite combined natal birth transit outer ring gochar chart today planets play day dasha prana sookshma','chart/gochar','Vedic'],
+  ['Moon chart (Chandra Lagna)','moon chart chandra lagna chandra kundli from the moon','chart/view-moon','Vedic'],
+  ['Bhava Chalit chart','bhava chalit chalit cusp chart nirayana','chart/view-chalit','Vedic'],
+  ['South Indian chart style','south indian chart style square','chart/style-south','Vedic'],
   ['Married life','married marriage couple wife husband spouse rate improve talk day patience chandrashtama habits shaadi','match/life'],
   ['Jaimini','jaimini karaka atmakaraka arudha upapada karakamsa','chart/jaimini','Jaimini'],
   ['Chara Dasha (Jaimini)','chara jaimini sign dasha period','chart/chara','Jaimini'],
@@ -1630,11 +1633,14 @@ function findList(){
 function openFind(){if($('out').hidden)return;track('find/open');$('srch').hidden=false;$('srq').value='';findList();setTimeout(()=>$('srq').focus(),30)}
 function closeFind(){const q=$('srq').value.trim();if(q&&!$('srres').querySelector('[data-to]'))track('find/empty',q);
   $('srch').hidden=true;$('srbtn').focus()}
+// Open the main chart in one of its views (Lagna, Bhava Chalit, Moon, Gochar).
+function chartView(v){go('chart','vedic');setTimeout(()=>{const x=document.querySelector('.chseg [data-v="'+v+'"]');if(x){if(CHART_VIEW!==v)x.click();$('chart').scrollIntoView({block:'center'})}},120)}
 function findGo(b){
   const q=$('srq').value.trim();
   // Places that sit inside a section and open with a click (not a screen of their own).
   const inner={'chart/rectify':()=>{go('chart','events');let n=0;const t=()=>{const x=$('evbt');if(x){x.click();x.scrollIntoView({block:'start'})}else if(n++<30)setTimeout(t,100)};setTimeout(t,80)},
-    'chart/gochar':()=>{go('chart','vedic');setTimeout(()=>{const x=document.querySelector('.chseg [data-v="gochar"]');if(x){x.click();$('chart').scrollIntoView({block:'center'})}},120)},
+    'chart/gochar':()=>chartView('gochar'),'chart/view-moon':()=>chartView('moon'),'chart/view-chalit':()=>chartView('chalit'),
+    'chart/style-south':()=>{go('chart','vedic');setTimeout(()=>{const x=document.querySelector('.chstyle [data-style="south"]');if(x)x.click();$('chart').scrollIntoView({block:'center'})},120)},
     'match/life':()=>{openMatch()}}[b.dataset.to];
   if(inner){const label=b.dataset.label;if(q)track('find/pick',q+' → '+label);
     try{localStorage.setItem('sj-find-recent',JSON.stringify([label,...recent().filter(x=>x!==label)].slice(0,5)))}catch(e){}
