@@ -34,7 +34,16 @@ KINDS = {
     "illness": ("Illness or surgery", "illness"),
     "accident": ("Accident or injury", "accident"),
     "separation": ("Separation or divorce", "divorce"),
+    # Recorded with care but never read against the chart: the app makes no predictions about death, so loss has
+    # no life matter in the timing engine and is left out of the fit score, accuracy and rectification.
+    "loss": ("Loss of a family member", None),
 }
+NOTED = "Recorded with care. We don't read the chart for loss, so this event isn't checked against it."
+
+
+def checked(events: list[dict]) -> list[dict]:
+    """The events that are read against the chart (not the ones only recorded, like a loss)."""
+    return [e for e in events if KINDS[e["kind"]][1]]
 GOOD = ("strong", "favourable")
 LORD_OK = ("supports", "leans good")
 
@@ -90,6 +99,8 @@ def _held_back(at: dict) -> str:
 def check(chart: dict, kind: str, d: date, precision: str) -> dict:
     """Did the chart's periods support this event when it happened?"""
     label, topic = KINDS[kind]
+    if topic is None:
+        return {"topic": None, "fit": "noted", "share": None, "period": None, "why": NOTED, "rough": False}
     lo, hi = span(d, precision)
     spans = K.verdict_spans(chart, topic, lo, hi)
     share = _share(spans, lo, hi)
@@ -117,6 +128,7 @@ def check(chart: dict, kind: str, d: date, precision: str) -> dict:
 
 def summary(chart: dict, events: list[dict], birth: date, today: date) -> dict | None:
     """How many events the chart explains, against how many chance would explain."""
+    events = checked(events)
     if not events:
         return None
     fits = sum(1 for e in events if e["check"]["fit"] == "fits")
@@ -145,6 +157,68 @@ def summary(chart: dict, events: list[dict], birth: date, today: date) -> dict |
                      "weak": "That's fewer than chance — worth double-checking your birth time."}.get(verdict)}
 
 
+LEVELS = ["Rough", "Fair", "Good", "Strong"]
+
+
+def accuracy(chart: dict, events: list[dict], summ: dict | None, tob_unknown: bool, rectified: bool) -> dict:
+    """How well the person's events let us check their chart: Rough, Fair, Good or Strong, with one next step.
+
+    It is about how well we can check the chart, never a grade of the chart. Rough: fewer than 3 events with the
+    month, or no birth time. Fair: 3+. Good: 6+ in 2 or more Mahadashas, fitting better than chance. Strong: 8+ in
+    2 or more Mahadashas, well above chance, and the birth time rectified (the saved time is among the best fits).
+    """
+    from datetime import datetime, time as dtime
+    dated = [e for e in checked(events) if e.get("precision") in ("day", "month")]
+
+    def maha(d: str) -> str | None:
+        iso = datetime.combine(date.fromisoformat(d), dtime(12)).isoformat()
+        return next((x["lord"] for x in chart.get("dasha", []) if x["start"][:19] <= iso < x["end"][:19]), None)
+    mahas = sorted({m for m in (maha(e["date"]) for e in dated) if m})
+    fits, expected = (summ or {}).get("fits", 0), (summ or {}).get("expected", 0)
+    above = len(dated) >= 3 and fits >= expected + 0.5
+    well_above = (summ or {}).get("verdict") == "good"
+    if tob_unknown or len(dated) < 3:
+        lvl = 0
+    elif len(dated) >= 8 and len(mahas) >= 2 and well_above and rectified:
+        lvl = 3
+    elif len(dated) >= 6 and len(mahas) >= 2 and above:
+        lvl = 2
+    else:
+        lvl = 1
+    first = mahas[0] if mahas else None
+    if tob_unknown:
+        step = ("time", "Add your birth time", "Even an approximate time, like “around 2 PM”, lets us check your chart.")
+    elif len(dated) < 3:
+        need = 3 - len(dated)
+        step = ("event", f"Add {need} past event{'s' if need > 1 else ''} with the month",
+                "A job, a wedding, a move or a degree — anything you remember the month of.")
+    elif len(mahas) < 2:
+        step = ("event", f"Add one event from before your {first} period" if first else "Add an event from earlier years",
+                f"All your events fall in your {first} period, so they can't tell your birth time from a few minutes "
+                "either side. Finishing school, a move or an illness from earlier years helps most." if first else
+                "Events from different periods of your life make the check firmer.")
+    elif len(dated) < 8:
+        need = 8 - len(dated)
+        step = ("event", f"Add {need} more event{'s' if need > 1 else ''}", "More events make the check firmer.")
+    elif not rectified:
+        step = ("rect", "Run Birth time rectification", "Your events span more than one period, so the result means something now.")
+    elif not well_above:
+        step = ("event", "Add events you remember well", "Exact months help most; check that the dates you added are right.")
+    else:
+        step = None
+    why = (["We need your birth time to check your chart." if tob_unknown else
+            "Add a few past events and we can start checking your chart against your life."][0] if lvl == 0 else
+           f"{len(dated)} events, all in your {first} period. About {expected:.0f} of {len(dated)} would fit by chance, "
+           "so they can't test your chart much yet." if len(mahas) < 2 else
+           f"{len(dated)} events across {len(mahas)} periods; {fits} fit, against about {expected:.0f} by chance.")
+    return {"level": lvl, "label": LEVELS[lvl], "levels": LEVELS, "why": why,
+            "checks": [{"ok": len(dated) >= 3, "text": "At least 3 events with the month"},
+                       {"ok": len(mahas) >= 2, "text": "Events in 2 or more Dasha periods"},
+                       {"ok": len(dated) >= 8, "text": "8 or more events"},
+                       {"ok": rectified, "text": "Birth time rectified"}],
+            "next": {"action": step[0], "title": step[1], "text": step[2]} if step else None}
+
+
 def birth_time_check(request: dict, events: list[dict], chart_at, today: date, span_min: int = 60,
                      step_min: int = 4) -> dict:
     """Birth time rectification: the person's events judged against charts cast a few minutes earlier and later.
@@ -155,6 +229,7 @@ def birth_time_check(request: dict, events: list[dict], chart_at, today: date, s
     lords the events span and on how many would fit by chance, so the result says that plainly.
     """
     from datetime import datetime, time as dtime
+    events = checked(events)
     h, m = map(int, request["tob"][:5].split(":"))
     now = h * 60 + m
     birth = date.fromisoformat(request["dob"])

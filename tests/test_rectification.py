@@ -29,3 +29,33 @@ def test_needs_three_events(tmp_path, monkeypatch):
     c = TestClient(app)
     pid = c.post("/profiles", json=REQ).json()["id"]
     assert c.get(f"/profiles/{pid}/events/birth-time").status_code == 422
+
+
+def test_accuracy_levels_and_next_step(tmp_path, monkeypatch):
+    monkeypatch.setenv("CHART_DB_PATH", str(tmp_path / "p.db"))
+    c = TestClient(app)
+    pid = c.post("/profiles", json=REQ).json()["id"]
+    a = c.get(f"/profiles/{pid}/accuracy").json()
+    assert a["label"] == "Rough" and a["next"]["title"] == "Add 3 past events with the month"
+    for e in EV:
+        y, m, d = map(int, e["date"].split("-"))
+        c.post(f"/profiles/{pid}/events", json={"kind": e["kind"], "year": y, "month": m, "day": d})
+    a = c.get(f"/profiles/{pid}/accuracy").json()
+    assert a["label"] == "Fair" and "before your Venus period" in a["next"]["title"]  # all six in one Mahadasha
+    assert "can't test your chart much" in a["why"]
+    c.get(f"/profiles/{pid}/events/birth-time")                                   # 14:20 is not the best fit
+    assert not c.get(f"/profiles/{pid}/accuracy").json()["checks"][3]["ok"]
+
+
+def test_a_loss_is_recorded_but_never_read_against_the_chart(tmp_path, monkeypatch):
+    monkeypatch.setenv("CHART_DB_PATH", str(tmp_path / "p.db"))
+    c = TestClient(app)
+    pid = c.post("/profiles", json=REQ).json()["id"]
+    for e in EV[:3]:
+        y, m, d = map(int, e["date"].split("-"))
+        c.post(f"/profiles/{pid}/events", json={"kind": e["kind"], "year": y, "month": m, "day": d})
+    v = c.post(f"/profiles/{pid}/events", json={"kind": "loss", "year": 2019, "month": 3}).json()
+    loss = next(e for e in v["events"] if e["kind"] == "loss")
+    assert loss["label"] == "Loss of a family member" and loss["check"]["fit"] == "noted"
+    assert v["summary"]["events"] == 3                                   # not counted in the fit score
+    assert len(c.get(f"/profiles/{pid}/events/birth-time").json()["labels"]) == 3   # nor in rectification

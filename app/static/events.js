@@ -3,7 +3,7 @@
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const COMMON = ['married', 'child', 'job', 'promotion', 'job_change', 'home', 'abroad', 'degree'];
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const FIT = { fits: ['good', 'Fits'], partly: ['', 'Partly'], no: ['warn', 'Doesn’t fit'] };
+  const FIT = { fits: ['good', 'Fits'], partly: ['', 'Partly'], no: ['warn', 'Doesn’t fit'], noted: ['', 'Noted'] };
   let S = {}, EL = null;
 
   window.renderEvents = async function (el, pid) {
@@ -91,6 +91,7 @@
     const d = S.data, s = d.summary;
     EL.innerHTML = `<h3>Your life so far</h3>
       <p class="gsub">Add things that happened in your life. We check each one against your chart — the more you add, the better we know your chart.</p>
+      ${d.accuracy && window.accCard ? window.accCard(d.accuracy) : ''}
       ${s && s.events < 3 ? `<p class="hint evhint">Add ${3 - s.events} more to see how well your chart explains your life.</p>` : ''}
       ${s && s.events >= 3 ? `<div class="evsum"><b>${s.fits}<small> of ${s.events}</small></b><div><p>${esc(s.text)}</p>${s.note ? `<small>${esc(s.note)}</small>` : ''}</div></div>` : ''}
       ${s && s.events >= 3 ? birthTime() : ''}
@@ -122,7 +123,7 @@
     else if (t.dataset.open) { S.open = S.open === +t.dataset.open ? null : +t.dataset.open; paint(); }
     else if (t.dataset.del) {
       const r = await fetch(`/profiles/${S.pid}/events/${t.dataset.del}`, { method: 'DELETE' });
-      if (r.ok) { S.data = await r.json(); S.open = null; S.bt = null; paint(); }
+      if (r.ok) { S.data = await r.json(); S.open = null; S.bt = null; paint(); if (window.loadAccuracy) window.loadAccuracy(S.pid); }
     } else if (t.id === 'evsave') {
       const v = keep();
       if (!S.kind) { S.err = 'Choose what happened.'; paint(); restore(v); return; }
@@ -135,6 +136,7 @@
         if (!r.ok) throw new Error(Array.isArray(d.detail) ? d.detail.map(x => x.msg).join('; ') : d.detail || r.statusText);
         Object.assign(S, { data: d, adding: false, kind: null, more: false, busy: false, bt: null, btConfirm: false });
         paint();
+        if (window.loadAccuracy) window.loadAccuracy(S.pid);
       } catch (err) { S.busy = false; S.err = err.message; paint(); restore(v); }
     }
   });

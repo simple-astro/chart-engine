@@ -39,6 +39,8 @@ CATALOGUE = [
                 ("kundli/about", "About you"), ("lifeevents", "Life events added")]),
     ("Match making", [("match/married", "Said they are married"), ("match/rated", "Rated their marriage"),
                       ("match/plan", "Started a 43-day couple plan")]),
+    ("Chart accuracy", [("accuracy/event", "Next step: add an event"), ("accuracy/rect", "Next step: run rectification"),
+                        ("accuracy/time", "Next step: add birth time"), ("accuracy/snooze", "Today nudge: Not now")]),
     ("Find", [("find/open", "Find opened")]),
 ]
 LABEL = {k: label for _, items in CATALOGUE for k, label in items}

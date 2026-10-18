@@ -224,6 +224,15 @@
   .lplan{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
   .mmprom.mmmarried .badge{display:none} .mmprom.mmmarried::after{content:'You’re married: see Married life below';font-size:.8rem;color:var(--mut)}
   .gcouple p{margin:0;line-height:1.6}
+  .accbadge{border:0;border-radius:999px;padding:3px 10px;font:inherit;font-weight:600;cursor:pointer;background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--ink)}
+  .accbadge.l2,.accbadge.l3{background:color-mix(in srgb,var(--ok) 24%,transparent)}
+  .accsheet{margin-top:10px} .acccard h4{margin:0 0 8px;font:600 1rem var(--serif)}
+  .acclad{display:flex;gap:4px;margin:6px 0 8px} .acclad span{flex:1;text-align:center;font-size:.78rem;padding:6px 0;border-radius:8px;background:var(--bg2);color:var(--mut)}
+  .acclad span.done{background:color-mix(in srgb,var(--ok) 22%,transparent);color:var(--ink)} .acclad span.cur{background:color-mix(in srgb,var(--acc) 28%,transparent);color:var(--ink);font-weight:700}
+  .accck{list-style:none;margin:6px 0;padding:0;font-size:.88rem} .accck li{display:flex;gap:8px;margin:3px 0;color:var(--mut)} .accck li.ok{color:var(--ink)} .accck i{font-style:normal;width:1em}
+  .accnext{margin-top:8px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--acc) 12%,transparent)} .accnext p{margin:4px 0 8px;font-size:.88rem}
+  .accrules{margin-top:10px;font-size:.86rem} .accrules summary{cursor:pointer;font-weight:600} .accok{margin:8px 0 0;color:var(--mut)}
+  .gacc p{margin:0;line-height:1.6} .accnot{color:var(--mut)}
   .kpay{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--acc) 40%,transparent);background:color-mix(in srgb,var(--acc) 10%,transparent);font-size:.86rem;line-height:1.5}
   .kpay.ok{border-color:color-mix(in srgb,var(--ok) 45%,transparent);background:color-mix(in srgb,var(--ok) 10%,transparent)}
   .kpbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px} .kpbtns button{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:.84rem;font-weight:600;cursor:pointer;min-height:36px}
@@ -1169,6 +1178,7 @@
     <div class="scr" id="s-today" data-scr="today">
       <section class="card gcard ckin" id="gcheckin" hidden></section>
       <section class="card gcard gcouple" id="gcouple" hidden></section>
+      <section class="card gcard gacc" id="gacc" hidden></section>
       <section class="card gcard" id="gtoday"><h3>Today for you</h3><div class="hint">Checking today’s panchang…</div></section>
       <section class="card gcard" id="gmood"></section>
       <h3 class="gh">Today in detail · plan the week</h3>
@@ -1228,7 +1238,7 @@
     <div class="scr" id="s-chart" data-scr="chart" hidden>
     <div class="card banner">
       <div><h2 id="bname"></h2><div class="meta" id="bmeta"></div></div>
-      <div class="stats" id="summary"></div>
+      <div class="stats" id="summary"></div><div class="accsheet" id="accsheet" hidden></div>
     </div>
     <!-- Studies: one card per tradition; each opens a page with only its own sections -->
     <div class="sthub" id="sthub" role="list" aria-label="Studies">
@@ -2228,6 +2238,27 @@ document.addEventListener('click',async e=>{const box=$('mlife');if(!box||!box.c
   else if(k==='stop'){await saveLife({plan:'stop'});paintLife()}
   $('mlife').scrollIntoView({block:'start'})});
 
+// Chart accuracy (life_events.accuracy): a badge in the chart summary that opens the ladder and the next step,
+// and a one-line nudge on Today while a step is waiting (hidden for a week after "Not now").
+let ACC=null;
+function accLadder(a){return '<div class="acclad">'+a.levels.map((n,i)=>'<span class="'+(i<a.level?'done':i===a.level?'cur':'')+'">'+n+'</span>').join('')+'</div>'}
+function accNext(a,wrap){const n=a.next;return n?'<div class="accnext"><b>Next step: '+esc(n.title)+'</b><p>'+esc(n.text)+'</p><button type="button" class="btn" data-acc="'+n.action+'">'+({event:'Add an event',rect:'Run it',time:'Add birth time'})[n.action]+'</button>'+(wrap||'')+'</div>':'<p class="accok">All steps done. Add an event now and then to keep it Strong.</p>'}
+window.accCard=a=>'<div class="acccard"><h4>How well we know your chart</h4>'+accLadder(a)+'<p class="hint">'+esc(a.why)+'</p><ul class="accck">'+a.checks.map(c=>'<li class="'+(c.ok?'ok':'')+'"><i>'+(c.ok?'✓':'○')+'</i>'+esc(c.text)+'</li>').join('')+'</ul>'+accNext(a)+
+  '<details class="accrules"><summary>How we work this out</summary><p><b>Rough</b>: fewer than 3 events, or birth time not known. <b>Fair</b>: 3 or more events with the month. <b>Good</b>: 6 or more events in 2 or more Dasha periods, fitting better than chance. <b>Strong</b>: 8 or more events in 2 or more periods, well above chance, and the birth time rectified.</p><p class="hint">It never claims more than your events show. A level is about how well we can check your chart, not a grade of your chart.</p></details></div>';
+async function loadAccuracy(pid){const n=$('gacc');n.hidden=true;ACC=null;if(pid==null)return;
+  try{const r=await fetch('/profiles/'+pid+'/accuracy');if(!r.ok||pid!==currentId)return;ACC=await r.json()}catch(e){return}
+  const b=$('accbadge');if(b){b.textContent=ACC.label+' ›';b.className='accbadge l'+ACC.level}
+  let snooze=0;try{snooze=+localStorage.getItem('sj-acc-snooze-'+pid)||0}catch(e){}
+  if(ACC.next&&Date.now()>snooze){n.innerHTML='<p>🎯 <b>One step to a more accurate chart:</b> '+esc(ACC.next.title.charAt(0).toLowerCase()+ACC.next.title.slice(1))+'. '+
+    '<button type="button" class="linkbtn" data-acc="'+ACC.next.action+'">'+({event:'Add it',rect:'Run it',time:'Add it'})[ACC.next.action]+' →</button> <button type="button" class="linkbtn accnot" data-acc="snooze">Not now</button></p>';n.hidden=false}}
+function accGo(action){
+  if(action==='snooze'){try{localStorage.setItem('sj-acc-snooze-'+currentId,String(Date.now()+7*864e5))}catch(e){}$('gacc').hidden=true;return}
+  if(action==='time'){$('medit').click();return}
+  go('chart','events');let k=0;const t=()=>{const x=$(action==='rect'?'evbt':'evadd');if(x){x.click();($('gevents')||x).scrollIntoView({block:'start'})}else if(k++<30)setTimeout(t,100)};setTimeout(t,80)}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-acc]');if(b){track('accuracy/'+b.dataset.acc);accGo(b.dataset.acc);return}
+  const bd=e.target.closest('#accbadge');if(bd&&ACC){const s=$('accsheet'),open=s.hidden;s.hidden=!open;bd.setAttribute('aria-expanded',String(open));
+    if(open)s.innerHTML='<div class="acccard">'+accLadder(ACC)+'<p class="hint">'+esc(ACC.why)+'</p>'+accNext(ACC)+'</div>'}});
+
 // Today: a one-line note when today or tomorrow is a talk day or a patience day for a married couple.
 async function loadCoupleDay(pid){const box=$('gcouple');box.hidden=true;if(pid==null)return;
   try{const d=await (await fetch('/profiles/'+pid+'/couple-day?tz='+lifeTz())).json();if(pid!==currentId||!d.couples)return;
@@ -2300,7 +2331,8 @@ function render(c,req){
   $('summary').innerHTML=[
     ['Lagna',l.sign],['Moon',c.grahas.Moon.sign],['Nakshatra',c.grahas.Moon.nakshatra+' '+c.grahas.Moon.pada],
     ['Sun',c.grahas.Sun.sign],['Dasha › Bhukti › Antar',md0?[md0,ad0,pd0].filter(Boolean).map(x=>x.lord).join(' › '):'—']
-  ].map(([a,b])=>'<div class="stat"><small>'+a+'</small><b>'+esc(b)+'</b></div>').join('');
+  ].map(([a,b])=>'<div class="stat"><small>'+a+'</small><b>'+esc(b)+'</b></div>').join('')+
+    (currentId!=null?'<div class="stat"><small>Chart accuracy</small><button type="button" class="accbadge" id="accbadge" aria-expanded="false">…</button></div>':'');
 
   const status=n=>{const g=c.grahas[n],d=window.planetDignity(c,n);
     return [d==='exalted'?'ex':d==='debilitated'?'db':d==='own'?'own':null,g.retrograde?'R':null,g.combust?'C':null].filter(Boolean)};
@@ -2459,7 +2491,7 @@ function render(c,req){
     '<div class="bnnc">'+B.circuits.map(k=>'<div class="jai"><small>'+esc(k.role)+'</small><b>'+esc(k.karaka)+' <span class="bnns">in '+esc(k.sign)+'</span></b>'+
       k.text.map(x=>'<p>'+esc(x)+'</p>').join('')+'</div>').join('')+'</div>';
   window.renderExchange($('xbody'),c);window.renderAshtakavarga($('akvbody'),c);
-  const gr=window.guideReading(c);gr.jaimini=c.jaimini;window.renderGuide($('guide'),gr,(req&&req.name)||m.name,$('gremedies'));loadToday();window.renderMood($('gmood'),currentId);loadCheckin(currentId);loadCoupleDay(currentId);window.renderEvents($('gevents'),currentId);window.renderUpcoming($('gupcoming'),currentId);
+  const gr=window.guideReading(c);gr.jaimini=c.jaimini;window.renderGuide($('guide'),gr,(req&&req.name)||m.name,$('gremedies'));loadToday();window.renderMood($('gmood'),currentId);loadCheckin(currentId);loadCoupleDay(currentId);loadAccuracy(currentId);window.renderEvents($('gevents'),currentId);window.renderUpcoming($('gupcoming'),currentId);
   if(req)window.renderTools($('gtools'),{req,chart:c,id:currentId,prashnaEl:$('gprashna')});
 
   const now=Date.now(),fd=s=>new Date(s).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});

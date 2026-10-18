@@ -1064,8 +1064,8 @@ def events_backtest(request: Request) -> dict:
     by: dict[str, dict] = {}
     people: set[int] = set()
     for e in storage.all_events():
-        if e["precision"] == "year":
-            continue
+        if e["precision"] == "year" or not L.KINDS[e["kind"]][1]:
+            continue  # a year-only date is too rough; a loss is never read against the chart
         chart = with_extras(e["chart"])
         c = L.check(chart, e["kind"], date.fromisoformat(e["date"]), e["precision"])
         base = L._base_rate(chart, c["topic"], date.fromisoformat(e["request"]["dob"]), today)

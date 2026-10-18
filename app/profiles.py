@@ -380,8 +380,16 @@ def _events_view(p: dict) -> dict:
     events = [{**e, "label": L.KINDS[e["kind"]][0],
                "check": L.check(chart, e["kind"], date.fromisoformat(e["date"]), e["precision"])}
               for e in storage.event_list(p["id"])]
-    return {"kinds": [{"key": k, "label": v[0]} for k, v in L.KINDS.items()], "events": events,
-            "summary": L.summary(chart, events, birth, today)}
+    summ = L.summary(chart, events, birth, today)
+    rectified = bool(storage.get_setting(f"rectified_{p['id']}_{p['request'].get('tob', '')[:5]}"))
+    return {"kinds": [{"key": k, "label": v[0]} for k, v in L.KINDS.items()], "events": events, "summary": summ,
+            "accuracy": L.accuracy(chart, events, summ, bool(p["request"].get("tob_unknown")), rectified)}
+
+
+@router.get("/{profile_id}/accuracy")
+def chart_accuracy(profile_id: int, request: Request) -> dict:
+    """Chart accuracy level and next step (the badge in Studies and the nudge on Today)."""
+    return _events_view(_require(profile_id, request))["accuracy"]
 
 
 @router.get("/{profile_id}/events")
@@ -413,13 +421,17 @@ def events_birth_time(profile_id: int, request: Request) -> dict:
     """Which birth times, an hour either side of the saved one, best explain the person's events."""
     from app import life_events as L
     p = _require(profile_id, request)
-    req, events = p["request"], storage.event_list(profile_id)
+    from app.life_events import checked
+    req, events = p["request"], checked(storage.event_list(profile_id))
     if req.get("tob_unknown"):
         raise HTTPException(status_code=422, detail="Add a birth time first; rectification refines a known time.")
     if len(events) < 3:
         raise HTTPException(status_code=422, detail="Add at least 3 events to rectify your birth time.")
     at = lambda tob: with_extras(compute_chart(ChartRequest(**{**req, "tob": tob})))
-    return L.birth_time_check(req, events, at, chat.local_today(p))
+    out = L.birth_time_check(req, events, at, chat.local_today(p))
+    if out["suggest"] is None:  # the saved time is among the best fits: count it as rectified (for this time only)
+        storage.set_setting(f"rectified_{profile_id}_{req['tob'][:5]}", chat.local_today(p).isoformat())
+    return out
 
 
 @router.delete("/{profile_id}/events/{event_id}")
