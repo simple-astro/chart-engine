@@ -1507,6 +1507,9 @@ const FIND=[
   ['Nadi amsha','nadi amsha 150','chart/nadi','Nadi'],
   ['BNN (Nadi trines)','bnn bhrigu nandi nadi trines karaka','chart/bnn','Nadi'],
   ['Your life so far','life events past log so far fits','chart/events','Nadi'],
+  ['Birth time rectification','rectification rectify birth time correct exact time minutes tob janam samay sahi','chart/rectify','Nadi'],
+  ['Gochar chart (transits on your chart)','gochar transit chart today planets day dasha prana sookshma','chart/gochar','Vedic'],
+  ['Married life','married marriage couple wife husband spouse rate improve talk day patience chandrashtama habits shaadi','match/life'],
   ['Jaimini','jaimini karaka atmakaraka arudha upapada karakamsa','chart/jaimini','Jaimini'],
   ['Chara Dasha (Jaimini)','chara jaimini sign dasha period','chart/chara','Jaimini'],
   ['Yogini Dasha','yogini mangala pingala dhanya bhramari bhadrika ulka siddha sankata dasha period 36 years','chart/chara','Jaimini'],
@@ -1592,6 +1595,13 @@ function closeFind(){const q=$('srq').value.trim();if(q&&!$('srres').querySelect
   $('srch').hidden=true;$('srbtn').focus()}
 function findGo(b){
   const q=$('srq').value.trim();
+  // Places that sit inside a section and open with a click (not a screen of their own).
+  const inner={'chart/rectify':()=>{go('chart','events');let n=0;const t=()=>{const x=$('evbt');if(x){x.click();x.scrollIntoView({block:'start'})}else if(n++<30)setTimeout(t,100)};setTimeout(t,80)},
+    'chart/gochar':()=>{go('chart','vedic');setTimeout(()=>{const x=document.querySelector('.chseg [data-v="gochar"]');if(x){x.click();$('chart').scrollIntoView({block:'center'})}},120)},
+    'match/life':()=>{openMatch()}}[b.dataset.to];
+  if(inner){const label=b.dataset.label;if(q)track('find/pick',q+' → '+label);
+    try{localStorage.setItem('sj-find-recent',JSON.stringify([label,...recent().filter(x=>x!==label)].slice(0,5)))}catch(e){}
+    closeFind();inner();return}
   if(b.dataset.askQ!==undefined){track('find/pick',q+' → ask');closeFind();go('ask');setTimeout(()=>{if(!$('q').disabled){$('q').value=b.dataset.askQ;$('q').focus()}},80);return}
   const [s,sub]=b.dataset.to.split('/'),label=b.dataset.label;
   if(q)track('find/pick',q+' → '+label);
