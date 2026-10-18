@@ -11,6 +11,7 @@ Hora (planetary hour) runs from sunrise in the Chaldean order, starting with the
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from app import muhurat
 from core import constants as C
@@ -116,8 +117,13 @@ def colours(lagna_sign: int, weekday: int) -> dict:
         return {"planet": p, "name": " or ".join(left), "hex": COLOUR[p][1]} if left else None
 
     also = [x for p in helpful if (x := c(p, shared | keep_wear))]
-    avoid = [{**x, "why": f"{p} rules your {rules(p)} house{'s' if len(owned_houses(p, lagna_sign)) > 1 else ''} — "
-              f"a difficult planet for your lagna"} for p in difficult if (x := c(p, shared | keep_wear))]
+    avoid, said = [], set()
+    for p in difficult:  # a colour two difficult planets share (white: Moon and Venus) is named once
+        x = c(p, shared | keep_wear | said)
+        if x:
+            said |= set(words(p))
+            avoid.append({**x, "why": f"{p} rules your {rules(p)} house{'s' if len(owned_houses(p, lagna_sign)) > 1 else ''}"
+                                      f" — a difficult planet for your lagna"})
     return {"wear": {"planet": wear, "name": COLOUR[wear][0], "hex": COLOUR[wear][1], "why": (f"{DAY_NAMES[weekday]}'s colour ({lord})" if wear == lord else
                                         f"{lord} rules {DAY_NAMES[weekday]} but is difficult for your lagna, so wear "
                                         f"your lagna lord {wear}'s colour")},
@@ -236,6 +242,12 @@ def today(day: date, lat: float, lon: float, tz_name: str, lagna_sign: int, birt
     f = muhurat.day_factors(p, birth_nakshatra, birth_moon_sign)
     acts = [muhurat.judge(a, p, f) for a in muhurat.ACTIVITIES]
     overall = muhurat._verdict(round(sum(a["score"] for a in acts) / len(acts)))
+    bhadra_end = None
+    if p.karana == "Vishti":  # Bhadra: avoided for important starts while it runs, so never "good for new starts"
+        from app.panchang_extra import limb_ends
+        bhadra_end = datetime.fromisoformat(limb_ends(p.sunrise)["karana"]["ends"]).astimezone(ZoneInfo(tz_name))
+        if overall[0] in ("excellent", "good"):
+            overall = ("fair", START_LABEL["fair"])
     w = muhurat.windows(p)
     wd = f["weekday"]
     lord = DAY_LORD[wd]
@@ -255,7 +267,8 @@ def today(day: date, lat: float, lon: float, tz_name: str, lagna_sign: int, birt
         cons.append("it is Shani Amavasya, a traditional day for Saturn upaya" if p.weekday == "Saturday"
                     else "it is Amavasya (new moon)")
     if p.karana == "Vishti":
-        cons.append("Bhadra (Vishti karana) slows new work")
+        cons.append("Bhadra (Vishti karana) slows new work"
+                    + (f" until {bhadra_end.strftime('%-I:%M %p')}" if bhadra_end and bhadra_end.date() == day else ""))
     if p.tithi_paksha_index in muhurat.RIKTA and p.tithi_number != 30:
         cons.append(f"{p.paksha} {muhurat._ordinal(p.tithi_paksha_index)} is a Rikta (empty) tithi")
     if p.yoga_number in muhurat.BAD_YOGAS:
@@ -278,6 +291,9 @@ def today(day: date, lat: float, lon: float, tz_name: str, lagna_sign: int, birt
         why = f"{p.nakshatra} nakshatra — an ordinary day; routine work goes fine"
 
     dos, avoid = personal_lists(p, f, acts, lord, lagna_sign, antar, antar_sign)
+    if bhadra_end:
+        until = bhadra_end.strftime("%-I:%M %p") + ("" if bhadra_end.date() == day else " tomorrow")
+        avoid = [{**a, "text": a["text"] + f" until {until}"} if a["why"].startswith("Bhadra") else a for a in avoid]
 
     cols = colours(lagna_sign, wd)
     wear = cols["wear"]["planet"]

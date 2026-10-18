@@ -118,3 +118,14 @@ def test_muhurat_days_carry_personal_colours():
     days = muhurat.muhurat_days(date(2026, 10, 10), 2, **DELHI, birth_nak=17, birth_moon_sign=7, lagna_sign=8)
     assert days[0]["colours"]["wear"]["planet"] == "Saturn" and days[1]["colours"]["wear"]["planet"] == "Sun"
     assert muhurat.muhurat_days(date(2026, 10, 10), 1, **DELHI)[0]["colours"] is None
+
+
+def test_shared_colour_named_once_and_bhadra_caps_the_badge():
+    from datetime import date
+    from app import today as T
+    c = T.colours(8, 0)  # Sagittarius lagna, Sunday: Moon and Venus are both difficult, both "white"
+    names = " or ".join(x["name"] for x in c["avoid"]).split(" or ")
+    assert names.count("white") == 1
+    g = T.today(date(2026, 10, 18), 49.8954, -97.1385, "America/Winnipeg", 8, 17, 7, "Venus", "Mercury", 4)  # Vishti karana
+    assert g["rating"]["verdict"] not in ("excellent", "good") and "until" in g["rating"]["why"]
+    assert any(a["why"].startswith("Bhadra") and "until" in a["text"] for a in g["avoid"])
