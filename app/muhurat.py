@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 
+from app import muhurat_rules
 from core import constants as C
 from core.panchang import compute_panchang
 
@@ -89,7 +90,7 @@ def day_factors(p, birth_nak: int | None, birth_moon_sign: int | None) -> dict:
                 else "the Moon is well placed from your Moon" if score > 0
                 else "the Moon is not well placed from your Moon" if score < 0 else "neutral")
         chandra = {"house": h, "score": score, "note": note}
-    return {"weekday": wd, "tara": tara, "chandra": chandra}
+    return {"weekday": wd, "tara": tara, "chandra": chandra, "calendar": muhurat_rules.facts(p)}
 
 
 def judge(activity: dict, p, f: dict) -> dict:
@@ -134,6 +135,12 @@ def judge(activity: dict, p, f: dict) -> dict:
         personal += c["score"]
         why.append({"good": c["score"] > 0, "bad": c["score"] < 0, "text": f"Chandra bala: {c['note']}"})
     score += max(-3, min(1, personal))
+    # Hard exclusions (app/muhurat_rules.py): a ruled-out day is "Better to avoid" whatever else it has going for it.
+    excluded, base = muhurat_rules.exclusions(activity["key"], f.get("calendar")), score
+    if excluded:
+        score = min(score, -2)
+        why[:0] = [{"good": False, "bad": True, "hard": True, "text": e["reason"]} for e in excluded
+                   if e["key"] not in ("rikta", "amavasya")]  # those two are already in the tithi line
     key, label = _verdict(score)
     extra = None
     if activity["key"] == "travel":
@@ -141,7 +148,8 @@ def judge(activity: dict, p, f: dict) -> dict:
     if activity["key"] == "marriage":
         extra = "Wedding dates also depend on Jupiter, Venus and the season — confirm the final date with an astrologer."
     return {"key": activity["key"], "name": activity["name"], "icon": activity["icon"], "score": score,
-            "verdict": key, "label": label, "why": why, "note": extra}
+            "verdict": key, "label": label, "why": why, "note": extra, "base_score": base,
+            "excluded": [e["reason"] for e in excluded]}
 
 
 def _ordinal(n: int) -> str:
@@ -184,7 +192,7 @@ def muhurat_days(start: date, days: int, lat: float, lon: float, tz_name: str,
         p_next = compute_panchang(start + timedelta(days=i + 1), lat, lon, tz_name) if full else None
         f = day_factors(p, birth_nak, birth_moon_sign)
         acts = [judge(a, p, f) for a in ACTIVITIES]
-        overall = round(sum(a["score"] for a in acts) / len(acts))
+        overall = round(sum(a["base_score"] for a in acts) / len(acts))  # the day in general, not one activity's rules
         out.append({
             "date": p.date.isoformat(), "weekday": p.weekday,
             "tithi": {"number": p.tithi_number, "paksha": p.paksha, "index": p.tithi_paksha_index,
@@ -221,15 +229,20 @@ def find_dates(activity: str, start: date, days: int, lat: float, lon: float, tz
     act = next((a for a in ACTIVITIES if a["key"] == activity), None)
     if not act:
         raise ValueError(f"unknown activity: {activity}")
-    found, checked = [], 0
+    found, checked, skipped = [], 0, {}
     for d in muhurat_days(start, days, lat, lon, tz_name, birth_nak, birth_moon_sign):
         checked += 1
         a = next(x for x in d["activities"] if x["key"] == activity)
+        for r in a["excluded"]:
+            skipped[r] = skipped.get(r, 0) + 1
         if a["verdict"] in ("excellent", "good"):
             found.append({"date": d["date"], "weekday": d["weekday"], "verdict": a["verdict"], "label": a["label"],
                           "score": a["score"], "why": [w for w in a["why"] if w["good"]], "cautions": [w for w in a["why"] if w["bad"]],
                           "note": a["note"], "tithi": d["tithi"]["name"], "nakshatra": d["nakshatra"],
                           "windows": good_windows(d["windows"]), "rahu_kalam": d["windows"]["rahu_kalam"]})
-    found.sort(key=lambda x: (-x["score"], x["date"]))
+    # Best rating first ("Very good" before "Good"), then the earliest date: a stated order, not raw scores.
+    rank = {"excellent": 0, "good": 1}
+    found.sort(key=lambda x: (rank[x["verdict"]], x["date"]))
     return {"activity": {"key": act["key"], "name": act["name"], "icon": act["icon"]}, "checked": checked,
-            "matches": len(found), "dates": found[:limit]}
+            "matches": len(found), "dates": found[:limit], "order": "rating, then date",
+            "skipped": [{"reason": r, "days": n} for r, n in sorted(skipped.items(), key=lambda x: -x[1])]}

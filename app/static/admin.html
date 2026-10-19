@@ -423,7 +423,7 @@
     <p class="sub">Life events people added (“Your life so far”), checked against their charts. <b>Fits</b> = the event fell in a period the engine supports; <b>by chance</b> = how many would fit if the dates were random. Year-only dates are left out. No names are shown.</p>
     <div class="evkpi" id="ev-kpi"></div>
     <div class="scroll"><table>
-      <thead><tr><th>Life matter</th><th class="num">Events</th><th class="num">Fit</th><th class="num">By chance</th></tr></thead>
+      <thead><tr><th>Life matter</th><th class="num">Events</th><th class="num">KP fit</th><th class="num">KP chance</th><th class="num">Karaka fit</th><th class="num">Karaka chance</th></tr></thead>
       <tbody id="ev-list"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
     </table></div>
   </section>
@@ -1028,10 +1028,11 @@ async function loadEvents() {
   try {
     const d = await api('/admin/api/events');
     $('ev-kpi').innerHTML = d.events ? `<b>${d.fits} of ${d.events}</b> events fit, against about <b>${d.expected}</b> by chance` +
-      (d.lift ? ` — <b>${d.lift}×</b> chance` : '') + ` · ${d.charts} chart${d.charts === 1 ? '' : 's'}` : '';
-    $('ev-list').innerHTML = d.by_topic.length ? d.by_topic.map(r => `<tr><td>${esc(r.title)}</td><td class="num">${r.events}</td><td class="num">${r.fits}</td><td class="num">${r.expected}</td></tr>`).join('')
-      : '<tr><td colspan="4" class="empty">No dated events yet. They appear as people add them on My Life → Your life so far.</td></tr>';
-  } catch (e) { $('ev-list').innerHTML = `<tr><td colspan="4" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
+      (d.lift ? ` — <b>${d.lift}×</b> chance` : '') + ` · ${d.charts} chart${d.charts === 1 ? '' : 's'}` +
+      (d.karaka ? `<br>Karaka check (draft rules): <b>${d.karaka.fits} of ${d.events}</b> fit, against about <b>${d.karaka.expected}</b> by chance` + (d.karaka.lift ? ` — <b>${d.karaka.lift}×</b> chance` : '') : '') : '';
+    $('ev-list').innerHTML = d.by_topic.length ? d.by_topic.map(r => `<tr><td>${esc(r.title)}</td><td class="num">${r.events}</td><td class="num">${r.fits}</td><td class="num">${r.expected}</td><td class="num">${r.karaka_fits}</td><td class="num">${r.karaka_expected}</td></tr>`).join('')
+      : '<tr><td colspan="6" class="empty">No dated events yet. They appear as people add them on My Life → Your life so far.</td></tr>';
+  } catch (e) { $('ev-list').innerHTML = `<tr><td colspan="6" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
 }
 async function loadBackups() { try { renderBackups(await api('/admin/api/backups')); } catch (e) { $('bk-list').innerHTML = `<tr><td colspan="3" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; } }
 $('bk-run').addEventListener('click', async e => {
@@ -1063,7 +1064,7 @@ function renderUsage(u) {
   $('us-picked').innerHTML = u.searches.picked.length ? u.searches.picked.map(x => `<tr><td>${esc(x.search)}</td><td class="num">${x.count}</td></tr>`).join('') : none(2, 'None yet.');
   $('us-testers').innerHTML = u.testers.length ? u.testers.map(t => `<tr><td>${esc(t.tester)}</td><td class="nowrap">${when(t.last_seen)}</td><td class="num">${t.days_active}</td><td class="num">${t.questions}</td><td>${esc(t.top.join(', ') || '–')}</td></tr>`).join('') : none(5, 'No tester activity yet.');
 }
-async function loadUsage() { try { renderUsage(await api('/admin/api/usage')); } catch (e) { $('us-features').innerHTML = `<tr><td colspan="4" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; } }
+async function loadUsage() { try { renderUsage(await api('/admin/api/usage')); } catch (e) { $('us-features').innerHTML = `<tr><td colspan="6" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; } }
 function setUsOpen(open) {
   $('us-body').hidden = !open; $('us-toggle').textContent = open ? 'Collapse' : 'Expand'; $('us-toggle').setAttribute('aria-expanded', String(open));
   try { localStorage.setItem('sj-admin-us', open ? 'open' : 'shut'); } catch (e) {}
@@ -1124,7 +1125,7 @@ async function loadAudit() {
     $('t-audit').innerHTML = rows.length ? rows.map(r => `<tr><td class="nowrap">${when(r.ts)}</td><td>${esc(r.actor)}${r.actor_role === 'owner' ? '' : ` <span class="tag">${ROLE_NAME[r.actor_role] || r.actor_role}</span>`}</td>
       <td>${esc(r.action)}${r.object ? ': <b>' + esc(r.object) + '</b>' : ''}</td><td>${esc(r.detail || '')}</td></tr>`).join('')
       : '<tr><td colspan="4" class="empty">Nothing yet.</td></tr>';
-  } catch (e) { $('t-audit').innerHTML = `<tr><td colspan="4" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
+  } catch (e) { $('t-audit').innerHTML = `<tr><td colspan="6" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
 }
 $('t-form').addEventListener('submit', async e => {
   e.preventDefault();

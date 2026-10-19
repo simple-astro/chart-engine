@@ -1057,6 +1057,7 @@ def events_backtest(request: Request) -> dict:
     """How often real events fall in periods the engine supports, against how often chance would (exact-day and
     month dates only; year-only dates are too rough to test)."""
     from datetime import date, datetime, timezone
+    from app import karaka_check as KC
     from app import life_events as L
     from app.routes import with_extras
     _require_admin(request)
@@ -1069,14 +1070,20 @@ def events_backtest(request: Request) -> dict:
         chart = with_extras(e["chart"])
         c = L.check(chart, e["kind"], date.fromisoformat(e["date"]), e["precision"])
         base = L._base_rate(chart, c["topic"], date.fromisoformat(e["request"]["dob"]), today)
-        t = by.setdefault(c["topic"], {"topic": c["topic"], "title": L.K.ALL_TOPICS[c["topic"]][0], "events": 0, "fits": 0, "expected": 0.0})
+        t = by.setdefault(c["topic"], {"topic": c["topic"], "title": L.K.ALL_TOPICS[c["topic"]][0], "events": 0, "fits": 0,
+                                       "expected": 0.0, "karaka_fits": 0, "karaka_expected": 0.0})
         t["events"] += 1
         t["fits"] += c["fit"] == "fits"
         t["expected"] += base
+        lo, hi = L.span(date.fromisoformat(e["date"]), e["precision"])
+        t["karaka_fits"] += KC.check(chart, c["topic"], lo, hi)["fit"] == "fits"
+        t["karaka_expected"] += KC.base_rate(chart, c["topic"], date.fromisoformat(e["request"]["dob"]), today)
         people.add(e["profile_id"])
     rows = sorted(by.values(), key=lambda r: -r["events"])
     for r in rows:
-        r["expected"] = round(r["expected"], 1)
+        r["expected"], r["karaka_expected"] = round(r["expected"], 1), round(r["karaka_expected"], 1)
     n, fits, exp = sum(r["events"] for r in rows), sum(r["fits"] for r in rows), sum(r["expected"] for r in rows)
+    kf, ke = sum(r["karaka_fits"] for r in rows), sum(r["karaka_expected"] for r in rows)
     return {"charts": len(people), "events": n, "fits": fits, "expected": round(exp, 1),
-            "lift": round(fits / exp, 2) if exp else None, "by_topic": rows}
+            "lift": round(fits / exp, 2) if exp else None, "by_topic": rows,
+            "karaka": {"fits": kf, "expected": round(ke, 1), "lift": round(kf / ke, 2) if ke else None}}

@@ -5,7 +5,10 @@ Everything is traditional and personalised only through the native's own chart:
 - functional benefics/malefics by lagna: lords of 1, 5, 9 (and a yogakaraka) help, lords of 6, 8, 12 that own
   no trikona do not — used to pick the colour, number and the best hora;
 - the running Mahadasha / Antardasha lords;
-- the weekday lord's traditional work, colour, number, daily habit and daan, and Disha Shool.
+- the weekday lord's traditional work, colour, number and Disha Shool;
+- today's upaya for the planet that most needs care for this person today (pick_upay): a hard day first
+  (Chandrashtama, a difficult star, Sade Sati on a Saturday), then a running period whose lord is difficult for the
+  lagna, else the weekday lord.
 Hora (planetary hour) runs from sunrise in the Chaldean order, starting with the weekday lord.
 """
 from __future__ import annotations
@@ -16,6 +19,7 @@ from zoneinfo import ZoneInfo
 from app import muhurat
 from core import constants as C
 from core.panchang import compute_panchang
+from core.transits import transit_positions
 
 DAY_LORD = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]  # Sunday = 0
 DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -31,9 +35,12 @@ HABIT = {"Sun": "Offer water to the rising Sun and seek your father's or a senio
          "Mercury": "Keep every promise today, speak kindly, and check in on a sister or daughter",
          "Jupiter": "Thank a teacher or elder, and apply a small turmeric or saffron tilak",
          "Venus": "Wear clean, fresh clothes and do one thoughtful thing for your partner",
-         "Saturn": "Help a worker or someone elderly, and finish one pending task"}
+         "Saturn": "Help a worker or someone elderly, and finish one pending task",
+         "Rahu": "Skip shortcuts and gossip today, cut screen time, and feed a stray dog",
+         "Ketu": "Spend ten quiet minutes in prayer or silence, and feed a street dog"}
 DAAN = {"Sun": "wheat or jaggery", "Moon": "rice or milk", "Mars": "red lentils (masoor)", "Mercury": "green moong",
-        "Jupiter": "chana dal, turmeric or bananas", "Venus": "white sweets or curd", "Saturn": "black sesame or mustard oil"}
+        "Jupiter": "chana dal, turmeric or bananas", "Venus": "white sweets or curd", "Saturn": "black sesame or mustard oil",
+        "Rahu": "a blanket or urad dal", "Ketu": "a blanket or sesame (til)"}
 # Disha Shool: what to eat or do before setting out if the journey can't wait.
 SHOOL_FIX = ["eat a little ghee or daliya", "look in a mirror or drink milk", "eat a little jaggery (gud)",
              "eat coriander seeds or sesame (til)", "eat a little curd (dahi)", "eat a little barley (jau) or curd",
@@ -94,6 +101,56 @@ def chart_planets(lagna_sign: int) -> tuple[list[str], set[str]]:
     good = list(dict.fromkeys(yogakaraka + [lord(1), lord(9), lord(5)]))
     bad = {p for p, hs in owned.items() if hs & {6, 8, 12} and not hs & {1, 5, 9}}
     return good, bad
+
+
+def difficult_for(planet: str, lagna_sign: int, natal_sign: int | None) -> str | None:
+    """Why ``planet`` is difficult for this lagna, or None. Sign lords: they rule 6, 8 or 12 and no trikona.
+    Rahu and Ketu own no sign: they are difficult when they sit in 6, 8 or 12, or act for a difficult sign lord."""
+    good, bad = chart_planets(lagna_sign)
+    if planet in ("Rahu", "Ketu"):
+        if natal_sign is None:
+            return None
+        h = (natal_sign - lagna_sign) % 12 + 1
+        if h in (6, 8, 12):
+            return f"sits in your {_ord(h)} house"
+        disp = C.SIGN_LORDS[natal_sign]
+        return f"acts for {disp}, a difficult planet for your {C.SIGNS[lagna_sign]} lagna" if disp in bad else None
+    if planet in bad:
+        hs = [h for h in owned_houses(planet, lagna_sign) if h in (6, 8, 12)]
+        return f"rules your {' and '.join(_ord(h) for h in hs)} house for a {C.SIGNS[lagna_sign]} lagna"
+    return None
+
+
+def pick_upay(p, f: dict, lagna_sign: int, birth_moon_sign: int, maha: str | None = None, antar: str | None = None,
+              maha_sign: int | None = None, antar_sign: int | None = None, saturn_sign: int | None = None) -> dict:
+    """Today's upaya: the planet that most needs care for this person today, first match wins.
+    1. A hard day: Chandrashtama (Moon), a difficult star today (Vipat, Pratyak, Naidhana: the star's lord), or
+       Sade Sati on Saturn's own day (Saturn).
+    2. A running period whose lord is difficult for the lagna: the Antardasha lord, then the Mahadasha lord.
+    3. Otherwise the weekday lord, as before."""
+    lord = DAY_LORD[f["weekday"]]
+    tara, chandra = f["tara"], f["chandra"]
+    pick = None
+    if chandra and chandra["house"] == 8:
+        pick = ("Moon", "chandrashtama", "Today the Moon is 8th from your Moon (Chandrashtama), so calm the Moon")
+    elif tara and tara["score"] < 0 and tara["name"] != "Janma":
+        the = "the " if p.nakshatra_lord in ("Sun", "Moon") else ""
+        pick = (p.nakshatra_lord, "tara", f"Your star today is {tara['name']}, so ease {the}{p.nakshatra_lord}, "
+                                          f"lord of today's nakshatra ({p.nakshatra})")
+    elif saturn_sign is not None and (saturn_sign - birth_moon_sign) % 12 in (11, 0, 1) and lord == "Saturn":
+        pick = ("Saturn", "sade_sati", "You are in Sade Sati (Saturn near your Moon sign) and Saturday is Saturn's day")
+    if not pick:
+        for level, planet, sign in (("Antardasha", antar, antar_sign), ("Mahadasha", maha, maha_sign)):
+            why = planet and difficult_for(planet, lagna_sign, sign)
+            if why:
+                pick = (planet, level.lower(), f"{planet} runs your {level} and {why}")
+                break
+    if not pick:
+        dl = [x for x in (maha, antar) if x]
+        pick = (lord, "day", f"{lord} rules today and also runs your {'Antardasha' if lord == antar else 'Mahadasha'}"
+                if lord in dl else f"{lord} rules {DAY_NAMES[f['weekday']]}")
+    planet, source, why = pick
+    return {"planet": planet, "habit": HABIT[planet], "daan": DAAN[planet], "why": why, "source": source}
 
 
 def colours(lagna_sign: int, weekday: int) -> dict:
@@ -236,12 +293,13 @@ def personal_lists(p, f: dict, acts: list[dict], lord: str, lagna_sign: int, ant
 
 
 def today(day: date, lat: float, lon: float, tz_name: str, lagna_sign: int, birth_nakshatra: int, birth_moon_sign: int,
-          maha: str | None = None, antar: str | None = None, antar_sign: int | None = None) -> dict:
+          maha: str | None = None, antar: str | None = None, antar_sign: int | None = None,
+          maha_sign: int | None = None) -> dict:
     p = compute_panchang(day, lat, lon, tz_name)
     nxt = compute_panchang(day + timedelta(days=1), lat, lon, tz_name)
     f = muhurat.day_factors(p, birth_nakshatra, birth_moon_sign)
     acts = [muhurat.judge(a, p, f) for a in muhurat.ACTIVITIES]
-    overall = muhurat._verdict(round(sum(a["score"] for a in acts) / len(acts)))
+    overall = muhurat._verdict(round(sum(a["base_score"] for a in acts) / len(acts)))
     bhadra_end = None
     if p.karana == "Vishti":  # Bhadra: avoided for important starts while it runs, so never "good for new starts"
         from app.panchang_extra import limb_ends
@@ -300,11 +358,8 @@ def today(day: date, lat: float, lon: float, tz_name: str, lagna_sign: int, birt
     colour = {**cols["wear"], "avoid": cols["avoid"][0]["name"] if cols["avoid"] else None,
               "also_good": cols["also_good"], "avoid_list": cols["avoid"]}
     hs = horas(p, nxt.sunrise)
-    dl = [x for x in (maha, antar) if x]
-    upay_planet = next((x for x in dl[::-1] if x == lord), lord)
-    upay = {"planet": upay_planet, "habit": HABIT[upay_planet], "daan": DAAN[upay_planet],
-            "why": (f"{lord} rules today and also runs your {'Antardasha' if lord == antar else 'Mahadasha'}"
-                    if lord in dl else f"{lord} rules {p.weekday}")}
+    saturn = transit_positions(p.sunrise)["Saturn"].sign_index
+    upay = pick_upay(p, f, lagna_sign, birth_moon_sign, maha, antar, maha_sign, antar_sign, saturn)
     line = DASHA_LINE.get(antar or maha or "", "")
     if line:
         line += (" — and today is its own day, a good one to push." if (antar or maha) == lord

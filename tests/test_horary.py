@@ -40,8 +40,9 @@ def test_horary_endpoint_validates():
 def test_finder_ranks_good_days_with_safe_windows():
     r = muhurat.find_dates("vehicle", date(2026, 10, 8), 60, 30.73, 76.79, "Asia/Kolkata", 17, 7)
     assert r["checked"] == 60 and 0 < len(r["dates"]) <= 5
-    scores = [d["score"] for d in r["dates"]]
-    assert scores == sorted(scores, reverse=True) and all(d["verdict"] in ("excellent", "good") for d in r["dates"])
+    # "Very good" before "Good", then by date (the order the screen states)
+    order = [({"excellent": 0, "good": 1}[d["verdict"]], d["date"]) for d in r["dates"]]
+    assert order == sorted(order)
     for d in r["dates"]:
         rk = [datetime.fromisoformat(x) for x in d["rahu_kalam"]]
         for w in d["windows"]:

@@ -7,7 +7,7 @@
   let S = {}, EL = null;
 
   window.renderEvents = async function (el, pid) {
-    EL = el; S = { pid, data: null, adding: false, kind: null, more: false, open: null, err: '', busy: false, bt: null, btConfirm: false };
+    EL = el; S = { pid, data: null, adding: false, kind: null, more: false, open: null, err: '', busy: false, bt: null, btConfirm: false, method: 'kp' };
     if (pid == null) { el.innerHTML = '<h3>Your life so far</h3><p class="hint">Save this chart to add your life events.</p>'; return; }
     el.innerHTML = '<h3>Your life so far</h3><div class="hint">Loading…</div>';
     try {
@@ -93,19 +93,34 @@
     } catch (e) { S.bt = { ...S.bt, err: 'Couldn’t change the time: ' + e.message }; S.btConfirm = false; paint(); }
   }
 
+  // KP, Karaka (natural significators, draft rules) or where both agree: one method at a time.
+  function methodSummary(d, s) {
+    const K = d.karaka;
+    if (S.method === 'kar' && K) return `<div class="evsum"><b>${K.fits}<small> of ${K.events}</small></b><div><p>Checked by natural karakas: ${K.fits} of your ${K.events} events fit. By chance, about ${Math.round(K.expected)} would.</p><small>${esc(K.note)}</small></div></div>`;
+    if (S.method === 'both' && K) return `<div class="evsum"><b>${K.agree}<small> of ${K.events}</small></b><div><p>Both methods fit ${K.agree} of your events: ✓✓ both fit · ✓· KP only · ·✓ karaka only · ·· neither.</p><small>Events where both fit are the strongest checks of your birth time.</small></div></div>`;
+    return `<div class="evsum"><b>${s.fits}<small> of ${s.events}</small></b><div><p>${esc(s.text)}</p>${s.note ? `<small>${esc(s.note)}</small>` : ''}</div></div>`;
+  }
+
   function paint() {
     const d = S.data, s = d.summary;
     EL.innerHTML = `<h3>Your life so far</h3>
       <p class="gsub">Add things that happened in your life. We check each one against your chart — the more you add, the better we know your chart.</p>
       ${d.accuracy && window.accCard ? window.accCard(d.accuracy) : ''}
       ${s && s.events < 3 ? `<p class="hint evhint">Add ${3 - s.events} more to see how well your chart explains your life.</p>` : ''}
-      ${s && s.events >= 3 ? `<div class="evsum"><b>${s.fits}<small> of ${s.events}</small></b><div><p>${esc(s.text)}</p>${s.note ? `<small>${esc(s.note)}</small>` : ''}</div></div>` : ''}
+      ${s && s.events >= 3 && d.karaka ? `<div class="seg evmeth" role="radiogroup" aria-label="Check by">${[['kp', 'KP'], ['kar', 'Karaka'], ['both', 'Both agree']].map(([k, t]) =>
+          `<button type="button" role="radio" data-meth="${k}" aria-checked="${S.method === k}" class="${S.method === k ? 'on' : ''}">${t}</button>`).join('')}</div>` : ''}
+      ${s && s.events >= 3 ? methodSummary(d, s) : ''}
       ${s && s.events >= 3 ? birthTime() : ''}
       ${d.events.length ? `<ul class="evlist">${d.events.map(e => {
-        const f = FIT[e.check.fit], open = S.open === e.id;
+        const k = e.karaka || { fit: 'noted' }, f = FIT[S.method === 'kar' ? k.fit : e.check.fit], open = S.open === e.id;
+        const mark = S.method === 'both' && e.check.fit !== 'noted'
+          ? `<span class="evagree" title="KP ${FIT[e.check.fit][1]} · Karaka ${FIT[k.fit][1]}">${e.check.fit === 'fits' ? '✓' : '·'}${k.fit === 'fits' ? '✓' : '·'}</span>`
+          : `<span class="badge ${f[0]}">${f[1]}</span>`;
         return `<li><button type="button" class="evrow" data-open="${e.id}" aria-expanded="${open}">
-            <span class="evwhen">${esc(when(e))}</span><span class="evlab">${esc(e.label)}</span><span class="badge ${f[0]}">${f[1]}</span></button>
-          ${open ? `<div class="evwhy"><p>${esc(e.check.why || '')}${e.check.rough ? ' Only the year is known, so this is a rough check.' : ''}</p>
+            <span class="evwhen">${esc(when(e))}</span><span class="evlab">${esc(e.label)}</span>${mark}</button>
+          ${open ? `<div class="evwhy">${e.check.fit === 'noted' ? `<p>${esc(e.check.why || '')}</p>` :
+            `<p><b>KP · ${FIT[e.check.fit][1]}:</b> ${esc(e.check.why || '')}${e.check.rough ? ' Only the year is known, so this is a rough check.' : ''}</p>
+             ${k.why ? `<p><b>Karaka · ${FIT[k.fit][1]}:</b> ${esc(k.why)}</p>` : ''}`}
             <button type="button" class="linkbtn" data-del="${e.id}">Remove this event</button></div>` : ''}</li>`;
       }).join('')}</ul>` : ''}
       ${S.adding ? form() : `<button type="button" class="btn ghost evadd" id="evadd">+ Add a past event</button>`}`;
@@ -124,6 +139,7 @@
     if (!t) return;
     const keep = () => ({ y: (EL.querySelector('#evy') || {}).value, m: (EL.querySelector('#evm') || {}).value, d: (EL.querySelector('#evd') || {}).value });
     const restore = v => { if (!v) return; ['y', 'm', 'd'].forEach(k => { const f = EL.querySelector('#ev' + k); if (f) f.value = v[k] || ''; }); };
+    if (t.dataset.meth) { S.method = t.dataset.meth; paint(); return; }
     if (t.id === 'evbt') { loadBirthTime(); return; }
     if (t.id === 'bthide') { S.bt = null; S.btConfirm = false; paint(); return; }
     if (t.id === 'btuse') { S.btConfirm = true; paint(); return; }

@@ -21,9 +21,16 @@ def _p(**kw):
     return NS(**{**base, **kw})
 
 
-def _act(key, p, birth_nak=None, birth_moon=None):
+# Calendar facts for an open day: no Chaturmas, Kharmas or combustion (the fake sunrise above falls in Kharmas).
+OPEN = {"tithi": 5, "paksha_index": 5, "month": 9, "adhik": False, "sun_sign": 9, "jupiter_sep": 90.0,
+        "venus_sep": 40.0}
+
+
+def _act(key, p, birth_nak=None, birth_moon=None, cal=None):
     a = next(x for x in muhurat.ACTIVITIES if x["key"] == key)
-    return muhurat.judge(a, p, muhurat.day_factors(p, birth_nak, birth_moon))
+    f = muhurat.day_factors(p, birth_nak, birth_moon)
+    f["calendar"] = {**OPEN, "tithi": p.tithi_number, "paksha_index": p.tithi_paksha_index, **(cal or {})}
+    return muhurat.judge(a, p, f)
 
 
 def test_good_day_for_buying_gold():

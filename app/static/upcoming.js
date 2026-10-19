@@ -14,7 +14,7 @@
     const tz = (loc && loc.tz_name) || (window.SJ_LOC && window.SJ_LOC.birthTz && window.SJ_LOC.birthTz()) || '';
     try {
       const r = await fetch(`/profiles/${pid}/upcoming` + (tz ? '?tz=' + encodeURIComponent(tz) : '')), d = await r.json();
-      if (!r.ok) throw new Error(d.detail || r.statusText);
+      if (!r.ok) throw new Error(window.apiErr(d.detail) || r.statusText);
       if (S.pid === pid) { S.data = d; paint(); }
     } catch (e) { el.innerHTML = `<h3>Coming up for you</h3><p class="hint err">Couldn’t look ahead: ${esc(e.message)}</p>`; }
   };
@@ -66,7 +66,7 @@
     if (loc) { q.set('lat', loc.lat); q.set('lon', loc.lon); q.set('tz', loc.tz_name); }
     try {
       const r = await fetch(`/profiles/${S.pid}/upcoming/days?` + q), d = await r.json();
-      if (!r.ok) throw new Error(d.detail || r.statusText);
+      if (!r.ok) throw new Error(window.apiErr(d.detail) || r.statusText);
       S.days[i] = { dates: d.dates };
     } catch (e) { S.days[i] = { err: 'Couldn’t find days: ' + e.message }; }
     paint();

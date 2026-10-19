@@ -1,6 +1,7 @@
 """HTTP routes for the Chart Engine."""
 from __future__ import annotations
 
+import logging
 from datetime import timezone
 
 from fastapi import APIRouter, HTTPException
@@ -19,6 +20,26 @@ from core.transits import transit_positions
 from core.vargas import varga_sign
 
 router = APIRouter()
+log = logging.getLogger(__name__)
+
+# User-facing errors. Exception text (e.g. "'No time zone found with key Foo/Bar'") goes to the log, never the client.
+TZ_ERROR = {"field": "tz", "message": "We don't recognise that timezone."}
+CALC_ERROR = "We couldn't work this out from those details. Please check them and try again."
+
+
+def require_tz(name: str | None) -> str:
+    """The IANA zone name, or a structured 422 the form can show under its timezone field."""
+    from zoneinfo import ZoneInfo
+    try:
+        ZoneInfo(name or "")
+    except Exception as exc:  # ZoneInfoNotFoundError, ValueError for malformed keys, TypeError
+        raise HTTPException(status_code=422, detail=TZ_ERROR) from exc
+    return name
+
+
+def calc_error(exc: Exception) -> HTTPException:
+    log.warning("calculation failed: %r", exc)
+    return HTTPException(status_code=422, detail=CALC_ERROR)
 
 
 def _graha_to_dict(g: Graha) -> dict:
@@ -66,10 +87,11 @@ def chart(req: ChartRequest) -> dict:
         ayanamsha=req.ayanamsha,
         node_type=req.node_type,
     )
+    require_tz(req.tz_name)
     try:
         return with_extras(compute_natal_chart(birth))
-    except Exception as exc:  # invalid tz, bad inputs -> 422
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:  # bad inputs -> 422 without the exception text
+        raise calc_error(exc) from exc
 
 
 def with_extras(c: dict) -> dict:
@@ -111,10 +133,11 @@ def transits(req: TransitRequest) -> dict:
 
 @router.post("/panchang")
 def panchang(req: PanchangRequest) -> dict:
+    require_tz(req.tz_name)
     try:
         p = compute_panchang(req.on, req.lat, req.lon, req.tz_name)
-    except Exception as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:  # polar day without sunrise
+        raise calc_error(exc) from exc
     return {
         "date": p.date.isoformat(),
         "weekday": p.weekday,

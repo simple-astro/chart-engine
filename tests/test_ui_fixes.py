@@ -1,0 +1,115 @@
+"""Front-end fixes from the QA pass, checked on the shipped index.html: routing, Match making, the timezone field,
+the chat limit and the "Go deeper" chips. Pure helpers run under node when it is installed."""
+import json
+import re
+import shutil
+import subprocess
+from pathlib import Path
+
+import pytest
+
+INDEX = (Path(__file__).resolve().parent.parent / "app" / "static" / "index.html").read_text()
+
+
+def _between(text, start, end):
+    i = text.index(start)
+    return text[i:text.index(end, i)]
+
+
+# ----- P1 navigation -----
+def test_match_making_lives_with_the_bottom_bar_and_has_a_way_out():
+    out = _between(INDEX, '<section id="out"', '<div class="scr" id="s-today"')
+    assert 'id="sjbar"' in out and '<section id="viewMatch"' in out  # same area, so the bar shows on Match
+    assert 'id="mback"' in _between(INDEX, '<section id="viewMatch"', "</section>")
+    assert re.search(r'<a class="brand" id="brand" href="#today"', INDEX)  # the logo goes to Today
+
+
+def test_one_router_for_every_view():
+    script = INDEX[INDEX.index("// ----- routing:"):]
+    assert "function route(){" in script and "function nav(hash,o){" in script
+    route = _between(script, "function route(){", "\n}\n")
+    for h in ("'new'", "'edit'", "'match'"):
+        assert h in route
+    assert "go('today',undefined,{replace:true})" in route  # unknown routes fall back to Today
+    assert "addEventListener('hashchange',onHash)" in INDEX and "addEventListener('popstate',onHash)" in INDEX
+    assert "$('matchbtn').onclick=()=>{closeMenu();nav('match')}" in INDEX
+    assert "nav('new')" in _between(INDEX, "$('newbtn').onclick=", "\n")
+    # nav() always routes, so a tap on the item you are on still works; go() records screens in history
+    assert re.search(r"function nav\(hash,o\)\{[^}]*\n[^\n]*\n\s*route\(\);", INDEX)
+    assert "pushState'" in _between(INDEX, "function go(name,sub,o){", "\nfunction loadVisible")
+    # the old handler that ignored hashes while another view was showing is gone
+    assert "if(!$('out').hidden){const[h,sub]=location.hash" not in INDEX
+
+
+# ----- P2 timezone -----
+def test_timezone_field_shows_its_own_error():
+    assert 'aria-describedby="tzerr"' in INDEX and 'id="tzerr"' in INDEX and 'list="tzlist"' in INDEX
+    submit = _between(INDEX, "$('f').addEventListener('submit'", "\n});")
+    assert "validTz(body.tz_name)" in submit and "d.field==='tz'" in submit
+    assert "'Error: '+err.message" not in submit
+    assert "Intl.supportedValuesOf('timeZone')" in INDEX
+
+
+# ----- P4 -----
+def test_match_needs_two_different_profiles():
+    assert 'id="madd"' in INDEX and "Add a second profile" in INDEX
+    ready = _between(INDEX, "function matchReady(){", "\n")
+    assert "profiles.length>=2&&$('mgroom').value!==$('mbride').value" in ready
+
+
+def test_chat_switches_off_at_the_daily_limit():
+    paint = _between(INDEX, "function paintLimit(){", "\n}\n")
+    assert "$('q').disabled=!on" in paint and "Daily limit reached" in paint and "resets_at" in paint
+    submit = _between(INDEX, "$('askf').addEventListener('submit'", "\n});")
+    assert "paintLimit()" in submit and "$('askbtn').disabled=false" not in submit
+
+
+def test_ayanamsha_is_remembered_and_place_search_is_debounced():
+    assert "localStorage.setItem('sj-ayanamsha'" in INDEX and "lastAyan()" in INDEX
+    assert "SEARCH_T=setTimeout(search," in INDEX and "AbortController" in INDEX and 'class="spin"' in INDEX
+
+
+def test_unknown_birth_time_softens_the_lagna():
+    assert "needs birth time" in INDEX and "noTime" in INDEX
+
+
+# ----- pure helpers, run for real -----
+NODE = shutil.which("node")
+
+
+def _js(expr: str):
+    helpers = INDEX[INDEX.index("window.apiErr="):INDEX.index("\n", INDEX.index("window.apiErr="))] + "\n"
+    helpers += _between(INDEX, "const DEEPER=", "function deeper(q,answer){")
+    code = "const window={};const esc=s=>s;\n" + helpers.replace("window.apiErr=", "window.apiErr=") + \
+        "\nconst apiErr=window.apiErr;\nconsole.log(JSON.stringify(" + expr + "))"
+    return json.loads(subprocess.run([NODE, "-e", code], capture_output=True, text=True, check=True).stdout)
+
+
+@pytest.mark.skipif(not NODE, reason="node not installed")
+def test_api_errors_read_as_one_line():
+    assert _js("apiErr('Profile not found')") == "Profile not found"
+    assert _js("apiErr({field:'tz',message:'We don’t recognise that timezone.'})") == "We don’t recognise that timezone."
+    assert _js("apiErr([{msg:'a'},{msg:'b'}])") == "a; b"
+    assert _js("apiErr(undefined)") == ""
+
+
+@pytest.mark.skipif(not NODE, reason="node not installed")
+def test_go_deeper_follows_the_matter_discussed():
+    marriage = _js("deeperPicks('When will I get married?','Your 7th house…')")
+    assert len(marriage) == 3 and all("marriage" in p or "career" in p for p in marriage)
+    assert not any(p.startswith("When") for p in marriage)  # timing was just asked
+    career = _js("deeperPicks('Will I get a promotion?','')")
+    assert any("my career" in p for p in career) and career != marriage
+    remedy = _js("deeperPicks('What remedy helps my health?','')")
+    assert not any("upaya" in p for p in remedy)  # a remedy was just asked
+
+
+@pytest.mark.skipif(not NODE, reason="node not installed")
+def test_no_go_deeper_after_a_refusal():
+    from app import chat
+    src = Path(chat.__file__).read_text()
+    refusal = re.search(r'"(I can\'t help with that question\. )"\s*\n\s*"(Please ask me something else[^"]*)"', src)
+    assert refusal, "the server's refusal text moved: update REFUSED in index.html"
+    text = refusal.group(1) + refusal.group(2)
+    assert _js(f"REFUSED.test({json.dumps(text)})") is True
+    assert _js("REFUSED.test('Your career looks steady this year.')") is False

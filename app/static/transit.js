@@ -46,10 +46,10 @@
         const z = encodeURIComponent(zone() || '');
         el.querySelector('#trlocname').textContent = LOC.name();
         const r = await fetch(`/profiles/${profileId}/transit?date=${day}&tz=${z}`, { signal: ctrl.signal });
-        const d = await r.json(); if (!r.ok) throw new Error(d.detail || r.statusText);
+        const d = await r.json(); if (!r.ok) throw new Error(window.apiErr(d.detail) || r.statusText);
         paint(d);
         const re = await fetch(`/profiles/${profileId}/transit/events?date=${day}&tz=${z}`, { signal: ctrl.signal });
-        const ev = await re.json(); if (!re.ok) throw new Error(ev.detail || re.statusText);
+        const ev = await re.json(); if (!re.ok) throw new Error(window.apiErr(ev.detail) || re.statusText);
         lastEv = ev; paintPeriods(ev.periods); paintEvents(ev);
       } catch (e) { if (e.name !== 'AbortError') body.innerHTML = `<p class="hint err">Couldn’t load transits: ${esc(e.message)}</p>`; }
       body.classList.remove('loading');

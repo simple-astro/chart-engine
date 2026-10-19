@@ -7,7 +7,7 @@ from datetime import date, datetime, timezone
 from pydantic import BaseModel, Field
 
 from app import muhurat, storage, today as today_mod
-from app.routes import chart as compute_chart, with_extras
+from app.routes import calc_error, chart as compute_chart, require_tz, with_extras
 from app.schemas import ChartRequest
 from core import horary, jamakkol, lalkitab, matchmaking
 
@@ -50,6 +50,7 @@ class TodayRequest(BaseModel):
     maha: str | None = Field(default=None, pattern=GRAHA)
     antar: str | None = Field(default=None, pattern=GRAHA)
     antar_sign: int | None = Field(default=None, ge=0, le=11)  # natal sign of the Antardasha lord
+    maha_sign: int | None = Field(default=None, ge=0, le=11)   # natal sign of the Mahadasha lord
 
 
 class HoraryRequest(BaseModel):
@@ -220,10 +221,7 @@ def lagna_times(lat: float, lon: float, tz: str, on: date | None = None, ayanams
     """When each sign rises on a local day (for planning a muhurat by lagna)."""
     from zoneinfo import ZoneInfo
     from app import birth_extras as B
-    try:
-        day = on or datetime.now(ZoneInfo(tz)).date()
-    except Exception:
-        raise HTTPException(status_code=422, detail="Unknown time zone")
+    day = on or datetime.now(ZoneInfo(require_tz(tz))).date()
     return {"date": day.isoformat(), "rises": B.lagna_times(day, lat, lon, tz, ayanamsha)}
 
 
@@ -245,14 +243,10 @@ def horary_kinds() -> list[dict]:
 
 @router.post("/jamakkol")
 def jamakkol_prashna(req: JamakkolRequest) -> dict:
-    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
     when = req.asked_at or datetime.now(timezone.utc)
     if when.tzinfo is None:
         raise HTTPException(status_code=422, detail="asked_at needs a timezone")
-    try:
-        ZoneInfo(req.tz_name)
-    except (ZoneInfoNotFoundError, ValueError) as exc:
-        raise HTTPException(status_code=422, detail="Unknown time zone") from exc
+    require_tz(req.tz_name)
     try:
         return jamakkol.jamakkol(req.kind, when, req.lat, req.lon, req.tz_name)
     except ValueError as exc:
@@ -266,27 +260,32 @@ def jamakkol_kinds() -> list[dict]:
 
 @router.post("/muhurat/find")
 def find_muhurat(req: FindRequest) -> dict:
+    require_tz(req.tz_name)
+    if not any(a["key"] == req.activity for a in muhurat.ACTIVITIES):
+        raise HTTPException(status_code=422, detail="Pick one of the listed activities.")
     try:
         return muhurat.find_dates(req.activity, req.start, req.days, req.lat, req.lon, req.tz_name,
                                   req.birth_nakshatra, req.birth_moon_sign)
-    except Exception as exc:  # unknown activity, bad timezone, polar day
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:  # polar day without sunrise
+        raise calc_error(exc) from exc
 
 
 @router.post("/today")
 def today(req: TodayRequest) -> dict:
+    require_tz(req.tz_name)
     try:
         return today_mod.today(req.date, req.lat, req.lon, req.tz_name, req.lagna_sign, req.birth_nakshatra,
-                               req.birth_moon_sign, req.maha, req.antar, req.antar_sign)
-    except Exception as exc:  # bad timezone or polar day without sunrise
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+                               req.birth_moon_sign, req.maha, req.antar, req.antar_sign, req.maha_sign)
+    except Exception as exc:  # polar day without sunrise
+        raise calc_error(exc) from exc
 
 
 @router.post("/muhurat")
 def daily_muhurat(req: MuhuratRequest) -> dict:
+    require_tz(req.tz_name)
     try:
         days = muhurat.muhurat_days(req.start, req.days, req.lat, req.lon, req.tz_name,
                                     req.birth_nakshatra, req.birth_moon_sign, req.lagna_sign, full=True)
-    except Exception as exc:  # bad timezone or polar day without sunrise
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:  # polar day without sunrise
+        raise calc_error(exc) from exc
     return {"tz_name": req.tz_name, "days": days}

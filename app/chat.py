@@ -167,7 +167,8 @@ def day_guide(profile: dict, d: date) -> dict:
     antar = lords.get("antar")
     g = T.today(d, w["lat"], w["lon"], w["tz_name"], chart["lagna"]["sign_index"], moon["nakshatra_index"],
                 moon["sign_index"], lords.get("maha"), antar,
-                chart["grahas"][antar]["sign_index"] if antar in chart["grahas"] else None)
+                chart["grahas"][antar]["sign_index"] if antar in chart["grahas"] else None,
+                chart["grahas"][lords["maha"]]["sign_index"] if lords.get("maha") in chart["grahas"] else None)
     col = g["colour"]
     return {
         "place": w["place"], "time_zone": w["tz_name"], "date": p["date"], "weekday": p["weekday"],

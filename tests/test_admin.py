@@ -327,3 +327,29 @@ def test_quota_shows_questions_left(gated, fake_llm):
     t.post(f"/profiles/{pid}/chat", json={"message": "How is my career outlook?"})
     assert t.get("/quota").json()["left"] == 29
     assert _admin().get("/quota").json() == {"limited": False}
+
+
+def test_fourth_question_is_refused_and_quota_says_when_it_resets(gated, fake_llm):
+    """QA: at 0 questions left the box stayed enabled. The server refuses a 4th question with a plain 429, and
+    /quota reports 0 left and the reset time the Ask screen shows."""
+    from datetime import datetime, timedelta, timezone
+    _admin().put("/admin/api/settings", json={"daily_limit_per_tester": 3})
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    for q in ("How is my career?", "And my marriage?", "What about money?"):
+        assert t.post(f"/profiles/{pid}/chat", json={"message": q}).status_code == 200
+    r = t.post(f"/profiles/{pid}/chat/stream", json={"message": "And my health?"})
+    assert r.status_code == 429 and "refill tomorrow" in r.json()["detail"]
+    q = t.get("/quota").json()
+    assert q["left"] == 0 and q["used"] == 3
+    tomorrow = datetime.now(timezone.utc).date() + timedelta(days=1)
+    assert datetime.fromisoformat(q["resets_at"]) == datetime(tomorrow.year, tomorrow.month, tomorrow.day,
+                                                              tzinfo=timezone.utc)
+
+
+def test_quota_is_zero_when_everyones_cap_is_used(gated, fake_llm):
+    _admin().put("/admin/api/settings", json={"daily_limit_total": 1})
+    t = _tester()
+    pid = t.post("/profiles", json=BODY).json()["id"]
+    assert t.post(f"/profiles/{pid}/chat", json={"message": "How is my career?"}).status_code == 200
+    assert _tester().get("/quota").json()["left"] == 0

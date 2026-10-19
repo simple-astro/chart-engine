@@ -94,7 +94,7 @@
     background:color-mix(in srgb,var(--bg) 78%,transparent);border-bottom:1px solid var(--line)}
   .top .in{max-width:1200px;margin:0 auto;padding:11px 22px;display:flex;align-items:center;gap:10px}
   .brand{font:600 1.5rem/1 var(--serif);display:flex;align-items:center;gap:10px;margin-right:auto;white-space:nowrap;letter-spacing:.3px}
-  .brand em{font-style:normal;color:var(--acc)}
+  .brand em{font-style:normal;color:var(--acc)} a.brand{color:inherit;text-decoration:none}
   .brand .logo{width:40px;height:40px;flex:none;filter:drop-shadow(0 2px 6px rgba(201,143,46,.35))}
   .sel{display:flex;align-items:center;gap:6px}
   select{padding:9px 12px;border-radius:11px;border:1px solid var(--line);background:var(--card);max-width:220px;cursor:pointer}
@@ -245,6 +245,7 @@
   .tsbtns{display:inline-flex;gap:4px} .tsbtns button{min-width:40px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
   .tsprev{border:1px solid color-mix(in srgb,var(--acc) 45%,transparent);border-radius:12px;padding:10px 12px;background:color-mix(in srgb,var(--acc) 8%,transparent)}
   .tstab td,.tstab th{padding:5px 8px;font-size:.86rem} .tstab tr.chg td{color:var(--acc);font-weight:700}
+  .evmeth{margin:4px 0 10px} .evagree{font-weight:700;letter-spacing:2px;color:var(--acc);font-variant-numeric:tabular-nums}
   .comp .cin{fill:var(--solid);stroke:var(--acc);stroke-width:1.2;opacity:1}
   .comp .csn{fill:var(--mut);font:500 7px var(--sans)} .comp .con{fill:var(--mut);font:600 10px var(--sans);opacity:.8}
   .comp .cpi{font:600 9px var(--sans)} .comp .cnat{fill:var(--ink)} .comp .cpo{font:700 12.5px var(--sans)} .comp .cpo.sm{font-size:11px} .comp .ctr{fill:var(--trn)}
@@ -258,6 +259,9 @@
   .kpbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px} .kpbtns button{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:.84rem;font-weight:600;cursor:pointer;min-height:36px}
   small.kpl{display:block;color:var(--mut);font-size:.74rem;white-space:nowrap} mark.kpch{background:var(--acc);color:var(--bg);border-radius:4px;padding:0 4px}
   .ok{color:var(--ok)} .err{color:var(--bad)}
+  .spin{display:inline-block;width:12px;height:12px;margin-right:7px;vertical-align:-1px;border:2px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
+  @media(prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
+  .ferr{color:var(--bad);font-size:.86rem;margin-top:6px} input[aria-invalid=true]{border-color:var(--bad)}
   .sugg{border:1px solid var(--line);border-radius:12px;margin-top:8px;overflow:hidden;background:var(--solid);box-shadow:var(--shadow)}
   .sugg div{padding:10px 14px;cursor:pointer;font-size:.92rem;transition:.14s} .sugg div:hover{background:var(--soft);color:var(--acc)}
   details.adv summary{cursor:pointer;color:var(--mut);font-size:.88rem;padding:4px 0}
@@ -273,6 +277,8 @@
   .stat:hover{border-color:var(--acc);transform:translateY(-2px)}
   .stat small{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
   .stat b{font-size:1rem;color:var(--acc);font-weight:600}
+  .stat.soft b{color:var(--mut);font-weight:500} .stat.soft em{display:block;font-style:normal;font-size:.7rem;color:var(--mut)}
+  .tunk{flex-basis:100%;margin:4px 0 0;font-size:.86rem;color:var(--mut)} .tunk b{color:var(--ink)}
   .grid{display:flex;flex-direction:column;gap:22px}
   .chartcard{display:grid;grid-template-columns:minmax(280px,420px) 1fr;grid-template-areas:"h h" "c k" "c l" "c n" "x x" "r r";column-gap:32px;align-content:start}
   .chartcard>.chhead{grid-area:h;display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:14px}
@@ -290,6 +296,18 @@
   .gdkey{margin:6px 0 0;font-size:.74rem;color:var(--mut)} .chart .dlv{fill:var(--acc);font-weight:700;font-size:.62em} .vfrom{width:min(260px,100%);margin:10px auto 0} .chseg button{white-space:nowrap;padding-left:4px;padding-right:4px} .chartcard>#chart{grid-area:c} .chartcard>.ckey{grid-area:k;margin-top:0;align-self:start}
   .chartcard>.clegend{grid-area:l;justify-content:flex-start} .chartcard>.hint{grid-area:n;text-align:left!important}
   .chartcard>.hread{grid-area:r} .chartcard>.lnkpanel{grid-area:x}
+  /* Wide screens: the chart's controls sit in rows (style + view, then day + options) and the Gochar dasha and
+     "what the sky is touching" cards sit side by side, instead of one narrow centred column. */
+  .gpanels{display:contents}
+  @media (min-width:901px){
+    .chartcard>.chhead{flex-direction:row;flex-wrap:wrap;justify-content:center;column-gap:12px;row-gap:10px}
+    .chartcard>.chhead>h3,.chartcard>.chhead>.gstep,.chartcard>.chhead>.gpanels,.chartcard>.chhead>.lnkbar{flex-basis:100%}
+    .chartcard>.chhead>.lnkbar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:auto}
+    .chhead .chstyle{width:auto} .chhead .chstyle button{white-space:nowrap;padding-left:14px;padding-right:14px} .chhead .chseg{width:auto;min-width:340px}
+    .gstep{flex-wrap:nowrap;gap:10px} .gstep .gctl{flex-basis:auto;margin:0 0 0 6px}
+    .gpanels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start}
+    .gpanels>.gdasha,.gpanels>.ghits{margin:0;max-width:none} .gpanels .hint{text-align:left}
+  }
   @media (max-width:900px){.chartcard{grid-template-columns:1fr;grid-template-areas:"h" "c" "x" "r" "k" "l" "n"}
     .chartcard>.ckey{margin-top:16px} .chartcard>.clegend{justify-content:center} .chartcard>.hint{text-align:center!important}}
   .chartcard{padding:22px;position:relative}
@@ -340,12 +358,14 @@
   .gkx{display:none}
   @media (min-width:901px){
     .chartcard{grid-template-rows:auto auto auto 1fr}
-    .chartcard>.ckey{grid-template-columns:1fr;gap:5px}
-    .chartcard .gk{padding:7px 12px;gap:10px}
-    .chartcard .gk>span{font-size:.86rem} .chartcard .gk small{font-size:.76rem}
-    .gkx{display:flex;flex-direction:column;align-items:flex-end;margin-left:auto;font-size:.76rem;color:var(--mut);line-height:1.2;white-space:nowrap;text-align:right}
-    .gkx b{font-weight:600;color:var(--ink);font-size:.8rem}
-    .chartcard .gka{margin-left:6px}
+    /* Planet list beside the chart: compact rows, two columns when the column is wide enough. */
+    .chartcard>.ckey{grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:6px;align-content:start}
+    .chartcard .gk{padding:6px 10px;gap:9px;border-radius:10px}
+    .chartcard .gk>b{width:26px;height:26px;font-size:.7rem}
+    .chartcard .gk>span{font-size:.84rem;line-height:1.15} .chartcard .gk small{font-size:.74rem}
+    .gkx{display:flex;flex-direction:column;align-items:flex-end;margin-left:auto;min-width:0;font-size:.74rem;color:var(--mut);line-height:1.15;text-align:right}
+    .gkx b{font-weight:600;color:var(--ink);font-size:.78rem} .gkx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .chartcard .gka{margin-left:4px;padding:2px 6px}
     .chartcard>.clegend{margin-top:14px} .chartcard>.hint{margin-top:8px}
   }
   /* guidance page */
@@ -437,6 +457,8 @@
   .ffsum{margin:4px 0 0;font-weight:600}
   .ffl{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
   .ffl li{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg2)}
+  .ffskip{margin-top:10px;font-size:.88rem} .ffskip small{color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:.72rem}
+  .ffskip ul{margin:4px 0 0;padding-left:18px} .ffskip li span{color:var(--mut)}
   .ffh{display:flex;align-items:center;justify-content:space-between;gap:8px} .ffh .badge{margin:0}
   .fft{color:var(--acc);font-weight:600;font-size:.9rem;margin:3px 0 2px} .ffl small{color:var(--mut);line-height:1.4;display:block}
   .hq-row{display:flex;gap:8px} .hq-row input{flex:1;font-size:1.3rem;font-weight:600;text-align:center;letter-spacing:2px}
@@ -468,7 +490,7 @@
   .jktab th{font-size:.68rem;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);font-weight:600} .jktab td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
   .jktab.cf td:last-child{font-weight:600}
   .jkn{font-size:.78rem;color:var(--mut);text-align:center;margin:4px 0 0}
-  .hq-row #jk-place{font-size:1rem;font-weight:400;text-align:left;letter-spacing:0;min-width:0}
+  .hq-row #jk-place,.hq-row #hq-place{font-size:1rem;font-weight:400;text-align:left;letter-spacing:0;min-width:0}
   .jkc{border:1px solid var(--line);border-radius:8px;padding:4px 5px;background:var(--bg2);display:flex;flex-direction:column;gap:1px;min-width:0;font-size:.74rem;line-height:1.25}
   .jkc small{color:var(--mut);font-size:.62rem} .jkc b{font-weight:700;overflow-wrap:anywhere} .jkc em{font-style:normal;color:var(--g2);font-weight:600;overflow-wrap:anywhere}
   .jkc i{font-style:normal;font-size:.6rem;font-weight:700;letter-spacing:.3px;border-radius:5px;padding:0 4px;align-self:flex-start}
@@ -735,6 +757,7 @@
   .rem ul{margin:6px 0 0;padding-left:18px} .rem li{margin:4px 0;color:var(--mut)}
   .callout{border-left:3px solid var(--acc);background:var(--soft);padding:12px 16px;border-radius:0 12px 12px 0;margin:0 0 16px;font-size:.92rem}
   .matchhead{display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end;padding:26px}
+  .madd{padding:22px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:14px} .madd p{margin:0} .mback{margin:0 0 6px;padding:6px 0}
   .score{display:flex;align-items:center;gap:26px;padding:28px;margin-top:20px;flex-wrap:wrap}
   .ring{--p:0;width:132px;height:132px;border-radius:50%;display:grid;place-items:center;flex:none;
     background:conic-gradient(var(--g1) calc(var(--p)*1%),var(--line) 0);box-shadow:var(--glow)}
@@ -1087,6 +1110,14 @@
     .hero{grid-template-columns:1fr;gap:26px;padding-top:18px} .hero h1{font-size:2.5rem} .wheel{display:none}
     .grid{grid-template-columns:1fr} .chartcard{position:static} .lk{grid-template-columns:1fr}
     .matchhead{grid-template-columns:1fr} .twocol{grid-template-columns:1fr}
+    /* Guna Milan table on phones: each koota is a small card, so "What it looks at" is never cut off. */
+    #mtable,#mtable tbody{display:block;min-width:0} #mtable thead{display:none}
+    #mtable tr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"k s" "g b" "bar bar" "w w";gap:4px 12px;padding:12px 2px;border-bottom:1px solid var(--line)}
+    #mtable td{padding:0;border:0;white-space:normal}
+    #mtable td:nth-child(1){grid-area:k} #mtable td:nth-child(4){grid-area:s;text-align:right}
+    #mtable td:nth-child(2){grid-area:g} #mtable td:nth-child(3){grid-area:b;text-align:right}
+    #mtable td:nth-child(2)::before{content:"Groom · ";color:var(--mut)} #mtable td:nth-child(3)::before{content:"Bride · ";color:var(--mut)}
+    #mtable td:nth-child(5){grid-area:bar} #mtable td:nth-child(6){grid-area:w;color:var(--mut);font-size:.86rem}
   }
   @media(max-width:620px){
     form#f{grid-template-columns:1fr;padding:20px} main{padding:20px 14px 120px} .top .in{padding:9px 14px}
@@ -1100,7 +1131,7 @@
 </head>
 <body>
 <header class="top"><div class="in" id="topin">
-  <div class="brand" id="brand"><img class="logo" src="/static/sun.svg" alt=""><span>Simple<em>Jyotish</em></span></div>
+  <a class="brand" id="brand" href="#today" aria-label="SimpleJyotish: go to Today"><img class="logo" src="/static/sun.svg" alt=""><span>Simple<em>Jyotish</em></span></a>
   <div class="who" id="saved" hidden>
     <button type="button" class="pill" id="pbtn" aria-haspopup="menu" aria-expanded="false" aria-controls="pmenu">
       <span class="av" id="pav" aria-hidden="true"></span>
@@ -1158,7 +1189,8 @@
           <div id="placeinfo" class="hint">Search and pick a city, or enter coordinates below.</div></div>
         <div><label for="lat">Latitude</label><input id="lat" type="number" step="any" min="-90" max="90" required></div>
         <div><label for="lon">Longitude</label><input id="lon" type="number" step="any" min="-180" max="180" required></div>
-        <div class="full"><label for="tz">Timezone (IANA)</label><input id="tz" placeholder="Asia/Kolkata" required></div>
+        <div class="full"><label for="tz">Timezone (IANA)</label><input id="tz" placeholder="Asia/Kolkata" list="tzlist" autocomplete="off" aria-describedby="tzerr" required>
+          <datalist id="tzlist"></datalist><div id="tzerr" class="ferr" role="alert" hidden></div></div>
         <details class="adv full"><summary>Advanced options</summary>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
             <div><label for="ayan">Ayanamsha</label><select id="ayan"><option value="krishnamurti">Krishnamurti (KP)</option><option value="lahiri">Lahiri</option><option value="pushya">Pushya Paksha</option><option value="raman">Raman</option><option value="fagan">Fagan-Bradley</option><option value="tropical">Tropical (no ayanamsha)</option></select></div>
@@ -1171,19 +1203,6 @@
     </div>
   </section>
 
-  <!-- ===== match making view ===== -->
-  <section id="viewMatch" hidden>
-    <h2 class="serif" style="font-size:1.9rem;margin-bottom:6px">Match making</h2>
-    <p class="hint" style="margin:0 0 18px">Guna Milan with dosha cancellations, Manglik check and each person’s marriage promise (KP), between two saved profiles.</p>
-    <div class="card matchhead">
-      <div><label for="mgroom">Groom</label><select id="mgroom" style="width:100%;max-width:none"></select></div>
-      <div><label for="mbride">Bride</label><select id="mbride" style="width:100%;max-width:none"></select></div>
-      <button type="button" class="btn" id="mgo">Check compatibility</button>
-    </div>
-    <div id="mhint" class="hint" style="margin:8px 4px"></div>
-    <div id="mres" hidden></div>
-  </section>
-
   <!-- ===== results: five screens behind the bottom bar ===== -->
   <section id="out" hidden>
     <nav class="sjbar" id="sjbar" aria-label="Main" hidden>
@@ -1193,6 +1212,21 @@
       <button type="button" data-go="remedies"><svg viewBox="0 0 24 24"><path d="M12 3c2 3 3 4.6 3 6.5a3 3 0 0 1-6 0C9 7.6 10 6 12 3z"/><path d="M4 15h16l-2 4H6z"/></svg><span>Remedies</span></button>
       <button type="button" data-go="chart"><svg viewBox="0 0 24 24"><path d="M4 4h5v16H4zM10 4h4v16h-4zM15.5 5l3.8-1 2.7 15.5-3.8 1z"/></svg><span>Studies</span></button>
     </nav>
+
+  <!-- ===== match making view ===== -->
+    <section id="viewMatch" hidden>
+      <button type="button" class="linkbtn mback" id="mback">← Back</button>
+      <h2 class="serif" style="font-size:1.9rem;margin-bottom:6px">Match making</h2>
+      <p class="hint" style="margin:0 0 18px">Guna Milan with dosha cancellations, Manglik check and each person’s marriage promise (KP), between two saved profiles.</p>
+      <div class="card madd" id="madd" hidden><p></p><button type="button" class="btn" id="maddbtn">+ Add a second profile</button></div>
+    <div class="card matchhead" id="matchhead">
+        <div><label for="mgroom">Groom</label><select id="mgroom" style="width:100%;max-width:none"></select></div>
+        <div><label for="mbride">Bride</label><select id="mbride" style="width:100%;max-width:none"></select></div>
+        <button type="button" class="btn" id="mgo">Check compatibility</button>
+      </div>
+      <div id="mhint" class="hint" style="margin:8px 4px"></div>
+      <div id="mres" hidden></div>
+    </section>
 
     <!-- Today: the daily card, how you feel, today's good and difficult times -->
     <div class="scr" id="s-today" data-scr="today">
@@ -1278,7 +1312,7 @@
           <div class="gctl"><div class="seg gfrom" id="gfrom" role="radiogroup" aria-label="Count houses from"><button type="button" role="radio" data-gf="lagna" class="on" aria-checked="true">Lagna</button><button type="button" role="radio" data-gf="moon" aria-checked="false">Moon</button></div>
           <select id="gint" aria-label="Step"><option value="1">Daily</option><option value="7">Weekly</option><option value="30">Monthly</option></select>
           <button type="button" class="btn ghost gplay" id="gplay" aria-pressed="false">▶ Play</button></div></div>
-        <div class="gdasha" id="gdasha" hidden></div><div class="ghits" id="ghits" hidden></div>
+        <div class="gpanels"><div class="gdasha" id="gdasha" hidden></div><div class="ghits" id="ghits" hidden></div></div>
           <button type="button" class="jpt" id="jpt" aria-pressed="false" title="Show the Jaimini Arudha Lagna (AL) and Upapada (UL) on the chart">AL · UL</button>
           <div class="lnkbar" id="lnkbar"><div class="seg lnkseg" id="lnkseg" role="group" aria-label="Draw planet links on the chart">
             <button type="button" data-m="place" aria-pressed="false">Placement</button><button type="button" data-m="asp" aria-pressed="false">Aspects</button><button type="button" data-m="conj" aria-pressed="false">Conjunctions</button></div>
@@ -1374,6 +1408,8 @@
 <script src="/static/kptiming.js?v=6"></script>
 <script src="/static/transit.js?v=10"></script>
 <script>
+// API errors as one readable line: a string detail, {field, message}, or FastAPI's list of field errors.
+window.apiErr=d=>d==null?'':typeof d==='string'?d:Array.isArray(d)?d.map(x=>x.msg||'').filter(Boolean).join('; '):d.message||'';
 {const f=window.fetch.bind(window);window.fetch=async(u,o)=>{const r=await f(u,o);if(r.status===401&&String(u).startsWith('/'))location.reload();return r}}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1408,10 +1444,48 @@ paintTheme();
 // ----- views & tabs -----
 let hasChart=false;
 function hideAll(){$('viewForm').hidden=true;$('out').hidden=true;$('viewMatch').hidden=true;$('sjbar').hidden=true}
-function showForm(){hideAll();$('viewForm').hidden=false;$('cancel').hidden=!hasChart;window.scrollTo({top:0,behavior:'smooth'})}
-function showResults(){hasChart=true;hideAll();$('out').hidden=false;$('sjbar').hidden=false;SCREEN?go(SCREEN):go(...startScreen())}
-$('newbtn').onclick=()=>{editId=null;$('go').textContent='Generate chart';$('f').reset();try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){};$('placeinfo').textContent='Search and pick a city, or enter coordinates below.';showForm()};
-$('cancel').onclick=()=>{editId=null;$('go').textContent='Generate chart';showResults()};
+function showForm(){hideAll();VIEW='form';$('viewForm').hidden=false;$('cancel').hidden=!hasChart;window.scrollTo({top:0,behavior:'smooth'})}
+// The results area (the five screens and Match making) with the bottom bar.
+function showOut(){$('viewForm').hidden=true;$('out').hidden=false;$('sjbar').hidden=!hasChart;$('viewMatch').hidden=true}
+// A chart has just loaded (startup, switching charts, a new or edited chart): show the view the address asks for.
+// After the form (#new, #edit) a new chart opens on Today and an edited one returns to the screen it came from.
+function showResults(){hasChart=true;
+  const h=location.hash.slice(1).split('/')[0];
+  if(h==='new'){const to=AFTER_NEW;AFTER_NEW=null;to?nav(to,{replace:true}):go('today',undefined,{replace:true})}
+  else if(h==='edit')nav(LAST_SCREEN||'today',{replace:true});
+  else route()}
+function openNew(){editId=null;$('go').textContent='Generate chart';$('f').reset();try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){};
+  const ay=lastAyan();if(ay)$('ayan').value=ay;
+  tzError('');$('placeinfo').textContent='Search and pick a city, or enter coordinates below.';showForm()}
+$('newbtn').onclick=()=>{AFTER_NEW=null;nav('new')};
+$('cancel').onclick=()=>{editId=null;$('go').textContent='Generate chart';nav(LAST_SCREEN||'today')};
+
+// The ayanamsha last used for a new chart is offered again next time (this device only).
+const lastAyan=()=>{try{const v=localStorage.getItem('sj-ayanamsha');return v&&[...$('ayan').options].some(o=>o.value===v)?v:null}catch(e){return null}};
+{const ay=lastAyan();if(ay)$('ayan').value=ay}
+
+// ----- routing: the address (#today, #timing/dates, #chart/planets, #match, #new…) decides the view -----
+// route() is the one place that picks the view. It runs on load, on every hashchange (typed links, back and
+// forward) and straight from nav(), so a tap on the item you are already on still works.
+// Screen hashes: see go(). Others: #match (Match making), #new (new-chart form), #edit (editing the current chart).
+// Anything else falls back to #today.
+let VIEW=null,ROUTED=null,LAST_SCREEN=null,AFTER_NEW=null;  // AFTER_NEW: where a new chart returns to (Match making)
+function nav(hash,o){
+  const to='#'+hash;
+  try{if(location.hash!==to)history[o&&o.replace?'replaceState':'pushState']({sj:1},'',to)}catch(e){location.hash=to;return}
+  route();
+}
+function route(){
+  const[h,sub]=location.hash.slice(1).split('/');
+  if(h==='new'){openNew();ROUTED=location.hash;return}
+  if(h==='edit'&&editId!=null){showForm();ROUTED=location.hash;return}
+  if(h==='match'){openMatch(sub);ROUTED=location.hash;return}
+  if(!hasChart){showForm();ROUTED=location.hash;return}  // nothing to show until a chart is loaded
+  if(SCREENS.includes(h)||h==='life'){go(h,sub,{replace:true});return}
+  go('today',undefined,{replace:true});
+}
+const onHash=()=>{if(location.hash!==ROUTED)route()};
+addEventListener('hashchange',onHash);addEventListener('popstate',onHash);
 // ----- screens: Today · Timing · Ask Astropositivism · Remedies · Kundli (bottom bar on phones, top on desktop) -----
 // One tab per question: how is today, when do things happen, ask, what can I do, what does my chart say.
 // The Kundli screen keeps its old id "chart" so saved links keep working; old "#life" links are mapped below.
@@ -1451,10 +1525,11 @@ function setBranch(b){
   if(!cur||cur.dataset.branch!==BRANCH){const first=tiles.find(t=>t.dataset.branch===BRANCH);if(first)showPane(first.dataset.pane)}
 }
 const OLD_LIFE={dasha:['timing','matter'],transits:['timing','transits']};
-const startScreen=()=>{const[h,sub]=location.hash.slice(1).split('/');return SCREENS.includes(h)||h==='life'?[h,sub]:['today']};
-function go(name,sub){
+function go(name,sub,o){
   if(name==='life')[name,sub]=OLD_LIFE[sub]||['chart',null];
   if(!SCREENS.includes(name))name='today';
+  if(!hasChart){showForm();return}
+  showOut();VIEW='screen';
   $('srbtn').hidden=false;
   SCREEN=name;
   document.querySelectorAll('#out .scr').forEach(s=>s.hidden=s.dataset.scr!==name);
@@ -1469,7 +1544,10 @@ function go(name,sub){
   const tkey=name==='timing'?'timing/'+TM:name==='chart'?(!BRANCH?'studies':sub&&$('ctiles').querySelector('[data-pane="'+sub+'"]')?'kundli/'+sub:'studies/'+BRANCH):name;
   if(tkey!==TRACK.last){TRACK.last=tkey;track(tkey)}
   const chartHash=!BRANCH?'':'/'+(BRANCH==='prashna'||$('ctiles').hidden?BRANCH:$('csel').value);
-  try{history.replaceState(null,'','#'+name+(name==='timing'&&TM!=='now'?'/'+TM:name==='chart'?chartHash:''))}catch(e){}
+  // Screens set the address too: a new entry (so Back works) unless the address already led here.
+  const hash='#'+name+(name==='timing'&&TM!=='now'?'/'+TM:name==='chart'?chartHash:'');
+  try{if(location.hash!==hash)history[o&&o.replace?'replaceState':'pushState']({sj:1},'',hash)}catch(e){}
+  ROUTED=location.hash;LAST_SCREEN=hash.slice(1);
   loadVisible();
   if(name==='ask')setTimeout(()=>{if(!$('q').disabled&&canHover())$('q').focus();toBottom()},60);
   window.scrollTo({top:0});
@@ -1508,7 +1586,6 @@ $('s-chart').addEventListener('click',e=>{const b=e.target.closest('[data-branch
 $('ctiles').addEventListener('click',e=>{const b=e.target.closest('[data-pane]');if(!b)return;go('chart',b.dataset.pane);
   if(!canHover())$('ctiles').closest('.panel').scrollIntoView({behavior:'smooth',block:'start'})});
 showPane('planets');
-addEventListener('hashchange',()=>{if(!$('out').hidden){const[h,sub]=location.hash.slice(1).split('/');if((SCREENS.includes(h)||h==='life')&&(h!==SCREEN||sub||(h==='chart'&&BRANCH)))go(h,sub||null)}});
 
 // ----- Find: one search for pages, your own planets and houses, meanings of terms, and a question for Astropositivism.
 // Opened from the header (or Ctrl/Cmd K). Understands Hindi and Punjabi words (shani, vivah, naukri…) and shows
@@ -1641,7 +1718,7 @@ function findGo(b){
   const inner={'chart/rectify':()=>{go('chart','events');let n=0;const t=()=>{const x=$('evbt');if(x){x.click();x.scrollIntoView({block:'start'})}else if(n++<30)setTimeout(t,100)};setTimeout(t,80)},
     'chart/gochar':()=>chartView('gochar'),'chart/view-moon':()=>chartView('moon'),'chart/view-chalit':()=>chartView('chalit'),
     'chart/style-south':()=>{go('chart','vedic');setTimeout(()=>{const x=document.querySelector('.chstyle [data-style="south"]');if(x)x.click();$('chart').scrollIntoView({block:'center'})},120)},
-    'match/life':()=>{openMatch()}}[b.dataset.to];
+    'match/life':()=>nav('match')}[b.dataset.to];
   if(inner){const label=b.dataset.label;if(q)track('find/pick',q+' → '+label);
     try{localStorage.setItem('sj-find-recent',JSON.stringify([label,...recent().filter(x=>x!==label)].slice(0,5)))}catch(e){}
     closeFind();inner();return}
@@ -1667,26 +1744,36 @@ addEventListener('keydown',e=>{
 });
 
 // ----- place search (Open-Meteo geocoding: free, no key) -----
+// Typing searches after a short pause (debounced); a newer search cancels the one still running, and the spinner
+// stays until results arrive.
+let SEARCH=null,SEARCH_T=null;
+const SPIN='<span class="spin" aria-hidden="true"></span>';
 async function search(){
+  clearTimeout(SEARCH_T);
   const q=$('place').value.trim(); if(q.length<2)return;
-  $('placeinfo').textContent='Searching…';
+  if(SEARCH)SEARCH.abort();
+  const ctl=SEARCH=new AbortController();
+  $('placeinfo').innerHTML=SPIN+'Searching for “'+esc(q)+'”…';$('placeinfo').setAttribute('aria-busy','true');
   try{
-    const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=en&name='+encodeURIComponent(q));
+    const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=en&name='+encodeURIComponent(q),{signal:ctl.signal});
     const j=await r.json(), list=j.results||[];
+    if(ctl!==SEARCH)return;
     const box=$('sugg'); box.innerHTML='';
     if(!list.length){box.hidden=true;$('placeinfo').textContent='No match. Enter coordinates and timezone manually.';return}
     list.forEach(p=>{
       const d=document.createElement('div');
       d.textContent=[p.name,p.admin1,p.country].filter(Boolean).join(', ')+'  ('+p.latitude.toFixed(2)+', '+p.longitude.toFixed(2)+')';
-      d.onclick=()=>{ $('lat').value=p.latitude; $('lon').value=p.longitude; if(p.timezone)$('tz').value=p.timezone;
+      d.onclick=()=>{ $('lat').value=p.latitude; $('lon').value=p.longitude; if(p.timezone){$('tz').value=p.timezone;tzError('')}
         $('place').value=[p.name,p.admin1,p.country].filter(Boolean).join(', ');
         box.hidden=true; $('placeinfo').innerHTML='<span class="ok">✓ Location set</span> — '+esc(p.timezone||'check timezone below'); };
       box.appendChild(d);
     });
     box.hidden=false; $('placeinfo').textContent='Pick a result:';
-  }catch(e){$('placeinfo').textContent='Search unavailable (offline?). Enter coordinates manually.'}
+  }catch(e){if(e.name==='AbortError'||ctl!==SEARCH)return;$('placeinfo').textContent='Search unavailable (offline?). Enter coordinates manually.'}
+  finally{if(ctl===SEARCH){SEARCH=null;$('placeinfo').removeAttribute('aria-busy')}}
 }
 $('find').onclick=search;
+$('place').addEventListener('input',()=>{clearTimeout(SEARCH_T);if($('place').value.trim().length>=3)SEARCH_T=setTimeout(search,450)});
 $('place').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();search()}});
 
 
@@ -1757,7 +1844,7 @@ $('plist').addEventListener('click',e=>{const b=e.target.closest('.prow');if(!b)
 $('mnew').onclick=()=>{closeMenu();$('newbtn').click()};
 $('mdefault').onclick=()=>{closeMenu();if(currentId==null)return;setDefault(String(currentId)===getDefault()?null:currentId);paintPill();paintList()};
 $('medit').onclick=()=>{closeMenu();const p=saved.find(x=>String(x.id)===String(currentId));if(!p)return;
-  fillForm(p.request);editId=p.id;$('save').checked=true;showForm();$('go').textContent='Save changes'};
+  fillForm(p.request);editId=p.id;$('save').checked=true;nav('edit');$('go').textContent='Save changes'};
 $('mdel').onclick=()=>{closeMenu();
   const p=saved.find(x=>String(x.id)===String(currentId));if(!p)return;
   $('cft').textContent='Delete '+p.name+'’s chart?';$('confirm').hidden=false;$('scrim').hidden=false;$('cfno').focus()};
@@ -1769,7 +1856,7 @@ $('cfyes').onclick=async()=>{
   await fetch('/profiles/'+id,{method:'DELETE'});
   if(id===getDefault())setDefault(null);
   currentId=null;hasChart=false;
-  const list=await loadList(); if(list.length)loadProfile(startChart(list).id); else {$('out').hidden=true;showForm()}
+  const list=await loadList(); if(list.length)loadProfile(startChart(list).id); else nav('new',{replace:true})
 };
 function fillForm(q){
   $('name').value=q.name;$('dob').value=q.dob;$('tob').value=q.tob.slice(0,5);$('lat').value=q.lat;$('lon').value=q.lon;
@@ -1785,7 +1872,7 @@ async function loadProfile(id){
 
 // ----- chat popup -----
 function openChat(){go('ask')}
-$('tgbtn').onclick=async()=>{try{const r=await fetch('/api/telegram/link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({profile_id:currentId})});const j=await r.json();if(!r.ok)throw new Error(j.detail||r.statusText);window.location.href=j.deep_link}catch(e){alert('Error: '+e.message)}};
+$('tgbtn').onclick=async()=>{try{const r=await fetch('/api/telegram/link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({profile_id:currentId})});const j=await r.json();if(!r.ok)throw new Error(apiErr(j.detail)||r.statusText);window.location.href=j.deep_link}catch(e){alert('Error: '+e.message)}};
 const EX=['What should I focus on this year?','When is a good time to change jobs?','Which remedies suit me right now?','How will my married life be?','Any health precautions for me?','What should I avoid this month?'];
 function md(t){ // tiny, safe markdown: headings, **bold**, `code`, bullets, paragraphs
   const inl=x=>esc(x).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g,'$1<i>$2</i>').replace(/`(.+?)`/g,'<code>$1</code>');
@@ -1819,17 +1906,51 @@ async function paintAskMeta(){
     if(ASKQ.limited)q='<span class="amq" title="AI questions left today"><span><b>'+ASKQ.left+'</b> of '+ASKQ.limit+' left today</span><i><i style="width:'+
       Math.round(100*ASKQ.left/Math.max(1,ASKQ.limit))+'%"></i></i></span>'}catch(e){ASKQ=null}
   el.innerHTML='<span class="amc">Moon in '+esc(lastChart.grahas.Moon.sign)+' · '+esc(lastChart.lagna.sign)+' Lagna</span>'+q;el.hidden=false;
+  paintLimit();
 }
-// "Go deeper": three follow-up questions under the latest answer, leaving out the topics just asked about.
+// Today's questions used up: the box and starter chips switch off and say when they come back (/quota resets_at).
+const limitReached=()=>!!(ASKQ&&ASKQ.limited&&ASKQ.left<=0);
+function paintLimit(){
+  const off=limitReached(),on=currentId!==null&&!off;
+  $('q').disabled=!on;$('askbtn').disabled=!on;
+  if(off){const r=ASKQ.resets_at?new Date(ASKQ.resets_at):null,
+      day=r?(r.toDateString()===new Date().toDateString()?' today':' tomorrow'):'',
+      t=r?r.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+day:null;  // the reset is UTC midnight
+    $('q').placeholder='Daily limit reached';$('chips').hidden=true;document.querySelectorAll('#log .deeper').forEach(x=>x.remove());
+    $('asknote').textContent='Daily limit reached, '+(t?'resets at '+t:'resets tomorrow')+'. Meanwhile Today, Timing, your charts and remedies are all free to explore.'}
+  else{$('q').placeholder='Ask Astropositivism anything…';if(currentId!==null)$('asknote').textContent=''}
+}
+// "Go deeper": up to three follow-ups under the latest answer, about the matter it discussed (marriage, career…)
+// and leaving out what was just asked (timing, remedies). None after a refusal or when today's questions are used up.
 const DEEPER=[['timing',/\b(when|date|month|year|timing|period|dasha|muhurat)\b/i,'When exactly will this unfold?'],
   ['remedy',/\b(remed\w*|upaya|gem\w*|stones?|mantra|puja)\b/i,'Which upaya strengthens this?'],
   ['love',/\b(marr\w*|wedding|spouse|husband|wife|love|relationships?|partner)\b/i,'How does this touch my relationships?'],
   ['work',/\b(job|career|work|business|promotion|money|income|wealth|financ\w*)\b/i,'And what about my career and money?'],
   ['home',/\b(home|house|family|mother|property)\b/i,'What does it mean for home and family?']];
-function deeper(q){
+const MATTERS=[['love',/\b(marr\w*|wedding|spouse|husband|wife|love|relationships?|partner|shaadi|vivah)\b/i,'marriage'],
+  ['work',/\b(job|career|work|business|promotion|naukri)\b/i,'my career'],
+  ['money',/\b(money|income|wealth|financ\w*|savings|debt|loan)\b/i,'money'],
+  ['health',/\b(health|illness|disease|surgery|stress|sleep)\b/i,'my health'],
+  ['study',/\b(stud\w*|exam\w*|education|degree|college)\b/i,'my studies'],
+  ['abroad',/\b(abroad|foreign|visa|overseas|videsh|settle)\b/i,'going abroad'],
+  ['home',/\b(home|house|family|mother|father|property)\b/i,'home and family']];
+const REFUSED=/\b(I can['’]t help with|I can['’]t answer|I (?:do not|don['’]t) (?:predict|answer)|not something I can|please ask me something else)\b/i;
+function deeperPicks(q,answer){
+  const asked=k=>DEEPER.find(d=>d[0]===k)[1].test(q);
+  const m=MATTERS.find(([,rx])=>rx.test(q))||MATTERS.find(([,rx])=>rx.test(answer||''));
+  if(!m)return DEEPER.filter(([,rx])=>!rx.test(q)).slice(0,3).map(x=>x[2]);
+  const [key,,t]=m,out=[];
+  if(!asked('timing'))out.push('When is a good time for '+t+'?');
+  if(!asked('remedy'))out.push('Which upaya helps with '+t+'?');
+  out.push('What should I avoid for '+t+' right now?');
+  const other={love:'And what about my career?',work:'How does this touch my relationships?',money:'And what about my career?'}[key]||'What should I focus on this year?';
+  if(out.length<3)out.push(other);
+  return out.slice(0,3);
+}
+function deeper(q,answer){
   document.querySelectorAll('#log .deeper').forEach(x=>x.remove());
-  if(!q||(ASKQ&&ASKQ.limited&&ASKQ.left<=0))return;
-  const picks=DEEPER.filter(([,rx])=>!rx.test(q)).slice(0,3).map(x=>x[2]);
+  if(!q||limitReached()||REFUSED.test(answer||''))return;
+  const picks=deeperPicks(q,answer);
   const row=document.createElement('div');row.className='deeper';
   row.innerHTML='<small>Go deeper</small>'+picks.map(p=>'<button type="button">'+esc(p)+'</button>').join('');
   row.querySelectorAll('button').forEach(b=>b.onclick=()=>{$('q').value=b.textContent;$('askf').requestSubmit()});
@@ -1848,8 +1969,8 @@ async function setAsk(){
   try{const h=await (await fetch('/profiles/'+id+'/chat')).json();
     if(id!==currentId)return;
     h.forEach(m=>m.role==='user'?addUser(m.content):addBot(m.content));
-    const lastQ=[...h].reverse().find(m=>m.role==='user');if(h.length&&h[h.length-1].role==='assistant'&&lastQ)deeper(lastQ.content);
-    $('chips').hidden=h.length>0;
+    const lastQ=[...h].reverse().find(m=>m.role==='user');if(h.length&&h[h.length-1].role==='assistant'&&lastQ)deeper(lastQ.content,h[h.length-1].content);
+    $('chips').hidden=h.length>0||limitReached();
     if(!h.length)$('log').innerHTML='<div class="empty"><span class="big">🙏</span><b>Namaste'+( $('name').value?', '+esc($('name').value.split(' ')[0]):'')+'.</b>I am a Jyotishi trained by the Astropositivism Team. What’s on your mind? Ask me about career, marriage, money, health or travel abroad, and I’ll tell you what your chart says and what you can do about it.</div>';
     else toBottom();
   }catch(e){}
@@ -1858,7 +1979,7 @@ $('clearchat').onclick=async()=>{if(currentId===null||!confirm('Start a new conv
 $('q').addEventListener('input',()=>{$('q').style.height='auto';$('q').style.height=Math.min($('q').scrollHeight,120)+'px'});
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('askf').requestSubmit()}});
 $('askf').addEventListener('submit',async e=>{
-  e.preventDefault();const q=$('q').value.trim();if(!q||currentId===null||$('askbtn').disabled)return;
+  e.preventDefault();const q=$('q').value.trim();if(!q||currentId===null||$('askbtn').disabled||limitReached())return;
   const id=currentId,empty=$('log').querySelector('.empty');if(empty)empty.remove();
   deeper(null);addUser(q);$('q').value='';$('q').style.height='auto';$('chips').hidden=true;$('askbtn').disabled=true;
   const bot=addBot();bot.innerHTML=THINK;
@@ -1866,7 +1987,8 @@ $('askf').addEventListener('submit',async e=>{
   const paint=()=>{const stick=nearBottom();bot.innerHTML=md(text)+(started?'':'');bot.classList.add('cursor');if(stick)toBottom()};
   try{
     const r=await fetch('/profiles/'+id+'/chat/stream',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q,here:MU.here||null})});
-    if(!r.ok||!r.body)throw new Error((await r.json().catch(()=>({}))).detail||r.statusText);
+    if(r.status===429&&ASKQ&&ASKQ.limited)ASKQ.left=0;  // used up on another device or tab
+    if(!r.ok||!r.body)throw new Error(apiErr((await r.json().catch(()=>({}))).detail)||r.statusText);
     const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
     for(;;){
       const {value,done}=await rd.read();if(done)break;
@@ -1886,8 +2008,8 @@ $('askf').addEventListener('submit',async e=>{
   if(failed){bot.innerHTML='<p>⚠ '+esc(text||'Something went wrong.')+'</p>'}
   else{bot.innerHTML=md(text)+(mode==='lookup'?'<small class="src">from your chart data</small>':mode==='cache'?'<small class="src">reused from an earlier answer today</small>':'')+
     (uid?'<div class="rate" data-u="'+uid+'" data-p="'+id+'"><span>Was this helpful?</span><button type="button" data-r="1" aria-label="Helpful">👍</button><button type="button" data-r="-1" aria-label="Not helpful">👎</button></div>':'')}
-  if(id===currentId){await paintAskMeta();if(!failed){deeper(q);toBottom()}}
-  $('askbtn').disabled=false;$('q').focus();
+  if(id===currentId){await paintAskMeta();if(!failed){deeper(q,text);toBottom()}}
+  paintLimit();if(!$('q').disabled)$('q').focus();
 });
 
 // "How did it go?" (app/checkins.py): one card on Today when a question about a day ahead is two days past.
@@ -1924,17 +2046,31 @@ $('f').addEventListener('submit',async e=>{
     lat:parseFloat($('lat').value),lon:parseFloat($('lon').value),tz_name:$('tz').value.trim(),
     tob_unknown:$('unk').checked,ayanamsha:$('ayan').value,node_type:$('node').value};
   if(body.tob.length>8)body.tob=body.tob.slice(0,8);
+  tzError('');
+  if(!validTz(body.tz_name)){tzError(TZ_MSG);return}
+  if(!editId)try{localStorage.setItem('sj-ayanamsha',body.ayanamsha)}catch(e){}
   $('go').disabled=true;$('msg').className='hint full';$('msg').textContent='Calculating…';
   try{
     const r=await fetch(editId?'/profiles/'+editId:$('save').checked?'/profiles':'/chart',{method:editId?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json();
-    if(!r.ok){const d=j.detail;throw new Error(Array.isArray(d)?d.map(x=>x.loc.slice(1).join('.')+': '+x.msg).join('; '):(d||r.statusText))}
+    if(!r.ok){const d=j.detail;
+      if(d&&d.field==='tz'){$('msg').textContent='';tzError(d.message);return}
+      throw new Error(Array.isArray(d)?d.map(x=>x.loc.slice(1).join('.')+': '+x.msg).join('; '):(apiErr(d)||r.statusText))}
     if(editId){editId=null;$('go').textContent='Generate chart'}
     if($('save').checked||j.id){currentId=j.id;render(j.chart,body);await loadList(j.id)}else{currentId=null;render(j,body)}
     setAsk();$('msg').textContent='';showResults();
-  }catch(err){$('msg').className='hint full err';$('msg').textContent='Error: '+err.message}
+  }catch(err){$('msg').className='hint full err';$('msg').textContent=err.message;$('msg').scrollIntoView({block:'center',behavior:'smooth'})}
   finally{$('go').disabled=false}
 });
+// Timezone: checked against the browser's list before sending (aliases like Asia/Calcutta are accepted too), and a
+// bad one is shown under the field, which takes focus. Picking a place fills it in.
+const TZ_MSG='We don’t recognise that timezone. Pick a place above to fill it in, or choose one from the list (e.g. Asia/Kolkata).';
+const TZS=(()=>{try{return new Set(Intl.supportedValuesOf('timeZone').concat('UTC'))}catch(e){return null}})();
+function validTz(v){if(!v)return false;if(TZS&&TZS.has(v))return true;try{new Intl.DateTimeFormat('en',{timeZone:v});return true}catch(e){return false}}
+function tzError(m){const e=$('tzerr');e.textContent=m;e.hidden=!m;$('tz').setAttribute('aria-invalid',String(!!m));
+  if(m){$('tz').focus();$('tz').scrollIntoView({block:'center',behavior:'smooth'})}}
+$('tz').addEventListener('input',()=>{if(!$('tzerr').hidden&&validTz($('tz').value.trim()))tzError('')});
+$('tz').addEventListener('focus',()=>{const l=$('tzlist');if(TZS&&!l.childElementCount)l.innerHTML=[...TZS].map(z=>'<option value="'+esc(z)+'">').join('')},{once:true});
 
 // North Indian diamond: houses fixed, signs rotate from the lagna. byH: {0..11: ['Su','Mo',...]}
 const BD={ex:['▲','ex','Exalted'],db:['▼','db','Debilitated'],own:['⌂','own','Own sign'],R:['R','rt','Retrograde'],C:['C','cb','Combust']};
@@ -2130,7 +2266,7 @@ async function loadMuhurat(force){
   try{
     const r=await fetch('/muhurat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...loc,
       start:tzToday(loc.tz_name),days:7,birth_nakshatra:moon.nakshatra_index,birth_moon_sign:moon.sign_index,lagna_sign:lastChart.lagna.sign_index})});
-    const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);
+    const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);
     MU.data=d;if(force)MU.sel=0;paintMuhurat();
   }catch(e){MU.loaded=false;box.innerHTML='<div class="hint err">Couldn’t load the muhurat: '+esc(e.message)+'</div>'}
 }
@@ -2148,15 +2284,15 @@ async function loadToday(){
   const place=hereName();
   const now=Date.now(),md=(c.dasha||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end));
   const ad=md&&(md.children||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end));
-  const post=(u,b)=>fetch(u,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);return d});
+  const post=(u,b)=>fetch(u,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);return d});
   try{
     const day=tzToday(loc.tz_name);
     const [t,w]=await Promise.all([
-      post('/today',{...loc,date:day,lagna_sign:c.lagna.sign_index,birth_nakshatra:moon.nakshatra_index,birth_moon_sign:moon.sign_index,maha:md&&md.lord,antar:ad&&ad.lord,antar_sign:ad&&c.grahas[ad.lord]?c.grahas[ad.lord].sign_index:null}),
+      post('/today',{...loc,date:day,lagna_sign:c.lagna.sign_index,birth_nakshatra:moon.nakshatra_index,birth_moon_sign:moon.sign_index,maha:md&&md.lord,antar:ad&&ad.lord,antar_sign:ad&&c.grahas[ad.lord]?c.grahas[ad.lord].sign_index:null,maha_sign:md&&c.grahas[md.lord]?c.grahas[md.lord].sign_index:null}),
       post('/muhurat',{...loc,start:day,days:7,birth_nakshatra:moon.nakshatra_index,birth_moon_sign:moon.sign_index})]);
     if(req!==lastReq||!$('gtoday'))return;
-    window.renderToday($('gtoday'),t,{place,here:!!MU.here,week:w.days});
-  }catch(e){if($('gtoday'))$('gtoday').innerHTML='<h3>Today for you</h3><div class="hint">Couldn’t load today: '+esc(e.message)+'</div>'}
+    window.renderToday($('gtoday'),t,{place,here:!!MU.here,week:w.days,name:req.name});
+  }catch(e){if($('gtoday'))$('gtoday').innerHTML='<h3>Today for '+esc((req.name||'').trim().split(/\s+/)[0]||'you')+'</h3><div class="hint">Couldn’t load today: '+esc(e.message)+'</div>'}
 }
 document.addEventListener('click',e=>{
   const b=e.target.closest('#tloc');if(!b)return;
@@ -2204,7 +2340,7 @@ async function loadLal(){
   const box=$('lalbody');box.innerHTML='<div class="hint">Calculating Lal Kitab kundli…</div>';
   try{
     const r=await fetch('/lal-kitab',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(lastReq)});
-    const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);
+    const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);
     const byH={};Object.entries(d.houses).forEach(([h,pl])=>{byH[h-1]=pl.map(n=>ABBR[n])});
     const lagnaIdx=SIGNS.indexOf(d.lagna_sign);
     const badge=t=>'<span class="badge '+(/pakka|Exalted/.test(t)?'good':/Debilit/.test(t)?'warn':'')+'">'+esc(t)+'</span>';
@@ -2220,27 +2356,43 @@ async function loadLal(){
 }
 
 // ----- match making -----
-let profiles=[];
+let profiles=[],MATCH_BACK=false;
+// Match making (#match): inside the results area, so the bottom bar stays; Back returns to where you were.
 async function openMatch(){
+  MATCH_BACK=VIEW!=null&&VIEW!=='match'&&!!(history.state&&history.state.sj);  // came here from inside the app
+  showOut();VIEW='match';
+  document.querySelectorAll('#out .scr').forEach(s=>s.hidden=true);
+  document.querySelectorAll('#sjbar [data-go]').forEach(b=>{b.classList.remove('on');b.removeAttribute('aria-current')});
+  document.body.classList.remove('on-ask');
+  $('viewMatch').hidden=false;window.scrollTo({top:0});
   profiles=await loadList(currentId||undefined);
-  hideAll();$('viewMatch').hidden=false;
+  if(VIEW!=='match')return;  // left while the list was loading
   const opts=profiles.map(p=>'<option value="'+p.id+'">'+esc(p.name)+' · '+p.request.dob+'</option>').join('');
   $('mgroom').innerHTML=opts;$('mbride').innerHTML=opts;
   if(profiles.length>1)$('mbride').selectedIndex=1;
-  $('mgo').disabled=profiles.length<2;
-  $('mhint').textContent=profiles.length<2?'Save at least two profiles (use “+ New chart” with “Save this profile” ticked) to match them.':'Pick the groom and bride from your saved profiles.';
-  $('mres').hidden=true;window.scrollTo({top:0});
+  const two=profiles.length>=2;
+  $('matchhead').hidden=!two;$('madd').hidden=two;
+  $('madd').querySelector('p').textContent=profiles.length?'Match making compares two saved charts. Add the second person’s birth details to see how you match.':
+    'Match making compares two saved charts. Add both people’s birth details to begin.';
+  matchReady();
+  $('mres').hidden=true;
 }
-$('matchbtn').onclick=openMatch;
+// The button only works with two different people picked.
+function matchReady(){const ok=profiles.length>=2&&$('mgroom').value!==$('mbride').value;$('mgo').disabled=!ok;
+  $('mhint').textContent=profiles.length<2?'':ok?'Pick the groom and bride from your saved profiles.':'Choose two different profiles.'}
+$('mgroom').onchange=$('mbride').onchange=matchReady;
+$('matchbtn').onclick=()=>{closeMenu();nav('match')};
+$('mback').onclick=()=>{if(MATCH_BACK)history.back();else nav(hasChart?(LAST_SCREEN||'today'):'new')};
+$('maddbtn').onclick=()=>{AFTER_NEW='match';nav('new');$('save').checked=true};
 $('mgo').onclick=async()=>{
   const g=+$('mgroom').value,b=+$('mbride').value;
-  if(g===b){$('mhint').textContent='Choose two different profiles.';return}
+  if(g===b){matchReady();return}
   $('mgo').disabled=true;$('mhint').textContent='Calculating…';
   try{
     const r=await fetch('/matchmaking',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({groom_id:g,bride_id:b})});
-    const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);
+    const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);
     MPAIR={g,b};renderMatch(d);$('mhint').textContent='';LIFE={step:null};loadLife();
-  }catch(err){$('mhint').textContent='Error: '+err.message}
+  }catch(err){$('mhint').textContent=err.message}
   $('mgo').disabled=false;
 };
 function renderMatch(d){
@@ -2283,7 +2435,7 @@ let MPAIR=null,LIFE={step:null},LD=null;
 const lifeTz=()=>encodeURIComponent((MU.here&&MU.here.tz_name)||Intl.DateTimeFormat().resolvedOptions().timeZone);
 const LV={high:['good','Easy'],mid:['','Okay'],low:['warn','Hard']},CV={high:['good','Strong'],mid:['','Middle'],low:['warn','Low']};
 async function loadLife(){if(!MPAIR)return;
-  try{const r=await fetch('/couples/'+MPAIR.g+'/'+MPAIR.b+'?tz='+lifeTz());LD=await r.json();if(!r.ok)throw new Error(LD.detail||r.statusText)}
+  try{const r=await fetch('/couples/'+MPAIR.g+'/'+MPAIR.b+'?tz='+lifeTz());LD=await r.json();if(!r.ok)throw new Error(apiErr(LD.detail)||r.statusText)}
   catch(e){$('mlife').innerHTML='<p class="hint err">Couldn’t load married life: '+esc(e.message)+'</p>';return}
   if(LD.married&&LIFE.step===null&&!Object.keys(LD.ratings).length)LIFE.step=1;paintLife()}
 async function saveLife(body){const r=await fetch('/couples/'+MPAIR.g+'/'+MPAIR.b+'?tz='+lifeTz(),{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
@@ -2444,11 +2596,11 @@ $('kpay').addEventListener('click',async e=>{const b=e.target.closest('[data-kp]
   const req={...lastReq,ayanamsha:'krishnamurti'};b.disabled=true;
   try{if(k==='show'){track('kp/show-standard');
       if(!KPALT){const r=await fetch('/chart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(req)});
-        const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);KPALT=d}
+        const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);KPALT=d}
       drawKpTables(KPALT,lastChart)}
     else if(k==='save'){track('kp/make-default');
       const r=await fetch('/profiles/'+currentId,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(req)});
-      const d=await r.json();if(!r.ok)throw new Error(d.detail||r.statusText);await loadProfile(currentId)}}
+      const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);await loadProfile(currentId)}}
   catch(err){b.disabled=false;alert('Couldn’t switch: '+err.message)}});
 // Jaimini timing: Chara Dasha or Yogini Dasha, one at a time (the choice is kept while the app is open).
 let DSEL='chara';
@@ -2470,10 +2622,13 @@ function render(c,req){
   $('bname').textContent=(req&&req.name)||m.name||'Birth chart';
   const where=req&&(req.place||(Math.abs(req.lat).toFixed(2)+'°'+(req.lat>=0?'N':'S')+', '+Math.abs(req.lon).toFixed(2)+'°'+(req.lon>=0?'E':'W')));
   $('bmeta').textContent=req?[req.dob,req.tob_unknown?'time unknown':req.tob.slice(0,5),where,req.tz_name].join(' · '):'';
+  const noTime=!!(req&&req.tob_unknown);
   $('summary').innerHTML=[
     ['Lagna',l.sign],['Moon',c.grahas.Moon.sign],['Nakshatra',c.grahas.Moon.nakshatra+' '+c.grahas.Moon.pada],
     ['Sun',c.grahas.Sun.sign],['Dasha › Bhukti › Antar',md0?[md0,ad0,pd0].filter(Boolean).map(x=>x.lord).join(' › '):'—']
-  ].map(([a,b])=>'<div class="stat"><small>'+a+'</small><b>'+esc(b)+'</b></div>').join('')+
+  ].map(([a,b])=>a==='Lagna'&&noTime?'<div class="stat soft" title="The Lagna changes every two hours or so; it needs the birth time"><small>Lagna</small><b>'+esc(b)+'?</b><em>needs birth time</em></div>'
+    :'<div class="stat"><small>'+a+'</small><b>'+esc(b)+'</b></div>').join('')+
+    (noTime?'<p class="tunk"><b>Birth time unknown.</b> The Lagna, houses and house-based readings below assume noon and may be off. The Moon, nakshatra and planets by sign are reliable. '+(currentId!=null?'Add the birth time with “Edit details” in the chart menu.':'Make the chart again with the birth time when you have it.')+'</p>':'')+
     (currentId!=null?'<div class="stat"><small>Chart accuracy</small><button type="button" class="accbadge" id="accbadge" aria-expanded="false">…</button></div>':'');
 
   const status=n=>{const g=c.grahas[n],d=window.planetDignity(c,n);
@@ -2691,7 +2846,7 @@ function render(c,req){
     b.onclick=()=>{[...vt.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');vSel=k;drawVarga()};
     vt.appendChild(b); if(i===0)b.click()});
 }
-loadList().then(l=>{if(l.length)loadProfile(startChart(l).id)});
+loadList().then(l=>{if(l.length)loadProfile(startChart(l).id);else route()});
 // Admins reach the admin page from the chart menu (kept out of the header to leave room for the name).
 fetch('/me').then(r=>r.ok?r.json():null).then(m=>{if(m&&m.gated&&(m.admin||m.role==='mentor'||m.role==='astrologer'))$('madmin').hidden=false}).catch(()=>{});
 </script>

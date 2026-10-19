@@ -62,7 +62,8 @@
     const c = d.colour, u = d.upay;
     const best = d.best_times.length ? d.best_times.map(w => `<span><small>${esc(w.label)}</small><b>${t(w.start)} – ${t(w.end)}</b></span>`).join('')
       : '<span><small>Best time</small><b>Keep it routine today</b></span>';
-    el.innerHTML = `<h3>Today for you <span class="badge ${{ excellent: 'good', good: 'good', fair: '', avoid: 'warn' }[d.rating.verdict]}">${esc(d.rating.label)}</span></h3>
+    const who = ((opt.name || '').trim().split(/\s+/)[0]) || 'you';
+    el.innerHTML = `<h3>Today for ${esc(who)} <span class="badge ${{ excellent: 'good', good: 'good', fair: '', avoid: 'warn' }[d.rating.verdict]}">${esc(d.rating.label)}</span></h3>
       <p class="gsub">${esc(d.weekday)}${day0 ? ` · ${esc(day0.tithi.name)}` : ''} · ${esc(d.nakshatra)}${d.tara ? ` · your star: ${esc(d.tara.name)}` : ''}</p>
       <div class="tgrid"><div class="tcol">
         <p class="twhy">${esc(cap(d.rating.why))}.</p>

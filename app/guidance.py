@@ -108,6 +108,18 @@ def _local(iso: str, tz_name: str) -> datetime:
     return datetime.fromisoformat(iso).astimezone(ZoneInfo(tz_name))
 
 
+def _today_upay(c: dict, day: date, lat: float, lon: float, tz_name: str, now: datetime | None) -> dict:
+    """The same personal upaya as the app's Today card (app.today.pick_upay)."""
+    from app import today as T
+    from app.transit_view import dasha_on
+    at = now or datetime(day.year, day.month, day.day, 12, tzinfo=ZoneInfo(tz_name))
+    lords = {x["level"]: x["lord"] for x in dasha_on(c, at)}
+    sign = lambda p: c["grahas"][p]["sign_index"] if p in c["grahas"] else None
+    moon = c["grahas"]["Moon"]
+    return T.today(day, lat, lon, tz_name, c["lagna"]["sign_index"], moon["nakshatra_index"], moon["sign_index"],
+                   lords.get("maha"), lords.get("antar"), sign(lords.get("antar")), sign(lords.get("maha")))["upay"]
+
+
 def day_guide(profile: dict, day: date, lat: float, lon: float, tz_name: str, place: str = "", now: datetime | None = None) -> str:
     c = profile["chart"]
     moon = c["grahas"]["Moon"]
@@ -140,8 +152,8 @@ def day_guide(profile: dict, day: date, lat: float, lon: float, tz_name: str, pl
     else:
         dont = f"Beginning new work during Rahu kalam ({rahu})."
     lines.append("🚫 **Avoid:** " + dont)
-    day_lord = DAY_LORD[(day.weekday() + 1) % 7]
-    lines.append(f"🙏 **Today’s upaya ({d['weekday']}, {day_lord}’s day):** {REMEDY[day_lord]}")
+    u = _today_upay(c, day, lat, lon, tz_name, now)
+    lines.append(f"🙏 **Today’s upaya ({u['planet']}):** {u['habit']}. If you can, also give {u['daan']}. _{u['why']}._")
     md, _ = current_period(c, now or datetime.now(ZoneInfo(tz_name)))
     if md:
         lines.append(f"\n_{md['lord']} period tip: lean into {GIFT[md['lord']]}; watch for {RISK[md['lord']]}._")

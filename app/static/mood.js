@@ -31,7 +31,7 @@
     el.innerHTML = '<h3>How are you feeling?</h3><div class="hint">Loading…</div>';
     try {
       const r = await fetch(`/profiles/${pid}/mood?limit=60`), d = await r.json();
-      if (!r.ok) throw new Error(d.detail || r.statusText);
+      if (!r.ok) throw new Error(window.apiErr(d.detail) || r.statusText);
       if (S.pid !== pid) return;
       Object.assign(S, { opts: d.options, logs: d.logs, share: d.share });
       paint();
@@ -167,7 +167,7 @@
         const r = await fetch(`/profiles/${S.pid}/mood`, { method: 'POST', headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ valence: S.v, feelings: S.feelings, causes: S.causes, note: S.note || null, scope: S.scope, here: here || null }) });
         const d = await r.json();
-        if (!r.ok) throw new Error(Array.isArray(d.detail) ? d.detail.map(x => x.msg).join('; ') : d.detail || r.statusText);
+        if (!r.ok) throw new Error(Array.isArray(d.detail) ? d.detail.map(x => x.msg).join('; ') : window.apiErr(d.detail) || r.statusText);
         S.logs.unshift(d.log); S.reply = d.reply;
         Object.assign(S, { v: null, feelings: [], causes: [], note: '', scope: 'now' });
         if (S.showPat) loadPat();

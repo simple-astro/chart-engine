@@ -64,7 +64,7 @@
   async function post(url, body) {
     const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const j = await r.json();
-    if (!r.ok) throw new Error(typeof j.detail === 'string' ? j.detail : r.statusText);
+    if (!r.ok) throw new Error(window.apiErr(j.detail) || r.statusText);
     return j;
   }
   const today = tz => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -88,13 +88,17 @@
   window.renderTools = async function (el, ctx) {
     const req = ctx.req, moon = ctx.chart.grahas.Moon;
     const place = (req.place || '').split(',')[0] || 'your birthplace';
-    let here = null;  // current location for Prashna, if the user shares it
+    const birthLabel = req.place ? 'Cast for ' + place + ' (birthplace)' : 'Cast for your birthplace';
     if (!kinds) { try { kinds = await (await fetch('/horary/kinds')).json(); } catch (e) { kinds = []; } }
     if (!jkinds) { try { jkinds = await (await fetch('/jamakkol/kinds')).json(); } catch (e) { jkinds = []; } }
     // Jamakkol is cast where the asker is now: the place typed here (remembered), else the app's "where you are"
     // setting, else the birthplace.
     const jkSaved = () => { try { const h = JSON.parse(localStorage.getItem('sj_jk_place') || 'null'); return h && isFinite(h.lat) && h.tz_name ? h : null; } catch (e) { return null; } };
     let jkHere = jkSaved() || herePlace();
+    // KP Prashna is cast where the asker is too: its own remembered place, else Jamakkol's, else "where you are",
+    // else the birthplace.
+    const hqSaved = () => { try { const h = JSON.parse(localStorage.getItem('sj_hq_place') || 'null'); return h && isFinite(h.lat) ? h : null; } catch (e) { return null; } };
+    let here = hqSaved() || jkHere;
 
     const finder = `<section class="card gcard tool">
         <h3>Find a good date</h3>
@@ -113,9 +117,14 @@
         <select id="hq-kind">${kinds.map(k => `<option value="${k.kind}">${esc(k.title)}</option>`).join('')}</select>
         <label class="tl-lab" for="hq-text">In my words <small>(optional)</small></label>
         <input id="hq-text" maxlength="160" placeholder="e.g. Will I get the job at the bank?">
+        <label class="tl-lab" for="hq-place">Place <small>(where you are asking from)</small></label>
+        <div class="hq-row"><input id="hq-place" maxlength="80" autocomplete="off" placeholder="Type a city, e.g. Bhopal" value="${esc(here ? (here.name || '') : (req.place || ''))}">
+          <button type="button" class="btn ghost" id="hq-find">Search</button></div>
+        <div class="sugg" id="hq-sugg" hidden></div>
+        <div class="hq-place"><span id="hq-where">${esc(here ? (here.name ? 'Cast for ' + here.name : 'Cast for where you are') : birthLabel)}</span> · <button type="button" class="linkbtn" id="hq-loc">Use where I am now</button></div>
+        <label class="tl-lab" for="hq-num">Your number</label>
         <div class="hq-row"><input id="hq-num" type="number" inputmode="numeric" min="1" max="249" placeholder="1–249" aria-label="Your number from 1 to 249">
           <button type="button" class="btn" id="hq-go">Ask</button></div>
-        <div class="hq-place">Cast for <b id="hq-where">${esc(place)}</b> · <button type="button" class="linkbtn" id="hq-loc">Use where I am now</button></div>
         <div id="hq-out" aria-live="polite"></div>
       </section>
       <section class="card gcard tool">
@@ -129,7 +138,7 @@
         <div class="hq-row"><input id="jk-place" maxlength="80" autocomplete="off" placeholder="Type a city, e.g. Bhopal" value="${esc(jkHere ? (jkHere.name || '') : (req.place || ''))}">
           <button type="button" class="btn ghost" id="jk-find">Search</button></div>
         <div class="sugg" id="jk-sugg" hidden></div>
-        <div class="hq-place"><span id="jk-where">${esc(jkHere ? (jkHere.name ? 'Cast for ' + jkHere.name : 'Cast for where you are') : 'Cast for ' + place + ' (birthplace)')}</span> · <button type="button" class="linkbtn" id="jk-loc">Use where I am now</button></div>
+        <div class="hq-place"><span id="jk-where">${esc(jkHere ? (jkHere.name ? 'Cast for ' + jkHere.name : 'Cast for where you are') : birthLabel)}</span> · <button type="button" class="linkbtn" id="jk-loc">Use where I am now</button></div>
         <button type="button" class="btn" id="jk-go">Cast now</button>
         <div id="jk-out" aria-live="polite"></div>
         <div id="jk-asks"></div>
@@ -152,58 +161,58 @@
           tz_name: req.tz_name, birth_nakshatra: moon.nakshatra_index, birth_moon_sign: moon.sign_index });
         const t = iso => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: req.tz_name });
         const d = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+        // Days a tradition rules out (Chaturmas, Kharmas, Ashtami…), with how many days each one closed.
+        const skipped = (r.skipped || []).length ? `<div class="ffskip"><small>Days left out</small><ul>${r.skipped.map(x =>
+          `<li>${esc(x.reason)} <span>· ${x.days} ${x.days === 1 ? 'day' : 'days'}</span></li>`).join('')}</ul></div>` : '';
         out.innerHTML = !r.dates.length
-          ? `<p class="hint">No strong day for ${esc(r.activity.name.toLowerCase())} in the next ${days} days. Try a longer range, or ask Astropositivism what to do meanwhile.</p>`
-          : `<p class="ffsum">${r.matches} good ${r.matches === 1 ? 'day' : 'days'} in the next ${days} — the best:</p><ol class="ffl">${r.dates.map(x => `<li>
+          ? `<p class="hint">No strong day for ${esc(r.activity.name.toLowerCase())} in the next ${days} days. Try a longer range, or ask Astropositivism what to do meanwhile.</p>${skipped}`
+          : `<p class="ffsum">${r.matches} good ${r.matches === 1 ? 'day' : 'days'} in the next ${days} — the best, sorted by rating, then date:</p><ol class="ffl">${r.dates.map(x => `<li>
               <div class="ffh"><b>${d(x.date)}</b><span class="badge ${x.verdict === 'excellent' ? 'good' : ''}">${esc(x.label)}</span></div>
               ${x.windows.length ? `<div class="fft">Best time: ${[...x.windows].sort((a, b) => b.best - a.best).slice(0, 2).sort((a, b) => a.start < b.start ? -1 : 1).map(w => `${t(w.start)}–${t(w.end)}${w.name === 'Abhijit' || w.name === 'Amrit' ? ` (${w.name})` : ''}`).join(' · ')}</div>` : ''}
               <small>${esc(x.why.slice(0, 2).map(w => w.text).join('; '))}. Avoid ${t(x.rahu_kalam[0])}–${t(x.rahu_kalam[1])} (Rahu kalam).</small>
             </li>`).join('')}</ol>${r.dates[0].note ? `<p class="hint">${esc(r.dates[0].note)}</p>` : ''}
-            <p class="hint">Times for ${esc(place)}.</p>`;
+            ${skipped}<p class="hint">Times for ${esc(place)}.</p>`;
       } catch (e) { out.innerHTML = `<p class="hint err">Couldn’t search dates: ${esc(e.message)}</p>`; }
       btn.disabled = false;
     };
 
-    $('hq-loc').onclick = () => {
-      if (!navigator.geolocation) { $('hq-where').textContent = 'your birthplace (location not available)'; return; }
-      $('hq-where').textContent = 'finding you…';
-      navigator.geolocation.getCurrentPosition(p => { here = { lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4) }; $('hq-where').textContent = 'where you are now'; },
-        () => { $('hq-where').textContent = place + ' (location blocked)'; }, { timeout: 10000 });
-    };
-
-    const jkSet = (h, label) => {
-      jkHere = h; $('jk-where').textContent = label;
-      try { localStorage.setItem('sj_jk_place', JSON.stringify(h)); } catch (e) {}
-    };
-    $('jk-loc').onclick = () => {
-      if (!navigator.geolocation) { $('jk-where').textContent = 'Location not available here: type your city above'; return; }
-      $('jk-where').textContent = 'Finding you…';
-      navigator.geolocation.getCurrentPosition(p => {
-        jkSet({ lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), tz_name: Intl.DateTimeFormat().resolvedOptions().timeZone, name: 'where you are now' }, 'Cast for where you are now');
-        $('jk-place').value = '';
-      }, () => { $('jk-where').textContent = 'Location blocked: type your city above'; }, { timeout: 10000 });
-    };
-    // Place search (Open-Meteo geocoding, as for the birth details): pick a result to cast for that place.
-    async function jkFind() {
-      const q = $('jk-place').value.trim(), box = $('jk-sugg'); if (q.length < 2) return;
-      $('jk-where').textContent = 'Searching…';
-      try {
-        const j = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=en&name=' + encodeURIComponent(q))).json();
-        const list = (j.results || []).filter(p => p.timezone);
-        box.innerHTML = ''; box.hidden = !list.length;
-        if (!list.length) { $('jk-where').textContent = 'No match. Try the nearest big city.'; return; }
-        list.forEach(p => {
-          const name = [p.name, p.admin1, p.country].filter(Boolean).join(', '), d = document.createElement('div');
-          d.textContent = name; d.setAttribute('role', 'button'); d.tabIndex = 0;
-          const pick = () => { $('jk-place').value = name; box.hidden = true; jkSet({ lat: +p.latitude.toFixed(4), lon: +p.longitude.toFixed(4), tz_name: p.timezone, name }, 'Cast for ' + name); };
-          d.onclick = pick; d.onkeydown = e => { if (e.key === 'Enter') pick(); };
-          box.appendChild(d);
-        });
-        $('jk-where').textContent = 'Pick your place:';
-      } catch (e) { $('jk-where').textContent = 'Place search unavailable right now.'; }
+    // A place box for each Prashna: type a city and pick it (Open-Meteo geocoding, as for the birth details), or use
+    // the device's location. The pick is remembered under its own key.
+    function placeBox(k, key, set) {
+      const where = $(k + '-where'), box = $(k + '-sugg'), input = $(k + '-place');
+      const pick = (h, label) => { set(h); where.textContent = label; try { localStorage.setItem(key, JSON.stringify(h)); } catch (e) {} };
+      $(k + '-loc').onclick = () => {
+        if (!navigator.geolocation) { where.textContent = 'Location not available here: type your city above'; return; }
+        where.textContent = 'Finding you…';
+        navigator.geolocation.getCurrentPosition(p => {
+          pick({ lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), tz_name: Intl.DateTimeFormat().resolvedOptions().timeZone, name: 'where you are now' }, 'Cast for where you are now');
+          input.value = '';
+        }, () => { where.textContent = 'Location blocked: type your city above'; }, { timeout: 10000 });
+      };
+      async function find() {
+        const q = input.value.trim(); if (q.length < 2) return;
+        where.textContent = 'Searching…';
+        try {
+          const j = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=en&name=' + encodeURIComponent(q))).json();
+          const list = (j.results || []).filter(p => p.timezone);
+          box.innerHTML = ''; box.hidden = !list.length;
+          if (!list.length) { where.textContent = 'No match. Try the nearest big city.'; return; }
+          list.forEach(p => {
+            const name = [p.name, p.admin1, p.country].filter(Boolean).join(', '), d = document.createElement('div');
+            d.textContent = name; d.setAttribute('role', 'button'); d.tabIndex = 0;
+            const go = () => { input.value = name; box.hidden = true; pick({ lat: +p.latitude.toFixed(4), lon: +p.longitude.toFixed(4), tz_name: p.timezone, name }, 'Cast for ' + name); };
+            d.onclick = go; d.onkeydown = e => { if (e.key === 'Enter') go(); };
+            box.appendChild(d);
+          });
+          where.textContent = 'Pick your place:';
+        } catch (e) { where.textContent = 'Place search unavailable right now.'; }
+      }
+      $(k + '-find').onclick = find;
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); find(); } });
+      return find;
     }
-    $('jk-find').onclick = jkFind;
-    $('jk-place').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); jkFind(); } });
+    const hqFind = placeBox('hq', 'sj_hq_place', h => { here = h; });
+    const jkFind = placeBox('jk', 'sj_jk_place', h => { jkHere = h; });
     const pid = ctx.id;  // a saved chart: each question is kept (ask once for 81 days, then "did it happen?")
     const jkTitle = k => (jkinds.find(x => x.kind === k) || {}).title || k;
     const dmy = iso => new Date(iso.length > 10 ? iso : iso + 'T12:00:00Z').toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
@@ -296,14 +305,17 @@
     $('hq-go').onclick = async () => {
       const n = parseInt($('hq-num').value, 10), out = $('hq-out');
       if (!(n >= 1 && n <= 249)) { out.innerHTML = '<p class="hint err">Please type a whole number from 1 to 249.</p>'; $('hq-num').focus(); return; }
+      const typed = $('hq-place').value.trim();
+      if (typed && typed !== (here ? here.name : (req.place || ''))) { out.innerHTML = ''; return hqFind(); }  // typed a new place but didn't pick it yet
       $('hq-go').disabled = true; out.innerHTML = '<p class="hint">Casting the Prashna chart…</p>';
       try {
-        const r = await post('/horary', { number: n, kind: $('hq-kind').value, ...(here || { lat: req.lat, lon: req.lon }) });
+        const r = await post('/horary', { number: n, kind: $('hq-kind').value, ...(here ? { lat: here.lat, lon: here.lon } : { lat: req.lat, lon: req.lon }) });
         const q = $('hq-text').value.trim();
         const ask = `I asked a KP Prashna (horary) question about ${r.question.title.toLowerCase()}${q ? `: "${q}"` : ''}. My number was ${n}. ` +
           `The result was "${r.label}". The reasons: ${r.reasons.join(' ')} Please explain simply what this means for me and what I should do.`;
         out.innerHTML = `<div class="hqv ${VERDICT[r.verdict]}"><span>Answer</span><b>${esc(r.label)}</b></div>
           <ul class="hqr">${r.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+          <p class="jkn">Cast for ${esc(here ? (here.name || 'where you are') : (req.place || place))}</p>
           <button type="button" class="btn ghost" id="hq-ask">Ask Astropositivism to explain</button>
           <p class="hint">Prashna answers the question as you hold it right now. Ask each question once — repeating it with new numbers weakens the answer.</p>`;
         $('hq-ask').onclick = () => window.askSukh && window.askSukh(ask);

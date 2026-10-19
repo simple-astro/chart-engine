@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -13,6 +14,8 @@ from app.routes import with_extras
 from app.schemas import ChartRequest
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
+log = logging.getLogger(__name__)
+CHAT_ERROR = "Astropositivism couldn't answer just now. Please try again in a minute."
 usage_router = APIRouter(tags=["usage"])
 
 
@@ -68,9 +71,14 @@ def quota(request: Request) -> dict:
     """How many AI questions this tester has left today, for the Ask Astropositivism header."""
     if not access.enabled() or request.state.admin:
         return {"limited": False}
+    from datetime import datetime, time, timedelta, timezone
     owner = _owner(request)
     limit, used = _tester_limit(owner), storage.llm_requests_today(owner)
-    return {"limited": True, "limit": limit, "used": used, "left": max(0, limit - used)}
+    shared_out = storage.llm_requests_today() >= config.get("daily_limit_total")  # everyone's cap for the day
+    # Counts are per UTC day (storage.llm_requests_today), so they refill at the next UTC midnight.
+    resets = datetime.combine(datetime.now(timezone.utc).date() + timedelta(days=1), time(0), tzinfo=timezone.utc)
+    return {"limited": True, "limit": limit, "used": used, "left": 0 if shared_out else max(0, limit - used),
+            "resets_at": resets.isoformat()}
 
 
 def _check_quota(request: Request) -> None:
@@ -108,13 +116,8 @@ def get_profile(profile_id: int, request: Request) -> dict:
 
 def _transit_tz(p: dict, tz: str | None) -> str:
     """The viewer's time zone if given (transits follow where they are now), else the birthplace's."""
-    from zoneinfo import ZoneInfo
-    name = tz or p["request"].get("tz_name") or "UTC"
-    try:
-        ZoneInfo(name)
-    except Exception as exc:  # unknown or malformed zone name
-        raise HTTPException(status_code=422, detail="unknown time zone") from exc
-    return name
+    from app.routes import require_tz
+    return require_tz(tz or p["request"].get("tz_name") or "UTC")
 
 
 def _transit_day(p: dict, date: str | None, tz: str | None = None):
@@ -235,10 +238,12 @@ def chat_send(profile_id: int, req: ChatRequest, request: Request) -> dict:
     _check_quota(request)
     try:
         return chat.chat(profile, req.message)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except RuntimeError as exc:  # server set-up (no API key, missing package)
+        log.warning("chat unavailable: %r", exc)
+        raise HTTPException(status_code=503, detail=CHAT_ERROR) from exc
     except Exception as exc:  # upstream API failure
-        raise HTTPException(status_code=502, detail=f"LLM request failed: {exc}") from exc
+        log.warning("chat failed: %r", exc)
+        raise HTTPException(status_code=502, detail=CHAT_ERROR) from exc
 
 
 @router.post("/{profile_id}/chat/stream")
@@ -251,8 +256,9 @@ def chat_stream(profile_id: int, req: ChatRequest, request: Request) -> Streamin
         try:
             for ev in chat.chat_events(profile, req.message):
                 yield json.dumps(ev) + "\n"
-        except Exception as exc:
-            yield json.dumps({"type": "error", "detail": str(exc)}) + "\n"
+        except Exception as exc:  # the reason goes to the log; the user gets a plain message
+            log.warning("chat stream failed: %r", exc)
+            yield json.dumps({"type": "error", "detail": CHAT_ERROR}) + "\n"
 
     return StreamingResponse(gen(), media_type="application/x-ndjson",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
@@ -377,14 +383,20 @@ def _events_view(p: dict) -> dict:
     from app import life_events as L
     chart = with_extras(p["chart"])
     birth, today = date.fromisoformat(p["request"]["dob"]), chat.local_today(p)
+    from app import karaka_check as KC
     events = [{**e, "label": L.KINDS[e["kind"]][0],
-               "check": L.check(chart, e["kind"], date.fromisoformat(e["date"]), e["precision"])}
+               "check": L.check(chart, e["kind"], date.fromisoformat(e["date"]), e["precision"]),
+               "karaka": KC.check(chart, L.KINDS[e["kind"]][1], *L.span(date.fromisoformat(e["date"]), e["precision"]))}
               for e in storage.event_list(p["id"])]
     summ = L.summary(chart, events, birth, today)
+    read = [e for e in L.checked(events)]
+    kar = {"fits": sum(e["karaka"]["fit"] == "fits" for e in read), "events": len(read), "note": KC.DRAFT_NOTE,
+           "expected": round(sum(KC.base_rate(chart, L.KINDS[e["kind"]][1], birth, today) for e in read), 1),
+           "agree": sum(e["check"]["fit"] == "fits" and e["karaka"]["fit"] == "fits" for e in read)} if read else None
     rectified = bool(storage.get_setting(f"rectified_{p['id']}_{p['request'].get('tob', '')[:5]}"))
     group = {k: g for g, ks in L.GROUPS for k in ks}
     return {"kinds": [{"key": k, "label": v[0], "group": group.get(k, "Other")} for k, v in L.KINDS.items()],
-            "groups": [g for g, _ in L.GROUPS], "events": events, "summary": summ,
+            "groups": [g for g, _ in L.GROUPS], "events": events, "summary": summ, "karaka": kar,
             "accuracy": L.accuracy(chart, events, summ, bool(p["request"].get("tob_unknown")), rectified)}
 
 
@@ -567,5 +579,6 @@ def upcoming_good_days(profile_id: int, request: Request, activity: str, start: 
     try:
         return muhurat.find_dates(activity, max(s, chat.local_today(p)), max(1, min(days, 45)), w["lat"], w["lon"],
                                   tz_name, moon["nakshatra_index"], moon["sign_index"], limit=3)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:  # unknown activity or polar day
+        from app.routes import calc_error
+        raise calc_error(exc) from exc

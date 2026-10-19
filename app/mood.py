@@ -86,7 +86,8 @@ def snapshot(profile: dict, where: dict, now: datetime) -> dict:
     moon, antar = chart["grahas"]["Moon"], lords.get("antar")
     g = T.today(local.date(), where["lat"], where["lon"], where["tz_name"], chart["lagna"]["sign_index"],
                 moon["nakshatra_index"], moon["sign_index"], lords.get("maha"), antar,
-                chart["grahas"][antar]["sign_index"] if antar in chart["grahas"] else None)
+                chart["grahas"][antar]["sign_index"] if antar in chart["grahas"] else None,
+                chart["grahas"][lords["maha"]]["sign_index"] if lords.get("maha") in chart["grahas"] else None)
     iso = now.isoformat()
     hora = next((h["lord"] for h in g["horas"] if h["start"] <= iso < h["end"]), None)
     rk = g["rahu_kalam"]

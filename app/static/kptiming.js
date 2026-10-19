@@ -30,7 +30,7 @@
       b.disabled = true; out.innerHTML = '<p class="hint">Checking each day’s transits…</p>';
       try {
         const r = await fetch(`/profiles/${profileId}/kp/${current}/days?start=${s}&days=${days}`);
-        const d = await r.json(); if (!r.ok) throw new Error(d.detail || r.statusText);
+        const d = await r.json(); if (!r.ok) throw new Error(window.apiErr(d.detail) || r.statusText);
         out.innerHTML = d.days.length ? `<ol class="kpdd">${d.days.map(x => `<li><b>${fd(x.date)}</b><span>${x.hits.map(esc).join(' · ')}</span></li>`).join('')}</ol>
             <p class="hint">Possible days only — tested on dated events, the window is reliable but exact-day timing is not (it needs a birth time accurate to the minute). Significators: ${esc(d.significators.join(', '))}. A transiting significator within 1° of a natal significator or a combination cusp, two significators conjoined, the Moon joining three, or the Antar lord in a significator’s star — with a fast planet involved.</p>`
           : '<p class="hint">No exact transit trigger in this window — the event is more likely in another window.</p>';
@@ -43,7 +43,7 @@
       box.innerHTML = '<p class="hint">Working out the KP timing…</p>';
       try {
         const r = await fetch(`/profiles/${profileId}/kp/${topic}?months=36`);
-        const d = await r.json(); if (!r.ok) throw new Error(d.detail || r.statusText);
+        const d = await r.json(); if (!r.ok) throw new Error(window.apiErr(d.detail) || r.statusText);
         const p = d.promise;
         const risk = d.kind === 'risk', vl = v => risk ? RISK[v] : v, vb = v => risk ? RISK_BADGE[v] : BADGE[v];
         box.innerHTML = `<div class="kpp"><div><small>${risk ? 'Is it indicated?' : 'Is it promised?'}</small><b>${esc(d.title)}</b></div>

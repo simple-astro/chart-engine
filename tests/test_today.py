@@ -31,7 +31,9 @@ def test_today_card_content():
     assert len(d["do"]) == 3 and 1 <= len(d["avoid"]) <= 3 and all(x["text"] and x["why"] for x in d["do"] + d["avoid"])
     assert d["direction"]["avoid"] == "south" and "curd" in d["direction"]["fix"]
     assert d["number"]["value"] == T.NUMBER[d["colour"]["planet"]]
-    assert d["upay"]["habit"].startswith("Thank a teacher") and "Namah" not in str(d["upay"])  # habits, not japa
+    # Jyeshtha native on a Purva Phalguni day: Vipat star, so the upaya is for Venus, the day star's lord
+    assert d["upay"]["planet"] == "Venus" and d["upay"]["source"] == "tara" and "Vipat" in d["upay"]["why"]
+    assert "Namah" not in str(d["upay"])  # habits, not japa
     assert d["sukh"].startswith("Your Mercury period")
     for w in d["best_times"]:
         assert w["start"] < w["end"] and not (w["start"] < d["rahu_kalam"][1] and w["end"] > d["rahu_kalam"][0])
@@ -129,3 +131,56 @@ def test_shared_colour_named_once_and_bhadra_caps_the_badge():
     g = T.today(date(2026, 10, 18), 49.8954, -97.1385, "America/Winnipeg", 8, 17, 7, "Venus", "Mercury", 4)  # Vishti karana
     assert g["rating"]["verdict"] not in ("excellent", "good") and "until" in g["rating"]["why"]
     assert any(a["why"].startswith("Bhadra") and "until" in a["text"] for a in g["avoid"])
+
+
+# ----- Today's upaya: the planet that most needs care for this person today -----
+from types import SimpleNamespace as NS
+
+THU = NS(nakshatra="Pushya", nakshatra_lord="Saturn")
+
+
+def _f(weekday=4, tara=None, chandra=None):
+    return {"weekday": weekday, "tara": tara, "chandra": chandra}
+
+
+def test_upay_chandrashtama_comes_first():
+    u = T.pick_upay(THU, _f(tara={"name": "Vipat", "score": -1}, chandra={"house": 8, "score": -2}), 7, 7)
+    assert u["planet"] == "Moon" and u["source"] == "chandrashtama"
+
+
+def test_upay_for_a_difficult_star_is_the_day_stars_lord():
+    u = T.pick_upay(THU, _f(tara={"name": "Naidhana", "score": -2}), 7, 7)
+    assert u["planet"] == "Saturn" and u["source"] == "tara" and "Pushya" in u["why"]
+    assert T.pick_upay(THU, _f(tara={"name": "Janma", "score": 0}), 7, 7)["source"] == "day"
+
+
+def test_upay_sade_sati_only_on_saturday():
+    assert T.pick_upay(THU, _f(weekday=6), 3, 3, saturn_sign=4)["source"] == "sade_sati"   # Saturn 2nd from Moon
+    assert T.pick_upay(THU, _f(weekday=6), 3, 3, saturn_sign=6)["source"] == "day"         # not near the Moon
+    assert T.pick_upay(THU, _f(weekday=4), 3, 3, saturn_sign=3)["source"] == "day"         # in Sade Sati, not Saturday
+
+
+def test_upay_follows_a_difficult_running_period():
+    # Scorpio lagna: Mercury rules 8 and 11 (difficult); the Antardasha is checked before the Mahadasha
+    u = T.pick_upay(THU, _f(), 7, 0, maha="Mars", antar="Mercury")
+    assert u["planet"] == "Mercury" and u["source"] == "antardasha" and "8th" in u["why"]
+    # Libra lagna: Saturn is the yogakaraka, not difficult, so the weekday lord stays
+    assert T.pick_upay(THU, _f(), 6, 0, maha="Saturn", antar="Saturn")["planet"] == "Jupiter"
+
+
+def test_upay_for_rahu_and_ketu_periods():
+    # Rahu in the 12th from a Cancer lagna (Gemini): difficult
+    u = T.pick_upay(THU, _f(), 3, 0, maha="Rahu", maha_sign=2)
+    assert u["planet"] == "Rahu" and u["source"] == "mahadasha" and "12th" in u["why"] and u["daan"]
+    # Rahu in Aries for an Aries lagna, with Mars ruling 1 and 8: not difficult
+    assert T.pick_upay(THU, _f(), 0, 0, maha="Rahu", maha_sign=0)["source"] == "day"
+    # Ketu in Gemini for an Aries lagna: Mercury (3rd and 6th) is difficult, so Ketu acts for it
+    assert "Mercury" in T.pick_upay(THU, _f(), 0, 0, antar="Ketu", antar_sign=2)["why"]
+
+
+def test_two_people_on_the_same_day_can_get_different_upaya():
+    day = date(2026, 10, 19)  # a Monday
+    a = T.today(day, **DELHI, lagna_sign=5, birth_nakshatra=13, birth_moon_sign=5, maha="Venus", antar="Mercury")
+    b = T.today(day, **DELHI, lagna_sign=3, birth_nakshatra=0, birth_moon_sign=0, maha="Rahu", antar="Rahu",
+                maha_sign=2, antar_sign=2)
+    assert a["upay"]["planet"] != b["upay"]["planet"]
