@@ -1216,7 +1216,7 @@
       <button type="button" data-go="timing"><svg viewBox="0 0 24 24"><path d="M6 2h12M6 22h12M7 2c0 6 10 6 10 10S7 16 7 22M17 2c0 6-10 6-10 10s10 4 10 10"/></svg><span>Timing</span></button>
       <button type="button" data-go="ask" class="askb"><i class="bub"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg></i><span>Ask Astropositivism</span></button>
       <button type="button" data-go="remedies"><svg viewBox="0 0 24 24"><path d="M12 3c2 3 3 4.6 3 6.5a3 3 0 0 1-6 0C9 7.6 10 6 12 3z"/><path d="M4 15h16l-2 4H6z"/></svg><span>Remedies</span></button>
-      <button type="button" data-go="chart"><svg viewBox="0 0 24 24"><path d="M4 4h5v16H4zM10 4h4v16h-4zM15.5 5l3.8-1 2.7 15.5-3.8 1z"/></svg><span>Studies</span></button>
+      <button type="button" data-go="chart"><svg viewBox="0 0 24 24"><path d="M4 4h5v16H4zM10 4h4v16h-4zM15.5 5l3.8-1 2.7 15.5-3.8 1z"/></svg><span>Charts</span></button>
     </nav>
 
   <!-- ===== match making view ===== -->
@@ -1256,7 +1256,7 @@
         <div class="card gcard" id="t-vim"><div id="dasha"></div></div>
         <div class="card gcard" id="t-yogini"><div id="yoginibody"></div></div>
         <section class="card gcard" id="gupcoming"></section>
-        <div class="card gcard tplan"><b>Jaimini’s Chara Dasha</b><button type="button" class="linkbtn" data-goto="chara">In Studies › Jaimini →</button></div>
+        <div class="card gcard tplan"><b>Jaimini’s Chara Dasha</b><button type="button" class="linkbtn" data-goto="chara">In Charts › Jaimini →</button></div>
       </div>
       <div id="tm-transits" hidden>
         <div class="card gcard" id="t-transit"><div id="trwrap"></div></div>
@@ -1268,7 +1268,7 @@
       </div>
       <div id="tm-dates" hidden>
         <div class="g2" id="gtools"></div>
-        <div class="card gcard tplan"><b>A yes-or-no question?</b><button type="button" class="linkbtn" data-goto="prashna">KP and Jamakkol Prashna in Studies →</button></div>
+        <div class="card gcard tplan"><b>A yes-or-no question?</b><button type="button" class="linkbtn" data-goto="prashna">KP and Jamakkol Prashna in Charts →</button></div>
       </div>
     </div>
 
@@ -1302,7 +1302,7 @@
       <div class="stats" id="summary"></div><div class="accsheet" id="accsheet" hidden></div><div class="tslide" id="tslide"></div>
     </div>
     <!-- Studies: one card per tradition; each opens a page with only its own sections -->
-    <div class="sthub" id="sthub" role="list" aria-label="Studies">
+    <div class="sthub" id="sthub" role="list" aria-label="Charts">
       <button type="button" role="listitem" data-branch="vedic"><i aria-hidden="true">☉</i><span><b>Vedic</b><small>Rasi chart, planets, yogas, divisional charts, Ashtakavarga, your life areas</small></span></button>
       <button type="button" role="listitem" data-branch="nadi"><i aria-hidden="true">◎</i><span><b>Nadi (KP)</b><small>Cusps and sub-lords, Nadi amsha, your life so far</small></span></button>
       <button type="button" role="listitem" data-branch="bnn"><i aria-hidden="true">△</i><span><b>BNN</b><small>Bhrigu Nandi Nadi: planets joined by trines, karaka circuits</small></span></button>
@@ -1310,7 +1310,7 @@
       <button type="button" role="listitem" data-branch="lal"><i aria-hidden="true">✦</i><span><b>Lal Kitab</b><small>Lal Kitab kundli, debts (rin) and its remedies</small></span></button>
       <button type="button" role="listitem" data-branch="prashna"><i aria-hidden="true">?</i><span><b>Prashna</b><small>Yes-or-no questions: KP number and Jamakkol</small></span></button>
     </div>
-    <nav class="stcrumb" id="stcrumb" aria-label="Studies" hidden><button type="button" class="linkbtn" data-branch="">Studies</button><span aria-hidden="true">›</span><b id="stname"></b>
+    <nav class="stcrumb" id="stcrumb" aria-label="Charts" hidden><button type="button" class="linkbtn" data-branch="">Charts</button><span aria-hidden="true">›</span><b id="stname"></b>
       <span class="stjump" id="stjump"></span></nav>
     <div class="grid" id="stgrid">
       <aside class="card chartcard"><div class="chhead"><h3 id="charttitle">Rasi chart (D1) · North Indian</h3>
@@ -1643,7 +1643,7 @@ const FIND=[
   ['Yes or no? (KP Prashna)','prashna horary question yes no number','chart/prashna','Prashna'],
   ['Jamakkol Prashna','jamakkol jamakol jammakkol prasanam prashna udayam arudam kavippu chatra tamil horary','chart/prashna','Prashna'],
 ];
-const FIND_NAME={today:'Today',timing:'Timing',ask:'Ask Astropositivism',remedies:'Remedies',chart:'Studies',now:'Now & next',transits:'Transits',
+const FIND_NAME={today:'Today',timing:'Timing',ask:'Ask Astropositivism',remedies:'Remedies',chart:'Charts',now:'Now & next',transits:'Transits',
   matter:'By matter',dates:'Good dates',yogini:'Now & next',muhurat:'Good days & muhurat',...BRANCHES};
 const POPULAR=['Today for you','Transit chart','KP timing by matter','Find a good date','Remedies (upaya)','Jamakkol Prashna'];
 const SYN={shani:'saturn',sani:'saturn',guru:'jupiter',brihaspati:'jupiter',shukra:'venus',mangal:'mars',budh:'mercury',budha:'mercury',
@@ -1699,12 +1699,12 @@ function findList(){
   const c=lastChart, mine=[];
   if(c){
     q.filter(w=>PLANET_OF[w]).forEach(w=>{const p=PLANET_OF[w],g=c.grahas[p];if(!g)return;
-      mine.push(findRow('Your '+p+': '+g.sign+', '+ORD(g.house)+' house','Studies › Vedic › Planets','chart/planets','Vedic'));
-      mine.push(findRow(p+' in Lal Kitab','Studies › Lal Kitab','chart/lal','Lal Kitab'))});
+      mine.push(findRow('Your '+p+': '+g.sign+', '+ORD(g.house)+' house','Charts › Vedic › Planets','chart/planets','Vedic'));
+      mine.push(findRow(p+' in Lal Kitab','Charts › Lal Kitab','chart/lal','Lal Kitab'))});
     const m=raw.toLowerCase().match(/(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:house|bhava|ghar)|(?:house|bhava|ghar)\s*(\d{1,2})/);
     const h=m&&+(m[1]||m[2]);
     if(h>=1&&h<=12){const sg=(c.lagna.sign_index+h-1)%12;
-      mine.push(findRow('Your '+ORD(h)+' house: '+SIGNS[sg],'Studies › Vedic › House by house','chart/reading','Vedic'))}
+      mine.push(findRow('Your '+ORD(h)+' house: '+SIGNS[sg],'Charts › Vedic › House by house','chart/reading','Vedic'))}
   }
   if(mine.length)out.push('<p class="srg">Your chart</p>'+mine.join(''));
   const scored=FIND.map(f=>{const hay=(f[0]+' '+f[1]+' '+(f[3]||'')).toLowerCase(),name=f[0].toLowerCase();
