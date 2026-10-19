@@ -280,7 +280,7 @@
   .stat.soft b{color:var(--mut);font-weight:500} .stat.soft em{display:block;font-style:normal;font-size:.7rem;color:var(--mut)}
   .tunk{flex-basis:100%;margin:4px 0 0;font-size:.86rem;color:var(--mut)} .tunk b{color:var(--ink)}
   .grid{display:flex;flex-direction:column;gap:22px}
-  .chartcard{display:grid;grid-template-columns:minmax(280px,420px) 1fr;grid-template-areas:"h h" "c k" "c l" "c n" "x x" "r r";column-gap:32px;align-content:start}
+  .chartcard{display:grid;grid-template-columns:minmax(280px,420px) 1fr;grid-template-areas:"h h" "c k" "c l" "c n" "g ." "x x" "r r";column-gap:32px;align-content:start}
   .chartcard>.chhead{grid-area:h;display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:14px}
   .chhead h3{font:600 1.15rem var(--serif);margin:0;text-align:center} .chseg{width:min(360px,100%)}
   .gstep{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
@@ -293,7 +293,10 @@
   .gdnew{color:var(--acc);font-size:.8rem;margin-top:2px}
   .gdasha table{width:100%;border-collapse:collapse;margin-top:6px;font-size:.8rem} .gdasha td{padding:2px 0;color:var(--mut)}
   .gdasha td:nth-child(2){color:var(--ink);font-weight:600} .gdasha td:last-child{text-align:right}
-  .gdkey{margin:6px 0 0;font-size:.74rem;color:var(--mut)} .chart .dlv{fill:var(--acc);font-weight:700;font-size:.62em} .vfrom{width:min(260px,100%);margin:10px auto 0} .chseg button{white-space:nowrap;padding-left:4px;padding-right:4px} .chartcard>#chart{grid-area:c} .chartcard>.ckey{grid-area:k;margin-top:0;align-self:start}
+  .gdkey{margin:6px 0 0;font-size:.74rem;color:var(--mut)} .chart .dlv{fill:var(--acc);font-weight:700;font-size:.62em} .vfrom{width:min(260px,100%);margin:10px auto 0} .chseg button{white-space:nowrap;padding-left:4px;padding-right:4px} .chartcard>#chart{grid-area:c} .chartcard>.gstep{grid-area:g;margin-top:12px;display:grid;grid-template-columns:44px auto 44px;justify-content:center;align-items:center;gap:8px;width:100%;max-width:420px;justify-self:center}
+  .chartcard>.gstep[hidden]{display:none} .chartcard>.gstep label{overflow:hidden;text-overflow:ellipsis;font-size:.76rem;letter-spacing:.3px;padding:11px 16px;min-width:150px;max-width:230px}
+  .chartcard>.gstep #gnow{grid-column:1/-1;justify-self:center;padding:0}
+  .chartcard>.gstep .gctl{grid-column:1/-1;flex-wrap:nowrap;margin:0} .chartcard>.ckey{grid-area:k;margin-top:0;align-self:start}
   .chartcard>.clegend{grid-area:l;justify-content:flex-start} .chartcard>.hint{grid-area:n;text-align:left!important}
   .chartcard>.hread{grid-area:r} .chartcard>.lnkpanel{grid-area:x}
   /* Wide screens: the chart's controls sit in rows (style + view, then day + options) and the Gochar dasha and
@@ -301,14 +304,13 @@
   .gpanels{display:contents}
   @media (min-width:901px){
     .chartcard>.chhead{flex-direction:row;flex-wrap:wrap;justify-content:center;column-gap:12px;row-gap:10px}
-    .chartcard>.chhead>h3,.chartcard>.chhead>.gstep,.chartcard>.chhead>.gpanels,.chartcard>.chhead>.lnkbar{flex-basis:100%}
+    .chartcard>.chhead>h3,.chartcard>.chhead>.gpanels,.chartcard>.chhead>.lnkbar{flex-basis:100%}
     .chartcard>.chhead>.lnkbar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:auto}
     .chhead .chstyle{width:auto} .chhead .chstyle button{white-space:nowrap;padding-left:14px;padding-right:14px} .chhead .chseg{width:auto;min-width:340px}
-    .gstep{flex-wrap:nowrap;gap:10px} .gstep .gctl{flex-basis:auto;margin:0 0 0 6px}
     .gpanels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start}
     .gpanels>.gdasha,.gpanels>.ghits{margin:0;max-width:none} .gpanels .hint{text-align:left}
   }
-  @media (max-width:900px){.chartcard{grid-template-columns:1fr;grid-template-areas:"h" "c" "x" "r" "k" "l" "n"}
+  @media (max-width:900px){.chartcard{grid-template-columns:1fr;grid-template-areas:"h" "c" "g" "x" "r" "k" "l" "n"}
     .chartcard>.ckey{margin-top:16px} .chartcard>.clegend{justify-content:center} .chartcard>.hint{text-align:center!important}}
   .chartcard{padding:22px;position:relative}
   .chartcard h3{font:600 1.15rem var(--serif);margin-bottom:14px;text-align:center}
@@ -556,6 +558,8 @@
   .trmoon{margin:0}
   .trmain{display:grid;grid-template-columns:minmax(260px,380px) 1fr;gap:20px;align-items:start;margin-bottom:16px}
   .trchart svg{max-width:380px}
+  .trmain .trbar{display:grid;grid-template-columns:repeat(5,1fr);max-width:380px;margin:10px 0 12px}
+  .trmain .trbar #trdate{grid-column:1/-1;order:-1;min-width:0} .trmain .trbar .trtoday{grid-column:1/-1}
   .chart .pn.trd{fill:var(--acc2)}
   .trnotes{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
   .trnotes li{padding:9px 12px;border-radius:10px;background:var(--bg2);border-left:3px solid var(--line);font-size:.88rem;line-height:1.45}
@@ -1308,16 +1312,16 @@
       <aside class="card chartcard"><div class="chhead"><h3 id="charttitle">Rasi chart (D1) · North Indian</h3>
         <div class="seg chstyle" role="radiogroup" aria-label="Chart style"><button type="button" role="radio" data-style="north">North Indian</button><button type="button" role="radio" data-style="south">South Indian</button></div>
         <div class="seg chseg" role="radiogroup" aria-label="Chart view"><button type="button" role="radio" aria-checked="true" class="on" data-v="lagna">Lagna</button><button type="button" role="radio" aria-checked="false" data-v="chalit">Bhava Chalit</button><button type="button" role="radio" aria-checked="false" data-v="moon" title="Chandra Lagna: houses counted from the Moon">Moon</button><button type="button" role="radio" aria-checked="false" data-v="gochar" title="Where the planets are today, in houses from your lagna">Gochar</button></div>
-        <div class="gstep" id="gstep" hidden><button type="button" data-d="-1" aria-label="Previous day">−</button><label><span id="gday"></span><input type="date" id="gdate" aria-label="Pick a date"></label><button type="button" data-d="1" aria-label="Next day">+</button><button type="button" class="linkbtn" data-d="0" id="gnow">Today</button>
-          <div class="gctl"><div class="seg gfrom" id="gfrom" role="radiogroup" aria-label="Count houses from"><button type="button" role="radio" data-gf="lagna" class="on" aria-checked="true">Lagna</button><button type="button" role="radio" data-gf="moon" aria-checked="false">Moon</button></div>
-          <select id="gint" aria-label="Step"><option value="1">Daily</option><option value="7">Weekly</option><option value="30">Monthly</option></select>
-          <button type="button" class="btn ghost gplay" id="gplay" aria-pressed="false">▶ Play</button></div></div>
         <div class="gpanels"><div class="gdasha" id="gdasha" hidden></div><div class="ghits" id="ghits" hidden></div></div>
           <button type="button" class="jpt" id="jpt" aria-pressed="false" title="Show the Jaimini Arudha Lagna (AL) and Upapada (UL) on the chart">AL · UL</button>
           <div class="lnkbar" id="lnkbar"><div class="seg lnkseg" id="lnkseg" role="group" aria-label="Draw planet links on the chart">
             <button type="button" data-m="place" aria-pressed="false">Placement</button><button type="button" data-m="asp" aria-pressed="false">Aspects</button><button type="button" data-m="conj" aria-pressed="false">Conjunctions</button></div>
             <div class="seg lnknodes" id="lnknodes" role="group" aria-label="Rahu and Ketu aspects" hidden><button type="button" data-n="579" aria-pressed="true">Rahu &amp; Ketu: 5 · 7 · 9</button><button type="button" data-n="7" aria-pressed="false">7th only</button></div></div></div>
         <div id="chart" class="chart"></div>
+        <div class="gstep" id="gstep" hidden><button type="button" data-d="-1" aria-label="Previous day">−</button><label><span id="gday"></span><input type="date" id="gdate" aria-label="Pick a date"></label><button type="button" data-d="1" aria-label="Next day">+</button><button type="button" class="linkbtn" data-d="0" id="gnow">Today</button>
+          <div class="gctl"><div class="seg gfrom" id="gfrom" role="radiogroup" aria-label="Count houses from"><button type="button" role="radio" data-gf="lagna" class="on" aria-checked="true">Lagna</button><button type="button" role="radio" data-gf="moon" aria-checked="false">Moon</button></div>
+          <select id="gint" aria-label="Step"><option value="1">Daily</option><option value="7">Weekly</option><option value="30">Monthly</option></select>
+          <button type="button" class="btn ghost gplay" id="gplay" aria-pressed="false">▶ Play</button></div></div>
         <div class="lnkpanel" id="lnkpanel" hidden>
           <div class="lnkkey"><span><i class="good"></i>Helpful for you</span><span><i class="bad"></i>Needs care</span><span><i class="mix"></i>Mixed</span></div>
           <div class="lnkchips" id="lnkchips" role="group" aria-label="Focus on one planet"></div>

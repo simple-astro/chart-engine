@@ -34,7 +34,10 @@
         <div class="trlocs" id="trlocs"></div>
       </div>
       <div id="trbody" aria-live="polite"><p class="hint">Loading the sky…</p></div>`;
-    const body = el.querySelector('#trbody'), input = el.querySelector('#trdate');
+    const body = el.querySelector('#trbody'), input = el.querySelector('#trdate'), bar = el.querySelector('.trbar');
+    // The date controls sit right under the chart once it is drawn (and back on top if loading fails), so stepping
+    // through days keeps your eye on the chart. The same node moves, so its listeners stay.
+    const dock = () => { const c = body.querySelector('#trchart'); if (c) c.after(bar); else el.prepend(bar); };
 
     async function load() {
       input.value = day;
@@ -51,7 +54,7 @@
         const re = await fetch(`/profiles/${profileId}/transit/events?date=${day}&tz=${z}`, { signal: ctrl.signal });
         const ev = await re.json(); if (!re.ok) throw new Error(window.apiErr(ev.detail) || re.statusText);
         lastEv = ev; paintPeriods(ev.periods); paintEvents(ev);
-      } catch (e) { if (e.name !== 'AbortError') body.innerHTML = `<p class="hint err">Couldn’t load transits: ${esc(e.message)}</p>`; }
+      } catch (e) { if (e.name !== 'AbortError') { el.prepend(bar); body.innerHTML = `<p class="hint err">Couldn’t load transits: ${esc(e.message)}</p>`; } }
       body.classList.remove('loading');
     }
 
@@ -71,6 +74,7 @@
           <td class="c">${p.h_lagna}</td><td class="c">${p.h_moon}</td><td class="c">${p.h_bhava}</td>
           <td class="c"><span class="${p.sav >= 28 ? 'ok' : p.sav < 25 ? 'bad' : ''}">${p.sav}</span></td>
           <td>${p.over_natal.length ? 'over natal ' + p.over_natal.join(', ') : ''}</td></tr>`).join('');
+      el.prepend(bar);  // keep the controls out of the way while the body is replaced
       body.innerHTML = `
         <div class="trtop">
           <section class="trcard"><h4>Running daśā on ${fd(d.date)}</h4><div class="trdas">${dasha}</div></section>
@@ -100,6 +104,7 @@
         d.planets.forEach(p => { (outer[p.h_lagna - 1] = outer[p.h_lagna - 1] || []).push({ t: ABBR[p.planet], d: Math.floor(p.deg) + '°', r: p.retrograde, lv: lv(p.dasha) }); });
         window.drawComposite(body.querySelector('#trchart'), L, inner, outer, null);
       } else window.drawNorth(body.querySelector('#trchart'), d.lagna_index, byH);
+      dock();
     }
 
     const STATUS = { strong: 'good', open: 'good', not_now: 'mute', not_promised: 'warn' };
