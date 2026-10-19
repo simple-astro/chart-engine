@@ -121,3 +121,10 @@ def test_bnn_is_its_own_studies_branch():
     assert 'data-pane="bnn" data-branch="bnn"' in INDEX
     nadi = _between(INDEX, 'data-branch="nadi"><i', "</button>")
     assert "BNN" not in nadi
+
+
+def test_bnn_chart_shows_retrograde_planets_in_the_sign_before_too():
+    draw = _between(INDEX, "  const drawMain=()=>{", "\n  };\n")
+    assert "BRANCH==='bnn'" in draw and "(g.sign_index+11)%12" in draw and "n==='Rahu'||n==='Ketu'" in draw
+    assert INDEX.count("p.ghost?'<tspan class=\"bnng\">") == 2  # North and South Indian charts
+    assert "wasBnn!==(BRANCH==='bnn')" in _between(INDEX, "function setBranch(b){", "\n}\n")  # redrawn on switch

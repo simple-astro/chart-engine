@@ -328,6 +328,7 @@
   .chart .pg{cursor:pointer}
   .chart.hl .pg{fill-opacity:.2} .chart.hl .pg.on{fill-opacity:1}
   .chart .pn.ex{fill:var(--ok)} .chart .pn.db{fill:var(--bad)}
+  .chart .bnng{fill:var(--mut);opacity:.75;font-style:italic}
   .bd.ex{fill:var(--ok);color:var(--ok)} .bd.db{fill:var(--bad);color:var(--bad)} .bd.own{fill:var(--acc);color:var(--acc)}
   .bd.rt{fill:var(--acc2);color:var(--acc2)} .bd.cb{fill:var(--cmb);color:var(--cmb)}
   .ctip{position:absolute;z-index:5;pointer-events:none;background:var(--solid);border:1px solid var(--line);border-radius:12px;
@@ -1517,7 +1518,9 @@ const BRANCHES={vedic:'Vedic',nadi:'Nadi (KP)',bnn:'BNN',jaimini:'Jaimini',lal:'
 const BRANCH_OF={planets:'vedic',yogas:'vedic',vargas:'vedic',akv:'vedic',xchg:'vedic',links:'vedic',about:'vedic',reading:'vedic',
   houses:'nadi',nadi:'nadi',bnn:'bnn',events:'nadi',jaimini:'jaimini',chara:'jaimini',lal:'lal',prashna:'prashna',kpq:'prashna',jamakkol:'prashna'};
 function setBranch(b){
+  const wasBnn=BRANCH==='bnn';
   BRANCH=BRANCHES[b]?b:null;
+  if(wasBnn!==(BRANCH==='bnn'))try{RERENDER&&RERENDER()}catch(e){}  // the faded BNN copies come and go with the branch
   $('sthub').hidden=!!BRANCH;$('stcrumb').hidden=!BRANCH;
   $('stgrid').hidden=!BRANCH||BRANCH==='prashna';$('stgrid').classList.toggle('solo',BRANCH==='lal');
   document.querySelectorAll('#s-chart .stx').forEach(x=>x.hidden=x.dataset.for!==BRANCH);
@@ -2124,7 +2127,7 @@ function drawNorth(el,lagnaIdx,byH,houseSigns,ascLabel){
     '<text class="asclbl" x="200" y="32" text-anchor="middle">'+(ascLabel||'LAGNA')+'</text>'+
     HOUSE_POLY.map((pts,i)=>'<polygon class="hz" data-h="'+(i+1)+'" points="'+pts+'"><title>House '+(i+1)+'</title></polygon>').join('');
   // byH entries are 'Su' strings, or {t:'Su', d:'15°', p:'Sun', b:['ex','R'], cls} for the main chart.
-  const lab=p=>typeof p==='string'?p:p.jp?'<tspan class="jp">'+p.t+'</tspan>':'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
+  const lab=p=>typeof p==='string'?p:p.ghost?'<tspan class="bnng"><title>'+p.title+'</title>'+p.t+'<tspan class="bd rt" dx="1">R</tspan></tspan>':p.jp?'<tspan class="jp">'+p.t+'</tspan>':'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
     (p.d?'<tspan class="dg" dx="1.5">'+p.d+'</tspan>':'')+(p.b||[]).map(k=>'<tspan class="bd '+BD[k][1]+'" dx="1">'+BD[k][0]+'</tspan>').join('')+
     (p.lv?'<tspan class="dlv" dx="1.5" dy="-5">'+p.lv+'</tspan><tspan dy="5"> </tspan>':'')+'</tspan>';
   P.forEach(([x,y],h)=>{
@@ -2141,7 +2144,7 @@ const SOUTH_CELL=[[1,0],[2,0],[3,0],[3,1],[3,2],[3,3],[2,3],[1,3],[0,3],[0,2],[0
 const SIGN_AB=['Ari','Tau','Gem','Can','Leo','Vir','Lib','Sco','Sag','Cap','Aqu','Pis'];
 function drawSouth(el,lagnaIdx,byH,ascLabel){
   const W=100,centres=[];
-  const lab=p=>typeof p==='string'?p:p.jp?'<tspan class="jp">'+p.t+'</tspan>':'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
+  const lab=p=>typeof p==='string'?p:p.ghost?'<tspan class="bnng"><title>'+p.title+'</title>'+p.t+'<tspan class="bd rt" dx="1">R</tspan></tspan>':p.jp?'<tspan class="jp">'+p.t+'</tspan>':'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
     (p.d?'<tspan class="dg" dx="1.5">'+p.d+'</tspan>':'')+(p.b||[]).map(k=>'<tspan class="bd '+BD[k][1]+'" dx="1">'+BD[k][0]+'</tspan>').join('')+
     (p.lv?'<tspan class="dlv" dx="1.5" dy="-5">'+p.lv+'</tspan><tspan dy="5"> </tspan>':'')+'</tspan>';
   let v='<svg viewBox="-2 -2 404 404" xmlns="http://www.w3.org/2000/svg" class="south"><rect class="bgsq" x="0" y="0" width="400" height="400"/>'+
@@ -2682,6 +2685,10 @@ function render(c,req){
   if(V!=='gochar')Object.entries(c.grahas).forEach(([n,g])=>{const h=houseOf([n,g]),b=status(n);
     (byH[h]=byH[h]||[]).push({t:ABBR[n],d:Math.floor(g.degrees_in_sign)+'°',p:n,b,cls:b.find(k=>k==='ex'||k==='db')})});
   if(V==='moon'){const h=(l.sign_index-from+12)%12;(byH[h]=byH[h]||[]).push({t:'Asc',jp:true})}
+  // BNN: a retrograde planet (not Rahu or Ketu) also gives the results of the sign before its own; shown faded there.
+  if(BRANCH==='bnn'&&(V==='lagna'||V==='moon'))Object.entries(c.grahas).forEach(([n,g])=>{if(!g.retrograde||n==='Rahu'||n==='Ketu')return;
+    const prev=(g.sign_index+11)%12,h=(prev-from+12)%12;
+    (byH[h]=byH[h]||[]).push({t:ABBR[n],ghost:true,title:n+' is retrograde in '+g.sign+': by the BNN rule it also gives the results of '+SIGNS[prev]})});
   if(JPTS&&V==='lagna'&&c.jaimini){const J=c.jaimini;  // Jaimini points sit in whole-sign houses, so only on the Lagna view
     [['AL',J.arudha_lagna.house],['UL',J.upapada.house]].forEach(([t,h])=>(byH[h-1]=byH[h-1]||[]).push({t,jp:true}))}
   $('jpt').hidden=V!=='lagna';
@@ -2697,7 +2704,8 @@ function render(c,req){
   $('charthint').textContent=V==='gochar'?(GO?'Inner chart: your birth planets (D1). Outer ring: the planets in the sky on this day (at noon), in the same houses, counted from your '+(GFROM==='moon'?'Moon ('+c.grahas.Moon.sign+')':'lagna ('+l.sign+')')+'. Step with − and +, or press Play.':currentId==null?'Save this chart to see the transits on it.':'Loading the sky…')
     :V==='moon'?'Houses counted from the Moon’s sign ('+c.grahas.Moon.sign+'). Used for the mind, Sade Sati and transits. Asc marks your lagna.'
     :chalit?'Each house starts at its cusp (numbers are the cusp signs). Nadi predictions read every planet’s position and lordship from this chart.'
-    :'Numbers are signs (1 = Aries). Tap a house to read it, or use Placement, Aspects and Conjunctions to draw the planet links; tap a planet to ask Astropositivism.';
+    :'Numbers are signs (1 = Aries). Tap a house to read it, or use Placement, Aspects and Conjunctions to draw the planet links; tap a planet to ask Astropositivism.'+
+      (BRANCH==='bnn'&&Object.entries(c.grahas).some(([n,g])=>g.retrograde&&n!=='Rahu'&&n!=='Ketu')?' Faded planets: retrograde planets also counted in the sign before (BNN).':'');
   };
   drawMain();RERENDER=drawMain;
   const nbOf=n=>(((c.strength||{}).neecha_bhanga||{})[n]||{}).cancelled;
