@@ -202,7 +202,7 @@
   .chk{display:flex;align-items:center;gap:9px} .chk input{width:auto;accent-color:var(--g2)}
   .chk label{margin:0;font-weight:500;text-transform:none;letter-spacing:0;font-size:.85rem;line-height:1.35;color:var(--mut)}
   .hint{font-size:.81rem;color:var(--mut);margin-top:6px}
-  .dsel{width:min(320px,100%);margin:0 auto 12px}
+  
   .rate{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;font-size:.82rem;color:var(--mut)}
   .rate button{border:1px solid var(--line);background:var(--bg2);border-radius:999px;padding:4px 10px;font:inherit;cursor:pointer;color:var(--ink);min-height:32px}
   .rate .rwhy{font-size:.8rem}
@@ -1254,6 +1254,7 @@
       </div>
       <div id="tm-now">
         <div class="card gcard" id="t-vim"><div id="dasha"></div></div>
+        <div class="card gcard" id="t-yogini"><div id="yoginibody"></div></div>
         <section class="card gcard" id="gupcoming"></section>
         <div class="card gcard tplan"><b>Jaimini’s Chara Dasha</b><button type="button" class="linkbtn" data-goto="chara">In Studies › Jaimini →</button></div>
       </div>
@@ -1373,8 +1374,7 @@
       <div class="card gcard tplan"><b>KP timing, matter by matter</b><button type="button" class="linkbtn" data-goto="kptime">Marriage, career, money… in Timing →</button></div>
     </div>
     <div class="stx" data-for="jaimini" hidden>
-      <div class="card gcard" id="t-chara"><div class="seg dsel" id="dsel" role="radiogroup" aria-label="Which dasha"><button type="button" role="radio" aria-checked="true" class="on" data-dsel="chara">Chara Dasha</button><button type="button" role="radio" aria-checked="false" data-dsel="yogini">Yogini Dasha</button></div>
-        <div id="yogbody"></div><div id="yoginibody" hidden></div></div>
+      <div class="card gcard" id="t-chara"><div id="yogbody"></div></div>
     </div>
     <div class="stx" data-for="lal" hidden>
       <div class="card gcard tplan"><b>Your other remedies</b><button type="button" class="linkbtn" data-goto="lucky">Habits, gems and lucky days in Remedies →</button></div>
@@ -1638,13 +1638,13 @@ const FIND=[
   ['Married life','married marriage couple wife husband spouse rate improve talk day patience chandrashtama habits shaadi','match/life'],
   ['Jaimini','jaimini karaka atmakaraka arudha upapada karakamsa','chart/jaimini','Jaimini'],
   ['Chara Dasha (Jaimini)','chara jaimini sign dasha period','chart/chara','Jaimini'],
-  ['Yogini Dasha','yogini mangala pingala dhanya bhramari bhadrika ulka siddha sankata dasha period 36 years','chart/chara','Jaimini'],
+  ['Yogini Dasha','yogini mangala pingala dhanya bhramari bhadrika ulka siddha sankata dasha period 36 years vedic','timing/yogini'],
   ['Lal Kitab','lal kitab rin debts pakka ghar remedies totke','chart/lal','Lal Kitab'],
   ['Yes or no? (KP Prashna)','prashna horary question yes no number','chart/prashna','Prashna'],
   ['Jamakkol Prashna','jamakkol jamakol jammakkol prasanam prashna udayam arudam kavippu chatra tamil horary','chart/prashna','Prashna'],
 ];
 const FIND_NAME={today:'Today',timing:'Timing',ask:'Ask Astropositivism',remedies:'Remedies',chart:'Studies',now:'Now & next',transits:'Transits',
-  matter:'By matter',dates:'Good dates',muhurat:'Good days & muhurat',...BRANCHES};
+  matter:'By matter',dates:'Good dates',yogini:'Now & next',muhurat:'Good days & muhurat',...BRANCHES};
 const POPULAR=['Today for you','Transit chart','KP timing by matter','Find a good date','Remedies (upaya)','Jamakkol Prashna'];
 const SYN={shani:'saturn',sani:'saturn',guru:'jupiter',brihaspati:'jupiter',shukra:'venus',mangal:'mars',budh:'mercury',budha:'mercury',
   chandra:'moon',chand:'moon',surya:'sun',suraj:'sun',vivah:'marriage',vivaah:'marriage',shaadi:'marriage',shadi:'marriage',viyah:'marriage',
@@ -1736,7 +1736,7 @@ function findGo(b){
   if(q)track('find/pick',q+' → '+label);
   if(FIND.some(f=>f[0]===label)){try{localStorage.setItem('sj-find-recent',JSON.stringify([label,...recent().filter(x=>x!==label)].slice(0,5)))}catch(e){}}
   closeFind();
-  const at={muhurat:'t-muhurat',about:'kabout',events:'gevents',reading:'kabout',links:'lnkbar',chara:'t-chara'}[sub];
+  const at={muhurat:'t-muhurat',about:'kabout',events:'gevents',reading:'kabout',links:'lnkbar',chara:'t-chara',yogini:'t-yogini'}[sub];
   go(s,sub);
   const el=at?$(at):s==='chart'&&sub&&$('t-'+sub)?$('t-'+sub):null;
   if(sub==='reading')document.querySelectorAll('#kabout details').forEach(d=>d.open=true);
@@ -2611,11 +2611,6 @@ $('kpay').addEventListener('click',async e=>{const b=e.target.closest('[data-kp]
       const r=await fetch('/profiles/'+currentId,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(req)});
       const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);await loadProfile(currentId)}}
   catch(err){b.disabled=false;alert('Couldn’t switch: '+err.message)}});
-// Jaimini timing: Chara Dasha or Yogini Dasha, one at a time (the choice is kept while the app is open).
-let DSEL='chara';
-function showDsel(){$('yogbody').hidden=DSEL!=='chara';$('yoginibody').hidden=DSEL!=='yogini';
-  $('dsel').querySelectorAll('button').forEach(b=>{const on=b.dataset.dsel===DSEL;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))})}
-$('dsel').addEventListener('click',e=>{const b=e.target.closest('[data-dsel]');if(!b||b.dataset.dsel===DSEL)return;DSEL=b.dataset.dsel;if(DSEL==='yogini')track('studies/yogini');showDsel()});
 function table(el,head,rows){
   el.innerHTML='<thead><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+
     rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody>';
@@ -2752,7 +2747,7 @@ function render(c,req){
     '</div><h3 class="jaih">Your Arudha Lagna</h3><ul class="jaial">'+J.al_reading.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+
     '<h3 class="jaih">Chara karakas</h3><div class="scroll"><table id="jaitable"></table></div>'+
     '<h3 class="jaih">Arudhas <small>how the world sees each part of your life</small></h3><div class="scroll"><table id="jaiar"></table></div>'+
-    '<p class="hint">Jaimini’s timing, <button type="button" class="lnkyoga" data-goto="chara">Chara Dasha or Yogini Dasha</button>, is just below.</p>';
+    '<p class="hint">Jaimini’s timing, <button type="button" class="lnkyoga" data-goto="chara">Chara Dasha</button>, is just below.</p>';
   if(J){table($('jaitable'),['Karaka','Planet','Degree in sign','Shows'],J.karakas.map(k=>['<b>'+k.short+'</b> '+k.karaka,k.planet,dms(k.degree),esc(k.role)]));
     table($('jaiar'),['Arudha','Sign','House','Planets there','Shows'],J.arudhas.map(a=>['<b>'+a.short+'</b>',a.sign,'H'+a.in_house,a.planets.join(', ')||'—',esc(a.shows)]))}
   // Chara Dasha, under Jaimini: each period treats its sign as a temporary Lagna (K.N. Rao's counting).
@@ -2774,7 +2769,8 @@ function render(c,req){
     '<div class="hint">Chara Dasha is sign-based: each period treats its sign as a temporary Lagna, and the sub-periods run month by month. Shown for reflection beside Vimshottari; your timing verdicts still come from Vimshottari.</div>';
   if(Y&&Y.current){table($('yogtable'),['Sign','Years','From','To','Your house'],Y.timeline.map(p=>[(p.start===Y.current.start?'<b>'+esc(p.sign)+' ◀ now</b>':esc(p.sign)),p.years,ym(p.start),ym(p.end),'H'+p.house]));
     table($('yogsub'),['Sub-period','From','To'],Y.current_subs.map(x=>[(Y.sub&&x.start===Y.sub.start?'<b>'+esc(x.sign)+' ◀ now</b>':esc(x.sign)),ym(x.start),ym(x.end)]))}
-  // Yogini Dasha, the other choice beside Chara: eight Yoginis in a 36-year cycle from the birth nakshatra.
+  // Yogini Dasha, a Vedic (Parashari) dasha shown under Vimshottari in Timing › Now & next: eight Yoginis in a
+  // 36-year cycle from the birth nakshatra. Hidden when it can't be worked out.
   const YG8=c.yogini;
   $('yoginibody').innerHTML=!YG8||!YG8.current?'':
     '<h3 class="jaih">Yogini Dasha <small>a second opinion beside Vimshottari</small></h3>'+
@@ -2783,8 +2779,8 @@ function render(c,req){
       (YG8.next?'<div><small>Next</small><b>'+esc(YG8.next.yogini)+' <span>· '+esc(YG8.next.planet)+'</span></b><em>from '+ym(YG8.next.start)+'</em><p>'+esc(YG8.next.text)+'</p></div>':'')+'</div>'+
     '<h4 class="jaih" style="font-size:1rem">All periods</h4><div class="scroll"><table id="yogitable"></table></div>'+
     '<div class="hint">Yogini Dasha runs in a 36-year cycle of 8 periods from your birth nakshatra. Shown for reflection; your timing verdicts still come from Vimshottari.</div>';
+  $('t-yogini').hidden=!(YG8&&YG8.current);
   if(YG8&&YG8.current)table($('yogitable'),['Yogini','Planet','From','To','Nature'],YG8.timeline.map(p=>[(p.start===YG8.current.start?'<b>'+esc(p.yogini)+' ◀ now</b>':esc(p.yogini)),p.planet,ym(p.start),ym(p.end),'<span class="badge '+({good:'good',care:'warn',mixed:''})[p.tone]+'">'+({good:'Supportive',care:'Go gently',mixed:'Mixed'})[p.tone]+'</span>']));
-  showDsel();
   // Yogas with the three checks (core/yoga_eval.py): strength, dasha activation, cancellation.
   const YG=c.yoga_check, YK={good:['good','Helpful'],challenging:['warn','To handle'],neutral:['','Neutral']},
     YS={Strong:'good',Mixed:'',Weak:'warn',Cancelled:'warn',Eased:'',Present:''};

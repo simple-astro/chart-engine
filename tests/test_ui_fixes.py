@@ -128,3 +128,11 @@ def test_bnn_chart_shows_retrograde_planets_in_the_sign_before_too():
     assert "BRANCH==='bnn'" in draw and "(g.sign_index+11)%12" in draw and "n==='Rahu'||n==='Ketu'" in draw
     assert INDEX.count("p.ghost?'<tspan class=\"bnng\">") == 2  # North and South Indian charts
     assert "wasBnn!==(BRANCH==='bnn')" in _between(INDEX, "function setBranch(b){", "\n}\n")  # redrawn on switch
+
+
+def test_yogini_dasha_sits_with_vimshottari_not_jaimini():
+    now = _between(INDEX, '<div id="tm-now">', '<div id="tm-transits"')
+    assert now.index('id="t-vim"') < now.index('id="t-yogini"') and 'id="yoginibody"' in now
+    jai = _between(INDEX, '<div class="stx" data-for="jaimini"', '<div class="stx" data-for="lal"')
+    assert "yogini" not in jai.lower() and 'id="yogbody"' in jai
+    assert "'Yogini Dasha'," in INDEX and "'timing/yogini']" in INDEX
