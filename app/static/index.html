@@ -1323,7 +1323,7 @@
     <div class="grid" id="stgrid">
       <aside class="card chartcard"><div class="chhead"><h3 id="charttitle">Rasi chart (D1) · North Indian</h3>
         <div class="seg chstyle" role="radiogroup" aria-label="Chart style"><button type="button" role="radio" data-style="north">North Indian</button><button type="button" role="radio" data-style="south">South Indian</button></div>
-        <div class="seg chseg" role="radiogroup" aria-label="Chart view"><button type="button" role="radio" aria-checked="true" class="on" data-v="lagna">Lagna</button><button type="button" role="radio" aria-checked="false" data-v="chalit">Bhava Chalit</button><button type="button" role="radio" aria-checked="false" data-v="moon" title="Chandra Lagna: houses counted from the Moon">Moon</button><button type="button" role="radio" aria-checked="false" data-v="gochar" title="Where the planets are today, in houses from your lagna">Gochar</button></div>
+        <div class="seg chseg" role="radiogroup" aria-label="Chart view"><button type="button" role="radio" aria-checked="true" class="on" data-v="lagna">Lagna</button><button type="button" role="radio" aria-checked="false" data-v="chalit">Bhava Chalit</button><button type="button" role="radio" aria-checked="false" data-v="moon" title="Chandra Lagna: houses counted from the Moon">Moon</button><button type="button" role="radio" aria-checked="false" data-v="gochar" title="Where the planets are today, in houses from your lagna">Transit</button></div>
         <div class="gpanels"><div class="gdasha" id="gdasha" hidden></div><div class="ghits" id="ghits" hidden></div></div>
           <button type="button" class="jpt" id="jpt" aria-pressed="false" title="Show the Jaimini Arudha Lagna (AL) and Upapada (UL) on the chart">AL · UL</button>
           <div class="lnkbar" id="lnkbar"><div class="seg lnkseg" id="lnkseg" role="group" aria-label="Draw planet links on the chart">
@@ -1637,7 +1637,7 @@ const FIND=[
   ['Special points','special points bhrigu bindu indu lagna hora lagna ghati lagna bhava lagna mandi gulika pushkara navamsha','chart/planets','Vedic'],
   ['When each lagna rises','lagna rising times ascendant table sign rises today muhurat griha pravesh fixed sign','today/muhurat'],
   ['Birth time rectification','rectification rectify birth time correct exact time minutes tob janam samay sahi','chart/rectify','Nadi'],
-  ['Composite chart: birth chart + transit (Gochar)','composite combined natal birth transit outer ring gochar chart today planets play day dasha prana sookshma','chart/gochar','Vedic'],
+  ['Composite chart: birth chart + transit','composite combined natal birth transit outer ring gochar chart today planets play day dasha prana sookshma','chart/gochar','Vedic'],
   ['Moon chart (Chandra Lagna)','moon chart chandra lagna chandra kundli from the moon','chart/view-moon','Vedic'],
   ['Bhava Chalit chart','bhava chalit chalit cusp chart nirayana','chart/view-chalit','Vedic'],
   ['South Indian chart style','south indian chart style square','chart/style-south','Vedic'],
@@ -1667,7 +1667,7 @@ const GLOSS=[
   [['karana'],'Karana','Half a tithi.','today/muhurat'],
   [['lagna','ascendant'],'Lagna','The sign rising in the east when you were born: your 1st house.','chart/vedic'],
   [['sign'],'Rashi','A zodiac sign; often it means your Moon sign.','chart/planets'],
-  [['transit'],'Gochar (transit)','Where the planets are in the sky now, read from your chart.','timing/transits'],
+  [['transit','gochar'],'Transit (gochar)','Where the planets are in the sky now, read from your chart.','timing/transits'],
   [['sade','sati'],'Sade Sati','About 7½ years while Saturn passes your Moon sign and the signs either side: a time for patience and steady work.','timing/transits'],
   [['ashtakavarga'],'Ashtakavarga','Points each house receives from the planets; more points, smoother results.','chart/akv'],
   [['navamsa','d9'],'Navamsa (D9)','The ninth-division chart, read for marriage and inner strength.','chart/vargas'],
@@ -2701,7 +2701,7 @@ function render(c,req){
   renderLinks(c);
   HOUSE_OF=Object.fromEntries(Object.entries(c.grahas).map(e=>[e[0],houseOf(e)]));
   $('chartkey').querySelectorAll('.gk').forEach(k=>{const x=k.querySelector('.gkx b');if(x)x.textContent='House '+(HOUSE_OF[k.dataset.p]+1)});  // follows the view
-  $('charttitle').textContent=chalit?'Nirayana Bhava Chalit · North Indian':V==='moon'?'Moon chart (Chandra Lagna)':V==='gochar'?'Gochar (transit)':'Rasi chart (D1) · '+(CHART_STYLE==='south'?'South':'North')+' Indian';
+  $('charttitle').textContent=chalit?'Nirayana Bhava Chalit · North Indian':V==='moon'?'Moon chart (Chandra Lagna)':V==='gochar'?'Transit chart':'Rasi chart (D1) · '+(CHART_STYLE==='south'?'South':'North')+' Indian';
   $('charthint').textContent=V==='gochar'?(GO?'Inner chart: your birth planets (D1). Outer ring: the planets in the sky on this day (at noon), in the same houses, counted from your '+(GFROM==='moon'?'Moon ('+c.grahas.Moon.sign+')':'lagna ('+l.sign+')')+'. Step with − and +, or press Play.':currentId==null?'Save this chart to see the transits on it.':'Loading the sky…')
     :V==='moon'?'Houses counted from the Moon’s sign ('+c.grahas.Moon.sign+'). Used for the mind, Sade Sati and transits. Asc marks your lagna.'
     :chalit?'Each house starts at its cusp (numbers are the cusp signs). Nadi predictions read every planet’s position and lordship from this chart.'

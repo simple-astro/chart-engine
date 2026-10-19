@@ -13,12 +13,12 @@
   const AB = { Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke', Snake: 'Sn', Paambu: 'Sn' };  // Paambu: questions saved before the rename
   const jkStyle = () => { try { return localStorage.getItem('sj_jk_style') || 'south'; } catch (e) { return 'south'; } };
   const herePlace = () => { try { const h = JSON.parse(localStorage.getItem('sj_here') || 'null'); return h && isFinite(h.lat) && h.tz_name ? h : null; } catch (e) { return null; } };
-  // Jamakkol chart in the Jamakkol programs' layout: jama planets on an outer ring around the signs, sky planets
+  // Jamakkol chart in the Jamakkol programs' layout: jama planets on an outer ring around the signs, inner planets
   // inside (retrograde in brackets), with Udayam (shaded), ARU, KAV and Md. South Indian (signs fixed) or North Indian.
   const RING = { 0: ['t', 1], 1: ['t', 2], 2: ['t', 3], 3: ['r', 1], 4: ['r', 2], 5: ['r', 3], 6: ['b', 2], 7: ['b', 1], 8: ['b', 0], 9: ['l', 2], 10: ['l', 1], 11: ['l', 0] };
   const skyLabel = (p, x) => x.retrograde && p !== 'Rahu' && p !== 'Ketu' ? `(${AB[p]})` : AB[p];
   function jkInside(r, i) {
-    return Object.entries(r.transit).filter(([, x]) => x.sign_index === i).map(([p, x]) => skyLabel(p, x))
+    return Object.entries(r.transit).filter(([p, x]) => p !== 'Ketu' && x.sign_index === i).map(([p, x]) => skyLabel(p, x))
       .concat(r.maandi.sign_index === i ? ['Md'] : [], r.arudam.sign_index === i ? ['ARU'] : [], r.kavippu.sign_index === i ? ['KAV'] : []);
   }
   function jkChart(r, style) {
@@ -43,7 +43,7 @@
       <div class="jkwrap" role="img" aria-label="Jamakkol chart: Udayam ${esc(r.udayam.sign)}, Arudam ${esc(r.arudam.sign)}, Kavippu ${esc(r.kavippu.sign)}">
         ${band('t', 'jkrow')}${band('l', 'jkcol')}${inner}${band('r', 'jkcol')}${band('b', 'jkrow')}</div>
       ${style === 'north' ? `<p class="jkn">${esc(wd)} ${esc(t)} · ${jam} · Hora ${esc(r.hora)}</p>` : ''}
-      <p class="jkl">Outer ring: <em>jama planets</em> with their degree · inside: planets in the sky now ((Sa) = retrograde), Md = Maandi, ARU = Arudam, KAV = Kavippu</p>`;
+      <p class="jkl">Outer ring: <em>jama planets</em> with their degree · inside: the inner planets now ((Sa) = retrograde), Md = Maandi, ARU = Arudam, KAV = Kavippu</p>`;
   }
   function jkDrawNorth(r) {
     const el = document.getElementById('jk-north'); if (!el || !window.drawNorth) return;
@@ -55,7 +55,7 @@
     return `${String(s).padStart(2, '0')}s ${String(D).padStart(2, '0')}° ${String(M).padStart(2, '0')}′ ${String(S).padStart(2, '0')}″`; };
   function jkTables(r) {
     const rows = [['Udayam', r.udayam], ['Arudam', r.arudam], ['Kavippu (Chatra)', r.kavippu],
-      ...['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'].map(p => [p + (r.transit[p].retrograde && p !== 'Rahu' && p !== 'Ketu' ? ' ℞' : ''), r.transit[p]]), ['Maandi', r.maandi]];
+      ...['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu'].filter(p => r.transit[p]).map(p => [p + (r.transit[p].retrograde && p !== 'Rahu' ? ' ℞' : ''), r.transit[p]]), ['Maandi', r.maandi]];
     return `<p class="jkh">Positions</p><table class="jktab pos"><colgroup><col><col><col></colgroup><thead><tr><th>Point</th><th>Longitude</th><th>Star</th></tr></thead><tbody>${
       rows.map(([n, x]) => `<tr><td>${esc(n)}</td><td class="n">${dms(x.lon)}</td><td>${esc(x.star)}</td></tr>`).join('')}</tbody></table>
       <p class="jkh">Prashna confirmation</p><table class="jktab cf"><colgroup><col><col></colgroup><tbody>${r.confirmation.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</tbody></table>`;

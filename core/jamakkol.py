@@ -51,7 +51,7 @@ SUBHA_UDAYAM = {4, 5, 6, 7, 8, 9}        # Leo to Capricorn: the Sun's half
 SUBHA_ARUDAM = {10, 11, 0, 1, 2, 3}      # Aquarius to Cancer: the Moon's half
 # Planets in the Udayam by how they rise: head first (success), back first (failure), both ways (delay).
 PLANET_RISE = {"Mercury": "head", "Jupiter": "head", "Venus": "head", "Rahu": "head", "Snake": "head",
-               "Sun": "back", "Mars": "back", "Saturn": "back", "Moon": "both", "Ketu": "both"}
+               "Sun": "back", "Mars": "back", "Saturn": "back", "Moon": "both"}
 MAANDI_GHATI_DAY = {0: 26, 1: 22, 2: 18, 3: 14, 4: 10, 5: 6, 6: 2}   # Vedic weekday (Sunday = 0) -> ghatis of 30
 MAANDI_GHATI_NIGHT = {0: 10, 1: 6, 2: 2, 3: 26, 4: 22, 5: 18, 6: 14}
 MOOLATRIKONA = {"Sun": 4, "Moon": 1, "Mars": 0, "Mercury": 5, "Jupiter": 8, "Venus": 6, "Saturn": 10}
@@ -72,7 +72,6 @@ ABOUT = {
     "Saturn": "work and a job, service or something slow and long",
     "Snake": "foreign travel, a pregnancy or something sudden or unusual",
     "Rahu": "foreign travel or something unusual",
-    "Ketu": "letting go, legal matters or spiritual questions",
 }
 HOUSE_ABOUT = {
     1: "yourself", 2: "money and family", 3: "a sibling, courage or a message", 4: "home, mother, property or studies",
@@ -187,7 +186,7 @@ def cast(when: datetime, lat: float, lon: float, tz: str) -> dict:
     kavippu = {**_point(kav_sign * 30 + min(30 - arudam["deg"], 29.9999)), "veedhi": C.SIGNS[veedhi],
                "count": count, "sun_sign": C.SIGNS[sun_sign], "tamil_month": TAMIL_MONTH[sun_sign]}
     transit = {n: {**_point(g.longitude), "retrograde": g.retrograde, "dignity": dignity(n, g.sign_index)}
-               for n, g in grahas.items()}
+               for n, g in grahas.items() if n != "Ketu"}  # Jamakkol reads Rahu only, as Divya Chakshu's list
     hora_i = min(11, int(frac * 12)) + (12 if period == "night" else 0)
     vedic_wd = (start.astimezone(ZoneInfo(tz)).weekday() + 1) % 7  # the day (or night) began at this sunrise/sunset
     ghati = (MAANDI_GHATI_DAY if period == "day" else MAANDI_GHATI_NIGHT)[vedic_wd]
@@ -232,21 +231,21 @@ def confirmation(chart: dict) -> list[list[str]]:
     return [
         ["Jama planet that crossed the Udayam", max(ahead, key=ahead.get)],
         ["Jama planet approaching the Udayam", min(ahead, key=ahead.get)],
-        ["Sky planets in the Udayam", names([p for p, x in sky.items() if x["sign_index"] == U["sign_index"]])],
+        ["Inner planets in the Udayam", names([p for p, x in sky.items() if x["sign_index"] == U["sign_index"]])],
         ["Jama planets in the Udayam", names([p for p, x in jama.items() if x["sign_index"] == U["sign_index"]])],
         ["Udayam to Arudam (house)", str(_house(U["sign_index"], A["sign_index"]))],
         ["Udayam to Kavippu (house)", str(_house(U["sign_index"], K["sign_index"]))],
-        ["Exalted sky planets", names([p for p in sky if sky[p]["dignity"] == "exalted"])],
+        ["Exalted inner planets", names([p for p in sky if sky[p]["dignity"] == "exalted"])],
         ["Exalted jama planets", names([p for p in seven if dig(p, jama[p]["sign_index"]) == "exalted"])],
-        ["Debilitated sky planets", names([p for p in sky if sky[p]["dignity"] == "debilitated"])],
+        ["Debilitated inner planets", names([p for p in sky if sky[p]["dignity"] == "debilitated"])],
         ["Debilitated jama planets", names([p for p in seven if dig(p, jama[p]["sign_index"]) == "debilitated"])],
-        ["Same sign, sky and jama", names([p for p in seven if jama[p]["sign_index"] == sky[p]["sign_index"]]
+        ["Same sign, inner and jama", names([p for p in seven if jama[p]["sign_index"] == sky[p]["sign_index"]]
                                           + (["Snake"] if jama["Snake"]["sign_index"] == sky["Rahu"]["sign_index"] else []))],
-        ["10th lord from the Udayam", f"{tl}: sky in house {_house(U['sign_index'], sky[tl]['sign_index'])}, "
+        ["10th lord from the Udayam", f"{tl}: inner in house {_house(U['sign_index'], sky[tl]['sign_index'])}, "
                                       f"jama in house {_house(U['sign_index'], jama[tl]['sign_index'])}"],
-        ["Exchanges among sky planets", names(_exchanges(ss, ss, True))],
+        ["Exchanges among inner planets", names(_exchanges(ss, ss, True))],
         ["Exchanges among jama planets", names(_exchanges(js, js, True))],
-        ["Exchanges, sky with jama", names(_exchanges(ss, js, False))],
+        ["Exchanges, inner with jama", names(_exchanges(ss, js, False))],
         ["Kavippu is catching", min(behind, key=behind.get) if behind else "–"],
         ["Maandi from the Udayam (house)", str(_house(U["sign_index"], chart["maandi"]["sign_index"]))],
         ["Hora", chart["hora"]],
@@ -295,9 +294,9 @@ def read(chart: dict, kind: str) -> dict:
         if p in in_kavippu:
             block.append(f"{p}, the significator of this matter, sits with the Kavippu.")
         if _strength(p, transit) == "debilitated":
-            neg.append(f"{p}, the significator, is weak (debilitated) in the sky now.")
+            neg.append(f"{p}, the significator, is weak (debilitated) among the inner planets now.")
         elif _strength(p, transit) in ("exalted", "own"):
-            pos.append(f"{p}, the significator, is strong ({_strength(p, transit)}) in the sky now.")
+            pos.append(f"{p}, the significator, is strong ({_strength(p, transit)}) among the inner planets now.")
     if k_house == 1:
         block.append("The Kavippu sits on the Udayam: the timing for you yourself is weak right now.")
     if a_house in (6, 8, 12):
@@ -401,7 +400,7 @@ def read(chart: dict, kind: str) -> dict:
     doubled = [p for p in JAMA if p != "Snake" and p in matters and jama[p]["sign_index"] == transit[p]["sign_index"]]
     if jama["Snake"]["sign_index"] == transit["Rahu"]["sign_index"] and ({"Snake", "Rahu"} & matters):
         doubled.append("Snake")
-    confirm += [f"{p} is doubled (its jama and sky positions share {C.SIGNS[jama[p]['sign_index']]}): its signal "
+    confirm += [f"{p} is doubled (its jama and inner positions share {C.SIGNS[jama[p]['sign_index']]}): its signal "
                 "here is confirmed." for p in doubled]
     # Arudam lord against Kavippu lord (shown for the astrologer's judgement; it does not change the answer).
     al, kl = C.SIGN_LORDS[A], C.SIGN_LORDS[K]

@@ -45,16 +45,16 @@ def test_matches_divya_chakshu_to_the_arc_minute():
     for k, v in want.items():
         assert abs((c[k]["lon"] - v + 180) % 360 - 180) < 1 / 60, k          # within 1'
     sky = {"Sun": dms(181, 33, 55), "Moon": dms(276, 57, 53), "Mars": dms(107, 41, 6), "Mercury": dms(205, 13, 1),
-           "Jupiter": dms(118, 21, 20), "Venus": dms(189, 28, 27), "Saturn": dms(345, 56, 3), "Rahu": dms(303, 48, 1),
-           "Ketu": dms(123, 48, 1)}
+           "Jupiter": dms(118, 21, 20), "Venus": dms(189, 28, 27), "Saturn": dms(345, 56, 3), "Rahu": dms(303, 48, 1)}
     for p, v in sky.items():
         assert abs((c["transit"][p]["lon"] - v + 180) % 360 - 180) < 1 / 60, p   # Moshier vs their ephemeris: < 1'
+    assert "Ketu" not in c["transit"]                                         # Jamakkol reads Rahu only
     assert {p: round(x["lon"]) for p, x in c["jama"]["planets"].items()} == {
         "Sun": 163, "Mars": 118, "Jupiter": 73, "Mercury": 28, "Venus": 343, "Saturn": 298, "Moon": 253, "Snake": 208}
     conf = dict(J.confirmation(c))
     assert conf["Jama planet that crossed the Udayam"] == "Moon" and conf["Jama planet approaching the Udayam"] == "Saturn"
     assert conf["Udayam to Arudam (house)"] == "10" and conf["Udayam to Kavippu (house)"] == "8"
-    assert conf["Exchanges, sky with jama"] == "Jupiter–Moon"
+    assert conf["Exchanges, inner with jama"] == "Jupiter–Moon"
     assert conf["Kavippu is catching"] == "Mars"   # the jama Mars (118°), not Ketu in the sky (123°)
 
 
