@@ -113,3 +113,11 @@ def test_no_go_deeper_after_a_refusal():
     text = refusal.group(1) + refusal.group(2)
     assert _js(f"REFUSED.test({json.dumps(text)})") is True
     assert _js("REFUSED.test('Your career looks steady this year.')") is False
+
+
+def test_bnn_is_its_own_studies_branch():
+    assert '<button type="button" role="listitem" data-branch="bnn">' in INDEX
+    assert "bnn:'BNN'" in _between(INDEX, "const BRANCHES=", "\n") and "bnn:'bnn'" in INDEX
+    assert 'data-pane="bnn" data-branch="bnn"' in INDEX
+    nadi = _between(INDEX, 'data-branch="nadi"><i', "</button>")
+    assert "BNN" not in nadi

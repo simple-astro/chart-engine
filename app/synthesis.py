@@ -250,8 +250,10 @@ def build(profile: dict, now: datetime | None = None) -> dict:
     }
     from core import bnn
     trines = bnn.analyse(c)["trines"]
-    out["bnn_trines"] = {t["element"]: " < ".join(p["planet"] for p in t["planets"]) for t in trines if len(t["planets"]) > 1}
-    out["bnn_rule"] = "BNN: planets in one element trine work together, lower degree first; for readings, never timing."
+    out["bnn_trines"] = {t["element"]: " < ".join(p["planet"] + (" (retrograde, from the sign before)" if p.get("also") else "")
+                                                  for p in t["planets"]) for t in trines if len(t["planets"]) > 1}
+    out["bnn_rule"] = ("BNN: planets in one element trine work together, lower degree first; a retrograde planet also acts "
+                       "from the sign before its own; for readings, never timing.")
     from core import chara
     y = chara.summary(c, now)
     if y["current"]:

@@ -972,6 +972,7 @@
   .bnnx{display:inline-flex;align-items:center;gap:6px;font-style:normal;white-space:nowrap}
   .bnnc{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px} .bnnc .jai p+p{margin-top:6px}
   .bnns{font:500 .82rem var(--sans);color:var(--mut)}
+  .bnnp span.bnnr{background:none;border:1px dashed var(--acc)} .bnnp span small{color:var(--mut);font-size:.7rem} .bnnp sup{font-size:.62rem;margin-left:1px}
   .dhd{margin:4px 0 6px 18px;font-size:.84rem;color:var(--mut)}
   .chrd .jai small.dage{display:block;margin:-2px 0 6px;color:var(--mut);font-size:.8rem;text-transform:none;letter-spacing:0}
   .ayn{margin:-4px 0 12px;font-size:.84rem;color:var(--mut)}
@@ -1301,7 +1302,8 @@
     <!-- Studies: one card per tradition; each opens a page with only its own sections -->
     <div class="sthub" id="sthub" role="list" aria-label="Studies">
       <button type="button" role="listitem" data-branch="vedic"><i aria-hidden="true">☉</i><span><b>Vedic</b><small>Rasi chart, planets, yogas, divisional charts, Ashtakavarga, your life areas</small></span></button>
-      <button type="button" role="listitem" data-branch="nadi"><i aria-hidden="true">◎</i><span><b>Nadi (KP)</b><small>Cusps and sub-lords, BNN, Nadi amsha, your life so far</small></span></button>
+      <button type="button" role="listitem" data-branch="nadi"><i aria-hidden="true">◎</i><span><b>Nadi (KP)</b><small>Cusps and sub-lords, Nadi amsha, your life so far</small></span></button>
+      <button type="button" role="listitem" data-branch="bnn"><i aria-hidden="true">△</i><span><b>BNN</b><small>Bhrigu Nandi Nadi: planets joined by trines, karaka circuits</small></span></button>
       <button type="button" role="listitem" data-branch="jaimini"><i aria-hidden="true">♛</i><span><b>Jaimini</b><small>Karakas, Arudha and Upapada, Chara Dasha</small></span></button>
       <button type="button" role="listitem" data-branch="lal"><i aria-hidden="true">✦</i><span><b>Lal Kitab</b><small>Lal Kitab kundli, debts (rin) and its remedies</small></span></button>
       <button type="button" role="listitem" data-branch="prashna"><i aria-hidden="true">?</i><span><b>Prashna</b><small>Yes-or-no questions: KP number and Jamakkol</small></span></button>
@@ -1345,7 +1347,7 @@
           <button type="button" role="tab" data-pane="nadi" data-branch="nadi"><b>Nadi amsha</b><small>150 parts of a sign</small></button>
           <button type="button" role="tab" data-pane="xchg" data-branch="vedic"><b>Lord exchange</b><small>Signs swapped</small></button>
           <button type="button" role="tab" data-pane="jaimini" data-branch="jaimini"><b>Jaimini</b><small>Karakas and Arudha</small></button>
-          <button type="button" role="tab" data-pane="bnn" data-branch="nadi"><b>BNN</b><small>Nadi trines</small></button>
+          <button type="button" role="tab" data-pane="bnn" data-branch="bnn"><b>BNN</b><small>Nadi trines</small></button>
           <button type="button" role="tab" data-pane="lal" data-branch="lal"><b>Lal Kitab</b><small>Houses and debts</small></button>
         </div>
         <div class="pane" id="t-planets"><div class="avak" id="avak"></div><div class="scroll"><table id="grahas"></table></div><div id="special"></div></div>
@@ -1361,7 +1363,7 @@
         <div class="pane" id="t-jaimini" hidden><div id="jaibody"></div>
           <div class="hint">Jaimini’s 8 chara karakas rank the planets (with Rahu, counted backwards) by their degree in their sign. Used here to describe you — your soul lesson, work style, partner and image — not for timing.</div></div>
         <div class="pane" id="t-bnn" hidden><div id="bnnbody"></div>
-          <div class="hint">Bhrigu Nandi Nadi reads planets as living karakas joined through their signs: planets in the 1st, 5th and 9th signs from each other (the same element) work together, and the lower degree gives its results first. For readings only — timing still comes from your Dasha.</div></div>
+          <div class="hint">Bhrigu Nandi Nadi reads planets as living karakas joined through their signs: planets in the 1st, 5th and 9th signs from each other (the same element) work together, and the lower degree gives its results first. A retrograde planet (not Rahu or Ketu) also gives the results of the sign before its own, so it is counted there too (dashed). For readings only — timing still comes from your Dasha.</div></div>
         <div class="pane" id="t-lal" hidden><div id="lalbody"><div class="hint">Loading…</div></div></div>
       </div>
     </div>
@@ -1511,9 +1513,9 @@ if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.fo
 const SCREENS=['today','timing','ask','remedies','chart'];
 let SCREEN=null,TM='now',BRANCH=null;
 // Studies: the Kundli screen (id "chart") opens on a hub; each branch shows only its own sections.
-const BRANCHES={vedic:'Vedic',nadi:'Nadi (KP)',jaimini:'Jaimini',lal:'Lal Kitab',prashna:'Prashna'};
+const BRANCHES={vedic:'Vedic',nadi:'Nadi (KP)',bnn:'BNN',jaimini:'Jaimini',lal:'Lal Kitab',prashna:'Prashna'};
 const BRANCH_OF={planets:'vedic',yogas:'vedic',vargas:'vedic',akv:'vedic',xchg:'vedic',links:'vedic',about:'vedic',reading:'vedic',
-  houses:'nadi',nadi:'nadi',bnn:'nadi',events:'nadi',jaimini:'jaimini',chara:'jaimini',lal:'lal',prashna:'prashna',kpq:'prashna',jamakkol:'prashna'};
+  houses:'nadi',nadi:'nadi',bnn:'bnn',events:'nadi',jaimini:'jaimini',chara:'jaimini',lal:'lal',prashna:'prashna',kpq:'prashna',jamakkol:'prashna'};
 function setBranch(b){
   BRANCH=BRANCHES[b]?b:null;
   $('sthub').hidden=!!BRANCH;$('stcrumb').hidden=!BRANCH;
@@ -1620,7 +1622,7 @@ const FIND=[
   ['Full reading and house by house','full reading interpretation house by house bhava','chart/reading','Vedic'],
   ['Houses and cusps','houses cusps bhava kp sub lord placidus','chart/houses','Nadi'],
   ['Nadi amsha','nadi amsha 150','chart/nadi','Nadi'],
-  ['BNN (Nadi trines)','bnn bhrigu nandi nadi trines karaka','chart/bnn','Nadi'],
+  ['BNN (Bhrigu Nandi Nadi)','bnn bhrigu nandi nadi trines karaka circuits retrograde','chart/bnn','BNN'],
   ['Your life so far','life events past log so far fits','chart/events','Nadi'],
   ['Birth summary (Avakhada chakra)','avakhada birth summary varna vashya yoni gana nadi paya tatva naming letter tithi at birth','chart/planets','Vedic'],
   ['Special points','special points bhrigu bindu indu lagna hora lagna ghati lagna bhava lagna mandi gulika pushkara navamsha','chart/planets','Vedic'],
@@ -2798,10 +2800,10 @@ function render(c,req){
   const B=c.bnn,EL={Fire:'🔥',Earth:'⛰',Air:'🌬',Water:'💧'};
   $('bnnbody').innerHTML=!B?'<div class="hint">Not available for this chart.</div>':
     '<div class="bnntri">'+B.trines.map(t=>'<div class="bnnt"><small>'+EL[t.element]+' '+t.element+' trine · '+t.signs.join(', ')+'</small>'+
-      (t.planets.length?'<div class="bnnp">'+t.planets.map((p,i)=>'<em class="bnnx">'+(i?'<i>→</i>':'')+'<span><b>'+esc(p.planet)+'</b> '+esc(p.sign.slice(0,3))+' '+Math.floor(p.degree)+'°</span></em>').join('')+'</div>'
+      (t.planets.length?'<div class="bnnp">'+t.planets.map((p,i)=>'<em class="bnnx">'+(i?'<i>→</i>':'')+'<span'+(p.also?' class="bnnr" title="Retrograde: also gives the results of '+esc(p.sign)+', the sign before its own"':'')+'><b>'+esc(p.planet)+'</b>'+(p.retro?'<sup class="bd rt">R</sup>':'')+' '+esc(p.sign.slice(0,3))+' '+Math.floor(p.degree)+'°'+(p.also?' <small>also</small>':'')+'</span></em>').join('')+'</div>'
         :'<p class="hint" style="margin:4px 0 0">No planets here.</p>')+'</div>').join('')+'</div>'+
     '<h3 class="jaih">Karaka circuits <small>what each planet stands for, and who it works with</small></h3>'+
-    '<div class="bnnc">'+B.circuits.map(k=>'<div class="jai"><small>'+esc(k.role)+'</small><b>'+esc(k.karaka)+' <span class="bnns">in '+esc(k.sign)+'</span></b>'+
+    '<div class="bnnc">'+B.circuits.map(k=>'<div class="jai"><small>'+esc(k.role)+'</small><b>'+esc(k.karaka)+' <span class="bnns">in '+esc(k.sign)+(k.also_sign?' · retrograde, also '+esc(k.also_sign):'')+'</span></b>'+
       k.text.map(x=>'<p>'+esc(x)+'</p>').join('')+'</div>').join('')+'</div>';
   window.renderExchange($('xbody'),c);window.renderAshtakavarga($('akvbody'),c);
   const gr=window.guideReading(c);gr.jaimini=c.jaimini;window.renderGuide($('guide'),gr,(req&&req.name)||m.name,$('gremedies'));loadToday();window.renderMood($('gmood'),currentId);loadCheckin(currentId);loadCoupleDay(currentId);loadAccuracy(currentId);window.renderEvents($('gevents'),currentId);window.renderUpcoming($('gupcoming'),currentId);
