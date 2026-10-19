@@ -1033,6 +1033,8 @@
   .top .sjbar{position:static;margin:0 auto;padding:0;width:auto;background:none;border:0;box-shadow:none;backdrop-filter:none}
   .top .sjbar{flex:none} .top .sjbar button{padding:8px 13px;font-size:.9rem;white-space:nowrap}
   .top .in:has(.sjbar:not([hidden])) .brand{margin-right:0}
+  /* Six tabs: between phone and 1440px drop the tab icons, so the row fits and the chart name in the profile pill shows */
+  @media(min-width:761px) and (max-width:1439px){.sjbar svg{display:none} .sjbar button{padding:8px 11px;white-space:nowrap}}
   #s-today>*+*,#tm-now>*+*,#tm-matter>*+*,#kabout>*+*,#s-remedies>*+*{margin-top:18px} #kabout{margin-top:22px}
   #s-today>.gh{margin:30px 0 -4px}
   .lseg{max-width:440px;margin:0 auto 20px} .tseg{max-width:520px} .tseg button{padding:8px 4px;font-size:.8rem;white-space:nowrap}
@@ -1074,7 +1076,7 @@
   body.on-ask footer{display:none}
   @media(max-width:760px){
     .sjbar{position:fixed;top:auto;left:0;right:0;bottom:0;width:auto;margin:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom));
-      display:grid;grid-template-columns:repeat(5,1fr);align-items:end;gap:0;border-radius:0;border:0;border-top:1px solid var(--line);
+      display:grid;grid-template-columns:repeat(3,2fr) 1.8fr repeat(2,3fr);align-items:end;gap:0;border-radius:0;border:0;border-top:1px solid var(--line);
       background:color-mix(in srgb,var(--solid) 80%,transparent);-webkit-backdrop-filter:saturate(1.7) blur(22px);backdrop-filter:saturate(1.7) blur(22px);
       border-top-width:.5px;box-shadow:none}
     .sjbar button{flex-direction:column;gap:3px;padding:5px 0 3px;font-size:.68rem;border-radius:0}
@@ -1084,6 +1086,7 @@
       background:linear-gradient(180deg,var(--g1),var(--g2));border:3px solid var(--bg);box-shadow:0 6px 18px rgba(201,143,46,.38)}
     .sjbar .bub svg{width:24px;height:24px}
     .sjbar .askb.on{color:var(--acc)}
+    .sjbar .askfull{display:none}  /* six tabs on a phone: the centre tab just says Ask */
     footer{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
     body.on-ask main{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
     #s-ask .pop{height:calc(100dvh - 150px - env(safe-area-inset-bottom));min-height:0;border-radius:18px;border:1px solid var(--line)}
@@ -1214,7 +1217,8 @@
     <nav class="sjbar" id="sjbar" aria-label="Main" hidden>
       <button type="button" data-go="today"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span>Today</span></button>
       <button type="button" data-go="timing"><svg viewBox="0 0 24 24"><path d="M6 2h12M6 22h12M7 2c0 6 10 6 10 10S7 16 7 22M17 2c0 6-10 6-10 10s10 4 10 10"/></svg><span>Timing</span></button>
-      <button type="button" data-go="ask" class="askb"><i class="bub"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg></i><span>Ask Astropositivism</span></button>
+      <button type="button" data-go="prashna"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.6M12 16.8v.2"/></svg><span>Prashna</span></button>
+      <button type="button" data-go="ask" class="askb"><i class="bub"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg></i><span>Ask<span class="askfull"> Astropositivism</span></span></button>
       <button type="button" data-go="remedies"><svg viewBox="0 0 24 24"><path d="M12 3c2 3 3 4.6 3 6.5a3 3 0 0 1-6 0C9 7.6 10 6 12 3z"/><path d="M4 15h16l-2 4H6z"/></svg><span>Remedies</span></button>
       <button type="button" data-go="chart"><svg viewBox="0 0 24 24"><path d="M4 4h5v16H4zM10 4h4v16h-4zM15.5 5l3.8-1 2.7 15.5-3.8 1z"/></svg><span>Charts</span></button>
     </nav>
@@ -1268,7 +1272,7 @@
       </div>
       <div id="tm-dates" hidden>
         <div class="g2" id="gtools"></div>
-        <div class="card gcard tplan"><b>A yes-or-no question?</b><button type="button" class="linkbtn" data-goto="prashna">KP and Jamakkol Prashna in Charts →</button></div>
+        <div class="card gcard tplan"><b>A yes-or-no question?</b><button type="button" class="linkbtn" data-goto="prashna">KP and Jamakkol Prashna →</button></div>
       </div>
     </div>
 
@@ -1285,6 +1289,11 @@
   <form id="askf" class="ask"><textarea id="q" rows="1" placeholder="Ask Astropositivism anything…"></textarea><button type="submit" class="btn" id="askbtn">Send</button></form>
   <div id="asknote" class="hint"></div>
 </div>
+    </div>
+
+    <!-- Prashna: yes-or-no questions (KP number and Jamakkol), its own tab -->
+    <div class="scr" id="s-prashna" data-scr="prashna" hidden>
+      <div class="g2" id="gprashna"></div>
     </div>
 
     <!-- Remedies -->
@@ -1308,7 +1317,6 @@
       <button type="button" role="listitem" data-branch="bnn"><i aria-hidden="true">△</i><span><b>BNN</b><small>Bhrigu Nandi Nadi: planets joined by trines, karaka circuits</small></span></button>
       <button type="button" role="listitem" data-branch="jaimini"><i aria-hidden="true">♛</i><span><b>Jaimini</b><small>Karakas, Arudha and Upapada, Chara Dasha</small></span></button>
       <button type="button" role="listitem" data-branch="lal"><i aria-hidden="true">✦</i><span><b>Lal Kitab</b><small>Lal Kitab kundli, debts (rin) and its remedies</small></span></button>
-      <button type="button" role="listitem" data-branch="prashna"><i aria-hidden="true">?</i><span><b>Prashna</b><small>Yes-or-no questions: KP number and Jamakkol</small></span></button>
     </div>
     <nav class="stcrumb" id="stcrumb" aria-label="Charts" hidden><button type="button" class="linkbtn" data-branch="">Charts</button><span aria-hidden="true">›</span><b id="stname"></b>
       <span class="stjump" id="stjump"></span></nav>
@@ -1378,9 +1386,6 @@
     </div>
     <div class="stx" data-for="lal" hidden>
       <div class="card gcard tplan"><b>Your other remedies</b><button type="button" class="linkbtn" data-goto="lucky">Habits, gems and lucky days in Remedies →</button></div>
-    </div>
-    <div class="stx" data-for="prashna" hidden>
-      <div class="g2" id="gprashna"></div>
     </div>
     <div id="kabout" class="stx" data-for="vedic" hidden>
       <h3 class="gh">About you</h3>
@@ -1511,18 +1516,18 @@ const SEEN={'t-muhurat':'today/muhurat','gupcoming':'timing/comingup','t-chara':
 if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.forEach(e=>{const k=SEEN[e.target.id];
   if(e.isIntersecting&&!TRACK.seen.has(k)&&!$('out').hidden){TRACK.seen.add(k);track(k)}}),{threshold:.25});
   Object.keys(SEEN).forEach(id=>{const el=$(id);if(el)io.observe(el)})}
-const SCREENS=['today','timing','ask','remedies','chart'];
+const SCREENS=['today','timing','prashna','ask','remedies','chart'];
 let SCREEN=null,TM='now',BRANCH=null;
 // Studies: the Kundli screen (id "chart") opens on a hub; each branch shows only its own sections.
-const BRANCHES={vedic:'Vedic',nadi:'Nadi (KP)',bnn:'BNN',jaimini:'Jaimini',lal:'Lal Kitab',prashna:'Prashna'};
+const BRANCHES={vedic:'Vedic',nadi:'Nadi (KP)',bnn:'BNN',jaimini:'Jaimini',lal:'Lal Kitab'};
 const BRANCH_OF={planets:'vedic',yogas:'vedic',vargas:'vedic',akv:'vedic',xchg:'vedic',links:'vedic',about:'vedic',reading:'vedic',
-  houses:'nadi',nadi:'nadi',bnn:'bnn',events:'nadi',jaimini:'jaimini',chara:'jaimini',lal:'lal',prashna:'prashna',kpq:'prashna',jamakkol:'prashna'};
+  houses:'nadi',nadi:'nadi',bnn:'bnn',events:'nadi',jaimini:'jaimini',chara:'jaimini',lal:'lal'};
 function setBranch(b){
   const wasBnn=BRANCH==='bnn';
   BRANCH=BRANCHES[b]?b:null;
   if(wasBnn!==(BRANCH==='bnn'))try{RERENDER&&RERENDER()}catch(e){}  // the faded BNN copies come and go with the branch
   $('sthub').hidden=!!BRANCH;$('stcrumb').hidden=!BRANCH;
-  $('stgrid').hidden=!BRANCH||BRANCH==='prashna';$('stgrid').classList.toggle('solo',BRANCH==='lal');
+  $('stgrid').hidden=!BRANCH;$('stgrid').classList.toggle('solo',BRANCH==='lal');
   document.querySelectorAll('#s-chart .stx').forEach(x=>x.hidden=x.dataset.for!==BRANCH);
   const tiles=[...$('ctiles').querySelectorAll('[data-pane]')];
   tiles.forEach(t=>t.hidden=t.dataset.branch!==BRANCH);
@@ -1536,6 +1541,7 @@ function setBranch(b){
 const OLD_LIFE={dasha:['timing','matter'],transits:['timing','transits']};
 function go(name,sub,o){
   if(name==='life')[name,sub]=OLD_LIFE[sub]||['chart',null];
+  if(name==='chart'&&['prashna','kpq','jamakkol'].includes(sub))[name,sub]=['prashna',null];  // Prashna was a Charts branch
   if(!SCREENS.includes(name))name='today';
   if(!hasChart){showForm();return}
   showOut();VIEW='screen';
@@ -1552,7 +1558,7 @@ function go(name,sub,o){
   }
   const tkey=name==='timing'?'timing/'+TM:name==='chart'?(!BRANCH?'studies':sub&&$('ctiles').querySelector('[data-pane="'+sub+'"]')?'kundli/'+sub:'studies/'+BRANCH):name;
   if(tkey!==TRACK.last){TRACK.last=tkey;track(tkey)}
-  const chartHash=!BRANCH?'':'/'+(BRANCH==='prashna'||$('ctiles').hidden?BRANCH:$('csel').value);
+  const chartHash=!BRANCH?'':'/'+($('ctiles').hidden?BRANCH:$('csel').value);
   // Screens set the address too: a new entry (so Back works) unless the address already led here.
   const hash='#'+name+(name==='timing'&&TM!=='now'?'/'+TM:name==='chart'?chartHash:'');
   try{if(location.hash!==hash)history[o&&o.replace?'replaceState':'pushState']({sj:1},'',hash)}catch(e){}
@@ -1640,10 +1646,10 @@ const FIND=[
   ['Chara Dasha (Jaimini)','chara jaimini sign dasha period','chart/chara','Jaimini'],
   ['Yogini Dasha','yogini mangala pingala dhanya bhramari bhadrika ulka siddha sankata dasha period 36 years vedic','timing/yogini'],
   ['Lal Kitab','lal kitab rin debts pakka ghar remedies totke','chart/lal','Lal Kitab'],
-  ['Yes or no? (KP Prashna)','prashna horary question yes no number','chart/prashna','Prashna'],
-  ['Jamakkol Prashna','jamakkol jamakol jammakkol prasanam prashna udayam arudam kavippu chatra tamil horary','chart/prashna','Prashna'],
+  ['Yes or no? (KP Prashna)','prashna horary question yes no number','prashna'],
+  ['Jamakkol Prashna','jamakkol jamakol jammakkol prasanam prashna udayam arudam kavippu chatra tamil horary','prashna'],
 ];
-const FIND_NAME={today:'Today',timing:'Timing',ask:'Ask Astropositivism',remedies:'Remedies',chart:'Charts',now:'Now & next',transits:'Transits',
+const FIND_NAME={today:'Today',timing:'Timing',ask:'Ask Astropositivism',remedies:'Remedies',prashna:'Prashna',chart:'Charts',now:'Now & next',transits:'Transits',
   matter:'By matter',dates:'Good dates',yogini:'Now & next',muhurat:'Good days & muhurat',...BRANCHES};
 const POPULAR=['Today for you','Transit chart','KP timing by matter','Find a good date','Remedies (upaya)','Jamakkol Prashna'];
 const SYN={shani:'saturn',sani:'saturn',guru:'jupiter',brihaspati:'jupiter',shukra:'venus',mangal:'mars',budh:'mercury',budha:'mercury',
@@ -1671,8 +1677,8 @@ const GLOSS=[
   [['arudha','upapada'],'Arudha (Jaimini)','How the world sees you (AL), and the image of your partner (UL).','chart/jaimini'],
   [['rin','debt','debts'],'Rin (Lal Kitab)','A karmic debt shown by certain placements, eased by simple remedies.','chart/lal'],
   [['pakka','ghar'],'Pakka ghar (Lal Kitab)','A planet’s permanent house in Lal Kitab.','chart/lal'],
-  [['prashna','horary'],'Prashna','Horary: a chart for the moment a question is asked.','chart/prashna'],
-  [['jamakkol','udayam','arudam','kavippu','chatra'],'Jamakkol','Tamil horary for the moment you ask: Udayam is the question’s rising point, Arudam its intention, Kavippu the hidden obstacle.','chart/prashna'],
+  [['prashna','horary'],'Prashna','Horary: a chart for the moment a question is asked.','prashna'],
+  [['jamakkol','udayam','arudam','kavippu','chatra'],'Jamakkol','Tamil horary for the moment you ask: Udayam is the question’s rising point, Arudam its intention, Kavippu the hidden obstacle.','prashna'],
   [['hora'],'Hora','The planetary hour: each hour of the day is ruled by a planet.','today/muhurat'],
   [['choghadiya'],'Choghadiya','Eight parts of the day and of the night, each good, neutral or one to avoid.','today/muhurat'],
   [['rahu','kalam','kaal'],'Rahu kalam','A daily 1½-hour slot to avoid for starting new things.','today/muhurat'],
@@ -2320,7 +2326,7 @@ function scrollWhenReady(id){let n=0;const tick=()=>{const x=$(id);
 function openTab(name){
   if(name==='times'&&SCREEN==='today'){scrollWhenReady('mtimes');return}  // already on Today: just scroll
   const to={muhurat:['today'],interp:['chart','vedic'],bhava:['chart','vedic'],dpred:['timing','matter'],kptime:['timing','matter'],dasha:['timing','now'],
-    chara:['chart','chara'],transit:['timing','transits'],dates:['timing','dates'],lucky:['remedies'],prashna:['chart','prashna'],times:['today']}[name]||['chart',name];
+    chara:['chart','chara'],transit:['timing','transits'],dates:['timing','dates'],lucky:['remedies'],prashna:['prashna'],times:['today']}[name]||['chart',name];
   go(to[0],to[1]);
   const el={muhurat:'t-muhurat',chara:'t-chara',times:'mtimes'}[name];if(el)scrollWhenReady(el);
 }

@@ -136,3 +136,11 @@ def test_yogini_dasha_sits_with_vimshottari_not_jaimini():
     jai = _between(INDEX, '<div class="stx" data-for="jaimini"', '<div class="stx" data-for="lal"')
     assert "yogini" not in jai.lower() and 'id="yogbody"' in jai
     assert "'Yogini Dasha'," in INDEX and "'timing/yogini']" in INDEX
+
+
+def test_prashna_is_a_main_tab():
+    assert "const SCREENS=['today','timing','prashna','ask','remedies','chart'];" in INDEX
+    assert '<button type="button" data-go="prashna">' in _between(INDEX, '<nav class="sjbar"', "</nav>")
+    assert 'id="gprashna"' in _between(INDEX, '<div class="scr" id="s-prashna"', "</div>\n")
+    assert 'data-branch="prashna"' not in INDEX and "prashna:'Prashna'};" not in INDEX  # gone from Charts
+    assert "['prashna','kpq','jamakkol'].includes(sub)" in INDEX  # old #chart/prashna links still open it
