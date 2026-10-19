@@ -88,6 +88,7 @@ def chart(req: ChartRequest) -> dict:
         tob_unknown=req.tob_unknown,
         ayanamsha=req.ayanamsha,
         node_type=req.node_type,
+        house_system=req.house_system,
     )
     require_tz(req.tz_name)
     try:
@@ -110,6 +111,9 @@ def with_extras(c: dict) -> dict:
     c["varga_lagna"].setdefault("D150", varga_sign(c["lagna"]["ascendant"], 150))
     signs = {p: g["sign_index"] for p, g in c["grahas"].items()}
     lagna = c["lagna"]["sign_index"]
+    if "cheshta" not in c:  # motional strength, for study only (core/cheshta.py)
+        from core.cheshta import cheshta
+        c["cheshta"] = cheshta(c["meta"]["julian_day"])
     c["ashtakavarga"] = ashtakavarga(signs, lagna)
     c["lords"] = lord_placements(signs, lagna)
     c["exchanges"] = {"D1": exchanges(signs, lagna)}

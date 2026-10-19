@@ -18,6 +18,9 @@ AYANAMSHA_MODES = {
 DEFAULT_AYANAMSHA = "krishnamurti"
 
 # House system is bound to the ayanamsha mode (FR-3.3a).
+# House systems a chart may choose instead of its ayanamsha's default (Swiss Ephemeris codes; whole sign is done here).
+# KP sub lords and the Nadi predictions are read from Placidus cusps; other systems change the cusps they use.
+HOUSE_SYSTEMS = {"placidus": b"P", "koch": b"K", "sripati": b"S", "equal": b"E", "whole_sign": None}
 HOUSE_SYSTEM_FOR_AYANAMSHA = {
     "krishnamurti": "placidus",   # KP mode
     "lahiri": "whole_sign",       # classical mode

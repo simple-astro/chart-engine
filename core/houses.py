@@ -44,9 +44,12 @@ def _make_cusp(house: int, longitude: float) -> Cusp:
     )
 
 
-def compute_houses(jd: float, lat: float, lon: float, ayanamsha: str) -> Houses:
+def compute_houses(jd: float, lat: float, lon: float, ayanamsha: str, house_system: str | None = None) -> Houses:
+    """Cusps in the ayanamsha's default house system, or in ``house_system`` when the chart chose one."""
     set_sidereal_mode(ayanamsha, jd)
-    system = C.HOUSE_SYSTEM_FOR_AYANAMSHA[ayanamsha]
+    system = house_system or C.HOUSE_SYSTEM_FOR_AYANAMSHA[ayanamsha]
+    if system not in C.HOUSE_SYSTEMS:
+        raise ValueError(f"unknown house system: {system!r}")
 
     # Placidus cusps come from Swiss Ephemeris in the sidereal frame.
     cusps_raw, ascmc = swe.houses_ex(jd, lat, lon, b"P", swe.FLG_SIDEREAL)
@@ -56,6 +59,9 @@ def compute_houses(jd: float, lat: float, lon: float, ayanamsha: str) -> Houses:
     if system == "placidus":
         # pyswisseph returns a 12-element, 0-indexed cusp tuple (index 0 = house 1).
         cusps = [_make_cusp(i + 1, cusps_raw[i]) for i in range(12)]
+    elif C.HOUSE_SYSTEMS[system]:  # Koch, Sripati, Equal: same ascendant, other cusps
+        raw, _ = swe.houses_ex(jd, lat, lon, C.HOUSE_SYSTEMS[system], swe.FLG_SIDEREAL)
+        cusps = [_make_cusp(i + 1, raw[i]) for i in range(12)]
     else:  # whole_sign
         sign_start = (int(ascendant // 30)) * 30.0
         cusps = [_make_cusp(i + 1, sign_start + 30.0 * i) for i in range(12)]

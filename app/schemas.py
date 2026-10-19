@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 Ayanamsha = Literal["krishnamurti", "lahiri", "pushya", "raman", "fagan", "tropical"]
+HouseSystem = Literal["placidus", "koch", "sripati", "equal", "whole_sign"]
 NodeType = Literal["mean", "true"]
 
 
@@ -21,6 +22,7 @@ class ChartRequest(BaseModel):
     tob_unknown: bool = False
     ayanamsha: Ayanamsha = "krishnamurti"
     node_type: NodeType = "mean"
+    house_system: HouseSystem | None = None  # None: the ayanamsha's default
 
 
 class TransitRequest(BaseModel):

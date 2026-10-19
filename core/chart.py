@@ -33,6 +33,7 @@ class BirthData:
     tob_unknown: bool = False
     ayanamsha: str = "krishnamurti"
     node_type: str = "mean"
+    house_system: str | None = None  # None: the ayanamsha's default (KP Placidus, Lahiri whole sign…)
 
 
 def _r(x: float) -> float:
@@ -70,7 +71,7 @@ def compute_natal_chart(birth: BirthData) -> dict:
     jd = ephemeris.julian_day(local_dt)
 
     grahas = compute_grahas(jd, birth.ayanamsha, node_type=birth.node_type)
-    houses = compute_houses(jd, birth.lat, birth.lon, birth.ayanamsha)
+    houses = compute_houses(jd, birth.lat, birth.lon, birth.ayanamsha, birth.house_system)
 
     graha_out: dict[str, dict] = {}
     for name, g in grahas.items():

@@ -42,6 +42,11 @@ CATALOGUE = [
                       ("match/plan", "Started a 43-day couple plan")]),
     ("Chart accuracy", [("accuracy/event", "Next step: add an event"), ("accuracy/rect", "Next step: run rectification"),
                         ("accuracy/time", "Next step: add birth time"), ("accuracy/snooze", "Today nudge: Not now")]),
+    ("Settings", [("settings/open", "Opened Settings"), ("settings/ayanamsa", "Changed a chart's ayanamsa"),
+                  ("settings/node", "Changed a chart's Rahu node"),
+                  ("settings/house", "Changed a chart's house system"), ("settings/default-ayanamsha", "Set the default ayanamsa"),
+                  ("settings/default-house", "Set the default house system"),
+                  ("settings/city", "Picked a current city")]),
     ("Find", [("find/open", "Find opened")]),
 ]
 LABEL = {k: label for _, items in CATALOGUE for k, label in items}
