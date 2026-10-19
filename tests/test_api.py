@@ -36,6 +36,10 @@ def test_chart_endpoint():
     assert len(body["grahas"]) == 9
     assert body["meta"]["house_system"] == "placidus"
     assert "ascendant" in body["lagna"]
+    # D150 (Chandra Kala Nadi), its Lagna birth-time window, and the KP houses for the dasha-lords table
+    assert set(body["vargas"]["D150"]) == set(body["grahas"]) and 0 <= body["varga_lagna"]["D150"] < 12
+    assert body["nadi_amsha"]["counting"] == "Chandra Kala Nadi" and body["nadi_amsha"]["lagna_window"]["later"] >= 1
+    assert set(body["kp_houses"]) == set(body["grahas"]) and all(body["kp_houses"]["Sun"])
 
 
 def test_chart_endpoint_rejects_bad_timezone():

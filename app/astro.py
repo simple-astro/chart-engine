@@ -236,6 +236,40 @@ def kp_horary(req: HoraryRequest) -> dict:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+@router.get("/consult")
+def consult_link() -> dict:
+    """Where Prashna points people to consult an astrologer (Admin › Settings), or null."""
+    from app import config
+    return {"telegram": config.get("consult_telegram") or None}
+
+
+@router.get("/mundane")
+def mundane_year(year: int, lat: float, lon: float) -> dict:
+    """The Hindu New Year and Mesha Sankranti charts for a year at a place (core/mundane.py)."""
+    from core import mundane
+    if not 1900 <= year <= 2100 or not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        raise HTTPException(status_code=422, detail="Pick a year between 1900 and 2100 and a valid place.")
+    return mundane.year_charts(year, lat, lon)
+
+
+class RulingRequest(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    tz_name: str = Field(min_length=1, max_length=64)
+    at: datetime | None = None  # defaults to now
+
+
+@router.post("/ruling-planets")
+def kp_ruling_planets(req: RulingRequest) -> dict:
+    """KP ruling planets for a moment and place (core/ruling.py)."""
+    from core import ruling
+    require_tz(req.tz_name)
+    when = req.at or datetime.now(timezone.utc)
+    if when.tzinfo is None:
+        raise HTTPException(status_code=422, detail="The time needs a timezone.")
+    return ruling.ruling_planets(when, req.lat, req.lon)
+
+
 @router.get("/horary/kinds")
 def horary_kinds() -> list[dict]:
     return [{"kind": k, "title": v[0], "house": v[1]} for k, v in horary.QUESTIONS.items()]

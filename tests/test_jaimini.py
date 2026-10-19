@@ -169,3 +169,31 @@ def test_yogini_dasha_starts_from_the_birth_nakshatra():
     y = yogini.summary(c, datetime(2026, 10, 12, tzinfo=timezone.utc))
     assert y["current"]["yogini"] == "Bhadrika" and y["next"]["yogini"] == "Ulka"
     assert all(w not in p["text"].lower() for p in ps for w in ("death", "ruin", "disaster"))  # gentle wording
+
+
+def test_argala_and_virodhargala():
+    from core import jaimini
+    signs = {"Sun": 1, "Moon": 3, "Mars": 3, "Jupiter": 10, "Venus": 11, "Saturn": 9, "Mercury": 4, "Rahu": 6, "Ketu": 0}
+    a = {x["from"]: x for x in jaimini.argala(signs, 0)}            # on Aries
+    assert a[2]["planets"] == ["Sun"] and a[2]["obstructing"] == ["Venus"] and not a[2]["holds"]   # 1 vs 1: blocked
+    assert a[4]["planets"] == ["Moon", "Mars"] and a[4]["obstructing"] == ["Saturn"] and a[4]["holds"]
+    assert a[11]["planets"] == ["Jupiter"] and a[11]["obstructing"] == [] and a[11]["holds"]
+    assert a[5]["kind"] == "secondary" and a[5]["planets"] == ["Mercury"]
+    assert all(x["from"] in (2, 4, 11, 5) for x in jaimini.argala(signs, 0))
+
+
+def test_narayana_dasha():
+    from core import chara
+    # sign order: movable consecutive, fixed every 6th, dual through the kendras first; even signs go backward
+    assert chara.narayana_order(0, {}) == list(range(12))                       # Aries, forward
+    assert chara.narayana_order(1, {})[:3] == [1, (1 - 5) % 12, (1 - 10) % 12]   # Taurus (even): every 6th, backward
+    assert chara.narayana_order(2, {})[:5] == [2, 5, 8, 11, 3]                  # Gemini: kendras first, forward
+    assert chara.narayana_order(1, {"Saturn": 1})[:2] == [1, 6]                  # Saturn in it: forward
+    assert chara.narayana_order(0, {"Ketu": 0})[:2] == [0, 11]                   # Ketu in it: reversed
+    signs = {"Sun": 4, "Moon": 7, "Mars": 4, "Mercury": 4, "Jupiter": 0, "Venus": 4, "Saturn": 7, "Rahu": 11, "Ketu": 5}
+    degs = {p: 10.0 for p in signs}
+    assert chara.narayana_years(2, signs, degs) == 2      # Gemini (odd): forward to Leo, 3 - 1
+    assert chara.narayana_years(5, signs, degs) == 1      # Virgo (even): back to Leo, 2 - 1
+    assert chara.narayana_years(4, signs, degs) == 12     # Leo: its lord the Sun at home
+    assert chara.narayana_years(8, signs, degs) == 4      # Sagittarius (odd): forward to Jupiter in Aries, 5 - 1
+    assert chara.narayana_years(8, {**signs, "Jupiter": 3}, degs) == 8      # Jupiter exalted in Cancer: 8 - 1 + 1

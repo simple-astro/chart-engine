@@ -26,7 +26,7 @@ CATALOGUE = [
                              ("answer/up", "Answers marked 👍"), ("answer/down", "Answers marked 👎 (with a reason)")]),
     ("Remedies", [("remedies", "Remedies screen")]),
     ("Prashna", [("prashna", "Prashna screen (KP and Jamakkol)")]),
-    ("Charts", [("studies", "Charts hub"), ("studies/vedic", "Vedic"), ("studies/nadi", "Nadi (KP)"), ("studies/bnn", "BNN"),
+    ("My Charts", [("studies", "My Charts hub"), ("studies/vedic", "Vedic"), ("studies/nadi", "KP"), ("studies/bnn", "BNN"), ("studies/tajika", "Tajika"), ("kundli/tajika", "Tajika (Varshaphal)"), ("studies/tajika-year", "Tajika: changed the year"), ("studies/mundane", "Mundane"), ("kundli/mundane", "Mundane charts"),
                  ("studies/jaimini", "Jaimini"), ("studies/lal", "Lal Kitab"), ("studies/prashna", "Prashna (when it was in Charts)"),
                  ("studies/chara", "Chara Dasha"), ("timing/chara", "Chara Dasha (when it was in Timing)"),
                  ("kundli", "Kundli screen (before Charts)"), ("links/place", "Placement arrows"), ("links/asp", "Aspect arrows"),

@@ -182,3 +182,70 @@ def summary(chart: dict, now: datetime | None = None) -> dict:
             "timeline": [slim(p) for p in periods[max(0, i - 1): i + 6]],
             "current_subs": cur["sub"] if cur else [],
             "note": "Sign-based timing (K.N. Rao's counting): each period treats its sign as a temporary Lagna."}
+
+
+# ----- Narayana Dasha (PVR Narasimha Rao's rules for the natal chart) -----
+ODD = {0, 2, 4, 6, 8, 10}          # Aries, Gemini, Leo, Libra, Sagittarius, Aquarius
+EXALT = {"Sun": 0, "Moon": 1, "Mars": 9, "Mercury": 5, "Jupiter": 3, "Venus": 11, "Saturn": 6}
+
+
+def _sign_strength(sign: int, signs: dict, degs: dict) -> tuple:
+    """Jaimini strength of a sign for choosing where Narayana Dasha starts, compared rule by rule."""
+    lord = lord_for_count(sign, signs, degs) if sign in PAIRS else SIGN_LORDS[sign]
+    with_or_aspecting = lambda p: signs[p] == sign or sign in rashi_aspects(signs[p])
+    dig = (3 if EXALT.get(lord) == signs[lord] else 2 if SIGN_LORDS[signs[lord]] == lord else
+           0 if EXALT.get(lord) is not None and (EXALT[lord] + 6) % 12 == signs[lord] else 1)
+    nature = 2 if sign in DUAL else 1 if sign in FIXED else 0
+    return (sum(1 for p, s in signs.items() if s == sign),
+            sum(1 for p in {"Jupiter", "Mercury", lord} if with_or_aspecting(p)),
+            dig, nature, degs.get(lord, 0))
+
+
+def narayana_years(sign: int, signs: dict, degs: dict) -> int:
+    lord = lord_for_count(sign, signs, degs)
+    target = signs[lord]
+    n = (target - sign) % 12 + 1 if sign in ODD else (sign - target) % 12 + 1
+    years = n - 1 or 12
+    if EXALT.get(lord) == target:
+        years += 1
+    elif EXALT.get(lord) is not None and (EXALT[lord] + 6) % 12 == target:
+        years -= 1
+    return max(years, 0)
+
+
+def narayana_order(start: int, signs: dict) -> list[int]:
+    forward = start in ODD
+    if signs.get("Saturn") == start:
+        forward = True
+    elif signs.get("Ketu") == start:
+        forward = not forward
+    step = (lambda k: k) if forward else (lambda k: -k)
+    if start in MOVABLE:
+        seq = list(range(12))
+    elif start in FIXED:
+        seq = [(5 * i) % 12 for i in range(12)]
+    else:
+        seq = [0, 3, 6, 9, 1, 4, 7, 10, 2, 5, 8, 11]
+    return [(start + step(k)) % 12 for k in seq]
+
+
+def narayana_dasha(chart: dict, cycles: int = 2) -> dict:
+    g = chart["grahas"]
+    signs = {p: v["sign_index"] for p, v in g.items()}
+    degs = {p: v["degrees_in_sign"] for p, v in g.items()}
+    lagna = chart["lagna"]["sign_index"]
+    seventh = (lagna + 6) % 12
+    start = lagna if _sign_strength(lagna, signs, degs) >= _sign_strength(seventh, signs, degs) else seventh
+    t, out = _jd_to_utc(chart["meta"]["julian_day"]), []
+    for cycle in range(cycles):
+        for s in narayana_order(start, signs):
+            y = narayana_years(s, signs, degs)
+            years = y if cycle == 0 else 12 - y
+            if years <= 0:
+                continue
+            end = t + timedelta(days=years * DAYS_PER_YEAR)
+            out.append({"sign": SIGNS[s], "sign_index": s, "house": (s - lagna) % 12 + 1, "years": years,
+                        "start": t.isoformat(), "end": end.isoformat(),
+                        "planets": [p for p, x in signs.items() if x == s]})
+            t = end
+    return {"start_sign": SIGNS[start], "from": "Lagna" if start == lagna else "7th house", "periods": out}

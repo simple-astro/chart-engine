@@ -85,6 +85,33 @@ def _js(expr: str):
     return json.loads(subprocess.run([NODE, "-e", code], capture_output=True, text=True, check=True).stdout)
 
 
+
+def test_my_charts_tab_has_the_sudarshan_chakra():
+    bar = _between(INDEX, '<nav class="sjbar"', "</nav>")
+    tab = _between(bar, '<button type="button" data-go="chart">', "</button>")
+    assert "<title>Sudarshan Chakra</title>" in tab and "<span>My Charts</span>" in tab
+    assert "chart:'My Charts'" in INDEX and ">Charts</button>" not in INDEX
+
+
+def test_kp_branch_and_paryaya_in_transits():
+    assert "nadi:'KP'" in _between(INDEX, "const BRANCHES=", "\n") and "Nadi (KP)" not in INDEX
+    assert 'id="gparyaya"' in _between(INDEX, '<div id="tm-transits"', '<div id="tm-matter"')
+    assert "if(SCREEN==='timing'&&TM==='transits')loadParyaya();" in INDEX
+
+
+def test_nadi_amsha_is_the_d150_divisional_chart():
+    assert 'id="t-nadi"' not in INDEX and 'data-pane="nadi"' not in INDEX and "nadiRow" not in INDEX
+    assert "D150:'Nadi amsha" in INDEX and 'id="vnadi"' in _between(INDEX, 'id="t-vargas"', 'id="t-akv"')
+    assert "nadiAmsha(c,k==='D150')" in INDEX and "Chandra Kala Nadi" in INDEX
+    assert "if(name==='chart'&&sub==='d150'){sub='vargas';VWANT='D150'}" in INDEX
+
+
+def test_kp_dasha_lords_table_sits_with_kp_timing():
+    matter = _between(INDEX, '<div id="tm-matter"', '<div id="tm-dates"')
+    assert matter.index('id="t-kpsig"') < matter.index('id="t-kptime"')
+    assert "kpSigTable(c);" in INDEX and "['Planet','Star lord','Sub lord']" in INDEX
+
+
 @pytest.mark.skipif(not NODE, reason="node not installed")
 def test_api_errors_read_as_one_line():
     assert _js("apiErr('Profile not found')") == "Profile not found"
@@ -148,3 +175,24 @@ def test_prashna_is_a_main_tab():
 
 def test_accuracy_nudge_is_off_for_now():
     assert "const ACC_NUDGE=false;" in INDEX and "if(ACC_NUDGE&&ACC.next" in INDEX
+
+
+def test_tajika_is_a_charts_branch():
+    assert '<button type="button" role="listitem" data-branch="tajika">' in INDEX
+    assert "tajika:'Tajika'" in _between(INDEX, "const BRANCHES=", "\n")
+    assert 'data-pane="tajika" data-branch="tajika"' in INDEX and 'id="t-tajika"' in INDEX
+    assert "if(SCREEN==='chart'&&BRANCH==='tajika')loadTajika();" in INDEX
+
+
+@pytest.mark.skipif(not NODE, reason="node not installed")
+def test_every_inline_script_parses(tmp_path):
+    """A syntax error anywhere in the page's own scripts stops the whole app, so parse each one."""
+    for i, js in enumerate(re.findall(r"<script>(.*?)</script>", INDEX, re.S)):
+        f = tmp_path / f"inline{i}.js"
+        f.write_text(js)
+        r = subprocess.run([NODE, "--check", str(f)], capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr[:400]
+    for name in ("tools.js", "transit.js", "guide.js", "events.js", "kptiming.js", "mood.js", "upcoming.js"):
+        r = subprocess.run([NODE, "--check", str(Path(__file__).resolve().parent.parent / "app" / "static" / name)],
+                           capture_output=True, text=True)
+        assert r.returncode == 0, (name, r.stderr[:400])

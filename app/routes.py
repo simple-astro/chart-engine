@@ -13,6 +13,8 @@ from core.chart import ENGINE_VERSION, BirthData, compute_natal_chart
 from core.grahas import Graha
 from core import bnn, chara, jaimini, yoga_eval, yogas, yogini
 from app import dasha_read
+from core import kp_predict, nadi_amsha
+from core.constants import SIGNS
 from core.parivartana import exchanges, lord_placements
 from core.panchang import compute_panchang
 from core.transit_scan import scan_events
@@ -89,7 +91,9 @@ def chart(req: ChartRequest) -> dict:
     )
     require_tz(req.tz_name)
     try:
-        return with_extras(compute_natal_chart(birth))
+        c = with_extras(compute_natal_chart(birth))
+        c["nadi_amsha"] = nadi_amsha.analyse(c, req.lat, req.lon)
+        return c
     except Exception as exc:  # bad inputs -> 422 without the exception text
         raise calc_error(exc) from exc
 
@@ -97,9 +101,13 @@ def chart(req: ChartRequest) -> dict:
 def with_extras(c: dict) -> dict:
     """Derived data kept out of the engine's golden output: divisional ascendants,
     Ashtakavarga, and lord exchanges (Rasi and Navamsa)."""
+    if "D150" not in c["vargas"]:  # the Nadi amsha chart, after the 16 classical vargas
+        c["vargas"]["D150"] = {n: {"sign_index": varga_sign(g["longitude"], 150),
+                                   "sign": SIGNS[varga_sign(g["longitude"], 150)]} for n, g in c["grahas"].items()}
     if "varga_lagna" not in c:
         asc = c["lagna"]["ascendant"]
         c["varga_lagna"] = {k: varga_sign(asc, int(k[1:])) for k in c["vargas"]}
+    c["varga_lagna"].setdefault("D150", varga_sign(c["lagna"]["ascendant"], 150))
     signs = {p: g["sign_index"] for p, g in c["grahas"].items()}
     lagna = c["lagna"]["sign_index"]
     c["ashtakavarga"] = ashtakavarga(signs, lagna)
@@ -111,10 +119,13 @@ def with_extras(c: dict) -> dict:
     c["strength"] = yogas.analyse(signs, lagna, d9, {p: g["combust"] for p, g in c["grahas"].items()})
     c["jaimini"] = jaimini.analyse(c)
     c["chara"] = chara.summary(c)
+    c["narayana"] = chara.narayana_dasha(c)
     c["yogini"] = yogini.summary(c)
     c["yoga_check"] = yoga_eval.evaluate(c)
     c["dasha_read"] = dasha_read.summary(c)
     c["bnn"] = bnn.analyse(c)
+    # KP: the houses each planet signifies by itself (Rahu and Ketu also through the planets they act for)
+    c["kp_houses"] = {p: sorted(kp_predict.own_houses(c, p)) for p in c["grahas"]}
     return c
 
 

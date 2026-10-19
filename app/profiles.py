@@ -111,6 +111,9 @@ def list_profiles(request: Request) -> list[dict]:
 def get_profile(profile_id: int, request: Request) -> dict:
     p = _require(profile_id, request)
     with_extras(p["chart"])  # also fills in data for charts saved before it existed
+    if "nadi_amsha" not in p["chart"]:
+        from core import nadi_amsha
+        p["chart"]["nadi_amsha"] = nadi_amsha.analyse(p["chart"], p["request"]["lat"], p["request"]["lon"])
     return p
 
 
@@ -148,6 +151,44 @@ def transit_events(profile_id: int, request: Request, date: str | None = None, t
     day = _transit_day(p, date, tz)
     ov = transit_view.overlay(p, day, tz_name=_transit_tz(p, tz))
     return {**te.events(p, day, ov), "periods": period_view.periods(p["chart"], day, ov["dasha"], ov["planets"])}
+
+
+@router.get("/{profile_id}/paryaya")
+def paryaya_rounds(profile_id: int, request: Request) -> dict:
+    """Jupiter and Saturn crossing the natal planets and Lagna, from a year ago to three years ahead (core/paryaya.py).
+    A hint only: scripts/backtest_paryaya.py found no edge over chance (5/15 book events vs a 29% base rate)."""
+    from datetime import date, timedelta
+    from core import paryaya
+    p = _require(profile_id, request)
+    today = chat.local_today(p)
+    return {"from": (today - timedelta(days=365)).isoformat(), "to": (today + timedelta(days=3 * 365)).isoformat(),
+            "today": today.isoformat(),
+            "crossings": paryaya.crossings(p["chart"], today - timedelta(days=365), today + timedelta(days=3 * 365))}
+
+
+@router.get("/{profile_id}/tajika")
+def tajika_year(profile_id: int, request: Request, years: int | None = None) -> dict:
+    """Varshaphal (core/tajika.py) for the year that starts ``years`` completed years after birth; by default the
+    year running now (the latest Varsha Pravesh before this moment)."""
+    from datetime import datetime, timezone
+    from core import tajika
+    p = _require(profile_id, request)
+    if years is None:
+        now = datetime.now(timezone.utc)
+        years = max(0, tajika.years_for(p["request"], now.date()))
+        r = tajika.annual(p["chart"], p["request"], years)
+        if datetime.fromisoformat(r["varsha_pravesh"]) > now and years > 0:   # the return is a day or two away
+            years -= 1
+        elif datetime.fromisoformat(r["next"]) <= now:
+            years += 1
+        else:
+            return {**r, "current": True}
+    try:
+        r = tajika.annual(p["chart"], p["request"], years)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Pick a year within 120 years of birth.") from exc
+    now = datetime.now(timezone.utc)
+    return {**r, "current": datetime.fromisoformat(r["varsha_pravesh"]) <= now < datetime.fromisoformat(r["next"])}
 
 
 @router.get("/{profile_id}/kp/{topic}")

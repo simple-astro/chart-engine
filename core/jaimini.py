@@ -126,6 +126,25 @@ def al_reading(al: int, in_sign) -> list[str]:
     return out
 
 
+# Argala (intervention) from the 2nd, 4th and 11th from a sign (the 5th as secondary), each obstructed
+# (Virodhargala) by the 12th, 10th, 3rd and 9th from it respectively.
+ARGALA = [(2, 12, "primary"), (4, 10, "primary"), (11, 3, "primary"), (5, 9, "secondary")]
+
+
+def argala(signs: dict, sign: int) -> list[dict]:
+    """Argala on ``sign``: who intervenes from each argala house and who obstructs them. An argala holds when it
+    has more planets than its obstructing house (simple count; ties count as obstructed). Rahu and Ketu are counted
+    like the others; the reverse counting some authors use for Ketu is not applied."""
+    at = lambda s: [p for p, x in signs.items() if p != "_deg" and x == s % 12]
+    out = []
+    for h, v, kind in ARGALA:
+        on, against = at(sign + h - 1), at(sign + v - 1)
+        if on:
+            out.append({"from": h, "kind": kind, "planets": on, "obstructed_from": v, "obstructing": against,
+                        "holds": len(on) > len(against)})
+    return out
+
+
 def analyse(chart: dict, scheme: int = 8) -> dict:
     g, L = chart["grahas"], chart["lagna"]["sign_index"]
     signs = {p: v["sign_index"] for p, v in g.items()}
@@ -163,8 +182,11 @@ def analyse(chart: dict, scheme: int = 8) -> dict:
         "money": f"Jaimini: your wealth image (A2) sits in your {_ord(a2['in_house'])} house and your gains (A11) in your "
                  f"{_ord(a11['in_house'])} — money links to {HOUSE_THEME[a2['in_house']]} and {HOUSE_THEME[a11['in_house']]}.",
     }
+    plain = {p: x for p, x in signs.items() if p != "_deg"}
+    argalas = [{"house": h, "sign": SIGNS[(L + h - 1) % 12], "argala": argala(plain, (L + h - 1) % 12)} for h in range(1, 13)]
     return {
         "scheme": scheme,
+        "argala": argalas,
         "arudhas": arudhas,
         "al_reading": al_reading(al, in_sign),
         "areas": areas,

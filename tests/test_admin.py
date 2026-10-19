@@ -16,7 +16,7 @@ def gated(tmp_path, monkeypatch):
     monkeypatch.setenv("CHART_DB_PATH", str(tmp_path / "p.db"))
     monkeypatch.setenv("TESTER_ACCESS_CODES", "tester-code")
     monkeypatch.setenv("ADMIN_ACCESS_CODE", "admin-code")
-    for var in ("CHART_LLM_MODEL", "CHAT_DAILY_LIMIT_PER_TESTER", "CHAT_DAILY_LIMIT_TOTAL"):
+    for var in ("CHART_LLM_MODEL", "CHAT_DAILY_LIMIT_PER_TESTER", "CHAT_DAILY_LIMIT_TOTAL", "CONSULT_TELEGRAM_URL"):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
     access._fails.clear()
@@ -99,15 +99,23 @@ def test_settings_roundtrip_and_validation(gated):
     a = _admin()
     s = a.get("/admin/api/overview").json()["settings"]
     assert s == {"model": "claude-haiku-4-5", "word_limit": 300, "daily_limit_per_tester": 30,
-                 "daily_limit_total": 300, "telegram_daily_limit": 5}
+                 "daily_limit_total": 300, "telegram_daily_limit": 5, "consult_telegram": ""}
     new = {"model": "claude-sonnet-5-5", "word_limit": 200, "daily_limit_per_tester": 5, "daily_limit_total": 50,
-           "telegram_daily_limit": 3}
+           "telegram_daily_limit": 3, "consult_telegram": "https://t.me/simple_astro"}
     assert a.put("/admin/api/settings", json=new).json() == new
     for bad in ({"model": "gpt-4"}, {"word_limit": 20}, {"daily_limit_total": -1}, {"word_limit": True},
-                {"word_limit": "300"}, {"nope": 1}, {"model": "claude-opus-5-5", "word_limit": 5}):
+                {"word_limit": "300"}, {"nope": 1}, {"model": "claude-opus-5-5", "word_limit": 5},
+                {"consult_telegram": "https://evil.example/x"}, {"consult_telegram": "javascript:alert(1)"}):
         assert a.put("/admin/api/settings", json=bad).status_code == 422, bad
     assert a.get("/admin/api/overview").json()["settings"] == new  # rejected saves changed nothing
     assert _tester().put("/admin/api/settings", json=new).status_code == 403
+
+
+def test_consult_link_is_shown_only_when_set(gated):
+    t = _tester()
+    assert t.get("/consult").json() == {"telegram": None}
+    _admin().put("/admin/api/settings", json={"consult_telegram": "https://t.me/simple_astro"})
+    assert t.get("/consult").json() == {"telegram": "https://t.me/simple_astro"}
 
 
 def test_haiku_request_shape(gated, fake_llm):

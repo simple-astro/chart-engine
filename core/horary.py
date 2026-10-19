@@ -118,7 +118,8 @@ def judge(n: int, kind: str, when: datetime, lat: float, lon: float, ayanamsha: 
 
     moon_lords = kp_lords(grahas["Moon"].longitude)
     asc_lords = kp_lords(houses.ascendant)
-    weekday = WEEKDAY_LORD[(when.weekday() + 1) % 7]
+    from core.ruling import day_lord
+    weekday = day_lord(when, lat, lon)  # the Vedic day runs from the local sunrise, not the UTC date
     ruling = list(dict.fromkeys([asc_lords.star_lord, asc_lords.sign_lord, moon_lords.star_lord,
                                  moon_lords.sign_lord, weekday]))
     moon_sig = set(sig["Moon"]["houses"])
@@ -140,7 +141,11 @@ def judge(n: int, kind: str, when: datetime, lat: float, lon: float, ayanamsha: 
     return {"number": point, "question": {"kind": kind, "title": title, "house": primary},
             "asked_at": when.isoformat(), "cusp_sub_lord": csl, "signifies": sorted(s),
             "supports": yes, "denies": no, "verdict": verdict, "label": label,
-            "ruling_planets": ruling, "ascendant": round(houses.ascendant, 4), "reasons": reasons}
+            "ruling_planets": ruling, "ascendant": round(houses.ascendant, 4), "reasons": reasons,
+            # the Prashna chart itself: the rising sign from the number, and the planets of this moment
+            "chart": {"lagna_sign": int(houses.ascendant // 30) % 12,
+                      "planets": {n: {"sign_index": g.sign_index, "deg": round(g.longitude % 30, 2),
+                                      "retrograde": g.retrograde} for n, g in grahas.items()}}}
 
 
 def _ord(n: int) -> str:

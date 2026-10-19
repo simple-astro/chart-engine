@@ -110,7 +110,13 @@ def _d30(s, d):
 _DISPATCH = {
     1: _d1, 2: _d2, 3: _d3, 4: _d4, 7: _d7, 9: _d9, 10: _d10, 12: _d12,
     16: _d16, 20: _d20, 24: _d24, 27: _d27, 30: _d30, 40: _d40, 45: _d45, 60: _d60,
+    150: lambda s, d: _nadi_d150(s * 30 + d),  # D150 Nadi amsha: derived only, not one of the 16 (core/nadi_amsha.py)
 }
+
+
+def _nadi_d150(longitude: float) -> int:
+    from core.nadi_amsha import d150_sign
+    return d150_sign(longitude)
 
 
 def varga_sign(longitude: float, n: int) -> int:

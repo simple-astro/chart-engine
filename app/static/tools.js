@@ -124,7 +124,17 @@
         <button type="button" class="btn" id="ff-go">Find dates</button>
         <div id="ff-out" aria-live="polite"></div>
       </section>`;
-    const prashna = `<section class="card gcard tool">
+    const prashna = `<section class="card gcard tool pqhow">
+        <h3>How to ask a Prashna</h3>
+        <ol>
+          <li><b>Ask one question with a yes-or-no answer.</b> “Will I get this job?”, not “Tell me about my career.”</li>
+          <li><b>Hold it in your mind and cast the chart</b>: type your number for KP Prashna, or press <i>Cast now</i> for Jamakkol. The chart is made for this moment and place.</li>
+          <li><b>Ask each question once.</b> Asking again with new numbers only blurs the answer.</li>
+          <li><b>After one KP Prashna and one Jamakkol</b> on the same question, consult your astrologer before you decide.</li>
+        </ol>
+        <div class="pqconsult" hidden></div>
+      </section>
+      <section class="card gcard tool">
         <h3>Yes or no? <small>KP Prashna</small></h3>
         <p class="gsub">Hold your question in mind, then type the first number from 1 to 249 that comes to you.</p>
         <label class="tl-lab" for="hq-kind">My question is about</label>
@@ -140,6 +150,12 @@
         <div class="hq-row"><input id="hq-num" type="number" inputmode="numeric" min="1" max="249" placeholder="1–249" aria-label="Your number from 1 to 249">
           <button type="button" class="btn" id="hq-go">Ask</button></div>
         <div id="hq-out" aria-live="polite"></div>
+      </section>
+      <section class="card gcard tool">
+        <h3>Ruling planets <small>KP</small></h3>
+        <p class="gsub">The planets ruling this very moment, strongest first. Astrologers use them to confirm an answer and to time it.</p>
+        <div id="rp-out" aria-live="polite"><p class="hint">Working out this moment…</p></div>
+        <div class="hq-place"><span id="rp-where"></span> · <button type="button" class="linkbtn" id="rp-go">Refresh now</button></div>
       </section>
       <section class="card gcard tool">
         <h3>Jamakkol Prashna <small>Tamil horary</small></h3>
@@ -225,7 +241,7 @@
       input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); find(); } });
       return find;
     }
-    const hqFind = placeBox('hq', 'sj_hq_place', h => { here = h; });
+    const hqFind = placeBox('hq', 'sj_hq_place', h => { here = h; rpShow(); });  // ruling planets follow the place
     const jkFind = placeBox('jk', 'sj_jk_place', h => { jkHere = h; });
     const pid = ctx.id;  // a saved chart: each question is kept (ask once for 81 days, then "did it happen?")
     const jkTitle = k => (jkinds.find(x => x.kind === k) || {}).title || k;
@@ -236,6 +252,7 @@
       return { ok: res.ok, status: res.status, j };
     }
     function jkShow(r, q) {
+      setTimeout(() => { const o = $('jk-out'); if (o && !o.querySelector('.pqline')) o.insertAdjacentHTML('beforeend', consultLine()); }, 0);
       const out = $('jk-out'), g = r.reading;
       const li = xs => xs.map(x => `<li>${esc(x)}</li>`).join('');
       const ask = `I asked a Jamakkol Prashna about ${g.question.title.toLowerCase()}${q ? `: "${q}"` : ''}. ` +
@@ -315,6 +332,30 @@
     $('jk-go').onclick = () => jkCast(false);
     jkList();
 
+    // "Consult your astrologer on Telegram" (Admin › Settings › consult link); hidden when no link is set.
+    let consultUrl = null;
+    const consultLine = () => consultUrl ? `<p class="pqline">Got both answers? <a href="${esc(consultUrl)}" target="_blank" rel="noopener">Consult your astrologer on Telegram</a> before you decide.</p>`
+      : '<p class="pqline">Got both answers? Consult your astrologer before you decide.</p>';
+    fetch('/consult').then(r => r.ok ? r.json() : null).then(d => {
+      consultUrl = d && d.telegram;
+      const box = el.parentNode && (ctx.prashnaEl || el).querySelector('.pqconsult');
+      if (consultUrl && box) { box.hidden = false; box.innerHTML = `<a class="btn pqtg" href="${esc(consultUrl)}" target="_blank" rel="noopener">Consult your astrologer on Telegram</a>`; }
+    }).catch(() => {});
+
+    // Ruling planets for now, cast where the KP Prashna is cast (the place chosen above, else the birthplace).
+    async function rpShow() {
+      const at = here && here.tz_name ? here : { lat: req.lat, lon: req.lon, tz_name: req.tz_name, name: req.place || place };
+      $('rp-where').textContent = 'For ' + (at.name || 'where you are') + ', ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: at.tz_name });
+      try {
+        const r = await post('/ruling-planets', { lat: at.lat, lon: at.lon, tz_name: at.tz_name });
+        $('rp-out').innerHTML = `<table class="jktab cf"><colgroup><col><col></colgroup><tbody>${r.rows.map(x => `<tr><td>${esc(x.role)}</td><td>${esc(x.planet)}</td></tr>`).join('')}
+          ${r.nodes.map(n => `<tr><td>${esc(n.planet)} (in ${esc(n.sign)}, for ${esc(n.for)})</td><td>${esc(n.planet)}</td></tr>`).join('')}</tbody></table>
+          <p class="jkn">Ruling planets: <b>${r.ruling_planets.map(esc).join(', ')}</b> · Lagna ${esc(r.lagna.sign)}, ${esc(r.lagna.star)} (sub ${esc(r.lagna.sub_lord)}) · Moon ${esc(r.moon.sign)}, ${esc(r.moon.star)} (sub ${esc(r.moon.sub_lord)})</p>`;
+      } catch (e) { $('rp-out').innerHTML = `<p class="hint err">Couldn’t work out the ruling planets: ${esc(e.message)}</p>`; }
+    }
+    $('rp-go').onclick = rpShow;
+    rpShow();
+
     $('hq-num').addEventListener('keydown', e => { if (e.key === 'Enter') $('hq-go').click(); });
     $('hq-go').onclick = async () => {
       const n = parseInt($('hq-num').value, 10), out = $('hq-out');
@@ -328,11 +369,19 @@
         const ask = `I asked a KP Prashna (horary) question about ${r.question.title.toLowerCase()}${q ? `: "${q}"` : ''}. My number was ${n}. ` +
           `The result was "${r.label}". The reasons: ${r.reasons.join(' ')} Please explain simply what this means for me and what I should do.`;
         out.innerHTML = `<div class="hqv ${VERDICT[r.verdict]}"><span>Answer</span><b>${esc(r.label)}</b></div>
+          <div class="chart hqchart" id="hq-chart" role="img" aria-label="KP Prashna chart"></div>
           <ul class="hqr">${r.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
           <p class="jkn">Cast for ${esc(here ? (here.name || 'where you are') : (req.place || place))}</p>
           <button type="button" class="btn ghost" id="hq-ask">Ask Astropositivism to explain</button>
           <p class="hint">Prashna answers the question as you hold it right now. Ask each question once — repeating it with new numbers weakens the answer.</p>`;
         $('hq-ask').onclick = () => window.askSukh && window.askSukh(ask);
+        if (window.drawNorth && r.chart) {
+          const byH = {}, L = r.chart.lagna_sign;
+          Object.entries(r.chart.planets).forEach(([p, x]) => { const h = (x.sign_index - L + 12) % 12;
+            (byH[h] = byH[h] || []).push(AB[p] + (x.retrograde && p !== 'Rahu' && p !== 'Ketu' ? 'ᴿ' : '')); });
+          window.drawNorth($('hq-chart'), L, byH, null, 'PRASHNA');
+        }
+        out.insertAdjacentHTML('beforeend', consultLine());
       } catch (e) { out.innerHTML = `<p class="hint err">Couldn’t cast the chart: ${esc(e.message)}</p>`; }
       $('hq-go').disabled = false;
     };

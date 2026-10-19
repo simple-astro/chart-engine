@@ -233,6 +233,10 @@
   .accnext{margin-top:8px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--acc) 12%,transparent)} .accnext p{margin:4px 0 8px;font-size:.88rem}
   .accrules{margin-top:10px;font-size:.86rem} .accrules summary{cursor:pointer;font-weight:600} .accok{margin:8px 0 0;color:var(--mut)}
   .gacc p{margin:0;line-height:1.6} .accnot{color:var(--mut)}
+  .tjstep{display:flex;align-items:center;gap:10px;margin-bottom:12px} .tjstep>div{display:flex;flex-direction:column;flex:1;min-width:0;text-align:center} .tjstep .linkbtn{white-space:nowrap}
+  .tjstep small{color:var(--mut)} .tjstep .btn{min-width:44px;padding:8px 12px}
+  .tjyog{margin:4px 0 12px;padding-left:18px} .tjyog li{margin:4px 0} .tjyog li.ok b{color:var(--ok)} .tjyog li.bad b{color:var(--bad)}
+  .tjcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:14px}
   .evfind{width:100%;margin:2px 0 6px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit}
   .evgrp{margin:10px 0 6px;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
   .avk{margin:0 0 12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg2)} .avk summary{cursor:pointer}
@@ -492,6 +496,11 @@
   .jktab.pos td.n{font-size:.74rem} .jktab td,.jktab th{white-space:normal} .jktab td,.jktab th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
   .jktab th{font-size:.68rem;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);font-weight:600} .jktab td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
   .jktab.cf td:last-child{font-weight:600}
+  .vnadi{margin-top:14px} .vnadi h4{margin:0 0 6px} .vnadi p{margin:0 0 10px;line-height:1.5} .vnlag{padding:10px 12px;border-radius:10px;background:var(--soft)} tr.vnhi td{background:var(--soft)}
+  .kpsh{display:block;font-size:.82em;color:var(--mut)} #kpsigt .badge{margin-top:3px;display:inline-block}
+  .pqhow ol{margin:6px 0 4px;padding-left:20px;line-height:1.5} .pqhow li{margin:6px 0} .pqhow .pqconsult{margin-top:10px}
+  .pqtg{display:inline-flex;align-items:center;min-height:44px} .pqline{margin:12px 0 0;font-size:.92rem} .pqline a{color:var(--acc);font-weight:600}
+  .hqchart{max-width:300px;margin:10px auto 4px}
   .jkrays{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px} .jkrays span{display:flex;flex-direction:column;align-items:center;min-width:52px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg2)}
   .jkrays small{font-size:.66rem;color:var(--mut)} .jkrays b{font-variant-numeric:tabular-nums}
   #gprashna>*,#gtools>*{min-width:0} .tool .scroll{max-width:100%;overflow-x:auto}  /* wide tables scroll inside their card */
@@ -755,7 +764,7 @@
 
   /* ---------- lal kitab + match ---------- */
   .lk{display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:22px;align-items:start;margin-bottom:22px}
-  .lk .chart svg{max-width:320px}
+  .lk .chart svg{max-width:320px} .lk>*{min-width:0}  /* tables scroll inside, not the page */
   .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.73rem;font-weight:600;margin:2px 4px 2px 0;
     background:var(--soft);color:var(--acc);border:1px solid var(--line)}
   .badge.good{background:rgba(46,125,50,.12);color:var(--ok);border-color:transparent}
@@ -1225,7 +1234,7 @@
       <button type="button" data-go="prashna"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.6M12 16.8v.2"/></svg><span>Prashna</span></button>
       <button type="button" data-go="ask" class="askb"><i class="bub"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg></i><span>Ask<span class="askfull"> Astropositivism</span></span></button>
       <button type="button" data-go="remedies"><svg viewBox="0 0 24 24"><path d="M12 3c2 3 3 4.6 3 6.5a3 3 0 0 1-6 0C9 7.6 10 6 12 3z"/><path d="M4 15h16l-2 4H6z"/></svg><span>Remedies</span></button>
-      <button type="button" data-go="chart"><svg viewBox="0 0 24 24"><path d="M4 4h5v16H4zM10 4h4v16h-4zM15.5 5l3.8-1 2.7 15.5-3.8 1z"/></svg><span>Charts</span></button>
+      <button type="button" data-go="chart"><svg viewBox="0 0 24 24" class="chakra"><title>Sudarshan Chakra</title><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/><path stroke-width="1.2" d="M15 12h5.5M14.12 14.12l3.89 3.89M12 15v5.5M9.88 14.12l-3.89 3.89M9 12H3.5M9.88 9.88L5.99 5.99M12 9V3.5M14.12 9.88l3.89-3.89"/><path stroke-width="1.3" d="M20.50 12.00L22.92 13.32M19.85 15.25L21.59 17.40M18.01 18.01L18.79 20.65M15.25 19.85L14.96 22.59M12.00 20.50L10.68 22.92M8.75 19.85L6.60 21.59M5.99 18.01L3.35 18.79M4.15 15.25L1.41 14.96M3.50 12.00L1.08 10.68M4.15 8.75L2.41 6.60M5.99 5.99L5.21 3.35M8.75 4.15L9.04 1.41M12.00 3.50L13.32 1.08M15.25 4.15L17.40 2.41M18.01 5.99L20.65 5.21M19.85 8.75L22.59 9.04"/></svg><span>My Charts</span></button>
     </nav>
 
   <!-- ===== match making view ===== -->
@@ -1265,14 +1274,16 @@
         <div class="card gcard" id="t-vim"><div id="dasha"></div></div>
         <div class="card gcard" id="t-yogini"><div id="yoginibody"></div></div>
         <section class="card gcard" id="gupcoming"></section>
-        <div class="card gcard tplan"><b>Jaimini’s Chara Dasha</b><button type="button" class="linkbtn" data-goto="chara">In Charts › Jaimini →</button></div>
+        <div class="card gcard tplan"><b>Jaimini’s Chara Dasha</b><button type="button" class="linkbtn" data-goto="chara">In My Charts › Jaimini →</button></div>
       </div>
       <div id="tm-transits" hidden>
         <div class="card gcard" id="t-transit"><div id="trwrap"></div></div>
+        <section class="card gcard" id="gparyaya"><h3>Paryaya <small>Jupiter and Saturn crossing your birth planets</small></h3><div class="hint">Loading…</div></section>
       </div>
       <div id="tm-matter" hidden>
         <div class="card gcard" id="t-dpred"><h3>Dasha prediction</h3><div id="dpredbody"></div>
           <div class="hint">Vimśottarī daśā. Open any sub-period to read it. Timing is broad; transits fine-tune when events happen.</div></div>
+        <div class="card gcard" id="t-kpsig"><h3>KP dasha lords <small>planet · star lord · sub lord</small></h3><div id="kpsigbody"></div></div>
         <div class="card gcard" id="t-kptime"><h3>KP timing</h3><div id="kptbody"></div></div>
       </div>
       <div id="tm-dates" hidden>
@@ -1316,14 +1327,16 @@
       <div class="stats" id="summary"></div><div class="accsheet" id="accsheet" hidden></div><div class="tslide" id="tslide"></div>
     </div>
     <!-- Studies: one card per tradition; each opens a page with only its own sections -->
-    <div class="sthub" id="sthub" role="list" aria-label="Charts">
+    <div class="sthub" id="sthub" role="list" aria-label="My Charts">
       <button type="button" role="listitem" data-branch="vedic"><i aria-hidden="true">☉</i><span><b>Vedic</b><small>Rasi chart, planets, yogas, divisional charts, Ashtakavarga, your life areas</small></span></button>
-      <button type="button" role="listitem" data-branch="nadi"><i aria-hidden="true">◎</i><span><b>Nadi (KP)</b><small>Cusps and sub-lords, Nadi amsha, your life so far</small></span></button>
+      <button type="button" role="listitem" data-branch="nadi"><i aria-hidden="true">◎</i><span><b>KP</b><small>Krishnamurti Paddhati: cusps and sub-lords, your life so far</small></span></button>
       <button type="button" role="listitem" data-branch="bnn"><i aria-hidden="true">△</i><span><b>BNN</b><small>Bhrigu Nandi Nadi: planets joined by trines, karaka circuits</small></span></button>
       <button type="button" role="listitem" data-branch="jaimini"><i aria-hidden="true">♛</i><span><b>Jaimini</b><small>Karakas, Arudha and Upapada, Chara Dasha</small></span></button>
       <button type="button" role="listitem" data-branch="lal"><i aria-hidden="true">✦</i><span><b>Lal Kitab</b><small>Lal Kitab kundli, debts (rin) and its remedies</small></span></button>
+      <button type="button" role="listitem" data-branch="tajika"><i aria-hidden="true">⟳</i><span><b>Tajika</b><small>Varshaphal: your year ahead. Annual chart, Muntha, year lord, Mudda dasha</small></span></button>
+      <button type="button" role="listitem" data-branch="mundane"><i aria-hidden="true">◍</i><span><b>Mundane</b><small>The year for the world: Hindu New Year and Mesha Sankranti charts, king and minister of the year</small></span></button>
     </div>
-    <nav class="stcrumb" id="stcrumb" aria-label="Charts" hidden><button type="button" class="linkbtn" data-branch="">Charts</button><span aria-hidden="true">›</span><b id="stname"></b>
+    <nav class="stcrumb" id="stcrumb" aria-label="My Charts" hidden><button type="button" class="linkbtn" data-branch="">My Charts</button><span aria-hidden="true">›</span><b id="stname"></b>
       <span class="stjump" id="stjump"></span></nav>
     <div class="grid" id="stgrid">
       <aside class="card chartcard"><div class="chhead"><h3 id="charttitle">Rasi chart (D1) · North Indian</h3>
@@ -1350,36 +1363,38 @@
       <div class="card panel">
         <select id="csel" autocomplete="off" hidden aria-hidden="true" tabindex="-1">
           <option value="planets">Planets</option><option value="yogas">Yogas</option><option value="houses">Houses &amp; cusps</option>
-          <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option><option value="nadi">Nadi amsha</option>
-          <option value="xchg">Lord exchange</option><option value="jaimini">Jaimini</option><option value="bnn">BNN (Nadi trines)</option><option value="lal">Lal Kitab</option>
+          <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option>
+          <option value="xchg">Lord exchange</option><option value="jaimini">Jaimini</option><option value="bnn">BNN (Nadi trines)</option><option value="lal">Lal Kitab</option><option value="tajika">Tajika</option><option value="mundane">Mundane</option>
         </select>
         <div class="ctiles" id="ctiles" role="tablist" aria-label="Kundli sections">
           <button type="button" role="tab" data-pane="planets" data-branch="vedic"><b>Planets</b><small>Positions and lords</small></button>
           <button type="button" role="tab" data-pane="yogas" data-branch="vedic"><b>Yogas</b><small>Checked three ways</small></button>
           <button type="button" role="tab" data-pane="houses" data-branch="nadi"><b>Houses &amp; cusps</b><small>KP cusps</small></button>
-          <button type="button" role="tab" data-pane="vargas" data-branch="vedic"><b>Divisional charts</b><small>D9, D10 and more</small></button>
+          <button type="button" role="tab" data-pane="vargas" data-branch="vedic"><b>Divisional charts</b><small>D9, D10 … D150</small></button>
           <button type="button" role="tab" data-pane="akv" data-branch="vedic"><b>Ashtakavarga</b><small>Points per house</small></button>
-          <button type="button" role="tab" data-pane="nadi" data-branch="nadi"><b>Nadi amsha</b><small>150 parts of a sign</small></button>
           <button type="button" role="tab" data-pane="xchg" data-branch="vedic"><b>Lord exchange</b><small>Signs swapped</small></button>
           <button type="button" role="tab" data-pane="jaimini" data-branch="jaimini"><b>Jaimini</b><small>Karakas and Arudha</small></button>
           <button type="button" role="tab" data-pane="bnn" data-branch="bnn"><b>BNN</b><small>Nadi trines</small></button>
           <button type="button" role="tab" data-pane="lal" data-branch="lal"><b>Lal Kitab</b><small>Houses and debts</small></button>
+          <button type="button" role="tab" data-pane="tajika" data-branch="tajika"><b>Tajika</b><small>Varshaphal</small></button>
+          <button type="button" role="tab" data-pane="mundane" data-branch="mundane"><b>Mundane</b><small>The year</small></button>
         </div>
         <div class="pane" id="t-planets"><div class="avak" id="avak"></div><div class="scroll"><table id="grahas"></table></div><div id="special"></div></div>
         <div class="pane" id="t-yogas" hidden><div id="yogabody"></div>
           <div class="hint">Each yoga is checked three ways: is it <b>strong</b> (its planets not combust, weakly placed or joined by a pure 6th/8th/12th lord), is it <b>active</b> (it gives results mainly in the Dasha of its planets), and is it <b>cancelled</b> by the classical rules. Traditional guidance, not certainty.</div></div>
         <div class="pane" id="t-houses" hidden><div class="kpay" id="kpay" hidden></div><div class="scroll"><table id="houses"></table></div>
           <div class="hint">KP (Placidus) cusps. Under each lord: <b>in</b> = the house it sits in, <b>rules</b> = the houses whose cusp falls in its sign (Bhava Chalit). Rahu and Ketu rule no sign; they act for the lord of the sign they sit in.</div></div>
-        <div class="pane" id="t-vargas" hidden><div id="vtabs" class="vt"></div><div class="seg vfrom" id="vfrom" role="radiogroup" aria-label="Count houses from"><button type="button" role="radio" aria-checked="true" class="on" data-f="lagna">From lagna</button><button type="button" role="radio" aria-checked="false" data-f="moon">From Moon</button></div><div class="vchart"><h4 id="vtitle"></h4><div id="vchart" class="chart"></div></div><div class="scroll"><table id="vtable"></table></div></div>
+        <div class="pane" id="t-vargas" hidden><div id="vtabs" class="vt"></div><div class="seg vfrom" id="vfrom" role="radiogroup" aria-label="Count houses from"><button type="button" role="radio" aria-checked="true" class="on" data-f="lagna">From lagna</button><button type="button" role="radio" aria-checked="false" data-f="moon">From Moon</button></div><div class="vchart"><h4 id="vtitle"></h4><div id="vchart" class="chart"></div></div><div class="scroll"><table id="vtable"></table></div>
+          <div class="vnadi" id="vnadi" hidden></div></div>
         <div class="pane" id="t-akv" hidden><div id="akvbody"></div></div>
-        <div class="pane" id="t-nadi" hidden><div class="scroll"><table id="nadi"></table></div>
-          <div class="hint">Each sign is split into 150 nadi amshas of 0°12′. “Nadi #” is the amsha within the sign (1–150).</div></div>
         <div class="pane" id="t-xchg" hidden><div id="xbody"></div></div>
         <div class="pane" id="t-jaimini" hidden><div id="jaibody"></div>
           <div class="hint">Jaimini’s 8 chara karakas rank the planets (with Rahu, counted backwards) by their degree in their sign. Used here to describe you — your soul lesson, work style, partner and image — not for timing.</div></div>
         <div class="pane" id="t-bnn" hidden><div id="bnnbody"></div>
           <div class="hint">Bhrigu Nandi Nadi reads planets as living karakas joined through their signs: planets in the 1st, 5th and 9th signs from each other (the same element) work together, and the lower degree gives its results first. A retrograde planet (not Rahu or Ketu) also gives the results of the sign before its own, so it is counted there too (dashed). For readings only — timing still comes from your Dasha.</div></div>
         <div class="pane" id="t-lal" hidden><div id="lalbody"><div class="hint">Loading…</div></div></div>
+        <div class="pane" id="t-tajika" hidden><div id="tajbody"><div class="hint">Loading…</div></div></div>
+        <div class="pane" id="t-mundane" hidden><div id="mundbody"><div class="hint">Loading…</div></div></div>
       </div>
     </div>
     <div class="stx" data-for="nadi" hidden>
@@ -1387,7 +1402,7 @@
       <div class="card gcard tplan"><b>KP timing, matter by matter</b><button type="button" class="linkbtn" data-goto="kptime">Marriage, career, money… in Timing →</button></div>
     </div>
     <div class="stx" data-for="jaimini" hidden>
-      <div class="card gcard" id="t-chara"><div id="yogbody"></div></div>
+      <div class="card gcard" id="t-chara"><div id="yogbody"></div><div id="narbody"></div></div>
     </div>
     <div class="stx" data-for="lal" hidden>
       <div class="card gcard tplan"><b>Your other remedies</b><button type="button" class="linkbtn" data-goto="lucky">Habits, gems and lucky days in Remedies →</button></div>
@@ -1434,7 +1449,7 @@ const dms=d=>{const x=Math.floor(d),m=Math.floor((d-x)*60);return x+'° '+String
 const SIGNS=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 const VNAME={D1:'Rasi',D2:'Hora · wealth',D3:'Drekkana · siblings',D4:'Chaturthamsa · property',D7:'Saptamsa · children',
   D9:'Navamsa · marriage',D10:'Dasamsa · career',D12:'Dwadasamsa · parents',D16:'Shodasamsa · vehicles',D20:'Vimsamsa · spirituality',
-  D24:'Chaturvimsamsa · education',D27:'Bhamsa · strength',D30:'Trimsamsa · misfortunes',D40:'Khavedamsa',D45:'Akshavedamsa',D60:'Shashtiamsa · past karma'};
+  D24:'Chaturvimsamsa · education',D27:'Bhamsa · strength',D30:'Trimsamsa · misfortunes',D40:'Khavedamsa',D45:'Akshavedamsa',D60:'Shashtiamsa · past karma',D150:'Nadi amsha · birth time'};
 const ABBR={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'};
 try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){}
 
@@ -1524,15 +1539,15 @@ if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.fo
 const SCREENS=['today','timing','prashna','ask','remedies','chart'];
 let SCREEN=null,TM='now',BRANCH=null;
 // Studies: the Kundli screen (id "chart") opens on a hub; each branch shows only its own sections.
-const BRANCHES={vedic:'Vedic',nadi:'Nadi (KP)',bnn:'BNN',jaimini:'Jaimini',lal:'Lal Kitab'};
+const BRANCHES={vedic:'Vedic',nadi:'KP',bnn:'BNN',jaimini:'Jaimini',lal:'Lal Kitab',tajika:'Tajika',mundane:'Mundane'};
 const BRANCH_OF={planets:'vedic',yogas:'vedic',vargas:'vedic',akv:'vedic',xchg:'vedic',links:'vedic',about:'vedic',reading:'vedic',
-  houses:'nadi',nadi:'nadi',bnn:'bnn',events:'nadi',jaimini:'jaimini',chara:'jaimini',lal:'lal'};
+  houses:'nadi',bnn:'bnn',events:'nadi',jaimini:'jaimini',chara:'jaimini',lal:'lal',tajika:'tajika',mundane:'mundane'};
 function setBranch(b){
   const wasBnn=BRANCH==='bnn';
   BRANCH=BRANCHES[b]?b:null;
   if(wasBnn!==(BRANCH==='bnn'))try{RERENDER&&RERENDER()}catch(e){}  // the faded BNN copies come and go with the branch
   $('sthub').hidden=!!BRANCH;$('stcrumb').hidden=!BRANCH;
-  $('stgrid').hidden=!BRANCH;$('stgrid').classList.toggle('solo',BRANCH==='lal');
+  $('stgrid').hidden=!BRANCH;$('stgrid').classList.toggle('solo',BRANCH==='lal'||BRANCH==='tajika'||BRANCH==='mundane');
   document.querySelectorAll('#s-chart .stx').forEach(x=>x.hidden=x.dataset.for!==BRANCH);
   const tiles=[...$('ctiles').querySelectorAll('[data-pane]')];
   tiles.forEach(t=>t.hidden=t.dataset.branch!==BRANCH);
@@ -1556,10 +1571,12 @@ function go(name,sub,o){
   document.querySelectorAll('#sjbar [data-go]').forEach(b=>{const on=b.dataset.go===name;b.classList.toggle('on',on);on?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current')});
   document.body.classList.toggle('on-ask',name==='ask');
   if(name==='timing')timingTab(sub||TM);
+  if(name==='chart'&&sub==='d150'){sub='vargas';VWANT='D150'}
   if(name==='chart'){
     const pane=sub&&$('ctiles').querySelector('[data-pane="'+sub+'"]')?sub:null;
     setBranch(BRANCHES[sub]?sub:BRANCH_OF[sub]||(sub===undefined?BRANCH:null));
     if(pane)showPane(pane);
+    if(pane==='vargas')pickVarga();
   }
   const tkey=name==='timing'?'timing/'+TM:name==='chart'?(!BRANCH?'studies':sub&&$('ctiles').querySelector('[data-pane="'+sub+'"]')?'kundli/'+sub:'studies/'+BRANCH):name;
   if(tkey!==TRACK.last){TRACK.last=tkey;track(tkey)}
@@ -1577,8 +1594,11 @@ function loadVisible(){
   if(!lastReq||$('out').hidden)return;
   if(SCREEN==='today')loadMuhurat();
   if(SCREEN==='timing'&&TM==='transits'&&$('trwrap').dataset.pid!==String(currentId)){$('trwrap').dataset.pid=String(currentId);window.renderTransit($('trwrap'),currentId,lastReq&&lastReq.tz_name)}
+  if(SCREEN==='timing'&&TM==='transits')loadParyaya();
   if(SCREEN==='timing'&&TM==='matter'&&$('kptbody').dataset.pid!==String(currentId)){$('kptbody').dataset.pid=String(currentId);window.renderKpTiming($('kptbody'),currentId)}
   if(SCREEN==='chart'&&BRANCH==='lal')loadLal();
+  if(SCREEN==='chart'&&BRANCH==='tajika')loadTajika();
+  if(SCREEN==='chart'&&BRANCH==='mundane')loadMundane();
 }
 function timingTab(v){
   if(!$('tm-'+v))v='now';
@@ -1586,6 +1606,8 @@ function timingTab(v){
   [...$('tseg').children].forEach(b=>{const on=b.dataset.t===v;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on))});
   ['now','transits','matter','dates'].forEach(k=>$('tm-'+k).hidden=k!==v);
 }
+let VWANT=null;  // a divisional chart to open once its tab exists (#chart/d150)
+function pickVarga(){if(!VWANT)return;const b=[...$('vtabs').children].find(x=>x.textContent===VWANT);if(b){VWANT=null;b.click()}}
 function showPane(name){
   if(!$('t-'+name)||!$('ctiles').querySelector('[data-pane="'+name+'"]'))return;
   $('csel').value=name;
@@ -1634,14 +1656,14 @@ const FIND=[
   ['Lord exchange','lord exchange parivartana','chart/xchg','Vedic'],
   ['Your life areas','life areas career money love marriage health home family lesson','chart/about','Vedic'],
   ['Full reading and house by house','full reading interpretation house by house bhava','chart/reading','Vedic'],
-  ['Houses and cusps','houses cusps bhava kp sub lord placidus','chart/houses','Nadi'],
-  ['Nadi amsha','nadi amsha 150','chart/nadi','Nadi'],
+  ['Houses and cusps','houses cusps bhava kp sub lord placidus','chart/houses','KP'],
+  ['Nadi amsha (D150)','nadi amsha 150 d150 chandra kala birth time twins','chart/d150','Vedic'],
   ['BNN (Bhrigu Nandi Nadi)','bnn bhrigu nandi nadi trines karaka circuits retrograde','chart/bnn','BNN'],
-  ['Your life so far','life events past log so far fits','chart/events','Nadi'],
+  ['Your life so far','life events past log so far fits','chart/events','KP'],
   ['Birth summary (Avakhada chakra)','avakhada birth summary varna vashya yoni gana nadi paya tatva naming letter tithi at birth','chart/planets','Vedic'],
   ['Special points','special points bhrigu bindu indu lagna hora lagna ghati lagna bhava lagna mandi gulika pushkara navamsha','chart/planets','Vedic'],
   ['When each lagna rises','lagna rising times ascendant table sign rises today muhurat griha pravesh fixed sign','today/muhurat'],
-  ['Birth time rectification','rectification rectify birth time correct exact time minutes tob janam samay sahi','chart/rectify','Nadi'],
+  ['Birth time rectification','rectification rectify birth time correct exact time minutes tob janam samay sahi','chart/rectify','KP'],
   ['Composite chart: birth chart + transit','composite combined natal birth transit outer ring gochar chart today planets play day dasha prana sookshma','chart/gochar','Vedic'],
   ['Moon chart (Chandra Lagna)','moon chart chandra lagna chandra kundli from the moon','chart/view-moon','Vedic'],
   ['Bhava Chalit chart','bhava chalit chalit cusp chart nirayana','chart/view-chalit','Vedic'],
@@ -1651,10 +1673,12 @@ const FIND=[
   ['Chara Dasha (Jaimini)','chara jaimini sign dasha period','chart/chara','Jaimini'],
   ['Yogini Dasha','yogini mangala pingala dhanya bhramari bhadrika ulka siddha sankata dasha period 36 years vedic','timing/yogini'],
   ['Lal Kitab','lal kitab rin debts pakka ghar remedies totke','chart/lal','Lal Kitab'],
+  ['Mundane: the year for the world','mundane samhita hindu new year ugadi gudi padwa nav varsh chaitra mesha sankranti raja mantri king minister samvatsara samvat','chart/mundane','Mundane'],
+  ['Tajika (Varshaphal)','tajika varshaphal varsha phal annual chart year ahead solar return birthday muntha year lord varshesha mudda dasha','chart/tajika','Tajika'],
   ['Yes or no? (KP Prashna)','prashna horary question yes no number','prashna'],
   ['Jamakkol Prashna','jamakkol jamakol jammakkol prasanam prashna udayam arudam kavippu chatra tamil horary','prashna'],
 ];
-const FIND_NAME={today:'Today',timing:'Timing',ask:'Ask Astropositivism',remedies:'Remedies',prashna:'Prashna',chart:'Charts',now:'Now & next',transits:'Transits',
+const FIND_NAME={today:'Today',timing:'Timing',ask:'Ask Astropositivism',remedies:'Remedies',prashna:'Prashna',chart:'My Charts',now:'Now & next',transits:'Transits',
   matter:'By matter',dates:'Good dates',yogini:'Now & next',muhurat:'Good days & muhurat',...BRANCHES};
 const POPULAR=['Today for you','Transit chart','KP timing by matter','Find a good date','Remedies (upaya)','Jamakkol Prashna'];
 const SYN={shani:'saturn',sani:'saturn',guru:'jupiter',brihaspati:'jupiter',shukra:'venus',mangal:'mars',budh:'mercury',budha:'mercury',
@@ -1710,12 +1734,12 @@ function findList(){
   const c=lastChart, mine=[];
   if(c){
     q.filter(w=>PLANET_OF[w]).forEach(w=>{const p=PLANET_OF[w],g=c.grahas[p];if(!g)return;
-      mine.push(findRow('Your '+p+': '+g.sign+', '+ORD(g.house)+' house','Charts › Vedic › Planets','chart/planets','Vedic'));
-      mine.push(findRow(p+' in Lal Kitab','Charts › Lal Kitab','chart/lal','Lal Kitab'))});
+      mine.push(findRow('Your '+p+': '+g.sign+', '+ORD(g.house)+' house','My Charts › Vedic › Planets','chart/planets','Vedic'));
+      mine.push(findRow(p+' in Lal Kitab','My Charts › Lal Kitab','chart/lal','Lal Kitab'))});
     const m=raw.toLowerCase().match(/(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:house|bhava|ghar)|(?:house|bhava|ghar)\s*(\d{1,2})/);
     const h=m&&+(m[1]||m[2]);
     if(h>=1&&h<=12){const sg=(c.lagna.sign_index+h-1)%12;
-      mine.push(findRow('Your '+ORD(h)+' house: '+SIGNS[sg],'Charts › Vedic › House by house','chart/reading','Vedic'))}
+      mine.push(findRow('Your '+ORD(h)+' house: '+SIGNS[sg],'My Charts › Vedic › House by house','chart/reading','Vedic'))}
   }
   if(mine.length)out.push('<p class="srg">Your chart</p>'+mine.join(''));
   const scored=FIND.map(f=>{const hay=(f[0]+' '+f[1]+' '+(f[3]||'')).toLowerCase(),name=f[0].toLowerCase();
@@ -2375,6 +2399,119 @@ async function loadLal(){
   }catch(err){lkLoaded=false;box.innerHTML='<p class="err">⚠ '+esc(err.message)+'</p>'}
 }
 
+// ----- Paryaya (core/paryaya.py): slow-planet rounds over the birth chart, a hint only -----
+let PY_PID=null;
+async function loadParyaya(){
+  const box=$('gparyaya');if(currentId==null){box.hidden=true;return}box.hidden=false;
+  if(PY_PID===currentId)return;const pid=PY_PID=currentId;
+  box.innerHTML='<h3>Paryaya <small>Jupiter and Saturn crossing your birth planets</small></h3><div class="hint">Working out the dates…</div>';
+  try{const r=await fetch('/profiles/'+pid+'/paryaya');const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);if(pid!==currentId)return;
+    const fd=s=>new Date(s+'T12:00:00Z').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}),past=x=>x.date<d.today;
+    box.innerHTML='<h3>Paryaya <small>Jupiter and Saturn crossing your birth planets</small></h3>'+
+      '<p class="gsub">The exact days the two slow planets pass over a birth planet or your Lagna, from a year ago to three years ahead. In Nadi practice these rounds are watched for timing.</p>'+
+      (d.crossings.length?'<div class="scroll"><table id="pytable"></table></div>':'<p class="hint">No crossings in this window.</p>')+
+      '<p class="hint">A hint only. Checked against the book’s dated events, these crossings came no more often near an event than on an ordinary day (5 of 15 within a month, against 29% by chance), so your timing still comes from the Dasha.</p>';
+    if(d.crossings.length)table($('pytable'),['Date','Transit','Over your','Motion'],d.crossings.map(x=>[(past(x)?'<span class="hint">':'<b>')+fd(x.date)+(past(x)?'</span>':'</b>'),x.planet,x.point,x.retrograde?'retrograde':'direct']));
+  }catch(e){PY_PID=null;box.innerHTML='<h3>Paryaya</h3><p class="err">⚠ '+esc(e.message)+'</p>'}
+}
+
+// ----- KP: each planet with its star lord and sub lord, and the houses each signifies; the running periods first -----
+function kpSigTable(c){const box=$('kpsigbody');if(!box)return;const H=c.kp_houses;
+  if(!H){box.innerHTML='<p class="hint">Open this chart again to see its KP dasha lords.</p>';return}
+  const run=dashaAt(c,new Date()).slice(0,3).map(d=>d.lord),TAG=['Dasa','Bhukti','Antar'],hs=p=>(H[p]||[]).join(', ')||'—',
+    order=['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury'],
+    rows=[...[...new Set(run)].map(p=>[p,run.map((q,i)=>q===p?TAG[i]:'').filter(Boolean).join(' · ')]),...order.filter(p=>!run.includes(p)).map(p=>[p,''])],
+    cell=(p,b)=>(b?'<b>'+p+'</b>':p)+'<small class="kpsh">'+hs(p)+'</small>';
+  box.innerHTML='<p class="gsub">In KP a period lord gives the results of the houses its <b>star lord</b> signifies, and its <b>sub lord</b> decides whether those results come good. '+
+    'Your running periods are at the top.</p><div class="scroll"><table id="kpsigt"></table></div>'+
+    '<p class="hint">Under each name, the houses it signifies: where it sits and the house cusps in its signs (Placidus). Rahu and Ketu also carry the houses of the planets they act for. '+
+    'Read a matter’s houses together: 2, 7, 11 for marriage; 2, 6, 10, 11 for work and money; 6, 8, 12 for obstacles.</p>';
+  const g=c.grahas,nr=new Set(run).size;table($('kpsigt'),['Planet','Star lord','Sub lord'],rows.map(([p,t])=>{const k=(g[p]||{}).kp||{};
+    return [cell(p,!!t)+(t?'<span class="badge good">'+t+'</span>':''),k.star_lord?cell(k.star_lord):'—',k.sub_lord?cell(k.sub_lord,1):'—']}));
+  $('kpsigt').querySelectorAll('tbody tr').forEach((r,i)=>{if(i<nr)r.classList.add('vnhi')})}
+
+// ----- D150, the Nadi amsha (core/nadi_amsha.py): what it is for, the Lagna's birth-time window, each point's part -----
+function nadiAmsha(c,on){const box=$('vnadi');box.hidden=!on;if(!on)return;const na=c.nadi_amsha;
+  if(!na){box.innerHTML='<p class="hint">Open this chart again to see its Nadi amsha.</p>';return}
+  const L=na.points.Lagna,w=na.lagna_window,f=x=>{const m=Math.round(x*60);return Math.floor(m/60)+'°'+String(m%60).padStart(2,'0')+'′'},
+    dn=x=>Math.floor(x)+'°'+String(Math.floor(x%1*60+1e-9)).padStart(2,'0')+'′',sec=n=>n<90?n+' seconds':Math.round(n/60)+' minutes';
+  box.innerHTML='<h4>What the Nadi amsha is for</h4>'+
+    '<p>Each sign is cut into <b>150 parts of 0°12′</b>. The rising degree moves through one part in about <b>48 seconds</b> of clock time, so the Lagna’s part is the finest check on a birth time. '+
+    'Nadi readers use it to <b>confirm the birth time</b> (does the part’s nature fit the person?) and to <b>tell twins apart</b>, who share every other chart. For planets it changes only once in hours or days, so it says little on its own.</p>'+
+    '<p class="vnlag">Your Lagna is in part <b>'+L.number+'</b> of '+L.sign+' ('+f(L.from)+' to '+f(L.to)+'). Born about <b>'+sec(w.earlier)+' earlier</b> or <b>'+sec(w.later)+' later</b>, it would fall in the next part. '+
+    (Math.min(w.earlier,w.later)<15?'That is close to an edge: if your birth time is not exact to the minute, treat the Lagna’s part as uncertain.':'Unless your birth time could be off by more than that, the part holds.')+'</p>'+
+    '<div class="scroll"><table id="vnadit"></table></div>'+
+    '<p class="hint">Numbered the Chandra Kala Nadi way: movable signs count from the start of the sign, fixed signs from the end, dual signs from the middle (15°). The D150 sign is the part’s number counted on from the sign itself.</p>';
+  table($('vnadit'),['Point','Sign','Degree','Nadi #','Part','D150 sign'],Object.entries(na.points).map(([n,p])=>
+    [n==='Lagna'?'<b>Lagna</b>':n,p.sign,dn(p.deg),'<b>'+p.number+'</b>',f(p.from)+'–'+f(p.to),p.d150_sign]));
+  const r=$('vnadit').querySelector('tbody tr');if(r)r.classList.add('vnhi')}
+
+// ----- Mundane (core/mundane.py): the year's charts for the place you are (else the birthplace) -----
+const MD={year:null,key:null};
+async function loadMundane(year){
+  const loc=MU.here||(lastReq?{lat:lastReq.lat,lon:lastReq.lon,tz_name:lastReq.tz_name}:null);if(!loc)return;
+  const y=year||MD.year||new Date().getFullYear(),key=y+'|'+loc.lat+'|'+loc.lon;if(key===MD.key)return;MD.year=y;MD.key=key;
+  const box=$('mundbody');box.innerHTML='<div class="hint">Casting the year’s charts…</div>';
+  try{const r=await fetch('/mundane?year='+y+'&lat='+loc.lat+'&lon='+loc.lon);const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);
+    const tz=loc.tz_name,dt=iso=>new Date(iso).toLocaleString([],{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',timeZone:tz}),
+      dd=iso=>new Date(iso).toLocaleDateString([],{weekday:'long',day:'numeric',month:'long',timeZone:tz});
+    const byH=c=>{const o={};Object.entries(c.planets).forEach(([n,p])=>{(o[p.house-1]=o[p.house-1]||[]).push({t:ABBR[n],d:Math.floor(p.deg)+'°',p:n,b:p.retrograde&&n!=='Rahu'&&n!=='Ketu'?['R']:[]})});return o};
+    box.innerHTML='<div class="tjstep"><button type="button" class="btn ghost" data-md="-1" aria-label="Previous year">‹</button><div><b>'+d.year+' · '+esc(d.samvatsara)+'</b><small>Vikram Samvat '+d.vikram_samvat+' · for '+esc(hereName())+'</small></div><button type="button" class="btn ghost" data-md="1" aria-label="Next year">›</button></div>'+
+      '<div class="tjcards"><div class="jai"><small>Raja (king of the year)</small><b>'+esc(d.raja)+'</b><p>Lord of the weekday of the New Year, '+dd(d.new_year.pratipada_day)+'.</p></div>'+
+      '<div class="jai"><small>Mantri (minister)</small><b>'+esc(d.mantri)+'</b><p>Lord of the weekday of Mesha Sankranti, '+dt(d.mesha_sankranti.at)+'.</p></div></div>'+
+      '<div class="lk"><div><h4 class="jaih" style="font-size:1rem;margin-top:0">Hindu New Year <small>new moon, '+dt(d.new_year.at)+'</small></h4><div class="chart" id="mdny"></div><p class="hint">Lagna '+esc(d.new_year.lagna.sign)+'</p></div>'+
+      '<div><h4 class="jaih" style="font-size:1rem;margin-top:0">Mesha Sankranti <small>'+dt(d.mesha_sankranti.at)+'</small></h4><div class="chart" id="mdms"></div><p class="hint">Lagna '+esc(d.mesha_sankranti.lagna.sign)+'</p></div></div>'+
+      '<p class="hint">Mundane charts read the year for a country or region, not for one person. Lahiri; cast for the place you are (set it on Today), else your birthplace.</p>';
+    drawNorth($('mdny'),d.new_year.lagna.sign_index,byH(d.new_year));drawNorth($('mdms'),d.mesha_sankranti.lagna.sign_index,byH(d.mesha_sankranti));
+  }catch(e){MD.key=null;box.innerHTML='<p class="err">⚠ '+esc(e.message)+'</p>'}
+}
+$('mundbody').addEventListener('click',e=>{const b=e.target.closest('[data-md]');if(b)loadMundane(MD.year+(+b.dataset.md))});
+
+// ----- Tajika (Varshaphal): the year from one solar return to the next (core/tajika.py) -----
+const TJ={pid:null,years:null,data:null};
+async function loadTajika(years){
+  if(currentId==null){$('tajbody').innerHTML='<p class="hint">Save this chart to see its Varshaphal.</p>';return}
+  if(years===undefined&&TJ.pid===currentId&&TJ.data)return;
+  const box=$('tajbody'),pid=currentId;if(!TJ.data||TJ.pid!==pid)box.innerHTML='<div class="hint">Casting the annual chart…</div>';
+  try{const r=await fetch('/profiles/'+pid+'/tajika'+(years!=null?'?years='+years:''));const d=await r.json();
+    if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);if(pid!==currentId)return;
+    TJ.pid=pid;TJ.years=d.years;TJ.data=d;paintTajika(d)}
+  catch(e){box.innerHTML='<p class="err">⚠ '+esc(e.message)+'</p>'}
+}
+function paintTajika(d){
+  const tz=d.tz,dt=iso=>new Date(iso).toLocaleString([],{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',timeZone:tz}),
+    dd=iso=>new Date(iso).toLocaleDateString([],{day:'numeric',month:'short',year:'numeric',timeZone:tz}),ord=n=>n+muhurat_ord(n),now=Date.now();
+  const yl=d.year_lord,m=d.muntha,P=d.planets;
+  const byH={};Object.values(P).forEach(p=>{(byH[p.house-1]=byH[p.house-1]||[]).push({t:ABBR[p.name],d:Math.floor(p.deg)+'°',p:p.name,
+    b:[p.dignity==='exalted'?'ex':p.dignity==='debilitated'?'db':p.dignity==='own'?'own':null,p.retrograde&&p.name!=='Rahu'&&p.name!=='Ketu'?'R':null].filter(Boolean)})});
+  (byH[m.house-1]=byH[m.house-1]||[]).push({t:'Mu',jp:true});
+  const cur=d.mudda_dasha.find(x=>now>=Date.parse(x.start)&&now<Date.parse(x.end));
+  $('tajbody').innerHTML=
+    '<div class="tjstep"><button type="button" class="btn ghost" data-tj="-1" aria-label="Previous year">‹</button>'+
+      '<div><b>Age '+d.years+' → '+(d.years+1)+'</b><small>'+dd(d.varsha_pravesh)+' – '+dd(d.next)+(d.current?' · this year':'')+'</small></div>'+
+      '<button type="button" class="btn ghost" data-tj="1" aria-label="Next year">›</button>'+(d.current?'':'<button type="button" class="linkbtn" data-tj="0">This year</button>')+'</div>'+
+    '<div class="tjcards">'+
+      '<div class="jai"><small>Year lord (Varshesha)</small><b>'+esc(yl.planet)+'</b><p>'+esc(yl.why)+'</p></div>'+
+      '<div class="jai"><small>Muntha</small><b>'+esc(m.sign)+' · '+ord(m.house)+' house</b><p>Lord '+esc(m.lord)+'. Your birth Lagna moved on one sign for each year of age ('+d.years+').</p></div>'+
+      '<div class="jai"><small>Varsha Pravesh</small><b>'+dt(d.varsha_pravesh)+'</b><p>'+(d.day?'Day':'Night')+' return; annual Lagna '+esc(d.lagna.sign)+' '+d.lagna.deg.toFixed(1)+'°. The Sun back on its birth degree, cast for your birthplace.</p></div>'+
+    '</div>'+
+    '<div class="lk"><div class="chart" id="tjchart"></div><div>'+
+      '<h4 class="jaih" style="font-size:1rem;margin-top:0">Office-bearers (Pancha-adhikari)</h4><div class="scroll"><table id="tjoff"></table></div></div></div>'+
+    '<h4 class="jaih" style="font-size:1rem">Tajika yogas <small>how the planets work together this year</small></h4>'+
+      (d.yogas.length?'<ul class="tjyog">'+d.yogas.map(y=>'<li class="'+(y.good?'ok':'bad')+'"><b>'+esc(y.yoga)+'</b> '+esc(y.text)+'</li>').join('')+'</ul>':'<p class="hint">No Tajika yoga between the seven planets this year.</p>')+
+    '<h4 class="jaih" style="font-size:1rem">Mudda dasha <small>Vimshottari within this year</small></h4><div class="scroll"><table id="tjmd"></table></div>'+
+    '<h4 class="jaih" style="font-size:1rem">Sahams <small>sensitive points for each matter</small></h4><div class="scroll"><table id="tjsah"></table></div>'+
+    '<h4 class="jaih" style="font-size:1rem">Tajika aspects <small>3/11 and 5/9 friendly · 4/10 and 1/7 inimical</small></h4><div class="scroll"><table id="tjasp"></table></div>'+
+    '<p class="hint">Year lord: the strongest office-bearer aspecting the annual Lagna, strength judged by dignity in the annual chart (the full Pancha-vargeeya bala is not used yet). Sahams: A − B + C, reversed for a night return where the rule says so. Eight of the sixteen Tajika yogas are computed. Mu = Muntha.</p>';
+  drawNorth($('tjchart'),d.lagna.sign_index,byH);
+  table($('tjoff'),['Office','Planet','Dignity','Aspects the Lagna'],d.office_bearers.map(b=>[esc(b.office),(b.planet===yl.planet&&b.office===yl.office?'<b>'+b.planet+' ◀ year lord</b>':b.planet),b.dignity,b.aspects_lagna?b.aspect:'—']));
+  table($('tjsah'),['Saham','Shows','Sign','House','Lord'],d.sahams.map(x=>['<b>'+esc(x.name)+'</b>',esc(x.shows),esc(x.sign)+' '+Math.floor(x.deg)+'°',ord(x.house),esc(x.lord)+' <small class="hint">('+esc(x.lord_dignity)+', H'+x.lord_house+')</small>']));
+  table($('tjmd'),['Lord','From','To'],d.mudda_dasha.map(x=>[x===cur?'<b>'+x.lord+' ◀ now</b>':x.lord,dd(x.start),dd(x.end)]));
+  table($('tjasp'),['Planets','Aspect','Nature','Within orbs'],d.aspects.map(a=>[a.a+' – '+a.b,a.kind,a.nature,a.within_orbs?'yes':'no ('+a.off_by+'° off)']));
+}
+$('tajbody').addEventListener('click',e=>{const b=e.target.closest('[data-tj]');if(!b||!TJ.data)return;const k=+b.dataset.tj;
+  loadTajika(k===0?null:Math.max(0,Math.min(120,TJ.years+k)));track('studies/tajika-year')});
+
 // ----- match making -----
 let profiles=[],MATCH_BACK=false;
 // Match making (#match): inside the results area, so the bottom bar stays; Back returns to where you were.
@@ -2733,12 +2870,8 @@ function render(c,req){
   lastReq=req||null;lkLoaded=false;lastChart=c;MU.loaded=false;MU.data=null;MU.sel=0;
   $('trwrap').dataset.pid='';$('kptbody').dataset.pid='';loadVisible();
 
-  const nadiRow=(n,sign,deg)=>{const k=Math.min(150,Math.floor(deg*5+1e-9)+1),a=(k-1)*12,e=k*12,f=x=>Math.floor(x/60)+'° '+String(x%60).padStart(2,'0')+'′';
-    return [n,sign,dms(deg),'<b>'+k+'</b> / 150',f(a)+' – '+f(e)]};
-  table($('nadi'),['Point','Sign','Degree','Nadi #','Nadi range in sign'],
-    [nadiRow('Lagna',l.sign,l.ascendant%30)].concat(Object.entries(c.grahas).map(([n,g])=>nadiRow(n,g.sign,g.degrees_in_sign))));
 
-  KPALT=null;drawKpTables(c);loadBirthExtras(req);paintSlide(c,req);
+  KPALT=null;drawKpTables(c);kpSigTable(c);loadBirthExtras(req);paintSlide(c,req);
 
   $('interpbody').innerHTML=window.interpret(c).map(sec=>'<details class="sec" open><summary><b>'+sec.title+'</b></summary><ul>'+sec.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></details>').join('');
   const secs=(list,openAll)=>list.map(s=>'<details class="sec'+(s.sub?' subsec':'')+(s.past?' past':'')+'"'+(openAll||s.open?' open':'')+'><summary><b>'+s.title+'</b>'+(s.badge?' '+s.badge:'')+'</summary><ul>'+s.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></details>').join('');
@@ -2760,8 +2893,12 @@ function render(c,req){
     '</div><h3 class="jaih">Your Arudha Lagna</h3><ul class="jaial">'+J.al_reading.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+
     '<h3 class="jaih">Chara karakas</h3><div class="scroll"><table id="jaitable"></table></div>'+
     '<h3 class="jaih">Arudhas <small>how the world sees each part of your life</small></h3><div class="scroll"><table id="jaiar"></table></div>'+
+    '<h3 class="jaih">Argala <small>which planets intervene in each house, and who blocks them</small></h3><div class="scroll"><table id="jaiarg"></table></div>'+
     '<p class="hint">Jaimini’s timing, <button type="button" class="lnkyoga" data-goto="chara">Chara Dasha</button>, is just below.</p>';
   if(J){table($('jaitable'),['Karaka','Planet','Degree in sign','Shows'],J.karakas.map(k=>['<b>'+k.short+'</b> '+k.karaka,k.planet,dms(k.degree),esc(k.role)]));
+    table($('jaiarg'),['House','Argala (intervention)','Blocked by'],J.argala.map(h=>['H'+h.house+' <small class="hint">'+esc(h.sign)+'</small>',
+      h.argala.length?h.argala.map(a=>(a.holds?'<b>':'')+a.planets.join(', ')+' from the '+ORD(a.from)+(a.kind==='secondary'?' (secondary)':'')+(a.holds?'</b>':'')).join('<br>'):'—',
+      h.argala.length?h.argala.map(a=>a.obstructing.length?a.obstructing.join(', ')+' in the '+ORD(a.obstructed_from)+(a.holds?' (too weak)':''):'nothing').join('<br>'):'—']));
     table($('jaiar'),['Arudha','Sign','House','Planets there','Shows'],J.arudhas.map(a=>['<b>'+a.short+'</b>',a.sign,'H'+a.in_house,a.planets.join(', ')||'—',esc(a.shows)]))}
   // Chara Dasha, under Jaimini: each period treats its sign as a temporary Lagna (K.N. Rao's counting).
   const Y=c.chara,ym=d=>new Date(d).toLocaleDateString(undefined,{month:'short',year:'numeric'}),
@@ -2782,6 +2919,12 @@ function render(c,req){
     '<div class="hint">Chara Dasha is sign-based: each period treats its sign as a temporary Lagna, and the sub-periods run month by month. Shown for reflection beside Vimshottari; your timing verdicts still come from Vimshottari.</div>';
   if(Y&&Y.current){table($('yogtable'),['Sign','Years','From','To','Your house'],Y.timeline.map(p=>[(p.start===Y.current.start?'<b>'+esc(p.sign)+' ◀ now</b>':esc(p.sign)),p.years,ym(p.start),ym(p.end),'H'+p.house]));
     table($('yogsub'),['Sub-period','From','To'],Y.current_subs.map(x=>[(Y.sub&&x.start===Y.sub.start?'<b>'+esc(x.sign)+' ◀ now</b>':esc(x.sign)),ym(x.start),ym(x.end)]))}
+  // Narayana Dasha (core/chara.py): Jaimini's sign dasha from the stronger of the Lagna and the 7th.
+  const NAR=c.narayana;
+  $('narbody').innerHTML=!NAR?'':'<h3 class="jaih">Narayana Dasha <small>sign periods from '+esc(NAR.start_sign)+' (the stronger of the Lagna and the 7th: here the '+esc(NAR.from)+')</small></h3>'+
+    '<div class="scroll"><table id="nartable"></table></div><div class="hint">Shown beside Chara Dasha for reflection; your timing verdicts still come from Vimshottari.</div>';
+  if(NAR){const nw=Date.now();table($('nartable'),['Sign','House','Years','From','To','Planets there'],NAR.periods.slice(0,12).map(p=>{const on=nw>=Date.parse(p.start)&&nw<Date.parse(p.end);
+    return [(on?'<b>':'')+esc(p.sign)+(on?' ◀ now</b>':''),'H'+p.house,p.years,ym(p.start),ym(p.end),p.planets.join(', ')||'—']}))}
   // Yogini Dasha, a Vedic (Parashari) dasha shown under Vimshottari in Timing › Now & next: eight Yoginis in a
   // 36-year cycle from the birth nakshatra. Hidden when it can't be worked out.
   const YG8=c.yogini;
@@ -2862,12 +3005,14 @@ function render(c,req){
       if(fromMoon&&vl!=null){const h=(vl-first+12)%12;(vByH[h]=vByH[h]||[]).push({t:'Asc',jp:true})}}
     $('vtitle').textContent=k+(VNAME[k]?' · '+VNAME[k]:'')+(first==null?'':fromMoon?' · from the Moon ('+SIGNS[first]+')':' · '+SIGNS[vl]+' ascendant');
     if(first==null)$('vchart').innerHTML='';else drawNorth($('vchart'),first,vByH,null,fromMoon?'MOON':null);
-    table($('vtable'),['Planet','Sign','House'],Object.entries(c.vargas[k]).map(([p,v])=>[p,v.sign||SIGNS[v.sign_index],first==null?'—':'H'+((v.sign_index-first+12)%12+1)]))};
+    table($('vtable'),['Planet','Sign','House'],Object.entries(c.vargas[k]).map(([p,v])=>[p,v.sign||SIGNS[v.sign_index],first==null?'—':'H'+((v.sign_index-first+12)%12+1)]));
+    nadiAmsha(c,k==='D150')};
   $('vfrom').onclick=e=>{const b=e.target.closest('[data-f]');if(!b||b.dataset.f===VFROM)return;VFROM=b.dataset.f;
     if(VFROM==='moon')track('vargas/moon');if(vSel)drawVarga()};
   Object.keys(c.vargas).forEach((k,i)=>{const b=document.createElement('button');b.type='button';b.textContent=k;
     b.onclick=()=>{[...vt.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');vSel=k;drawVarga()};
     vt.appendChild(b); if(i===0)b.click()});
+  pickVarga();
 }
 loadList().then(l=>{if(l.length)loadProfile(startChart(l).id);else route()});
 // Admins reach the admin page from the chart menu (kept out of the header to leave room for the name).

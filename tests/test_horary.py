@@ -56,3 +56,10 @@ def test_finder_endpoint():
     assert c.post("/muhurat/find", json=body).json()["activity"]["key"] == "marriage"
     assert c.post("/muhurat/find", json={**body, "days": 400}).status_code == 422
     assert c.post("/muhurat/find", json={**body, "activity": "nope"}).status_code == 422
+
+
+def test_judgement_returns_the_chart_to_draw():
+    r = horary.judge(123, "marriage", datetime(2026, 10, 8, 9, 0, tzinfo=timezone.utc), **CHD)
+    ch = r["chart"]
+    assert 0 <= ch["lagna_sign"] < 12 and set(ch["planets"]) >= {"Sun", "Moon", "Rahu", "Ketu"}
+    assert all(0 <= p["sign_index"] < 12 and 0 <= p["deg"] < 30 for p in ch["planets"].values())
