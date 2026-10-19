@@ -58,7 +58,21 @@
       ...['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu'].filter(p => r.transit[p]).map(p => [p + (r.transit[p].retrograde && p !== 'Rahu' ? ' ℞' : ''), r.transit[p]]), ['Maandi', r.maandi]];
     return `<p class="jkh">Positions</p><table class="jktab pos"><colgroup><col><col><col></colgroup><thead><tr><th>Point</th><th>Longitude</th><th>Star</th></tr></thead><tbody>${
       rows.map(([n, x]) => `<tr><td>${esc(n)}</td><td class="n">${dms(x.lon)}</td><td>${esc(x.star)}</td></tr>`).join('')}</tbody></table>
-      <p class="jkh">Prashna confirmation</p><table class="jktab cf"><colgroup><col><col></colgroup><tbody>${r.confirmation.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</tbody></table>`;
+      <p class="jkh">Prashna confirmation</p><table class="jktab cf"><colgroup><col><col></colgroup><tbody>${r.confirmation.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</tbody></table>
+      ${jkRays(r)}`;
+  }
+  // Ray powers (as Divya Chakshu): each jama planet's rays, and the grid of rays × signs from each inner planet to it.
+  // The planet's own cell (the Snake's is Rahu's) is marked.
+  const INNER = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu'];
+  function jkRays(r) {
+    if (!r.ray_matrix || !r.rays) return '';  // casts saved before the grid existed
+    const own = (j, i) => j === i || (j === 'Snake' && i === 'Rahu');
+    return `<p class="jkh">Ray powers</p>
+      <div class="jkrays">${Object.entries(r.rays).map(([p, v]) => `<span><small>${esc(p === 'Rahu' ? 'Rahu/Ketu' : p)}</small><b>${v}</b></span>`).join('')}</div>
+      ${r.sign_rays ? `<div class="jkrays">${Object.entries(r.sign_rays).map(([s, v]) => `<span><small>${esc(s)}</small><b>${v}</b></span>`).join('')}</div>` : ''}
+      <div class="scroll"><table class="jktab rays"><thead><tr><th></th>${INNER.map(i => `<th>${AB[i]}</th>`).join('')}</tr></thead><tbody>${
+        r.ray_matrix.map(row => `<tr><th>${esc(row.jama)}</th>${INNER.map(i => `<td class="n${own(row.jama, i) ? ' own' : ''}">${row.cells[i]}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <p class="jkn">Rays × signs counted from the inner planet (column) to the jama planet (row), both included.</p>`;
   }
 
   async function post(url, body) {

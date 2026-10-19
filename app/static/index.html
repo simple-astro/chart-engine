@@ -492,6 +492,11 @@
   .jktab.pos td.n{font-size:.74rem} .jktab td,.jktab th{white-space:normal} .jktab td,.jktab th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
   .jktab th{font-size:.68rem;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);font-weight:600} .jktab td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
   .jktab.cf td:last-child{font-weight:600}
+  .jkrays{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px} .jkrays span{display:flex;flex-direction:column;align-items:center;min-width:52px;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg2)}
+  .jkrays small{font-size:.66rem;color:var(--mut)} .jkrays b{font-variant-numeric:tabular-nums}
+  #gprashna>*,#gtools>*{min-width:0} .tool .scroll{max-width:100%;overflow-x:auto}  /* wide tables scroll inside their card */
+  .jktab.rays{table-layout:auto;min-width:420px} .jktab.rays th,.jktab.rays td{text-align:center;padding:4px 3px} .jktab.rays tbody th{text-align:left;text-transform:none;letter-spacing:0;font-size:.76rem;color:var(--ink)}
+  .jktab.rays td.own{background:color-mix(in srgb,var(--ok) 22%,transparent);font-weight:700}
   .jkn{font-size:.78rem;color:var(--mut);text-align:center;margin:4px 0 0}
   .hq-row #jk-place,.hq-row #hq-place{font-size:1rem;font-weight:400;text-align:left;letter-spacing:0;min-width:0}
   .jkc{border:1px solid var(--line);border-radius:8px;padding:4px 5px;background:var(--bg2);display:flex;flex-direction:column;gap:1px;min-width:0;font-size:.74rem;line-height:1.25}
@@ -2509,11 +2514,13 @@ function accLadder(a){return '<div class="acclad">'+a.levels.map((n,i)=>'<span c
 function accNext(a,wrap){const n=a.next;return n?'<div class="accnext"><b>Next step: '+esc(n.title)+'</b><p>'+esc(n.text)+'</p><button type="button" class="btn" data-acc="'+n.action+'">'+({event:'Add an event',rect:'Run it',time:'Add birth time'})[n.action]+'</button>'+(wrap||'')+'</div>':'<p class="accok">All steps done. Add an event now and then to keep it Strong.</p>'}
 window.accCard=a=>'<div class="acccard"><h4>How well we know your chart</h4>'+accLadder(a)+'<p class="hint">'+esc(a.why)+'</p><ul class="accck">'+a.checks.map(c=>'<li class="'+(c.ok?'ok':'')+'"><i>'+(c.ok?'✓':'○')+'</i>'+esc(c.text)+'</li>').join('')+'</ul>'+accNext(a)+
   '<details class="accrules"><summary>How we work this out</summary><p><b>Rough</b>: fewer than 3 events, or birth time not known. <b>Fair</b>: 3 or more events with the month. <b>Good</b>: 6 or more events in 2 or more Dasha periods, fitting better than chance. <b>Strong</b>: 8 or more events in 2 or more periods, well above chance, and the birth time rectified.</p><p class="hint">It never claims more than your events show. A level is about how well we can check your chart, not a grade of your chart.</p></details></div>';
+// The Today nudge ("One step to a more accurate chart") is switched off for now; the accuracy badge stays.
+const ACC_NUDGE=false;
 async function loadAccuracy(pid){const n=$('gacc');n.hidden=true;ACC=null;if(pid==null)return;
   try{const r=await fetch('/profiles/'+pid+'/accuracy');if(!r.ok||pid!==currentId)return;ACC=await r.json()}catch(e){return}
   const b=$('accbadge');if(b){b.textContent=ACC.label+' ›';b.className='accbadge l'+ACC.level}
   let snooze=0;try{snooze=+localStorage.getItem('sj-acc-snooze-'+pid)||0}catch(e){}
-  if(ACC.next&&Date.now()>snooze){n.innerHTML='<p>🎯 <b>One step to a more accurate chart:</b> '+esc(ACC.next.title.charAt(0).toLowerCase()+ACC.next.title.slice(1))+'. '+
+  if(ACC_NUDGE&&ACC.next&&Date.now()>snooze){n.innerHTML='<p>🎯 <b>One step to a more accurate chart:</b> '+esc(ACC.next.title.charAt(0).toLowerCase()+ACC.next.title.slice(1))+'. '+
     '<button type="button" class="linkbtn" data-acc="'+ACC.next.action+'">'+({event:'Add it',rect:'Run it',time:'Add it'})[ACC.next.action]+' →</button> <button type="button" class="linkbtn accnot" data-acc="snooze">Not now</button></p>';n.hidden=false}}
 function accGo(action){
   if(action==='snooze'){try{localStorage.setItem('sj-acc-snooze-'+currentId,String(Date.now()+7*864e5))}catch(e){}$('gacc').hidden=true;return}

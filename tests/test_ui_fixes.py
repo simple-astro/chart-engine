@@ -144,3 +144,7 @@ def test_prashna_is_a_main_tab():
     assert 'id="gprashna"' in _between(INDEX, '<div class="scr" id="s-prashna"', "</div>\n")
     assert 'data-branch="prashna"' not in INDEX and "prashna:'Prashna'};" not in INDEX  # gone from Charts
     assert "['prashna','kpq','jamakkol'].includes(sub)" in INDEX  # old #chart/prashna links still open it
+
+
+def test_accuracy_nudge_is_off_for_now():
+    assert "const ACC_NUDGE=false;" in INDEX and "if(ACC_NUDGE&&ACC.next" in INDEX

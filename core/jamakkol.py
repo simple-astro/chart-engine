@@ -15,12 +15,14 @@ Three points and eight "jama" planets are worked out from the clock, the Sun and
   the weekday's lord stands at the very end of Pisces. Each is in the sign of its degree.
 - Maandi: the degree rising on the eastern horizon when Maandi rises, the classical (Prashna Marga) way. Each day
   and night is split into 30 ghatis; Maandi rises a set number of ghatis after sunrise (by day) or sunset (by
-  night) for each weekday. This is what Divya Chakshu shows (checked within about 1° at Bhopal, Saturday night
-  01:46); the quicker "Sun + 12° + 24° per part" shortcut some websites use can land a sign early. Shown as a point
-  to take care around, never read for death.
-Reckoning follows Divya Chakshu, checked to the arc-second at Bhopal, 19 Oct 2026 09:34 IST: Lahiri ayanamsha,
-the true node for Rahu and Ketu, and Hindu sunrise and sunset (the centre of the Sun's disc on the horizon, no
-refraction) for the day and night. The rest of the app keeps its own settings (KP ayanamsha, apparent sunrise).
+  night) for each weekday, counted on the Hindu sunrise and sunset with the Lahiri ascendant (the reference
+  calculator, 0.3′); the quicker "Sun + 12° + 24° per part" shortcut some websites use can land a sign early. Shown
+  as a point to take care around, never read for death.
+Reckoning follows the owner's reference calculator ("Jamakkol Horary": Lahiri, Hindu sunrise, mean node), checked
+at Winnipeg, 19 Oct 2026 10:09:23 CDT to under 1′ for every point: Lahiri ayanamsha, the mean node for Rahu, and
+Hindu sunrise and sunset (the centre of the Sun's disc on the horizon, no refraction) for the day, the night and
+Maandi. Divya Chakshu agrees on everything except its true node and its Maandi. The rest of the app keeps its own
+settings (KP ayanamsha, apparent sunrise).
 The transit planets (the inner planets) are the real sky at that moment; they decide strength. The reading rules
 below are deterministic: they never invent a fact, and the AI only explains what they found.
 """
@@ -36,13 +38,13 @@ from core.dignity import dignity
 from core.ephemeris import julian_day
 from core.grahas import compute_grahas
 from core.houses import compute_houses
-from core.panchang import _jd_to_utc, compute_panchang
+from core.panchang import _jd_to_utc
 
 JAMA = ["Sun", "Mars", "Jupiter", "Mercury", "Venus", "Saturn", "Moon", "Snake"]
 WEEKDAY_LORD = ["Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Sun"]  # Python weekday 0 = Monday
 JAMAM_MINUTES = 90
 AYANAMSHA = "lahiri"
-NODE = "true"
+NODE = "mean"
 
 # The Sun's sign gives the veedhi used for Kavippu.
 VEEDHI = {11: 1, 0: 1, 5: 1, 6: 1, 1: 0, 2: 0, 3: 0, 4: 0, 7: 2, 8: 2, 9: 2, 10: 2}
@@ -54,6 +56,13 @@ PLANET_RISE = {"Mercury": "head", "Jupiter": "head", "Venus": "head", "Rahu": "h
                "Sun": "back", "Mars": "back", "Saturn": "back", "Moon": "both"}
 MAANDI_GHATI_DAY = {0: 26, 1: 22, 2: 18, 3: 14, 4: 10, 5: 6, 6: 2}   # Vedic weekday (Sunday = 0) -> ghatis of 30
 MAANDI_GHATI_NIGHT = {0: 10, 1: 6, 2: 2, 3: 26, 4: 22, 5: 18, 6: 14}
+# Planetary rays (kiranas), as Divya Chakshu's "Ray Powers". Timing: days = rays × signs from the Udayam to the
+# planet's jama position, doubled in the inner planet's own sign, tripled when exalted, halved when it is debilitated,
+# retrograde or with the Kavippu (the owner's teaching). The Snake has its own ray; Rahu (inner) has 4.
+RAYS = {"Sun": 5, "Moon": 21, "Mars": 8, "Mercury": 16, "Jupiter": 10, "Venus": 20, "Saturn": 4, "Snake": 6, "Rahu": 4}
+INNER = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu"]
+# Sign rays (Divya Chakshu's second "Ray Powers" row), Aries first. Shown for the astrologer; no rule uses them yet.
+SIGN_RAYS = [8, 8, 5, 3, 8, 11, 2, 4, 6, 8, 8, 27]
 MOOLATRIKONA = {"Sun": 4, "Moon": 1, "Mars": 0, "Mercury": 5, "Jupiter": 8, "Venus": 6, "Saturn": 10}
 STRENGTH = {"exalted": 4, "moolatrikona": 3, "own": 2, "debilitated": 0}  # anything else 1
 CHALDEAN = ["Saturn", "Jupiter", "Mars", "Sun", "Venus", "Mercury", "Moon"]
@@ -123,18 +132,6 @@ def _sun(dt: datetime) -> float:
     return compute_grahas(julian_day(dt), AYANAMSHA)["Sun"].longitude
 
 
-def _apparent_bounds(when: datetime, lat: float, lon: float, tz: str) -> tuple[datetime, datetime]:
-    """The day or night running at ``when`` by the apparent sunrise and sunset (as the panchang): Maandi uses these
-    and the KP ascendant, which is what matches Divya Chakshu (0.2′ at Bhopal, 19 Oct 2026 09:34 IST)."""
-    local = when.astimezone(ZoneInfo(tz)).date()
-    today = compute_panchang(local, lat, lon, tz)
-    if today.sunrise <= when < today.sunset:
-        return today.sunrise, today.sunset
-    if when >= today.sunset:
-        return today.sunset, compute_panchang(local + timedelta(days=1), lat, lon, tz).sunrise
-    return compute_panchang(local - timedelta(days=1), lat, lon, tz).sunset, today.sunrise
-
-
 def _day_bounds(when: datetime, lat: float, lon: float, tz: str) -> tuple[str, datetime, datetime, float]:
     """("day"|"night", start, end, the Sun's sidereal degree at the start) for the moment ``when``."""
     local = when.astimezone(ZoneInfo(tz)).date()
@@ -190,9 +187,8 @@ def cast(when: datetime, lat: float, lon: float, tz: str) -> dict:
     hora_i = min(11, int(frac * 12)) + (12 if period == "night" else 0)
     vedic_wd = (start.astimezone(ZoneInfo(tz)).weekday() + 1) % 7  # the day (or night) began at this sunrise/sunset
     ghati = (MAANDI_GHATI_DAY if period == "day" else MAANDI_GHATI_NIGHT)[vedic_wd]
-    a_start, a_end = _apparent_bounds(when, lat, lon, tz)
-    rises = a_start + (a_end - a_start) * ghati / 30
-    maandi = {**_point(compute_houses(julian_day(rises), lat, lon, "krishnamurti").ascendant),
+    rises = start + (end - start) * ghati / 30
+    maandi = {**_point(compute_houses(julian_day(rises), lat, lon, AYANAMSHA).ascendant),
               "rises": rises.astimezone(ZoneInfo(tz)).strftime("%H:%M")}
     hora = CHALDEAN[(CHALDEAN.index(DAY_LORD[vedic_wd]) + hora_i) % 7]
     return {"asked_at": when.isoformat(), "place": {"lat": lat, "lon": lon, "tz_name": tz}, "period": period,
@@ -224,6 +220,7 @@ def confirmation(chart: dict) -> list[list[str]]:
     dig = lambda p, si: dignity(p, si)
     names = lambda xs: ", ".join(xs) if xs else "–"
     tl = C.SIGN_LORDS[(U["sign_index"] + 9) % 12]
+    tc = tenth_lord_connections(chart)
     # The Kavippu moves backwards and catches the first jama planet below it (Divya Chakshu: "Chatra catching").
     behind = {p: (K["lon"] - x["lon"]) % 360 for p, x in jama.items() if (K["lon"] - x["lon"]) % 360 > 1e-6}
     js = {p: x["sign_index"] for p, x in jama.items() if p in seven}
@@ -241,8 +238,9 @@ def confirmation(chart: dict) -> list[list[str]]:
         ["Debilitated jama planets", names([p for p in seven if dig(p, jama[p]["sign_index"]) == "debilitated"])],
         ["Same sign, inner and jama", names([p for p in seven if jama[p]["sign_index"] == sky[p]["sign_index"]]
                                           + (["Snake"] if jama["Snake"]["sign_index"] == sky["Rahu"]["sign_index"] else []))],
-        ["10th lord from the Udayam", f"{tl}: inner in house {_house(U['sign_index'], sky[tl]['sign_index'])}, "
-                                      f"jama in house {_house(U['sign_index'], jama[tl]['sign_index'])}"],
+        ["10th lord bhava connections", f"{' '.join(map(str, tc['houses']))} ({tl}: jama in house {tc['house']}; "
+                                        f"its star lord {tc['star_lord']} "
+                                        + (f"rules {' and '.join(map(str, tc['ruled']))})" if tc["ruled"] else "rules no sign)")],
         ["Exchanges among inner planets", names(_exchanges(ss, ss, True))],
         ["Exchanges among jama planets", names(_exchanges(js, js, True))],
         ["Exchanges, inner with jama", names(_exchanges(ss, js, False))],
@@ -264,6 +262,97 @@ def _strength(planet: str, transit: dict) -> str:
     return transit["Rahu" if planet == "Snake" else planet]["dignity"]
 
 
+def _root(planet: str, transit: dict) -> dict:
+    """The inner planet behind a jama planet (the Snake's root is Rahu)."""
+    return transit["Rahu" if planet == "Snake" else planet]
+
+
+def _rooted(planet: str, transit: dict, k_sign: int) -> bool:
+    """Inner planets are the root, jama planets the branch: a jama planet counts only if its inner planet is not
+    debilitated and not with the Kavippu."""
+    r = _root(planet, transit)
+    return r["dignity"] != "debilitated" and r["sign_index"] != k_sign
+
+
+def ray_timing(chart: dict, karakas: list[str]) -> dict:
+    """Days until the event: the rays of the planet that matters × signs from its jama position to the Udayam.
+    The planet is the question's first significator with a known ray, else the Moon. Rays double in the inner
+    planet's own sign, triple when it is exalted, and halve when it is debilitated, retrograde or with the Kavippu."""
+    U, K = chart["udayam"]["sign_index"], chart["kavippu"]["sign_index"]
+    jama, transit = chart["jama"]["planets"], chart["transit"]
+    planet = next((p for p in karakas if p in RAYS), "Moon")
+    inner = _root(planet, transit)
+    rays, why = float(RAYS[planet]), [f"{planet}'s rays {RAYS[planet]}"]
+    if inner["dignity"] == "exalted":
+        rays, why = rays * 3, why + ["× 3 (exalted)"]
+    elif inner["dignity"] in ("own", "moolatrikona"):
+        rays, why = rays * 2, why + ["× 2 (own sign)"]
+    for cut, reason in ((inner["dignity"] == "debilitated", "debilitated"), (inner.get("retrograde") and planet != "Rahu", "retrograde"),
+                        (K in (inner["sign_index"], jama[planet]["sign_index"]), "with the Kavippu")):
+        if cut:
+            rays, why = rays / 2, why + [f"÷ 2 ({reason})"]
+    count = (jama[planet]["sign_index"] - U) % 12 + 1
+    days = round(rays * count)
+    note = "" if planet in karakas else " (the Moon, as this question has no significator)"
+    return {"days": days, "planet": planet,
+            "text": f"Roughly {days} days: {' '.join(why)} = {rays:g} rays, × {count} signs from the jama {planet} to the "
+                    f"Udayam{note}. Treat it as a window, not a date."}
+
+
+def tenth_lord_connections(chart: dict) -> dict:
+    """Divya Chakshu's "10th Lord bhava connections": the house (from the Udayam) of the jama 10th lord, then the
+    houses ruled by that jama planet's star lord, in zodiac order (checked on four casts: Bhopal 09:34 and 09:58,
+    New Delhi 10:10, Chandigarh 21:43 on 19 Oct 2026: "3 1 2", "3 12 3", "2 12 3", "3 1 2")."""
+    U = chart["udayam"]["sign_index"]
+    lord = C.SIGN_LORDS[(U + 9) % 12]
+    j = chart["jama"]["planets"][lord]
+    star_lord = C.NAKSHATRA_LORDS[int(j["lon"] // C.NAKSHATRA_ARC) % 27]
+    ruled = [_house(U, s) for s in range(12) if C.SIGN_LORDS[s] == star_lord]  # none for Rahu and Ketu
+    return {"lord": lord, "house": _house(U, j["sign_index"]), "star_lord": star_lord, "ruled": ruled,
+            "houses": [_house(U, j["sign_index"])] + ruled}
+
+
+def ray_matrix(chart: dict) -> list[dict]:
+    """Divya Chakshu's "Ray Powers" grid: for each jama planet (row) and inner planet (column), the jama planet's
+    rays × the signs counted from the inner planet to the jama planet, both ends included. Plain rays, no multipliers
+    (checked cell by cell against Divya Chakshu at Bhopal, 19 Oct 2026 09:58 IST)."""
+    jama, transit = chart["jama"]["planets"], chart["transit"]
+    return [{"jama": j, "rays": RAYS[j],
+             "cells": {i: RAYS[j] * ((jama[j]["sign_index"] - transit[i]["sign_index"]) % 12 + 1) for i in INNER}}
+            for j in ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Snake"]]  # Divya Chakshu's row order
+
+
+def lord_links(chart: dict) -> list[dict]:
+    """How the 10th lord (the base of the question) and the 11th lord (gains) connect with the Udayam: sitting in it,
+    a jama planet approaching it, opposite it (7th aspect), or an exchange of signs with the Udayam lord.
+    Each link says which layer it comes from; jama links count only when rooted."""
+    U, K = chart["udayam"]["sign_index"], chart["kavippu"]["sign_index"]
+    jama, transit = chart["jama"]["planets"], chart["transit"]
+    ahead = {p: (x["lon"] - chart["udayam"]["lon"]) % 360 for p, x in jama.items()}
+    approaching = min(ahead, key=ahead.get)
+    ul = C.SIGN_LORDS[U]
+    out = []
+    for h, role in ((10, "10th lord (the base of the question)"), (11, "11th lord (gains)")):
+        lord = C.SIGN_LORDS[(U + h - 1) % 12]
+        inner, outer = transit[lord], jama[lord]
+        if lord == ul:
+            continue  # the Udayam lord ruling the 10th or 11th too is read through the Udayam lord rules
+        how = []
+        if inner["sign_index"] == U:
+            swap = transit[ul]["sign_index"] == (U + h - 1) % 12  # parivartana: the Udayam lord sits in the 10th/11th
+            how.append(("inner", f"sits in the Udayam{f' and exchanges signs with the Udayam lord {ul}' if swap else ''}"))
+        elif _house(U, inner["sign_index"]) == 7:
+            how.append(("inner", "aspects the Udayam from the 7th"))
+        if outer["sign_index"] == U and _rooted(lord, transit, K):
+            how.append(("jama", "its jama planet is in the Udayam"))
+        if approaching == lord and _rooted(lord, transit, K):
+            how.append(("jama", "its jama planet is approaching the Udayam"))
+        weak = inner["dignity"] == "debilitated"  # zero rays: a debilitated lord cannot deliver through the link
+        for layer, text in how:
+            out.append({"house": h, "lord": lord, "layer": layer, "weak": weak, "text": f"The {role} {lord} {text}."})
+    return out
+
+
 def read(chart: dict, kind: str) -> dict:
     """Rule-based reading of a Jamakkol chart for one kind of question."""
     if kind not in QUESTIONS:
@@ -273,8 +362,10 @@ def read(chart: dict, kind: str) -> dict:
     jama, transit = chart["jama"]["planets"], chart["transit"]
     a_house, k_house = _house(U, A), _house(U, K)
     lord = C.SIGN_LORDS[U]
-    in_udayam = [p for p, x in jama.items() if x["sign_index"] == U] + \
-                [p for p, x in transit.items() if x["sign_index"] == U]
+    K0 = chart["kavippu"]["sign_index"]
+    jama_in_u = [p for p, x in jama.items() if x["sign_index"] == U]
+    unrooted = [p for p in jama_in_u if not _rooted(p, transit, K0)]
+    in_udayam = [p for p in jama_in_u if p not in unrooted] + [p for p, x in transit.items() if x["sign_index"] == U]
     ahead = {p: (x["lon"] - chart["udayam"]["lon"]) % 360 for p, x in jama.items()}
     approaching = min(ahead, key=ahead.get)
     crossed = max(ahead, key=ahead.get)  # the one just behind (largest gap ahead = smallest gap behind)
@@ -314,10 +405,19 @@ def read(chart: dict, kind: str) -> dict:
         neg.append(f"The Udayam lord {lord} is retrograde: effort may not convert easily.")
     if _house(U, ld["sign_index"]) in (10, 11):
         pos.append(f"The Udayam lord {lord} is in house {_house(U, ld['sign_index'])} from the Udayam: success.")
-    eleventh = C.SIGN_LORDS[(U + 10) % 12]
-    if approaching == eleventh:
-        pos.append(f"{eleventh}, lord of the 11th (gains), is approaching the Udayam.")
-    if approaching == "Moon":
+    # The 10th lord is the base of the question; the 11th lord brings the gain. Either one linked to the Udayam
+    # (in it, its rooted jama planet in or approaching it, opposite it, or exchanging with the Udayam lord): success.
+    links = lord_links(chart)
+    for x in links:
+        if x["weak"]:
+            neg.append(x["text"].rstrip(".") + ", but it is debilitated: it cannot deliver.")
+        else:
+            pos.append(x["text"].rstrip(".") + ": success.")
+    for p in unrooted:
+        neg.append(f"The jama {p} is in the Udayam, but its inner planet is "
+                   f"{'debilitated' if _root(p, transit)['dignity'] == 'debilitated' else 'with the Kavippu'}: "
+                   "the branch has no root, so it does not count.")
+    if approaching == "Moon" and _rooted("Moon", transit, K0):
         pos.append("The Moon is approaching the Udayam: things can move quickly.")
     if approaching in ("Saturn", "Snake"):
         neg.append(f"{'Saturn' if approaching == 'Saturn' else 'The Snake'} is approaching the Udayam: it will take time.")
@@ -370,19 +470,20 @@ def read(chart: dict, kind: str) -> dict:
         verdict, label = "no", "Unlikely for now"
 
     timing = None
-    moon = jama["Moon"]["sign_index"]
-    rays = {"exalted": 63, "debilitated": 0}.get(transit["Moon"]["dignity"], 21)
-    if verdict in ("yes", "likely") and rays:
-        count = (moon - U) % 12 + 1
-        timing = {"days": rays * count, "text": f"Roughly {rays * count} days: the Moon's rays ({rays}) × {count} signs "
-                                                 "from the jama Moon to the Udayam. Treat it as a window, not a date."}
+    if verdict in ("yes", "likely"):
+        timing = ray_timing(chart, karakas)
     # The 10th from the Udayam (ucchiyal sindanai): where its lord sits confirms what the question is about.
     tenth = (U + 9) % 12
     tlord = C.SIGN_LORDS[tenth]
-    th = _house(U, transit[tlord]["sign_index"])
     in_tenth = list(dict.fromkeys([p for p, x in jama.items() if x["sign_index"] == tenth] +
                                   [p for p, x in transit.items() if x["sign_index"] == tenth]))
-    confirm = [f"The 10th lord {tlord} sits in house {th} from the Udayam: the question is tied to {HOUSE_ABOUT[th]}."]
+    tc = tenth_lord_connections(chart)
+    topics = list(dict.fromkeys(HOUSE_ABOUT[h] for h in tc["houses"]))
+    confirm = [f"The 10th lord {tlord} is the base of the question: its jama planet is in house {tc['house']}"
+               + (f" and its star lord {tc['star_lord']} rules house{'s' if len(tc['ruled']) > 1 else ''} "
+                  f"{' and '.join(map(str, tc['ruled']))}" if tc["ruled"] else "")
+               + f" (bhava connections {' '.join(map(str, tc['houses']))}): the question is tied to "
+               + (topics[0] if len(topics) == 1 else ", ".join(topics[:-1]) + " and " + topics[-1]) + "."]
     if in_tenth:
         confirm.append(f"In the 10th from the Udayam: {', '.join(in_tenth)}, which confirms the topic.")
     # The Kavippu in general: the area of life it holds back, and the planets whose matters it blocks.
@@ -426,7 +527,8 @@ def read(chart: dict, kind: str) -> dict:
 
 def jamakkol(kind: str, when: datetime, lat: float, lon: float, tz: str) -> dict:
     chart = cast(when, lat, lon, tz)
-    return {**chart, "confirmation": confirmation(chart), "reading": read(chart, kind)}
+    return {**chart, "confirmation": confirmation(chart), "reading": read(chart, kind), "ray_matrix": ray_matrix(chart),
+            "rays": RAYS, "sign_rays": dict(zip(C.SIGNS, SIGN_RAYS))}
 
 
 def kinds() -> list[dict]:
