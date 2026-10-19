@@ -10,7 +10,7 @@
   // Jamakkol chart: South Indian layout (signs fixed), index = sign 0..11 → [row, col]
   const SOUTH = { 11: [0, 0], 0: [0, 1], 1: [0, 2], 2: [0, 3], 10: [1, 0], 3: [1, 3], 9: [2, 0], 4: [2, 3], 8: [3, 0], 7: [3, 1], 6: [3, 2], 5: [3, 3] };
   const SHORT = ['Ari', 'Tau', 'Gem', 'Can', 'Leo', 'Vir', 'Lib', 'Sco', 'Sag', 'Cap', 'Aqu', 'Pis'];
-  const AB = { Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke', Paambu: 'Pb' };
+  const AB = { Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke', Snake: 'Sn', Paambu: 'Sn' };  // Paambu: questions saved before the rename
   const jkStyle = () => { try { return localStorage.getItem('sj_jk_style') || 'south'; } catch (e) { return 'south'; } };
   const herePlace = () => { try { const h = JSON.parse(localStorage.getItem('sj_here') || 'null'); return h && isFinite(h.lat) && h.tz_name ? h : null; } catch (e) { return null; } };
   // Jamakkol chart in the Jamakkol programs' layout: jama planets on an outer ring around the signs, sky planets

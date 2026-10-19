@@ -8,9 +8,9 @@ Three points and eight "jama" planets are worked out from the clock, the Sun and
 - Arudam (the intention behind the question): from the minute hand only. Each 5 minutes is one sign from Aries.
 - Kavippu (the hidden obstacle, also called Chatra): the Sun's sign gives a veedhi (Taurus, Aries or Gemini). Count
   from the Arudam to the veedhi, and the same count from the Udayam gives the Kavippu's sign; its degree mirrors the
-  Arudam's (30° minus the Arudam's degree), as three Jamakkol programs show. It moves backwards: the first planet
-  below it is the one it is "catching".
-- Jama planets (the outer planets): Sun, Mars, Jupiter, Mercury, Venus, Saturn, Moon and Paambu (the snake), 45°
+  Arudam's (30° minus the Arudam's degree), as three Jamakkol programs show. It moves backwards: the first jama
+  planet below it is the one it is "catching".
+- Jama planets (the outer planets): Sun, Mars, Jupiter, Mercury, Venus, Saturn, Moon and the Snake (Paambu), 45°
   apart in that order. They turn backwards through the zodiac at 45° per jamam of 1½ hours. At 6:00 on the clock
   the weekday's lord stands at the very end of Pisces. Each is in the sign of its degree.
 - Maandi: the degree rising on the eastern horizon when Maandi rises, the classical (Prashna Marga) way. Each day
@@ -18,6 +18,9 @@ Three points and eight "jama" planets are worked out from the clock, the Sun and
   night) for each weekday. This is what Divya Chakshu shows (checked within about 1° at Bhopal, Saturday night
   01:46); the quicker "Sun + 12° + 24° per part" shortcut some websites use can land a sign early. Shown as a point
   to take care around, never read for death.
+Reckoning follows Divya Chakshu, checked to the arc-second at Bhopal, 19 Oct 2026 09:34 IST: Lahiri ayanamsha,
+the true node for Rahu and Ketu, and Hindu sunrise and sunset (the centre of the Sun's disc on the horizon, no
+refraction) for the day and night. The rest of the app keeps its own settings (KP ayanamsha, apparent sunrise).
 The transit planets (the inner planets) are the real sky at that moment; they decide strength. The reading rules
 below are deterministic: they never invent a fact, and the AI only explains what they found.
 """
@@ -26,17 +29,20 @@ from __future__ import annotations
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
+import swisseph as swe
+
 from core import constants as C
 from core.dignity import dignity
 from core.ephemeris import julian_day
 from core.grahas import compute_grahas
 from core.houses import compute_houses
-from core.panchang import _sidereal_sun_moon, compute_panchang
+from core.panchang import _jd_to_utc, compute_panchang
 
-JAMA = ["Sun", "Mars", "Jupiter", "Mercury", "Venus", "Saturn", "Moon", "Paambu"]
+JAMA = ["Sun", "Mars", "Jupiter", "Mercury", "Venus", "Saturn", "Moon", "Snake"]
 WEEKDAY_LORD = ["Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Sun"]  # Python weekday 0 = Monday
 JAMAM_MINUTES = 90
-AYANAMSHA = "krishnamurti"
+AYANAMSHA = "lahiri"
+NODE = "true"
 
 # The Sun's sign gives the veedhi used for Kavippu.
 VEEDHI = {11: 1, 0: 1, 5: 1, 6: 1, 1: 0, 2: 0, 3: 0, 4: 0, 7: 2, 8: 2, 9: 2, 10: 2}
@@ -44,7 +50,7 @@ SIRSHODAYA, PRISHTODAYA = {2, 4, 5, 6, 7, 10}, {0, 1, 3, 8, 9}  # Pisces rises b
 SUBHA_UDAYAM = {4, 5, 6, 7, 8, 9}        # Leo to Capricorn: the Sun's half
 SUBHA_ARUDAM = {10, 11, 0, 1, 2, 3}      # Aquarius to Cancer: the Moon's half
 # Planets in the Udayam by how they rise: head first (success), back first (failure), both ways (delay).
-PLANET_RISE = {"Mercury": "head", "Jupiter": "head", "Venus": "head", "Rahu": "head", "Paambu": "head",
+PLANET_RISE = {"Mercury": "head", "Jupiter": "head", "Venus": "head", "Rahu": "head", "Snake": "head",
                "Sun": "back", "Mars": "back", "Saturn": "back", "Moon": "both", "Ketu": "both"}
 MAANDI_GHATI_DAY = {0: 26, 1: 22, 2: 18, 3: 14, 4: 10, 5: 6, 6: 2}   # Vedic weekday (Sunday = 0) -> ghatis of 30
 MAANDI_GHATI_NIGHT = {0: 10, 1: 6, 2: 2, 3: 26, 4: 22, 5: 18, 6: 14}
@@ -64,7 +70,7 @@ ABOUT = {
     "Jupiter": "children, money, gold, teaching or higher studies",
     "Venus": "a partner or spouse, money, comforts or a vehicle",
     "Saturn": "work and a job, service or something slow and long",
-    "Paambu": "foreign travel, a pregnancy or something sudden or unusual",
+    "Snake": "foreign travel, a pregnancy or something sudden or unusual",
     "Rahu": "foreign travel or something unusual",
     "Ketu": "letting go, legal matters or spiritual questions",
 }
@@ -84,7 +90,7 @@ QUESTIONS = {
     "children": ("Children", [5], ["Jupiter"]),
     "property": ("Land, a house or a vehicle", [4], ["Mars", "Venus"]),
     "education": ("Studies or exams", [4, 5], ["Mercury"]),
-    "travel": ("Travel or going abroad", [9, 12], ["Paambu"]),
+    "travel": ("Travel or going abroad", [9, 12], ["Snake"]),
     "dispute": ("A dispute or court case", [6, 7], ["Jupiter"]),
     "general": ("Something else", [], []),
 }
@@ -104,17 +110,43 @@ def _point(lon: float) -> dict:
             "star": C.NAKSHATRAS[int(lon // C.NAKSHATRA_ARC) % 27]}
 
 
-def _day_bounds(when: datetime, lat: float, lon: float, tz: str) -> tuple[str, datetime, datetime, float]:
-    """("day"|"night", start, end, the Sun's sidereal degree at the start) for the moment ``when``."""
+def _rise_set(day, lat: float, lon: float, tz: str) -> tuple[datetime, datetime]:
+    """Hindu sunrise and sunset on a local date: the centre of the Sun's disc on the horizon, without refraction."""
+
+    jd0 = julian_day(datetime(day.year, day.month, day.day, tzinfo=ZoneInfo(tz)))
+    ev = lambda rs, start: swe.rise_trans(start, swe.SUN, rs | swe.BIT_HINDU_RISING, (lon, lat, 0.0), 0.0, 0.0,
+                                          swe.FLG_MOSEPH)[1][0]
+    rise = ev(swe.CALC_RISE, jd0)
+    return _jd_to_utc(rise), _jd_to_utc(ev(swe.CALC_SET, rise))
+
+
+def _sun(dt: datetime) -> float:
+    return compute_grahas(julian_day(dt), AYANAMSHA)["Sun"].longitude
+
+
+def _apparent_bounds(when: datetime, lat: float, lon: float, tz: str) -> tuple[datetime, datetime]:
+    """The day or night running at ``when`` by the apparent sunrise and sunset (as the panchang): Maandi uses these
+    and the KP ascendant, which is what matches Divya Chakshu (0.2′ at Bhopal, 19 Oct 2026 09:34 IST)."""
     local = when.astimezone(ZoneInfo(tz)).date()
     today = compute_panchang(local, lat, lon, tz)
     if today.sunrise <= when < today.sunset:
-        return "day", today.sunrise, today.sunset, _sidereal_sun_moon(julian_day(today.sunrise))[0]
+        return today.sunrise, today.sunset
     if when >= today.sunset:
-        start, end = today.sunset, compute_panchang(local + timedelta(days=1), lat, lon, tz).sunrise
+        return today.sunset, compute_panchang(local + timedelta(days=1), lat, lon, tz).sunrise
+    return compute_panchang(local - timedelta(days=1), lat, lon, tz).sunset, today.sunrise
+
+
+def _day_bounds(when: datetime, lat: float, lon: float, tz: str) -> tuple[str, datetime, datetime, float]:
+    """("day"|"night", start, end, the Sun's sidereal degree at the start) for the moment ``when``."""
+    local = when.astimezone(ZoneInfo(tz)).date()
+    rise, sset = _rise_set(local, lat, lon, tz)
+    if rise <= when < sset:
+        return "day", rise, sset, _sun(rise)
+    if when >= sset:
+        start, end = sset, _rise_set(local + timedelta(days=1), lat, lon, tz)[0]
     else:
-        start, end = compute_panchang(local - timedelta(days=1), lat, lon, tz).sunset, today.sunrise
-    return "night", start, end, _sidereal_sun_moon(julian_day(start))[0]
+        start, end = _rise_set(local - timedelta(days=1), lat, lon, tz)[1], rise
+    return "night", start, end, _sun(start)
 
 
 def jama_positions(when: datetime, tz: str) -> dict:
@@ -147,7 +179,7 @@ def cast(when: datetime, lat: float, lon: float, tz: str) -> dict:
     local = when.astimezone(ZoneInfo(tz))
     m = local.minute + local.second / 60
     arudam = _point((m // 5) * 30 + (m % 5) / 5 * 30)
-    grahas = compute_grahas(julian_day(when), AYANAMSHA)
+    grahas = compute_grahas(julian_day(when), AYANAMSHA, node_type=NODE)
     sun_sign = grahas["Sun"].sign_index
     veedhi = VEEDHI[sun_sign]
     kav_sign = (udayam["sign_index"] + (veedhi - arudam["sign_index"]) % 12) % 12
@@ -159,8 +191,9 @@ def cast(when: datetime, lat: float, lon: float, tz: str) -> dict:
     hora_i = min(11, int(frac * 12)) + (12 if period == "night" else 0)
     vedic_wd = (start.astimezone(ZoneInfo(tz)).weekday() + 1) % 7  # the day (or night) began at this sunrise/sunset
     ghati = (MAANDI_GHATI_DAY if period == "day" else MAANDI_GHATI_NIGHT)[vedic_wd]
-    rises = start + (end - start) * ghati / 30
-    maandi = {**_point(compute_houses(julian_day(rises), lat, lon, AYANAMSHA).ascendant),
+    a_start, a_end = _apparent_bounds(when, lat, lon, tz)
+    rises = a_start + (a_end - a_start) * ghati / 30
+    maandi = {**_point(compute_houses(julian_day(rises), lat, lon, "krishnamurti").ascendant),
               "rises": rises.astimezone(ZoneInfo(tz)).strftime("%H:%M")}
     hora = CHALDEAN[(CHALDEAN.index(DAY_LORD[vedic_wd]) + hora_i) % 7]
     return {"asked_at": when.isoformat(), "place": {"lat": lat, "lon": lon, "tz_name": tz}, "period": period,
@@ -192,8 +225,8 @@ def confirmation(chart: dict) -> list[list[str]]:
     dig = lambda p, si: dignity(p, si)
     names = lambda xs: ", ".join(xs) if xs else "–"
     tl = C.SIGN_LORDS[(U["sign_index"] + 9) % 12]
-    pts = {**{f"{p} (jama)": x["lon"] for p, x in jama.items()}, **{p: x["lon"] for p, x in sky.items()}}
-    behind = {n: (K["lon"] - lon) % 360 for n, lon in pts.items() if (K["lon"] - lon) % 360 > 1e-6}
+    # The Kavippu moves backwards and catches the first jama planet below it (Divya Chakshu: "Chatra catching").
+    behind = {p: (K["lon"] - x["lon"]) % 360 for p, x in jama.items() if (K["lon"] - x["lon"]) % 360 > 1e-6}
     js = {p: x["sign_index"] for p, x in jama.items() if p in seven}
     ss = {p: sky[p]["sign_index"] for p in seven}
     return [
@@ -208,7 +241,7 @@ def confirmation(chart: dict) -> list[list[str]]:
         ["Debilitated sky planets", names([p for p in sky if sky[p]["dignity"] == "debilitated"])],
         ["Debilitated jama planets", names([p for p in seven if dig(p, jama[p]["sign_index"]) == "debilitated"])],
         ["Same sign, sky and jama", names([p for p in seven if jama[p]["sign_index"] == sky[p]["sign_index"]]
-                                          + (["Paambu"] if jama["Paambu"]["sign_index"] == sky["Rahu"]["sign_index"] else []))],
+                                          + (["Snake"] if jama["Snake"]["sign_index"] == sky["Rahu"]["sign_index"] else []))],
         ["10th lord from the Udayam", f"{tl}: sky in house {_house(U['sign_index'], sky[tl]['sign_index'])}, "
                                       f"jama in house {_house(U['sign_index'], jama[tl]['sign_index'])}"],
         ["Exchanges among sky planets", names(_exchanges(ss, ss, True))],
@@ -228,8 +261,8 @@ def _power(planet: str, transit: dict) -> tuple[int, str]:
 
 
 def _strength(planet: str, transit: dict) -> str:
-    """The inner (transit) planet decides strength; Paambu follows Rahu."""
-    return transit["Rahu" if planet == "Paambu" else planet]["dignity"]
+    """The inner (transit) planet decides strength; the Snake follows Rahu."""
+    return transit["Rahu" if planet == "Snake" else planet]["dignity"]
 
 
 def read(chart: dict, kind: str) -> dict:
@@ -287,8 +320,8 @@ def read(chart: dict, kind: str) -> dict:
         pos.append(f"{eleventh}, lord of the 11th (gains), is approaching the Udayam.")
     if approaching == "Moon":
         pos.append("The Moon is approaching the Udayam: things can move quickly.")
-    if approaching in ("Saturn", "Paambu"):
-        neg.append(f"{'Saturn' if approaching == 'Saturn' else 'Paambu'} is approaching the Udayam: it will take time.")
+    if approaching in ("Saturn", "Snake"):
+        neg.append(f"{'Saturn' if approaching == 'Saturn' else 'The Snake'} is approaching the Udayam: it will take time.")
 
     rise = {PLANET_RISE[p] for p in in_udayam}  # planets in the Udayam: how they rise decides
     names = lambda kind_: ", ".join(dict.fromkeys(p for p in in_udayam if PLANET_RISE[p] == kind_))
@@ -365,9 +398,9 @@ def read(chart: dict, kind: str) -> dict:
                              f"{'prosper' if good else 'struggle'}" + (" (but it is with the Kavippu)" if good and p in in_kavippu else "") + ".")
     # Double confirmation: a planet that matters here whose jama and sky positions share a sign.
     matters = set(karakas) | set(in_udayam) | set(in_kavippu) | {approaching}
-    doubled = [p for p in JAMA if p != "Paambu" and p in matters and jama[p]["sign_index"] == transit[p]["sign_index"]]
-    if jama["Paambu"]["sign_index"] == transit["Rahu"]["sign_index"] and ({"Paambu", "Rahu"} & matters):
-        doubled.append("Paambu")
+    doubled = [p for p in JAMA if p != "Snake" and p in matters and jama[p]["sign_index"] == transit[p]["sign_index"]]
+    if jama["Snake"]["sign_index"] == transit["Rahu"]["sign_index"] and ({"Snake", "Rahu"} & matters):
+        doubled.append("Snake")
     confirm += [f"{p} is doubled (its jama and sky positions share {C.SIGNS[jama[p]['sign_index']]}): its signal "
                 "here is confirmed." for p in doubled]
     # Arudam lord against Kavippu lord (shown for the astrologer's judgement; it does not change the answer).

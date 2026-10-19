@@ -25,7 +25,7 @@ def test_matches_a_live_calculator_chart():
     got = {p: (x["sign"], round(x["lon"])) for p, x in j["planets"].items()}
     assert got == {"Sun": ("Taurus", 37), "Mars": ("Pisces", 352), "Jupiter": ("Aquarius", 307),
                    "Mercury": ("Sagittarius", 262), "Venus": ("Scorpio", 217), "Saturn": ("Virgo", 172),
-                   "Moon": ("Leo", 127), "Paambu": ("Gemini", 82)}
+                   "Moon": ("Leo", 127), "Snake": ("Gemini", 82)}
     c = J.cast(t, 13.0827, 80.2707, "Asia/Kolkata")
     assert c["period"] == "night" and c["udayam"]["sign"] == "Aries" and 8.5 < c["udayam"]["deg"] < 11
     assert (c["arudam"]["sign"], round(c["arudam"]["deg"], 1)) == ("Cancer", 1.9)      # shown as 1°54'
@@ -34,7 +34,28 @@ def test_matches_a_live_calculator_chart():
     j = J.jama_positions(at(2026, 10, 17, 11, 35, 52), "America/Winnipeg")
     assert (j["weekday"], j["number"], j["ruler"]) == ("Saturday", 4, "Jupiter")
     assert {p: round(x["lon"]) for p, x in j["planets"].items()} == {
-        "Jupiter": 327, "Mercury": 282, "Venus": 237, "Saturn": 192, "Moon": 147, "Paambu": 102, "Sun": 57, "Mars": 12}
+        "Jupiter": 327, "Mercury": 282, "Venus": 237, "Saturn": 192, "Moon": 147, "Snake": 102, "Sun": 57, "Mars": 12}
+
+
+def test_matches_divya_chakshu_to_the_arc_minute():
+    """Divya Chakshu, Bhopal, Monday 19 Oct 2026 09:34 IST: Lahiri, true node, Hindu sunrise for the Udayam."""
+    c = J.cast(at(2026, 10, 19, 9, 34, tz="Asia/Kolkata"), 23.2599, 77.4126, "Asia/Kolkata")
+    dms = lambda d, m, s: d + m / 60 + s / 3600
+    want = {"udayam": dms(281, 58, 23), "arudam": dms(204, 0, 0), "kavippu": dms(125, 59, 58), "maandi": dms(302, 38, 24)}
+    for k, v in want.items():
+        assert abs((c[k]["lon"] - v + 180) % 360 - 180) < 1 / 60, k          # within 1'
+    sky = {"Sun": dms(181, 33, 55), "Moon": dms(276, 57, 53), "Mars": dms(107, 41, 6), "Mercury": dms(205, 13, 1),
+           "Jupiter": dms(118, 21, 20), "Venus": dms(189, 28, 27), "Saturn": dms(345, 56, 3), "Rahu": dms(303, 48, 1),
+           "Ketu": dms(123, 48, 1)}
+    for p, v in sky.items():
+        assert abs((c["transit"][p]["lon"] - v + 180) % 360 - 180) < 1 / 60, p   # Moshier vs their ephemeris: < 1'
+    assert {p: round(x["lon"]) for p, x in c["jama"]["planets"].items()} == {
+        "Sun": 163, "Mars": 118, "Jupiter": 73, "Mercury": 28, "Venus": 343, "Saturn": 298, "Moon": 253, "Snake": 208}
+    conf = dict(J.confirmation(c))
+    assert conf["Jama planet that crossed the Udayam"] == "Moon" and conf["Jama planet approaching the Udayam"] == "Saturn"
+    assert conf["Udayam to Arudam (house)"] == "10" and conf["Udayam to Kavippu (house)"] == "8"
+    assert conf["Exchanges, sky with jama"] == "Jupiter–Moon"
+    assert conf["Kavippu is catching"] == "Mars"   # the jama Mars (118°), not Ketu in the sky (123°)
 
 
 def test_jama_day_runs_six_to_six():
