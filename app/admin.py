@@ -480,6 +480,42 @@ def all_profiles(request: Request) -> list[dict]:
              "tester": _tester(p.get("owner"), labels) if p.get("owner") else "local"} for p in storage.list_all(None)]
 
 
+# ----- saved charts: users' birth details for the owner, mentors and astrologers; every look is in the audit log -----
+def _birth(p: dict, labels: dict[str, str]) -> dict:
+    r = p["request"]
+    return {"id": p["id"], "name": p["name"], "dob": r.get("dob"),
+            "tob": None if r.get("tob_unknown") else (r.get("tob") or "")[:5], "tob_unknown": bool(r.get("tob_unknown")),
+            "place": r.get("place") or None, "lat": r.get("lat"), "lon": r.get("lon"), "tz_name": r.get("tz_name"),
+            "ayanamsha": r.get("ayanamsha"), "node_type": r.get("node_type") or "mean",
+            "house_system": r.get("house_system"), "tester": _tester(p.get("owner"), labels), "created_at": p["created_at"]}
+
+
+@router.get("/admin/api/charts")
+def saved_charts(request: Request) -> list[dict]:
+    _require_role(request, "mentor", "astrologer")
+    labels = storage.owner_code_labels()
+    rows = [_birth(p, labels) for p in storage.list_all(None)]
+    _audit(request, "viewed saved charts", None, f"{len(rows)} charts")
+    return rows
+
+
+@router.get("/admin/api/charts/{profile_id}")
+def saved_chart(profile_id: int, request: Request) -> dict:
+    """One chart's birth details and a short summary (Lagna, Moon, the Dasha running now)."""
+    from datetime import datetime, timezone
+    from app.transit_view import dasha_on
+    _require_role(request, "mentor", "astrologer")
+    p = storage.get(profile_id)
+    if not p:
+        raise HTTPException(status_code=404, detail="Chart not found")
+    c, out = p["chart"], _birth(p, storage.owner_code_labels())
+    moon = c["grahas"]["Moon"]
+    out["summary"] = {"lagna": c["lagna"]["sign"], "moon": f"{moon['sign']} · {moon['nakshatra']}",
+                      "house_system": c["meta"].get("house_system"), "dasha": dasha_on(c, datetime.now(timezone.utc))}
+    _audit(request, "viewed birth details", p["name"], out["tester"])
+    return out
+
+
 @router.post("/admin/api/compare")
 async def compare(request: Request) -> dict:
     from concurrent.futures import ThreadPoolExecutor

@@ -82,6 +82,9 @@
   tr.row{cursor:pointer} tr.row:hover td{background:var(--soft)}
   tr.row:focus-visible td{outline:2px solid var(--g2);outline-offset:-2px}
   tr.detail td{background:var(--bg2);white-space:normal}
+  #ch-list tr[aria-expanded="true"] td{font-weight:600}
+  .chdl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:4px 0 10px;font-size:.88rem;max-width:calc(100vw - 72px)} .chdl dt{color:var(--mut)} .chdl dd{margin:0;overflow-wrap:anywhere}
+  @media (max-width:600px){#ch th:nth-child(5),#ch-list tr[data-id] td:nth-child(5){display:none}}
   .qa{display:grid;gap:10px;padding:4px 2px;position:sticky;left:10px;max-width:min(900px,calc(100vw - 90px))}
   .qa b{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin-bottom:3px}
   .qa div{white-space:pre-wrap;word-break:break-word;color:var(--ink)}
@@ -450,6 +453,19 @@
     <div class="scroll"><table>
       <thead><tr><th>Tester</th><th>Charts</th><th class="num">Today</th><th class="num">All questions</th><th>Last active</th></tr></thead>
       <tbody id="testers"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+    </table></div>
+    </div>
+  </section>
+
+  <section class="card" id="ch" data-roles="owner mentor astrologer">
+    <div class="qhead"><h2>Saved charts</h2>
+      <div class="qbtns"><button class="sbtn" type="button" data-fold="ch-body" data-fold-default="shut" aria-expanded="true" aria-controls="ch-body">Collapse</button></div></div>
+    <div id="ch-body">
+    <p class="sub">Every chart users have saved, with their birth details. Select a row for the full details. Each view is recorded in the change log.</p>
+    <div class="toolbar"><input id="ch-filter" type="search" placeholder="Filter by name, place or tester" aria-label="Filter saved charts"><span class="hint" id="ch-count"></span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Name</th><th>Born</th><th>Place</th><th>Saved by</th><th>Saved</th></tr></thead>
+      <tbody id="ch-list"><tr><td colspan="5" class="empty">Open this section to load the charts.</td></tr></tbody>
     </table></div>
     </div>
   </section>
@@ -1072,6 +1088,54 @@ function setUsOpen(open) {
 }
 $('us-toggle').addEventListener('click', () => setUsOpen($('us-body').hidden));
 try { if (localStorage.getItem('sj-admin-us') === 'shut') setUsOpen(false); } catch (e) {}
+// ----- Saved charts: loaded when the section is first opened (the server logs each look) -----
+let CHARTS = null, CH_OPEN = null;
+const AYN = {krishnamurti: 'KP', lahiri: 'Lahiri', pushya: 'Pushya Paksha', raman: 'Raman', fagan: 'Fagan-Bradley', tropical: 'Tropical'};
+const HSN = {placidus: 'Placidus', koch: 'Koch', sripati: 'Sripati', equal: 'Equal', whole_sign: 'Whole sign'};
+const born = c => [c.dob ? new Date(c.dob + 'T12:00:00Z').toLocaleDateString(undefined, {day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'}) : '–',
+  c.tob_unknown ? 'time unknown' : c.tob].filter(Boolean).join(', ');
+function paintCharts() {
+  const q = $('ch-filter').value.trim().toLowerCase();
+  const list = (CHARTS || []).filter(c => !q || [c.name, c.place, c.tester, c.dob].join(' ').toLowerCase().includes(q));
+  $('ch-count').textContent = CHARTS ? `${list.length} of ${CHARTS.length}` : '';
+  $('ch-list').innerHTML = list.length ? list.map(c => `<tr class="row" data-id="${c.id}" tabindex="0" aria-expanded="${CH_OPEN === c.id}">
+      <td>${esc(c.name)}</td><td>${esc(born(c))}</td><td>${esc(c.place || '–')}</td><td>${esc(c.tester)}</td><td>${esc(when(c.created_at))}</td></tr>
+      ${CH_OPEN === c.id ? `<tr class="detail"><td colspan="5" id="ch-detail"><p class="hint">Loading…</p></td></tr>` : ''}`).join('')
+    : `<tr><td colspan="5" class="empty">${CHARTS ? 'No chart matches.' : 'Loading…'}</td></tr>`;
+}
+async function loadCharts() {
+  if (CHARTS) return;
+  try { CHARTS = await api('/admin/api/charts'); paintCharts(); }
+  catch (e) { $('ch-list').innerHTML = `<tr><td colspan="5" class="empty">Couldn’t load the charts: ${esc(e.message)}</td></tr>`; }
+}
+async function openChart(id) {
+  CH_OPEN = CH_OPEN === id ? null : id; paintCharts();
+  if (CH_OPEN == null) return;
+  try {
+    const c = await api('/admin/api/charts/' + id), s = c.summary, box = $('ch-detail'); if (!box || CH_OPEN !== id) return;
+    const copy = `${c.name}\nBorn: ${born(c)}\nPlace: ${c.place || ''} (${c.lat}, ${c.lon})\nTimezone: ${c.tz_name}`;
+    box.innerHTML = `<dl class="chdl">
+        <dt>Name</dt><dd>${esc(c.name)}</dd><dt>Born</dt><dd>${esc(born(c))}</dd>
+        <dt>Place</dt><dd>${esc(c.place || '–')}</dd><dt>Coordinates</dt><dd>${esc(c.lat)}, ${esc(c.lon)}</dd>
+        <dt>Timezone</dt><dd>${esc(c.tz_name)}</dd>
+        <dt>Settings</dt><dd>${esc(AYN[c.ayanamsha] || c.ayanamsha)} ayanamsa · ${esc(HSN[s.house_system] || s.house_system)} houses${c.house_system ? '' : ' (default)'} · ${c.node_type === 'true' ? 'True' : 'Mean'} node</dd>
+        <dt>Chart</dt><dd>${esc(s.lagna)} rising · Moon in ${esc(s.moon)}</dd>
+        <dt>Dasha now</dt><dd>${s.dasha.length ? s.dasha.map(d => esc(d.lord)).join(' › ') + ` <span class="hint">(until ${esc(s.dasha[s.dasha.length - 1].end)})</span>` : '–'}</dd>
+        <dt>Saved by</dt><dd>${esc(c.tester)} · ${esc(when(c.created_at))}</dd></dl>
+      <div class="qbtns"><button class="sbtn" type="button" id="ch-copy">Copy birth details</button><button class="sbtn" type="button" id="ch-pg">Use in Playground</button></div>`;
+    $('ch-copy').onclick = async e => { try { await navigator.clipboard.writeText(copy); e.target.textContent = 'Copied'; } catch (err) { e.target.textContent = 'Copy not allowed here'; } };
+    $('ch-pg').onclick = () => {
+      const sel = $('pg-chart'); if (!sel || ![...sel.options].some(o => o.value === String(id))) { $('ch-pg').textContent = 'Not in the Playground list'; return; }
+      sel.value = String(id); if ($('pg-body').hidden) setFold('pg-body', true);
+      sel.scrollIntoView({block: 'center'}); sel.focus();
+    };
+  } catch (e) { const box = $('ch-detail'); if (box) box.innerHTML = `<p class="hint">Couldn’t load this chart: ${esc(e.message)}</p>`; }
+}
+$('ch-filter').addEventListener('input', paintCharts);
+$('ch-list').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openChart(+tr.dataset.id); });
+$('ch-list').addEventListener('keydown', e => { const tr = e.target.closest('tr[data-id]'); if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openChart(+tr.dataset.id); } });
+document.querySelector('[data-fold="ch-body"]').addEventListener('click', () => setTimeout(() => { if (!$('ch-body').hidden) loadCharts(); }));
+
 // Collapse / Expand for the Studio and its parts, Access codes, Backups and Testers, each remembered on this
 // device; data-fold-default="shut" starts a section collapsed until it is first opened.
 function setFold(id, open, remember = true) {
@@ -1086,6 +1150,7 @@ document.querySelectorAll('[data-fold]').forEach(b => {
   try { saved = localStorage.getItem('sj-admin-fold-' + b.dataset.fold); } catch (e) {}
   if ((saved || b.dataset.foldDefault) === 'shut') setFold(b.dataset.fold, false, false);
 });
+if (!$('ch-body').hidden) loadCharts();  // Saved charts was left open on this device
 
 // ----- who is signed in: the owner sees everything; a mentor the Studio, costs, testers, usage and questions;
 // an astrologer the Studio and questions. The server checks every call as well.
