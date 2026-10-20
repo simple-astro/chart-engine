@@ -1999,7 +1999,7 @@ $('place').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault()
 
 
 // ----- saved profiles -----
-let currentId=null,editId=null,saved=[];
+let currentId=null,editId=null,saved=[],unsaved=null;  // unsaved: the request of a chart shown but not saved (currentId is null then)
 // The chart the app opens with on this device (otherwise the newest one).
 const getDefault=()=>{try{return localStorage.getItem('sj-default-chart')}catch(e){return null}};
 const setDefault=id=>{try{id==null?localStorage.removeItem('sj-default-chart'):localStorage.setItem('sj-default-chart',String(id))}catch(e){}};
@@ -2009,6 +2009,14 @@ const niceDate=d=>{try{return new Date(d+'T00:00').toLocaleDateString(undefined,
 const subLine=q=>[niceDate(q.dob),(q.place||'').split(',')[0]].filter(Boolean).join(' · ');
 const CHECK='<svg class="ck" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 function paintPill(){
+  const own=['medit','mdel','mdefault'];
+  if(currentId==null&&unsaved){  // an unsaved chart is on screen: name it, never a saved one
+    $('saved').hidden=false;
+    $('pav').textContent=initial(unsaved.name);$('pnm').textContent=unsaved.name;$('psub').textContent='Not saved · '+subLine(unsaved);
+    $('pbtn').setAttribute('aria-label','Current chart: '+unsaved.name+' (not saved). Open chart menu');
+    own.forEach(id=>$(id).hidden=true);return;
+  }
+  $('saved').hidden=!saved.length;own.forEach(id=>$(id).hidden=false);
   const p=saved.find(x=>String(x.id)===String(currentId))||saved[0]; if(!p)return;
   $('pav').textContent=initial(p.name);$('pnm').textContent=p.name;$('psub').textContent=subLine(p.request);
   $('pbtn').setAttribute('aria-label','Current chart: '+p.name+'. Open chart menu');
@@ -2076,7 +2084,7 @@ $('cfyes').onclick=async()=>{
   const id=String(currentId);closeConfirm();
   await fetch('/profiles/'+id,{method:'DELETE'});
   if(id===getDefault())setDefault(null);
-  currentId=null;hasChart=false;
+  currentId=null;unsaved=null;hasChart=false;
   const list=await loadList(); if(list.length)loadProfile(startChart(list).id); else nav('new',{replace:true})
 };
 function fillForm(q){
@@ -2088,7 +2096,7 @@ async function loadProfile(id){
   const r=await fetch('/profiles/'+encodeURIComponent(id)); if(!r.ok)return;
   const p=await r.json(),q=p&&p.request; if(!q)return;
   fillForm(q);
-  currentId=p.id;TS={base:null,baseChart:null,off:0};paintPill();render(p.chart,q);setAsk();showResults();
+  currentId=p.id;unsaved=null;TS={base:null,baseChart:null,off:0};paintPill();render(p.chart,q);setAsk();showResults();
 }
 
 // ----- chat popup -----
@@ -2279,7 +2287,7 @@ $('f').addEventListener('submit',async e=>{
       if(d&&d.field==='tz'){$('msg').textContent='';tzError(d.message);return}
       throw new Error(Array.isArray(d)?d.map(x=>x.loc.slice(1).join('.')+': '+x.msg).join('; '):(apiErr(d)||r.statusText))}
     if(editId){editId=null;$('go').textContent='Generate chart'}
-    if($('save').checked||j.id){currentId=j.id;render(j.chart,body);await loadList(j.id)}else{currentId=null;render(j,body)}
+    if($('save').checked||j.id){currentId=j.id;unsaved=null;render(j.chart,body);await loadList(j.id)}else{currentId=null;unsaved=body;paintPill();render(j,body)}
     setAsk();$('msg').textContent='';showResults();
   }catch(err){$('msg').className='hint full err';$('msg').textContent=err.message;$('msg').scrollIntoView({block:'center',behavior:'smooth'})}
   finally{$('go').disabled=false}
