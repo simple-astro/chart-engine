@@ -171,6 +171,7 @@
         <div class="hq-place"><span id="jk-where">${esc(jkHere ? (jkHere.name ? 'Cast for ' + jkHere.name : 'Cast for where you are') : birthLabel)}</span> · <button type="button" class="linkbtn" id="jk-loc">Use where I am now</button></div>
         <button type="button" class="btn" id="jk-go">Cast now</button>
         <div id="jk-out" aria-live="polite"></div>
+        <div id="jk-time"></div>
         <div id="jk-asks"></div>
       </section>`;
     // The date finder lives in Timing; the two Prashna tools in Studies › Prashna (or all here if no second place)
@@ -251,7 +252,48 @@
       const res = await fetch(url, opts), j = await res.json().catch(() => ({}));
       return { ok: res.ok, status: res.status, j };
     }
-    function jkShow(r, q) {
+    // Time explorer under a cast chart (astrologers): step the day, slide the time of day, recast. It only explores:
+    // the answer as asked (and any saved Jamakkol question) stays as it was.
+    const zOff = (ms, tz) => {  // the zone's offset from UTC at that instant, in ms
+      const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+      return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - Math.floor(ms / 1000) * 1000;
+    };
+    const wallOf = (ms, tz) => { const l = new Date(ms + zOff(ms, tz)); return { y: l.getUTCFullYear(), m: l.getUTCMonth(), d: l.getUTCDate(), min: l.getUTCHours() * 60 + l.getUTCMinutes() }; };
+    const utcOf = (w, tz) => { const g = Date.UTC(w.y, w.m, w.d, 0, w.min); return g - zOff(g - zOff(g, tz), tz); };
+    // The bar sits right under its chart; take it out before the result is redrawn, so it keeps its state.
+    const undock = (bar, res) => { if (bar && res && res.contains(bar)) res.after(bar); return bar; };
+    function timeBar(box, askedIso, tz, recast, show) {
+      if (!box) return;
+      const asked = wallOf(Date.parse(askedIso), tz), key = w => `${w.y}-${w.m}-${w.d}-${w.min}`;
+      let w = { ...asked }, seq = 0, timer = null;
+      box.innerHTML = `<div class="tbar lv-pro" role="group" aria-label="Change the chart's time">
+          <div class="tbh"><span>Time</span><b class="tbl"></b><button type="button" class="linkbtn tbr" hidden>Back to asked time</button></div>
+          <input type="range" min="0" max="1439" step="1" aria-label="Time of day">
+          <div class="tbrow"><button type="button" class="sbtn" data-dd="-1" aria-label="Previous day">‹ Day</button><button type="button" class="sbtn" data-dm="-1" aria-label="One minute earlier">−1 min</button><button type="button" class="sbtn" data-dm="1" aria-label="One minute later">+1 min</button><button type="button" class="sbtn" data-dd="1" aria-label="Next day">Day ›</button></div>
+          <p class="tbn" aria-live="polite">Exploring only: your answer stays as asked.</p></div>`;
+      const sl = box.querySelector('input'), lab = box.querySelector('.tbl'), back = box.querySelector('.tbr'), note = box.querySelector('.tbn');
+      const paint = () => {
+        sl.value = w.min; back.hidden = key(w) === key(asked);
+        lab.textContent = new Date(utcOf(w, tz)).toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: tz });
+      };
+      const go = () => {
+        paint(); clearTimeout(timer);
+        timer = setTimeout(async () => {
+          const my = ++seq; note.textContent = 'Casting…';
+          try { const r = await recast(new Date(utcOf(w, tz)).toISOString()); if (my === seq) { show(r, key(w) !== key(asked)); note.textContent = 'Exploring only: your answer stays as asked.'; } }
+          catch (e) { if (my === seq) note.textContent = 'Couldn’t cast for that time: ' + e.message; }
+        }, 220);
+      };
+      const set = (d, min) => { const n = new Date(Date.UTC(w.y, w.m, w.d + d, 0, min)); w = { y: n.getUTCFullYear(), m: n.getUTCMonth(), d: n.getUTCDate(), min: n.getUTCHours() * 60 + n.getUTCMinutes() }; go(); };
+      sl.addEventListener('input', () => set(0, +sl.value));
+      box.querySelector('.tbrow').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+        if (b.dataset.dd) set(+b.dataset.dd, w.min); else set(0, w.min + +b.dataset.dm); });
+      back.onclick = () => { w = { ...asked }; go(); };
+      paint();
+    }
+    function jkShow(r, q, exploring) {
+      const bar = undock($('jk-time'), $('jk-out'));
       setTimeout(() => { const o = $('jk-out'); if (o && !o.querySelector('.pqline')) o.insertAdjacentHTML('beforeend', consultLine()); }, 0);
       const out = $('jk-out'), g = r.reading;
       const li = xs => xs.map(x => `<li>${esc(x)}</li>`).join('');
@@ -273,8 +315,13 @@
         ${g.timing ? `<p class="hint">${esc(g.timing.text)}</p>` : ''}
         ${jkWorking(r)}
         <button type="button" class="btn ghost" id="jk-ask">Ask Astropositivism to explain</button>
-        <p class="hint">Jamakkol answers the question as you hold it right now, for 81 days${r.ask ? ` (until ${esc(dmy(r.ask.valid_until))})` : ''}. Ask each question once.</p>`;
+        <p class="hint">${exploring ? 'This chart is for the time picked below, not the moment you asked.' : `Jamakkol answers the question as you hold it right now, for 81 days${r.ask && r.ask.valid_until ? ` (until ${esc(dmy(r.ask.valid_until))})` : ''}. Ask each question once.`}</p>`;
       $('jk-ask').onclick = () => window.askSukh && window.askSukh(ask);
+      if (exploring === undefined)  // a fresh cast or a saved answer: the time bar starts from its moment
+        timeBar($('jk-time'), r.asked_at, r.place.tz_name,
+          at => post('/jamakkol', { kind: g.question.kind, lat: r.place.lat, lon: r.place.lon, tz_name: r.place.tz_name, asked_at: at }),
+          (x, moved) => jkShow({ ...x, ask: r.ask ? { place: r.ask.place } : undefined }, q, moved));
+      if (bar) $('jk-chart').after(bar);
       const paint = () => { $('jk-chart').innerHTML = jkChart(r, jkStyle()); jkDrawNorth(r); };
       jkDrawNorth(r);
       $('jk-chart').addEventListener('click', e => {
@@ -305,7 +352,7 @@
     });
     async function jkCast(again) {
       const out = $('jk-out'), btn = $('jk-go');
-      btn.disabled = true; out.innerHTML = '<p class="hint">Casting the Jamakkol chart for this minute…</p>';
+      undock($('jk-time'), out).innerHTML = ''; btn.disabled = true; out.innerHTML = '<p class="hint">Casting the Jamakkol chart for this minute…</p>';
       const typed = $('jk-place').value.trim();
       if (typed && typed !== (jkHere ? jkHere.name : (req.place || ''))) {  // typed a new place but didn't pick it yet
         btn.disabled = false; out.innerHTML = ''; return jkFind();
@@ -364,26 +411,33 @@
       if (typed && typed !== (here ? here.name : (req.place || ''))) { out.innerHTML = ''; return hqFind(); }  // typed a new place but didn't pick it yet
       $('hq-go').disabled = true; out.innerHTML = '<p class="hint">Casting the Prashna chart…</p>';
       try {
-        const r = await post('/horary', { number: n, kind: $('hq-kind').value, ...(here ? { lat: here.lat, lon: here.lon } : { lat: req.lat, lon: req.lon }) });
-        const q = $('hq-text').value.trim();
-        const ask = `I asked a KP Prashna (horary) question about ${r.question.title.toLowerCase()}${q ? `: "${q}"` : ''}. My number was ${n}. ` +
-          `The result was "${r.label}". The reasons: ${r.reasons.join(' ')} Please explain simply what this means for me and what I should do.`;
-        out.innerHTML = `<div class="hqv ${VERDICT[r.verdict]}"><span>Answer</span><b>${esc(r.label)}</b></div>
-          <div class="chart hqchart" id="hq-chart" role="img" aria-label="KP Prashna chart"></div>
-          <ul class="hqr">${r.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-          <p class="jkn">Cast for ${esc(here ? (here.name || 'where you are') : (req.place || place))}</p>
-          <button type="button" class="btn ghost" id="hq-ask">Ask Astropositivism to explain</button>
-          <p class="hint">Prashna answers the question as you hold it right now. Ask each question once — repeating it with new numbers weakens the answer.</p>`;
-        $('hq-ask').onclick = () => window.askSukh && window.askSukh(ask);
-        if (window.drawNorth && r.chart) {
-          const byH = {}, L = r.chart.lagna_sign;
-          Object.entries(r.chart.planets).forEach(([p, x]) => { const h = (x.sign_index - L + 12) % 12;
-            (byH[h] = byH[h] || []).push(AB[p] + (x.retrograde && p !== 'Rahu' && p !== 'Ketu' ? 'ᴿ' : '')); });
-          window.drawNorth($('hq-chart'), L, byH, null, 'PRASHNA');
-        }
-        out.insertAdjacentHTML('beforeend', consultLine());
+        const body = { number: n, kind: $('hq-kind').value, ...(here ? { lat: here.lat, lon: here.lon } : { lat: req.lat, lon: req.lon }) };
+        const tz = (here && here.tz_name) || req.tz_name, q = $('hq-text').value.trim();
+        const r = await post('/horary', body);
+        out.innerHTML = '<div id="hq-res"></div><div id="hq-time"></div>' + consultLine();
+        hqShow(r, n, q, tz, false);
+        timeBar($('hq-time'), r.asked_at, tz, at => post('/horary', { ...body, asked_at: at }), (x, moved) => hqShow(x, n, q, tz, moved));
       } catch (e) { out.innerHTML = `<p class="hint err">Couldn’t cast the chart: ${esc(e.message)}</p>`; }
       $('hq-go').disabled = false;
     };
+    function hqShow(r, n, q, tz, exploring) {
+      const ask = `I asked a KP Prashna (horary) question about ${r.question.title.toLowerCase()}${q ? `: "${q}"` : ''}. My number was ${n}. ` +
+        `The result was "${r.label}". The reasons: ${r.reasons.join(' ')} Please explain simply what this means for me and what I should do.`;
+      const bar = undock($('hq-time'), $('hq-res'));
+      $('hq-res').innerHTML = `<div class="hqv ${VERDICT[r.verdict]}"><span>Answer</span><b>${esc(r.label)}</b></div>
+        <div class="chart hqchart" id="hq-chart" role="img" aria-label="KP Prashna chart"></div>
+        <ul class="hqr">${r.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+        <p class="jkn">Cast for ${esc(here ? (here.name || 'where you are') : (req.place || place))} · ${esc(new Date(r.asked_at).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: tz }))}</p>
+        <button type="button" class="btn ghost" id="hq-ask">Ask Astropositivism to explain</button>
+        <p class="hint">${exploring ? 'This chart is for the time picked below, not the moment you asked.' : 'Prashna answers the question as you hold it right now. Ask each question once — repeating it with new numbers weakens the answer.'}</p>`;
+      $('hq-ask').onclick = () => window.askSukh && window.askSukh(ask);
+      if (window.drawNorth && r.chart) {
+        const byH = {}, L = r.chart.lagna_sign;
+        Object.entries(r.chart.planets).forEach(([p, x]) => { const h = (x.sign_index - L + 12) % 12;
+          (byH[h] = byH[h] || []).push(AB[p] + (x.retrograde && p !== 'Rahu' && p !== 'Ketu' ? 'ᴿ' : '')); });
+        window.drawNorth($('hq-chart'), L, byH, null, 'PRASHNA');
+      }
+      if (bar) $('hq-chart').after(bar);
+    }
   };
 })();
