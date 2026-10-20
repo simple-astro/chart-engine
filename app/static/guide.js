@@ -58,28 +58,33 @@
   window.renderToday = function (el, d, opt) {
     const t = iso => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: d.tz });
     const day0 = opt.week && opt.week[0], cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-    const li = xs => xs.map(x => `<li>${esc(x.text)}<small>${esc(cap(x.why))}</small></li>`).join('');
+    // lv-pro: hidden for "Just guide me" readers (index.html); lv-guide: shown only to them
+    const li = xs => xs.map(x => `<li${/rahu kaal/i.test(x.text) ? ' class="lv-pro"' : ''}>${esc(x.text)}<small class="lv-pro">${esc(cap(x.why))}</small></li>`).join('');
+    const PLAIN = { excellent: 'A great day. Start what matters to you.', good: 'A good day for most things.',
+      fair: 'An ordinary day. Keep to your routine and finish what you started.', avoid: 'A day for routine work. Keep big new starts for another day.' };
+    const b0 = d.best_times[0];
     const c = d.colour, u = d.upay;
     const best = d.best_times.length ? d.best_times.map(w => `<span><small>${esc(w.label)}</small><b>${t(w.start)} – ${t(w.end)}</b></span>`).join('')
       : '<span><small>Best time</small><b>Keep it routine today</b></span>';
     const who = ((opt.name || '').trim().split(/\s+/)[0]) || 'you';
     el.innerHTML = `<h3>Today for ${esc(who)} <span class="badge ${{ excellent: 'good', good: 'good', fair: '', avoid: 'warn' }[d.rating.verdict]}">${esc(d.rating.label)}</span></h3>
-      <p class="gsub">${esc(d.weekday)}${day0 ? ` · ${esc(day0.tithi.name)}` : ''} · ${esc(d.nakshatra)}${d.tara ? ` · your star: ${esc(d.tara.name)}` : ''}</p>
+      <p class="gsub lv-pro">${esc(d.weekday)}${day0 ? ` · ${esc(day0.tithi.name)}` : ''} · ${esc(d.nakshatra)}${d.tara ? ` · your star: ${esc(d.tara.name)}` : ''}</p>
       <div class="tgrid"><div class="tcol">
-        <p class="twhy">${esc(cap(d.rating.why))}.</p>
-        ${d.sukh ? `<p class="tsukh"><img src="/static/sun.svg" alt="" width="22" height="22"><span>${esc(d.sukh)}</span></p>` : ''}
-        <div class="dd tdd"><div><h5 class="ok">Do today</h5><ul>${li(d.do)}</ul></div><div><h5 class="bad">Avoid today</h5><ul>${li(d.avoid)}</ul></div></div>
+        <p class="twhy lv-pro">${esc(cap(d.rating.why))}.</p><p class="twhy lv-guide">${PLAIN[d.rating.verdict] || PLAIN.fair}</p>
+        ${d.sukh ? `<p class="tsukh lv-pro"><img src="/static/sun.svg" alt="" width="22" height="22"><span>${esc(d.sukh)}</span></p>` : ''}
+        <div class="dd tdd"><div><h5 class="ok">Do today</h5><ul>${li(d.do)}</ul></div><div><h5 class="bad"><span class="lv-pro">Avoid today</span><span class="lv-guide">Go easy on</span></h5><ul>${li(d.avoid)}</ul></div></div>
       </div><div class="tcol">
-        <div class="gtimes">${best}<span class="tbad"><small>Rahu Kaal — avoid</small><b>${t(d.rahu_kalam[0])} – ${t(d.rahu_kalam[1])}</b></span></div>
-        <button type="button" class="linkbtn tall" data-goto="times">All of today’s times and the week ahead →</button>
-        <div class="tchips">
+        ${b0 ? `<div class="trbest lv-guide"><span>Best time today</span><b>${t(b0.start)} – ${t(b0.end)}</b></div>` : ''}
+        <div class="gtimes lv-pro">${best}<span class="tbad"><small>Rahu Kaal — avoid</small><b>${t(d.rahu_kalam[0])} – ${t(d.rahu_kalam[1])}</b></span></div>
+        <button type="button" class="linkbtn tall lv-pro" data-goto="times">All of today’s times and the week ahead →</button>
+        <div class="tchips lv-pro">
           <div title="${esc(c.why)}"><small>Wear</small><b><i class="tsw" style="background:${c.hex}"></i>${esc(cap(c.name))}</b>${(c.avoid_list || []).length ? `<em>avoid ${esc(c.avoid_list.map(x => x.name).join(', '))}</em>` : ''}</div>
           <div title="Traditional number of ${esc(d.number.planet)}"><small>Number</small><b>${d.number.value}</b><em>${esc(d.number.planet)}</em></div>
           <div><small>Travel</small><b>Not ${esc(d.direction.avoid)}</b><em>if you must: ${esc(d.direction.fix)}</em></div>
         </div>
-        <div class="tup"><small>Today’s upaya</small><p><b>${esc(u.habit)}.</b> If you can, also give ${esc(u.daan)}.</p><em>${esc(u.why)}.</em></div>
+        <div class="tup lv-pro"><small>Today’s upaya</small><p><b>${esc(u.habit)}.</b> If you can, also give ${esc(u.daan)}.</p><em>${esc(u.why)}.</em></div>
       </div></div>
-      <div class="tfoot"><small class="hint">Times for ${esc(opt.place)}. Colour, number and direction are traditional associations, not promises.</small>
+      <div class="tfoot"><small class="hint">Times for ${esc(opt.place)}.<span class="lv-pro"> Colour, number and direction are traditional associations, not promises.</span></small>
         <button type="button" class="linkbtn" id="tloc">${opt.here ? 'Use birthplace times' : 'Use my current location'}</button></div>
 `;
   };

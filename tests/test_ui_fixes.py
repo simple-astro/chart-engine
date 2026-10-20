@@ -166,9 +166,9 @@ def test_yogini_dasha_sits_with_vimshottari_not_jaimini():
 
 
 def test_prashna_is_a_main_tab():
-    assert "const SCREENS=['today','timing','prashna','ask','remedies','chart'];" in INDEX
+    assert "const SCREENS=['today','timing','prashna','ask','remedies','chart','year','plans','more'];" in INDEX
     assert '<button type="button" data-go="prashna">' in _between(INDEX, '<nav class="sjbar"', "</nav>")
-    assert 'id="gprashna"' in _between(INDEX, '<div class="scr" id="s-prashna"', "</div>\n")
+    assert 'id="gprashna"' in _between(INDEX, '<div class="scr" id="s-prashna"', '<!-- Remedies')
     assert 'data-branch="prashna"' not in INDEX and "prashna:'Prashna'};" not in INDEX  # gone from Charts
     assert "['prashna','kpq','jamakkol'].includes(sub)" in INDEX  # old #chart/prashna links still open it
 
@@ -196,3 +196,27 @@ def test_every_inline_script_parses(tmp_path):
         r = subprocess.run([NODE, "--check", str(Path(__file__).resolve().parent.parent / "app" / "static" / name)],
                            capture_output=True, text=True)
         assert r.returncode == 0, (name, r.stderr[:400])
+
+
+def test_colour_moods_for_testers():
+    for m in ("saffron", "midnight", "diya", "lotus"):
+        assert f':root[data-mood="{m}"]' in INDEX and f"['{m}'," in _between(INDEX, "const MOODS=", ";")
+    assert "#241903" not in INDEX.replace("--onacc:#241903", "")  # button text follows the mood
+    assert 'localStorage.getItem("sj-mood")' in INDEX            # applied before first paint
+    assert "MOOD_OK=true" in INDEX and "(MOOD_OK&&typeof setMood" in INDEX         # testers pick them in Settings
+
+
+def test_just_guide_me_level():
+    # chosen once, saved in the browser, applied before first paint
+    assert 'localStorage.getItem("sj-level")' in INDEX and 'id="lvdlg"' in INDEX
+    for lv in ("guide", "learn", "full"):
+        assert f'data-lv="{lv}"' in INDEX
+    # its own bottom bar: Today · My year · Ask · Plans · More
+    bar = _between(INDEX, '<nav class="sjbar"', "</nav>")
+    for go in ("year", "plans", "more"):
+        assert f'data-go="{go}"' in bar and f'id="s-{go}"' in INDEX
+    assert ':root[data-level="guide"] .lv-pro{display:none!important}' in INDEX
+    # Prashna for this level: the answer and the astrologer, no chart or reasons
+    tools = (Path(__file__).resolve().parent.parent / "app" / "static" / "tools.js").read_text()
+    assert 'class="chart hqchart lv-pro"' in tools and '<ul class="hqr lv-pro">' in tools
+    assert "level:levelNow()" in INDEX  # the chat answers in plain words

@@ -166,6 +166,11 @@ def _connect() -> sqlite3.Connection:
     # Ticked "get ready" steps for upcoming changes (app/upcoming.py): one row per ticked step.
     conn.execute("CREATE TABLE IF NOT EXISTS prep_done (profile_id INTEGER NOT NULL, step TEXT NOT NULL,"
                  " done_at TEXT NOT NULL, PRIMARY KEY (profile_id, step))")
+    # Goal plans (app/goals.py): the goals a person picked and the steps they ticked.
+    conn.execute("CREATE TABLE IF NOT EXISTS goal_plans (profile_id INTEGER NOT NULL, goal TEXT NOT NULL,"
+                 " added_at TEXT NOT NULL, PRIMARY KEY (profile_id, goal))")
+    conn.execute("CREATE TABLE IF NOT EXISTS goal_steps (profile_id INTEGER NOT NULL, goal TEXT NOT NULL, step TEXT NOT NULL,"
+                 " done_at TEXT NOT NULL, PRIMARY KEY (profile_id, goal, step))")
     # Which sections testers open (app/usage.py): a short name per event, no chart data. Kept for 90 days.
     conn.execute("CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL,"
                  " owner TEXT, name TEXT NOT NULL, detail TEXT)")
@@ -257,6 +262,8 @@ def delete(profile_id: int, owner: str | None = None) -> bool:
         conn.execute("DELETE FROM life_events WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM jamakkol_asks WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM prep_done WHERE profile_id = ?", (profile_id,))
+        conn.execute("DELETE FROM goal_plans WHERE profile_id = ?", (profile_id,))
+        conn.execute("DELETE FROM goal_steps WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM settings WHERE key = ?", (f"mood_share:{profile_id}",))
         return conn.execute("DELETE FROM profiles WHERE id = ?", (profile_id,)).rowcount > 0
 
@@ -784,6 +791,37 @@ def all_events() -> list[dict]:
     with _lock, _connect() as conn:
         rows = conn.execute("SELECT e.*, p.chart, p.request FROM life_events e JOIN profiles p ON p.id = e.profile_id").fetchall()
     return [{**dict(r), "chart": json.loads(r["chart"]), "request": json.loads(r["request"])} for r in rows]
+
+
+# ----- goal plans; callers check the profile belongs to the person first -----
+def goals_of(profile_id: int) -> list[str]:
+    with _lock, _connect() as conn:
+        return [r[0] for r in conn.execute("SELECT goal FROM goal_plans WHERE profile_id = ? ORDER BY added_at", (profile_id,))]
+
+
+def goal_add(profile_id: int, goal: str) -> None:
+    with _lock, _connect() as conn:
+        conn.execute("INSERT OR IGNORE INTO goal_plans (profile_id, goal, added_at) VALUES (?, ?, ?)", (profile_id, goal, _now()))
+
+
+def goal_remove(profile_id: int, goal: str) -> None:
+    with _lock, _connect() as conn:
+        conn.execute("DELETE FROM goal_plans WHERE profile_id = ? AND goal = ?", (profile_id, goal))
+        conn.execute("DELETE FROM goal_steps WHERE profile_id = ? AND goal = ?", (profile_id, goal))
+
+
+def goal_steps_done(profile_id: int) -> set[tuple[str, str]]:
+    with _lock, _connect() as conn:
+        return {(r[0], r[1]) for r in conn.execute("SELECT goal, step FROM goal_steps WHERE profile_id = ?", (profile_id,))}
+
+
+def goal_tick(profile_id: int, goal: str, step: str, done: bool) -> None:
+    with _lock, _connect() as conn:
+        if done:
+            conn.execute("INSERT OR IGNORE INTO goal_steps (profile_id, goal, step, done_at) VALUES (?, ?, ?, ?)",
+                         (profile_id, goal, step, _now()))
+        else:
+            conn.execute("DELETE FROM goal_steps WHERE profile_id = ? AND goal = ? AND step = ?", (profile_id, goal, step))
 
 
 # ----- ticked preparation steps; callers check the profile belongs to the person first -----

@@ -372,6 +372,8 @@ def _now_line(profile: dict) -> str:
 
 def _system_text(profile: dict) -> str:
     text = SYSTEM.format(words=_word_limit()) + ask.llm_context(profile) + _now_line(profile)
+    if profile.get("level") == "guide":
+        text += GUIDE_NOTE
     remarks = storage.tester_remarks(profile.get("owner"))
     if remarks:
         text += f"\n\n[CONTEXT NOTE: {remarks}]"
@@ -380,6 +382,12 @@ def _system_text(profile: dict) -> str:
         text += ("\n\n[INSTRUCTION FROM YOUR ASTROLOGERS — follow it unless it conflicts with the chart data or the "
                  f"rules above: {test['instruction']}]")
     return text
+
+
+# "Just guide me" readers chose no charts: say the same reading in everyday words.
+GUIDE_NOTE = ("\n\n[READER LEVEL: this person chose \"Just guide me\". Answer in plain everyday words. Do not name "
+              "houses, signs, nakshatras, Dasha or Bhukti lords, yogas or degrees; say what it means for their life, "
+              "when, and one thing to do. Keep it short and warm.]")
 
 
 def _system(profile: dict) -> list[dict]:
@@ -527,7 +535,8 @@ def answer_key(profile: dict, message: str) -> str | None:
     """Reused answers are per setup version and per time zone (times and 'today' depend on where the user is)."""
     key = cache_key(message)
     # the teaching version too, so a publish or rollback is never answered from an older setup
-    return key and f"{CONTEXT_VERSION}:t{storage.teach_version()['id']}:{where(profile)['tz_name']}:{key}"
+    lv = ":guide" if profile.get("level") == "guide" else ""  # plain-word answers are kept apart
+    return key and f"{CONTEXT_VERSION}:t{storage.teach_version()['id']}:{where(profile)['tz_name']}{lv}:{key}"
 
 
 def chat_events(profile: dict, message: str):

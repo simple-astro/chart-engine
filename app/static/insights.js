@@ -455,7 +455,9 @@
       remedies.push({ planet: weak, title: `To strengthen ${weak}`, why, text: REMEDY[weak] });
     }
 
-    return { period, areas: lifeAreas, remedies, lucky: { day: lk.day, color: lk.color, num: lk.num }, rising: sign, moon: x.g.Moon.sign };
+    const about = { self: LAGNA[sign], mind: `You feel things and react ${STYLE[x.g.Moon.sign]}.`,
+      strong: lifeAreas.filter(a => a.level.cls === 'good').map(a => a.name) };  // plain words for "Just guide me"
+    return { period, areas: lifeAreas, remedies, lucky: { day: lk.day, color: lk.color, num: lk.num }, rising: sign, moon: x.g.Moon.sign, about };
   };
 
   window.luckyReading = function (c) {

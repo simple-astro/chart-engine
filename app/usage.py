@@ -48,6 +48,14 @@ CATALOGUE = [
                   ("settings/default-house", "Set the default house system"),
                   ("settings/city", "Picked a current city")]),
     ("Find", [("find/open", "Find opened")]),
+    ("Just guide me level", [("year", "My year screen"), ("plans", "My plans screen"), ("more", "More screen"),
+                             ("level/guide", "Chose: Just guide me"), ("level/learn", "Chose: I am learning"),
+                             ("level/full", "Chose: I read charts"), ("plans/add", "Goal added"), ("plans/tick", "Plan step ticked"),
+                             ("year/work", "My year: Work"), ("year/money", "My year: Money"), ("year/love", "My year: Love"),
+                             ("year/health", "My year: Health"), ("year/all", "My year: All")]),
+    ("Colour themes (testing)", [("theme/classic", "Picked Classic"), ("theme/saffron", "Picked Saffron Dawn"),
+                                 ("theme/midnight", "Picked Midnight Temple"), ("theme/diya", "Picked Clear Diya (large text)"),
+                                 ("theme/lotus", "Picked Lotus Calm")]),
 ]
 LABEL = {k: label for _, items in CATALOGUE for k, label in items}
 STORED = {"mood", "getready", "asked", "lifeevents"}            # counted from stored data, not page events

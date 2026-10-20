@@ -124,7 +124,16 @@
         <button type="button" class="btn" id="ff-go">Find dates</button>
         <div id="ff-out" aria-live="polite"></div>
       </section>`;
-    const prashna = `<section class="card gcard tool pqhow">
+    const prashna = `<section class="card gcard tool pqhow lv-guide">
+        <h3>Ask a yes-or-no question</h3>
+        <ol>
+          <li>Ask one question that has a yes-or-no answer, like “Will I get this job?”</li>
+          <li>Hold it in your mind and type the first number from 1 to 249 that comes to you.</li>
+          <li>Ask each question only once. Before you decide, talk it over with your astrologer.</li>
+        </ol>
+        <div class="pqconsult" hidden></div>
+      </section>
+      <section class="card gcard tool pqhow lv-pro">
         <h3>How to ask a Prashna</h3>
         <ol>
           <li><b>Ask one question with a yes-or-no answer.</b> “Will I get this job?”, not “Tell me about my career.”</li>
@@ -135,7 +144,7 @@
         <div class="pqconsult" hidden></div>
       </section>
       <section class="card gcard tool">
-        <h3>Yes or no? <small>KP Prashna</small></h3>
+        <h3>Yes or no? <small class="lv-pro">KP Prashna</small></h3>
         <p class="gsub">Hold your question in mind, then type the first number from 1 to 249 that comes to you.</p>
         <label class="tl-lab" for="hq-kind">My question is about</label>
         <select id="hq-kind">${kinds.map(k => `<option value="${k.kind}">${esc(k.title)}</option>`).join('')}</select>
@@ -151,13 +160,13 @@
           <button type="button" class="btn" id="hq-go">Ask</button></div>
         <div id="hq-out" aria-live="polite"></div>
       </section>
-      <section class="card gcard tool">
+      <section class="card gcard tool lv-pro">
         <h3>Ruling planets <small>KP</small></h3>
         <p class="gsub">The planets ruling this very moment, strongest first. Astrologers use them to confirm an answer and to time it.</p>
         <div id="rp-out" aria-live="polite"><p class="hint">Working out this moment…</p></div>
         <div class="hq-place"><span id="rp-where"></span> · <button type="button" class="linkbtn" id="rp-go">Refresh now</button></div>
       </section>
-      <section class="card gcard tool">
+      <section class="card gcard tool lv-pro">
         <h3>Jamakkol Prashna <small>Tamil horary</small></h3>
         <p class="gsub">Ask while the question is on your mind. The chart is cast for this very minute, where you are.</p>
         <label class="tl-lab" for="jk-kind">My question is about</label>
@@ -385,8 +394,8 @@
       : '<p class="pqline">Got both answers? Consult your astrologer before you decide.</p>';
     fetch('/consult').then(r => r.ok ? r.json() : null).then(d => {
       consultUrl = d && d.telegram;
-      const box = el.parentNode && (ctx.prashnaEl || el).querySelector('.pqconsult');
-      if (consultUrl && box) { box.hidden = false; box.innerHTML = `<a class="btn pqtg" href="${esc(consultUrl)}" target="_blank" rel="noopener">Consult your astrologer on Telegram</a>`; }
+      const boxes = el.parentNode ? (ctx.prashnaEl || el).querySelectorAll('.pqconsult') : [];
+      if (consultUrl) boxes.forEach(box => { box.hidden = false; box.innerHTML = `<a class="btn pqtg" href="${esc(consultUrl)}" target="_blank" rel="noopener">Consult your astrologer on Telegram</a>`; });
     }).catch(() => {});
 
     // Ruling planets for now, cast where the KP Prashna is cast (the place chosen above, else the birthplace).
@@ -425,8 +434,8 @@
         `The result was "${r.label}". The reasons: ${r.reasons.join(' ')} Please explain simply what this means for me and what I should do.`;
       const bar = undock($('hq-time'), $('hq-res'));
       $('hq-res').innerHTML = `<div class="hqv ${VERDICT[r.verdict]}"><span>Answer</span><b>${esc(r.label)}</b></div>
-        <div class="chart hqchart" id="hq-chart" role="img" aria-label="KP Prashna chart"></div>
-        <ul class="hqr">${r.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+        <div class="chart hqchart lv-pro" id="hq-chart" role="img" aria-label="KP Prashna chart"></div>
+        <ul class="hqr lv-pro">${r.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
         <p class="jkn">Cast for ${esc(here ? (here.name || 'where you are') : (req.place || place))} · ${esc(new Date(r.asked_at).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: tz }))}</p>
         <button type="button" class="btn ghost" id="hq-ask">Ask Astropositivism to explain</button>
         <p class="hint">${exploring ? 'This chart is for the time picked below, not the moment you asked.' : 'Prashna answers the question as you hold it right now. Ask each question once — repeating it with new numbers weakens the answer.'}</p>`;

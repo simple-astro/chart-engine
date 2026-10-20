@@ -48,6 +48,7 @@ class Here(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     here: Here | None = None
+    level: str | None = Field(default=None, pattern=r"^(guide|learn|full)$")  # the reader's level (index.html)
 
 
 def _owner(request: Request) -> str | None:
@@ -270,7 +271,8 @@ def chat_history(profile_id: int, request: Request) -> list[dict]:
 
 
 def _with_here(profile: dict, req: ChatRequest) -> dict:
-    return {**profile, "viewer": req.here.model_dump()} if req.here else profile
+    out = {**profile, "viewer": req.here.model_dump()} if req.here else profile
+    return {**out, "level": req.level} if req.level else out
 
 
 @router.post("/{profile_id}/chat")
@@ -599,6 +601,66 @@ def prep_tick(profile_id: int, req: PrepTick, request: Request) -> dict:
     _require(profile_id, request)
     storage.prep_tick(profile_id, req.step, req.done)
     return {"step": req.step, "done": req.done}
+
+
+# ----- "Just guide me" level (app/goals.py): the year ahead in words, and goal plans -----
+@router.get("/{profile_id}/year")
+def year_ahead(profile_id: int, request: Request) -> dict:
+    from app import goals
+    return goals.year_ahead(_require(profile_id, request)["chart"])
+
+
+@router.get("/{profile_id}/plans")
+def plans(profile_id: int, request: Request) -> dict:
+    from app import goals
+    p = _require(profile_id, request)
+    done = storage.goal_steps_done(profile_id)
+    mine = [g for g in storage.goals_of(profile_id) if g in goals.GOALS]
+    return {"plans": [goals.plan(p["chart"], g, {s for gg, s in done if gg == g}) for g in mine],
+            "choices": [{"goal": k, "title": v["title"]} for k, v in goals.GOALS.items() if k not in mine]}
+
+
+class GoalPick(BaseModel):
+    goal: str = Field(min_length=2, max_length=20, pattern=r"^[a-z_]+$")
+
+
+class GoalTick(BaseModel):
+    step: str = Field(min_length=2, max_length=20, pattern=r"^[a-z_]+$")
+    done: bool
+
+
+def _goal(goal: str) -> dict:
+    from app import goals
+    if goal not in goals.GOALS:
+        raise HTTPException(status_code=422, detail="Unknown goal")
+    return goals.GOALS[goal]
+
+
+@router.post("/{profile_id}/plans")
+def plan_add(profile_id: int, req: GoalPick, request: Request) -> dict:
+    _require(profile_id, request)
+    _goal(req.goal)
+    storage.goal_add(profile_id, req.goal)
+    return {"added": req.goal}
+
+
+@router.delete("/{profile_id}/plans/{goal}")
+def plan_remove(profile_id: int, goal: str, request: Request) -> dict:
+    _require(profile_id, request)
+    _goal(goal)
+    storage.goal_remove(profile_id, goal)
+    return {"removed": goal}
+
+
+@router.put("/{profile_id}/plans/{goal}")
+def plan_tick(profile_id: int, goal: str, req: GoalTick, request: Request) -> dict:
+    _require(profile_id, request)
+    if req.step not in {sid for sid, _ in _goal(goal)["steps"]}:
+        raise HTTPException(status_code=422, detail="Unknown step")
+    if goal not in storage.goals_of(profile_id):
+        raise HTTPException(status_code=404, detail="Add this goal first")
+    storage.goal_tick(profile_id, goal, req.step, req.done)
+    return {"goal": goal, "step": req.step, "done": req.done}
 
 
 @router.get("/{profile_id}/upcoming/days")
