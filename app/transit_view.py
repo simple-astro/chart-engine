@@ -6,7 +6,7 @@ from types import SimpleNamespace as NS
 from zoneinfo import ZoneInfo
 
 from app.muhurat import TARAS
-from core.ashtakavarga import ashtakavarga
+from core.ashtakavarga import ashtakavarga, chart_method
 from core.constants import SIGNS
 from core.kp import kp_lords, planet_house
 from core.kp_predict import own_houses
@@ -56,7 +56,7 @@ def overlay(profile: dict, day: date, hour: int = 12, tz_name: str | None = None
     natal = chart["grahas"]
     moon_sign = natal["Moon"]["sign_index"]
     cusps = NS(cusps=[NS(house=c["house"], longitude=c["longitude"]) for c in chart["houses"]])
-    sav = ashtakavarga({p: g["sign_index"] for p, g in natal.items()}, L)["sav"]
+    sav = ashtakavarga({p: g["sign_index"] for p, g in natal.items()}, L, chart_method(chart))["sav"]
     dba = dasha_on(chart, when)
     levels: dict[str, list[str]] = {}
     for d in dba:

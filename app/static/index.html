@@ -83,7 +83,63 @@
     --ok:#2e7d4f; --bad:#b3261e; --cmb:#a35a12; --mood-low:#3e6e8c; --mood-mid:#8a8a6b; --mood-high:#4f7a5c;
     --shadow:0 1px 2px rgba(31,42,34,.05),0 10px 30px rgba(31,42,34,.07); --glow:none;
     --serif:"Lora",Georgia,serif; --sans:"Nunito Sans",-apple-system,system-ui,sans-serif}
-  :root[data-mood]:not([data-mood="midnight"]) body::before{opacity:0}
+  :root[data-mood="sky"]{color-scheme:light;
+    --bg:#f2f7fc; --bg2:#e1edf8; --card:rgba(255,255,255,.9); --solid:#ffffff;
+    --ink:#1b2a3a; --mut:#53657a; --trn:#2c6aa3; --acc:#2c6aa3; --acc2:#3f7f6a; --g1:#a9d6f5; --g2:#5fa6dd; --onacc:#0b2136;
+    --soft:rgba(44,106,163,.09); --line:rgba(27,42,58,.12); --haze:rgba(44,106,163,.04);
+    --ok:#2e7d32; --bad:#b3261e; --cmb:#a35a12; --mood-low:#5f70ab; --mood-mid:#9c8b66; --mood-high:#2c6aa3;
+    --shadow:0 1px 2px rgba(27,42,58,.05),0 10px 30px rgba(27,42,58,.08); --glow:none;
+    --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif; --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Segoe UI",sans-serif}
+  :root[data-mood="blossom"]{color-scheme:light;
+    --bg:#fcf4f6; --bg2:#f7e2e9; --card:rgba(255,255,255,.9); --solid:#ffffff;
+    --ink:#2e1a22; --mut:#715862; --trn:#3d6fa8; --acc:#a8325e; --acc2:#7a4f9a; --g1:#f6bfd0; --g2:#e3829f; --onacc:#3a0f1f;
+    --soft:rgba(168,50,94,.08); --line:rgba(46,26,34,.12); --haze:rgba(168,50,94,.04);
+    --ok:#2e7d32; --bad:#b3261e; --cmb:#a35a12; --mood-low:#5f70ab; --mood-mid:#9c8b66; --mood-high:#a8325e;
+    --shadow:0 1px 2px rgba(46,26,34,.05),0 10px 30px rgba(46,26,34,.08); --glow:none;
+    --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif; --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Segoe UI",sans-serif}
+  :root[data-mood="mint"]{color-scheme:light;
+    --bg:#f1f8f4; --bg2:#ddefe5; --card:rgba(255,255,255,.9); --solid:#ffffff;
+    --ink:#18291f; --mut:#526b5e; --trn:#3a6d8c; --acc:#25704e; --acc2:#3a6d8c; --g1:#aee0c4; --g2:#67bd8f; --onacc:#0b2418;
+    --soft:rgba(37,112,78,.09); --line:rgba(24,41,31,.12); --haze:rgba(37,112,78,.04);
+    --ok:#2e7d32; --bad:#b3261e; --cmb:#a35a12; --mood-low:#5f70ab; --mood-mid:#9c8b66; --mood-high:#25704e;
+    --shadow:0 1px 2px rgba(24,41,31,.05),0 10px 30px rgba(24,41,31,.08); --glow:none;
+    --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif; --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Segoe UI",sans-serif}
+  :root[data-mood="lavender"]{color-scheme:light;
+    --bg:#f6f3fb; --bg2:#e8e1f5; --card:rgba(255,255,255,.9); --solid:#ffffff;
+    --ink:#231c33; --mut:#605876; --trn:#3d6fa8; --acc:#6345a6; --acc2:#a8325e; --g1:#d2c4f2; --g2:#9e86db; --onacc:#1c1236;
+    --soft:rgba(99,69,166,.09); --line:rgba(35,28,51,.12); --haze:rgba(99,69,166,.04);
+    --ok:#2e7d32; --bad:#b3261e; --cmb:#a35a12; --mood-low:#5f70ab; --mood-mid:#9c8b66; --mood-high:#6345a6;
+    --shadow:0 1px 2px rgba(35,28,51,.05),0 10px 30px rgba(35,28,51,.08); --glow:none;
+    --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif; --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Segoe UI",sans-serif}
+  :root[data-mood="peach"]{color-scheme:light;
+    --bg:#fdf5ef; --bg2:#f9e3d4; --card:rgba(255,255,255,.9); --solid:#ffffff;
+    --ink:#2e1f16; --mut:#725e4d; --trn:#3d6fa8; --acc:#a1471f; --acc2:#7d5a14; --g1:#f9c9a6; --g2:#ec9a6b; --onacc:#341405;
+    --soft:rgba(161,71,31,.08); --line:rgba(46,31,22,.12); --haze:rgba(161,71,31,.04);
+    --ok:#2e7d32; --bad:#b3261e; --cmb:#a35a12; --mood-low:#5f70ab; --mood-mid:#9c8b66; --mood-high:#a1471f;
+    --shadow:0 1px 2px rgba(46,31,22,.05),0 10px 30px rgba(46,31,22,.08); --glow:none;
+    --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif; --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Segoe UI",sans-serif}
+  :root[data-mood="indigo"]{color-scheme:dark;
+    --bg:#0f1024; --bg2:#1b1d3d; --card:rgba(24,26,54,.88); --solid:#1b1d3d;
+    --ink:#eceaf8; --mut:#a9a7c8; --trn:#9cc7f2; --acc:#c3b5ff; --acc2:#9fd3c0; --g1:#d2c6ff; --g2:#9483f2; --onacc:#140f33;
+    --soft:rgba(195,181,255,.12); --line:rgba(236,234,248,.12); --haze:rgba(195,181,255,.045);
+    --ok:#93e0b4; --bad:#ffa3a3; --cmb:#f2b866; --mood-low:#8aa6c9; --mood-mid:#b9ab8c; --mood-high:#c3b5ff;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 40px rgba(0,0,0,.55); --glow:0 0 22px rgba(195,181,255,.14);
+    --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif; --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Segoe UI",sans-serif}
+  :root[data-mood="ocean"]{color-scheme:dark;
+    --bg:#07131d; --bg2:#11253a; --card:rgba(15,33,49,.88); --solid:#11253a;
+    --ink:#e5f0f9; --mut:#97adc1; --trn:#86c9f5; --acc:#86c9f5; --acc2:#9fdcb4; --g1:#aadaf8; --g2:#4e9fd6; --onacc:#06182a;
+    --soft:rgba(134,201,245,.12); --line:rgba(229,240,249,.12); --haze:rgba(134,201,245,.045);
+    --ok:#93e0b4; --bad:#ffa3a3; --cmb:#f2b866; --mood-low:#8aa6c9; --mood-mid:#b9ab8c; --mood-high:#86c9f5;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 40px rgba(0,0,0,.55); --glow:0 0 22px rgba(134,201,245,.14);
+    --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif; --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Segoe UI",sans-serif}
+  :root[data-mood="amber"]{color-scheme:dark;
+    --bg:#140f09; --bg2:#231a10; --card:rgba(35,26,16,.88); --solid:#231a10;
+    --ink:#f5ecdc; --mut:#b8a98f; --trn:#e7c48a; --acc:#f5b947; --acc2:#e8956a; --g1:#f8cd6f; --g2:#e39a32; --onacc:#1d1205;
+    --soft:rgba(245,185,71,.12); --line:rgba(245,236,220,.12); --haze:rgba(245,185,71,.05);
+    --ok:#a8dd9a; --bad:#ff9f8a; --cmb:#f5b947; --mood-low:#b39a7a; --mood-mid:#c9a96b; --mood-high:#f5b947;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 40px rgba(0,0,0,.55); --glow:0 0 22px rgba(245,185,71,.16);
+    --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif; --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Segoe UI",sans-serif}
+  :root[data-mood]:not([data-mood="midnight"]):not([data-mood="indigo"]):not([data-mood="ocean"]):not([data-mood="amber"]) body::before{opacity:0}
   .mh small{font-weight:500;color:var(--mut);margin-left:4px}
   /* ---------- reader level (the "How do you use astrology?" choice). guide = "Just guide me": no charts, no jargon,
      its own bottom bar (Today · My year · Ask · Plans · More). learn and full show everything for now. ---------- */
@@ -1690,7 +1746,9 @@ function paintTheme(){
 }
 MQ.addEventListener('change',()=>{if(themeMode()==='auto')paintTheme()});
 paintTheme();
-// ----- colour moods (testing): Saffron Dawn, Midnight Temple, Clear Diya (large text), Lotus Calm -----
+// ----- colour moods (testing): Saffron Dawn, Midnight Temple, Clear Diya (large text), Lotus Calm, five pastels
+// (Sky Blue, Blossom Pink, Mint, Lavender, Peach) and three more dark ones (Indigo Night, Ocean Night, Amber Dark) in the Classic fonts -----
+const DARK_MOODS=['midnight','indigo','ocean','amber'];
 // Each mood is one fixed look, so it also sets light or dark; the light/dark button goes back to Classic.
 const MOOD_FONTS={saffron:'Fraunces:opsz,wght@9..144,500;9..144,600&family=Work+Sans:wght@400;500;600;700',
   midnight:'Marcellus&family=DM+Sans:wght@400;500;600;700',diya:'Atkinson+Hyperlegible:wght@400;700&family=Noto+Sans+Devanagari:wght@400;600',
@@ -1699,7 +1757,7 @@ const moodNow=()=>document.documentElement.getAttribute('data-mood')||'';
 function moodFont(m){if(!MOOD_FONTS[m]||document.getElementById('mf-'+m))return;const l=document.createElement('link');l.rel='stylesheet';l.id='mf-'+m;
   l.href='https://fonts.googleapis.com/css2?family='+MOOD_FONTS[m]+'&display=swap';document.head.appendChild(l)}
 function setMood(m,quiet){const r=document.documentElement;
-  if(m){moodFont(m);r.setAttribute('data-mood',m);r.setAttribute('data-theme',m==='midnight'?'dark':'light')}
+  if(m){moodFont(m);r.setAttribute('data-mood',m);r.setAttribute('data-theme',DARK_MOODS.includes(m)?'dark':'light')}
   else{r.removeAttribute('data-mood');let t=null;try{t=localStorage.getItem('sj-theme')}catch(e){}t==='dark'||t==='light'?r.setAttribute('data-theme',t):r.removeAttribute('data-theme')}
   try{m?localStorage.setItem('sj-mood',m):localStorage.removeItem('sj-mood')}catch(e){}
   paintTheme();if(!quiet)track('theme/'+(m||'classic'));try{RERENDER&&RERENDER()}catch(e){}}
@@ -1720,7 +1778,7 @@ function showResults(){hasChart=true;
   else route()}
 function openNew(){editId=null;$('go').textContent='Generate chart';$('f').reset();try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){};
   const ay=lastAyan();if(ay)$('ayan').value=ay;
-  const D=setDefaults();if(D.ayanamsha)$('ayan').value=D.ayanamsha;if(D.node)$('node').value=D.node;FORM_HS=D.house||null;  // Settings › Defaults
+  const D=setDefaults();if(D.ayanamsha)$('ayan').value=D.ayanamsha;if(D.node)$('node').value=D.node;FORM_HS=D.house||null;FORM_DY=D.dy||null;FORM_AKV=D.akv||null;  // Settings › Defaults
   tzError('');$('placeinfo').textContent='Search and pick a city, or enter coordinates below.';showForm()}
 $('newbtn').onclick=()=>{AFTER_NEW=null;nav('new')};
 $('cancel').onclick=()=>{editId=null;$('go').textContent='Generate chart';nav(LAST_SCREEN||'today')};
@@ -2160,7 +2218,7 @@ $('cfyes').onclick=async()=>{
 };
 function fillForm(q){
   $('name').value=q.name;$('dob').value=q.dob;$('tob').value=q.tob.slice(0,5);$('lat').value=q.lat;$('lon').value=q.lon;
-  $('place').value=q.place||'';$('tz').value=q.tz_name;$('unk').checked=q.tob_unknown;$('ayan').value=q.ayanamsha;$('node').value=q.node_type;FORM_HS=q.house_system||null;
+  $('place').value=q.place||'';$('tz').value=q.tz_name;$('unk').checked=q.tob_unknown;$('ayan').value=q.ayanamsha;$('node').value=q.node_type;FORM_HS=q.house_system||null;FORM_DY=q.dasha_year||null;FORM_AKV=q.ashtakavarga||null;
 }
 async function loadProfile(id){
   if(!id)return;  // guard: '/profiles/' is the list endpoint and would return an array
@@ -2346,6 +2404,8 @@ $('f').addEventListener('submit',async e=>{
     lat:parseFloat($('lat').value),lon:parseFloat($('lon').value),tz_name:$('tz').value.trim(),
     tob_unknown:$('unk').checked,ayanamsha:$('ayan').value,node_type:$('node').value};
   if(FORM_HS)body.house_system=FORM_HS;
+  if(FORM_DY)body.dasha_year=FORM_DY;
+  if(FORM_AKV)body.ashtakavarga=FORM_AKV;
   if(body.tob.length>8)body.tob=body.tob.slice(0,8);
   tzError('');
   if(!validTz(body.tz_name)){tzError(TZ_MSG);return}
@@ -3145,13 +3205,17 @@ function paintCheshta(c){const box=$('cheshta'),C=c.cheshta;if(!box)return;if(!C
 const AYN_LIST=[['krishnamurti','Krishnamurti (KP)'],['lahiri','Lahiri'],['pushya','Pushya Paksha'],['raman','Raman'],['fagan','Fagan-Bradley'],['tropical','Tropical (no ayanamsha)']];
 const HOUSES_FOR={krishnamurti:'Placidus (KP cusps)',lahiri:'Whole sign',pushya:'Placidus (KP cusps)',raman:'Whole sign',fagan:'Placidus',tropical:'Placidus'};
 const HS_LIST=[['placidus','Placidus (KP)'],['koch','Koch'],['sripati','Sripati'],['equal','Equal'],['whole_sign','Whole sign']];
-let FORM_HS=null;  // house system the chart form sends: the edited chart's, or Settings › Defaults
+let FORM_HS=null,FORM_DY=null,FORM_AKV=null;  // house system, dasha year and Ashtakavarga method the chart form sends: the edited chart's, or Settings › Defaults
+const DY_LIST=[['solar','Solar · 365.25'],['savana','Savana · 360']],AKV_LIST=[['parashara','Parashara'],['varahamihira','Varahamihira']];
 function setDefaults(){try{return JSON.parse(localStorage.getItem('sj-defaults')||'{}')}catch(e){return {}}}
 function saveDefaults(d){try{localStorage.setItem('sj-defaults',JSON.stringify(d))}catch(e){}}
 let SET={pend:null,find:[],busy:false},MOOD_OK=false;
 const moodOn=()=>typeof moodNow==='function'?moodNow():'';  // colour themes may not be loaded
 const MOODS=[['','Classic','#fbf7ef','#c98f2e'],['saffron','Saffron Dawn','#fbf6ec','#c2410c'],['midnight','Midnight Temple','#0b1418','#e0b45c'],
-  ['diya','Clear Diya','#ffffff','#8e1b1b'],['lotus','Lotus Calm','#f3f6f1','#4f7a5c']];
+  ['diya','Clear Diya','#ffffff','#8e1b1b'],['lotus','Lotus Calm','#f3f6f1','#4f7a5c'],
+  ['sky','Sky Blue','#f2f7fc','#5fa6dd'],['blossom','Blossom Pink','#fcf4f6','#e3829f'],['mint','Mint','#f1f8f4','#67bd8f'],
+  ['lavender','Lavender','#f6f3fb','#9e86db'],['peach','Peach','#fdf5ef','#ec9a6b'],
+  ['indigo','Indigo Night','#0f1024','#c3b5ff'],['ocean','Ocean Night','#07131d','#86c9f5'],['amber','Amber Dark','#140f09','#f5b947']];
 function openSettings(){$('setscrim').hidden=false;$('setsheet').hidden=false;SET={pend:null,find:[],busy:false};paintSettings();track('settings/open');$('setdone').focus()}
 function closeSettings(){$('setscrim').hidden=true;$('setsheet').hidden=true}
 function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.name||'this chart').split(' ')[0];
@@ -3166,9 +3230,13 @@ function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.
     '<div class="setrow"><div><b>Ayanamsa</b><small>Moves every position slightly, and the Dasha dates</small></div>'+sel('setay',P&&P.key==='ayanamsha'?P.v:R.ayanamsha)+'</div>'+
     '<div class="setrow"><div><b>Rahu and Ketu</b><small>Mean node is the classical default</small></div>'+seg('node',[['mean','Mean'],['true','True']],P&&P.key==='node_type'?P.v:R.node_type||'mean')+'</div>'+
     '<div class="setrow"><div><b>House system</b><small>KP sub lords and Nadi readings use Placidus</small></div>'+hsel('seths',P&&P.key==='house_system'?P.v:R.house_system||'',P&&P.key==='ayanamsha'?P.v:R.ayanamsha)+'</div>'+
+    '<div class="setrow"><div><b>Days in a dasha year</b><small>Vimshottari, Yogini, Chara and Narayana dates</small></div>'+seg('dy',DY_LIST,P&&P.key==='dasha_year'?P.v:R.dasha_year||'solar')+'</div>'+
+    '<div class="setrow"><div><b>Ashtakavarga</b><small>Bindu tables: they differ for the Moon and Venus</small></div>'+seg('akv',AKV_LIST,P&&P.key==='ashtakavarga'?P.v:R.ashtakavarga||'parashara')+'</div>'+
     (P?'<div class="setwarn">'+(P.key==='ayanamsha'?'Changing <b>'+esc(name)+'</b> to <b>'+esc(AYN_LIST.find(x=>x[0]===P.v)[1])+'</b> recalculates the chart'+(shift?' and moves the Dasha dates by about <b>'+(shift>=60?Math.round(shift/30.4)+' months':shift+' days')+'</b>':'')+'.'
        :P.key==='house_system'?'Changing <b>'+esc(name)+'</b> to <b>'+(P.v?esc(HS_LIST.find(x=>x[0]===P.v)[1]):'the ayanamsa’s own')+'</b> houses moves the cusps, so some planets may change house.'+
          (P.v&&P.v!=='placidus'?' KP sub lords and Nadi readings are made for Placidus cusps.':'')
+       :P.key==='dasha_year'?'Changing <b>'+esc(name)+'</b> to the <b>'+(P.v==='savana'?'360-day Savana':'365.25-day solar')+'</b> year moves every Dasha date'+(shift?' — the running Mahadasha by about <b>'+(shift>=60?Math.round(shift/30.4)+' months':shift+' days')+'</b>':'')+'.'
+       :P.key==='ashtakavarga'?'Changing <b>'+esc(name)+'</b> to <b>'+(P.v==='varahamihira'?'Varahamihira':'Parashara')+'</b> moves a few Moon and Venus bindus (the Sarvashtakavarga by up to a few points per sign).'
        :'Changing <b>'+esc(name)+'</b> to the <b>'+(P.v==='true'?'True':'Mean')+'</b> node moves Rahu and Ketu slightly.')+
       ' Readings, Coming up and rectification will use it.<div class="setbtns"><button type="button" class="btn" data-set="apply"'+(SET.busy?' disabled':'')+'>'+(SET.busy?'Recalculating…':'Recalculate '+esc(name))+'</button><button type="button" class="btn ghost" data-set="cancel">Cancel</button></div></div>':''):
     '<h5>This chart</h5><p class="hint">Save a chart to change its ayanamsa, node or houses here.</p>')+
@@ -3176,6 +3244,8 @@ function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.
     '<div class="setrow"><div><b>Ayanamsa</b></div>'+sel('setdefay',D.ayanamsha||'krishnamurti')+'</div>'+
     '<div class="setrow"><div><b>Rahu and Ketu</b></div>'+seg('defnode',[['mean','Mean'],['true','True']],D.node||'mean')+'</div>'+
     '<div class="setrow"><div><b>House system</b></div>'+hsel('setdefhs',D.house||'')+'</div>'+
+    '<div class="setrow"><div><b>Days in a dasha year</b></div>'+seg('defdy',DY_LIST,D.dy||'solar')+'</div>'+
+    '<div class="setrow"><div><b>Ashtakavarga</b></div>'+seg('defakv',AKV_LIST,D.akv||'parashara')+'</div>'+
    '<h5>Display</h5>'+
     '<div class="setrow"><div><b>Chart style</b></div>'+seg('style',[['north','North Indian'],['south','South Indian']],CHART_STYLE==='south'?'south':'north')+'</div>'+
     '<div class="setrow"><div><b>Theme</b>'+(moodOn()?'<small>A colour theme is on; this switches back to Classic</small>':'')+'</div>'+seg('theme',[['light','Light'],['dark','Dark'],['auto','System']],moodOn()?'':mode)+'</div>'+
@@ -3187,8 +3257,8 @@ function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.
       SET.find.map((r,i)=>'<button type="button" data-set="city" data-i="'+i+'">'+esc([r.name,r.admin1,r.country].filter(Boolean).join(', '))+'</button>').join('')+'</div>'+
       '<div class="setbtns"><button type="button" class="btn ghost" data-set="gps">Use my current location</button>'+(MU.here?'<button type="button" class="btn ghost" data-set="birth">Use birthplace</button>':'')+'</div></div>'+
    '<p class="hint setfoot">Reminders and Telegram: in Coming up and the bot’s /settings. Your level: in the chart menu.</p>'}
-async function dashaShift(v){// how far the running Mahadasha moves under another ayanamsha
-  try{const r=await fetch('/chart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...lastReq,ayanamsha:v})});const c=await r.json();
+async function dashaShift(v,key){// how far the running Mahadasha moves under another ayanamsha (or dasha year)
+  try{const r=await fetch('/chart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...lastReq,[key||'ayanamsha']:v})});const c=await r.json();
     const now=Date.now(),f=x=>(x.dasha||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end))||x.dasha[0];
     return Math.round((new Date(f(c).start)-new Date(f(lastChart).start))/864e5)}catch(e){return 0}}
 $('msettings').onclick=()=>{closeMenu();openSettings()};
@@ -3207,13 +3277,16 @@ $('setsheet').addEventListener('input',e=>{if(e.target.id!=='setcity')return;con
     const keep=$('setcity').value;paintSettings();const i=$('setcity');i.value=keep;i.focus()},300)});
 $('setsheet').addEventListener('click',async e=>{const b=e.target.closest('[data-set]');if(!b)return;const k=b.dataset.set,v=b.dataset.v;
   if(k==='node'){if(v===(lastReq.node_type||'mean')){SET.pend=null}else SET.pend={key:'node_type',v,shiftDays:0};paintSettings()}
+  else if(k==='dy'){if(v===(lastReq.dasha_year||'solar')){SET.pend=null;paintSettings()}else{SET.pend={key:'dasha_year',v,shiftDays:0};paintSettings();SET.pend.shiftDays=await dashaShift(v,'dasha_year');if(SET.pend&&SET.pend.v===v)paintSettings()}}
+  else if(k==='akv'){SET.pend=v===(lastReq.ashtakavarga||'parashara')?null:{key:'ashtakavarga',v,shiftDays:0};paintSettings()}
   else if(k==='cancel'){SET.pend=null;paintSettings()}
   else if(k==='apply'&&SET.pend&&currentId!=null){SET.busy=true;paintSettings();
     const body={...lastReq,[SET.pend.key]:SET.pend.v||null};
     try{const r=await fetch('/profiles/'+currentId,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw 0;
-      track('settings/'+({node_type:'node',house_system:'house'}[SET.pend.key]||'ayanamsa'));await loadProfile(currentId);SET={pend:null,find:[],busy:false};paintSettings()}
+      track('settings/'+({node_type:'node',house_system:'house',dasha_year:'dasha-year',ashtakavarga:'ashtakavarga'}[SET.pend.key]||'ayanamsa'));await loadProfile(currentId);SET={pend:null,find:[],busy:false};paintSettings()}
     catch(err){SET.busy=false;paintSettings()}}
   else if(k==='defnode'){const D=setDefaults();D.node=v;saveDefaults(D);paintSettings()}
+  else if(k==='defdy'||k==='defakv'){const D=setDefaults(),f=k==='defdy'?'dy':'akv';if(v===(f==='dy'?'solar':'parashara'))delete D[f];else D[f]=v;saveDefaults(D);track('settings/default-'+(f==='dy'?'dasha-year':'ashtakavarga'));paintSettings()}
   else if(k==='style'){setChartStyle(v);paintSettings()}
   else if(k==='mood'){if(v!==moodOn())setMood(v);paintSettings()}
   else if(k==='theme'){if(moodOn()){document.documentElement.removeAttribute('data-mood');try{localStorage.removeItem('sj-mood')}catch(_){}}

@@ -198,7 +198,7 @@ def ayanamsha_note(chart: dict, md: dict) -> dict:
     finally:
         set_sidereal_mode(name, meta["julian_day"])  # leave Swiss Ephemeris in the chart's own frame
     moon = (chart["grahas"]["Moon"]["longitude"] + meta["ayanamsha_value"] - lahiri) % 360
-    same = next((p for p in vim.vimshottari_tree(moon, _birth(chart), max_level=1) if p.lord == md["lord"]), None)
+    same = next((p for p in vim.vimshottari_tree(moon, _birth(chart), max_level=1, days_per_year=vim.year_days(chart)) if p.lord == md["lord"]), None)
     if same:
         out["lahiri"] = {"shift_days": round((same.start - datetime.fromisoformat(md["start"])).total_seconds() / 86400),
                          "md_start": same.start.isoformat()}

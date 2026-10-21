@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from core.ashtakavarga import ashtakavarga
+from core.ashtakavarga import ashtakavarga, chart_method
 from core.constants import SIGN_LORDS, SIGNS
 from core.dignity import dignity
 from core.parivartana import exchanges
@@ -99,7 +99,7 @@ def build(profile: dict, now: datetime | None = None) -> dict:
     waxing = (g["Moon"]["longitude"] - g["Sun"]["longitude"]) % 360 < 180
     benefic = {"Jupiter", "Venus", "Mercury"} | ({"Moon"} if waxing else set())
     nature = lambda p: "benefic" if p in benefic else "malefic"
-    akv = ashtakavarga(signs, L)
+    akv = ashtakavarga(signs, L, chart_method(c))
     sav = {h: akv["sav"][(L + h - 1) % 12] for h in range(1, 13)}
     strong = lambda p: dig[p] in ("exalted", "own") or (dig[p] == "debilitated" and nb.get(p, {}).get("cancelled"))
 

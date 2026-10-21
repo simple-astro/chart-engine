@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.schemas import ChartRequest, PanchangRequest, TransitRequest, TransitScanRequest
 from core import ephemeris
-from core.ashtakavarga import ashtakavarga
+from core.ashtakavarga import ashtakavarga, chart_method
 from core.chart import ENGINE_VERSION, BirthData, compute_natal_chart
 from core.grahas import Graha
 from core import bnn, chara, jaimini, yoga_eval, yogas, yogini
@@ -89,6 +89,8 @@ def chart(req: ChartRequest) -> dict:
         ayanamsha=req.ayanamsha,
         node_type=req.node_type,
         house_system=req.house_system,
+        dasha_year=req.dasha_year,
+        ashtakavarga=req.ashtakavarga,
     )
     require_tz(req.tz_name)
     try:
@@ -114,7 +116,7 @@ def with_extras(c: dict) -> dict:
     if "cheshta" not in c:  # motional strength, for study only (core/cheshta.py)
         from core.cheshta import cheshta
         c["cheshta"] = cheshta(c["meta"]["julian_day"])
-    c["ashtakavarga"] = ashtakavarga(signs, lagna)
+    c["ashtakavarga"] = ashtakavarga(signs, lagna, chart_method(c))
     c["lords"] = lord_placements(signs, lagna)
     c["exchanges"] = {"D1": exchanges(signs, lagna)}
     d9 = {p: v["sign_index"] for p, v in c["vargas"].get("D9", {}).items()} or None

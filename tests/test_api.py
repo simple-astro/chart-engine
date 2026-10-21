@@ -103,3 +103,27 @@ def test_old_time_zone_names_still_work():
     assert importlib.util.find_spec("tzdata") is not None
     body = {"dob": "1990-05-15", "tob": "14:30:00", "lat": 28.6139, "lon": 77.209, "tz_name": "Asia/Calcutta"}
     assert client.post("/chart", json=body).status_code == 200
+
+
+def test_dasha_year_and_ashtakavarga_settings():
+    from fastapi.testclient import TestClient
+    from datetime import datetime
+    from app.main import app
+    from core import ashtakavarga as A
+    c = TestClient(app)
+    base = {"dob": "1987-09-01", "tob": "14:30:00", "lat": 30.73629, "lon": 76.7884, "tz_name": "Asia/Kolkata"}
+    solar = c.post("/chart", json=base).json()
+    savana = c.post("/chart", json={**base, "dasha_year": "savana", "ashtakavarga": "varahamihira"}).json()
+    assert "dasha_year" not in solar["meta"] and savana["meta"]["dasha_year"] == "savana"
+    days = lambda ch, i: (datetime.fromisoformat(ch["dasha"][i]["end"]) - datetime.fromisoformat(ch["dasha"][i]["start"])).days
+    for i in (1, 2):  # whole Mahadashas: years x days per year
+        assert abs(days(solar, i) / days(savana, i) - 365.25 / 360) < 0.001
+    assert solar["ashtakavarga"]["method"] == "parashara" and savana["ashtakavarga"]["method"] == "varahamihira"
+    assert solar["ashtakavarga"]["bav_totals"] == savana["ashtakavarga"]["bav_totals"]
+    t = A.table("varahamihira")
+    assert 9 in t["Moon"]["Moon"] and 9 not in t["Moon"]["Mars"] and 2 in t["Moon"]["Jupiter"]
+    assert 12 not in t["Moon"]["Jupiter"] and 4 in t["Venus"]["Mars"] and 5 not in t["Venus"]["Mars"]
+    assert A.table("parashara") is A.BENEFIC
+    span = lambda p: (datetime.fromisoformat(p["end"]) - datetime.fromisoformat(p["start"])).days
+    assert abs(span(solar["narayana"]["periods"][1]) / span(savana["narayana"]["periods"][1]) - 365.25 / 360) < 0.01
+    assert c.post("/chart", json={**base, "dasha_year": "lunar"}).status_code == 422

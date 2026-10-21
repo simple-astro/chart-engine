@@ -23,6 +23,8 @@ class ChartRequest(BaseModel):
     ayanamsha: Ayanamsha = "krishnamurti"
     node_type: NodeType = "mean"
     house_system: HouseSystem | None = None  # None: the ayanamsha's default
+    dasha_year: Literal["solar", "savana"] = "solar"           # days in a dasha year: 365.25 or 360
+    ashtakavarga: Literal["parashara", "varahamihira"] = "parashara"
 
 
 class TransitRequest(BaseModel):

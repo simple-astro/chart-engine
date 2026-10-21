@@ -32,42 +32,44 @@ def _jd_to_utc(jd: float) -> datetime:
     return datetime(2000, 1, 1, 12, tzinfo=timezone.utc) + timedelta(days=jd - 2451545.0)
 
 
-def _period(i: int, start: datetime, years: float) -> dict:
+def _period(i: int, start: datetime, years: float, days: float = DAYS_PER_YEAR) -> dict:
     name, planet, _, text, tone = YOGINIS[i]
-    end = start + timedelta(days=years * DAYS_PER_YEAR)
+    end = start + timedelta(days=years * days)
     return {"yogini": name, "planet": planet, "start": start.isoformat(), "end": end.isoformat(),
             "years": round(years, 4), "text": text, "tone": tone}
 
 
-def yogini_dasha(moon_longitude: float, birth_utc: datetime, cycles: int = 3) -> list[dict]:
+def yogini_dasha(moon_longitude: float, birth_utc: datetime, cycles: int = 3,
+                 days: float = DAYS_PER_YEAR) -> list[dict]:
     """Main periods from birth for ``cycles`` x 36 years, each with its sub-periods."""
     nak = int(moon_longitude // NAK_SPAN)  # 0-based
     first = (nak + 1 + 3 - 1) % 8           # (nakshatra number + 3), 1..8 -> 0..7
     done = (moon_longitude % NAK_SPAN) / NAK_SPAN
     full = YOGINIS[first][2]
     # The first period began before birth: the elapsed part of the nakshatra.
-    start = birth_utc - timedelta(days=done * full * DAYS_PER_YEAR)
+    start = birth_utc - timedelta(days=done * full * days)
     out = []
     for k in range(8 * cycles):
         i = (first + k) % 8
         years = YOGINIS[i][2]
-        main = _period(i, start, years)
+        main = _period(i, start, years, days)
         subs, s = [], start
         for j in range(8):
             si = (i + j) % 8
             sy = years * YOGINIS[si][2] / TOTAL
-            subs.append(_period(si, s, sy))
-            s = s + timedelta(days=sy * DAYS_PER_YEAR)
+            subs.append(_period(si, s, sy, days))
+            s = s + timedelta(days=sy * days)
         main["sub"] = subs
         out.append(main)
-        start = start + timedelta(days=years * DAYS_PER_YEAR)
+        start = start + timedelta(days=years * days)
     return out
 
 
 def summary(chart: dict, now: datetime | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
     birth = _jd_to_utc(chart["meta"]["julian_day"])
-    periods = yogini_dasha(chart["grahas"]["Moon"]["longitude"], birth)
+    from core.dasha import year_days
+    periods = yogini_dasha(chart["grahas"]["Moon"]["longitude"], birth, days=year_days(chart))
     iso = now.isoformat()
     cur = next((p for p in periods if p["start"] <= iso < p["end"]), None)
     sub = cur and next((s for s in cur["sub"] if s["start"] <= iso < s["end"]), None)

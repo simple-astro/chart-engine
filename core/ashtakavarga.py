@@ -34,13 +34,34 @@ BENEFIC: dict[str, dict[str, tuple[int, ...]]] = {
 }
 
 
-def ashtakavarga(signs: dict[str, int], lagna_sign: int) -> dict:
+# Varahamihira (Brihat Jataka) differs from Parashara in six places, as in Jagannatha Hora and PyJHora:
+# (planet, contributor) -> (houses added, houses removed). Each planet's total stays the same.
+VARAHAMIHIRA = {("Moon", "Moon"): ({9}, set()), ("Moon", "Mars"): (set(), {9}),
+                ("Moon", "Jupiter"): ({2}, {12}), ("Venus", "Mars"): ({4}, {5})}
+METHODS = ("parashara", "varahamihira")
+
+
+def table(method: str = "parashara") -> dict[str, dict[str, tuple[int, ...]]]:
+    if method != "varahamihira":
+        return BENEFIC
+    out = {p: dict(c) for p, c in BENEFIC.items()}
+    for (planet, contrib), (add, drop) in VARAHAMIHIRA.items():
+        out[planet][contrib] = tuple(sorted((set(out[planet][contrib]) | add) - drop))
+    return out
+
+
+def chart_method(chart: dict) -> str:
+    return (chart.get("meta") or {}).get("ashtakavarga", "parashara")
+
+
+def ashtakavarga(signs: dict[str, int], lagna_sign: int, method: str = "parashara") -> dict:
     """signs: planet -> sign index (0 = Aries). Returns BAV and SAV indexed by sign."""
     pos = {**{p: signs[p] for p in PLANETS}, "Lagna": lagna_sign}
+    rules = table(method)
     bav = {}
     for planet in PLANETS:
         row = [0] * 12
-        for contrib, houses in BENEFIC[planet].items():
+        for contrib, houses in rules[planet].items():
             for h in houses:
                 row[(pos[contrib] + h - 1) % 12] += 1
         bav[planet] = row
@@ -51,4 +72,5 @@ def ashtakavarga(signs: dict[str, int], lagna_sign: int) -> dict:
         "bav_totals": {p: sum(bav[p]) for p in PLANETS},
         "sav_total": sum(sav),
         "own_bindus": {p: bav[p][signs[p]] for p in PLANETS},
+        "method": method,
     }

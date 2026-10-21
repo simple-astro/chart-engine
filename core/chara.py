@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 from core import bnn, jaimini
 from core.constants import SIGN_LORDS, SIGNS
 
-DAYS_PER_YEAR = 365.25
+from core.dasha import year_days
 VISHAMA = {0, 1, 2, 6, 7, 8}
 PAIRS = {7: ("Mars", "Ketu"), 10: ("Saturn", "Rahu")}
 
@@ -84,16 +84,17 @@ def chara_dasha(chart: dict, cycles: int = 2) -> list[dict]:
     lagna = chart["lagna"]["sign_index"]
     order = mahadasha_order(lagna)
     start, out = _jd_to_utc(chart["meta"]["julian_day"]), []
+    days = year_days(chart)
     for cycle in range(cycles):
         for s in order:
             y = sign_years(s, signs, degs)
             years = y if cycle == 0 else 12 - y
             if years <= 0:
                 continue
-            end = start + timedelta(days=years * DAYS_PER_YEAR)
+            end = start + timedelta(days=years * days)
             subs, t = [], start
             for si in sub_order(s):
-                e = t + timedelta(days=years * DAYS_PER_YEAR / 12)
+                e = t + timedelta(days=years * days / 12)
                 subs.append({"sign": SIGNS[si], "sign_index": si, "start": t.isoformat(), "end": e.isoformat()})
                 t = e
             out.append({"sign": SIGNS[s], "sign_index": s, "house": (s - lagna) % 12 + 1, "years": years,
@@ -237,13 +238,14 @@ def narayana_dasha(chart: dict, cycles: int = 2) -> dict:
     seventh = (lagna + 6) % 12
     start = lagna if _sign_strength(lagna, signs, degs) >= _sign_strength(seventh, signs, degs) else seventh
     t, out = _jd_to_utc(chart["meta"]["julian_day"]), []
+    days = year_days(chart)
     for cycle in range(cycles):
         for s in narayana_order(start, signs):
             y = narayana_years(s, signs, degs)
             years = y if cycle == 0 else 12 - y
             if years <= 0:
                 continue
-            end = t + timedelta(days=years * DAYS_PER_YEAR)
+            end = t + timedelta(days=years * days)
             out.append({"sign": SIGNS[s], "sign_index": s, "house": (s - lagna) % 12 + 1, "years": years,
                         "start": t.isoformat(), "end": end.isoformat(),
                         "planets": [p for p, x in signs.items() if x == s]})

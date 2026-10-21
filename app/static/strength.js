@@ -87,7 +87,8 @@
     }).join('');
 
     el.innerHTML = `<p class="sub"><b>Ashtakavarga</b> gives each house a score from eight sources — the seven planets and your lagna.
-        Above <b>28</b> a house is strong and gives good results easily; below <b>25</b> it needs more effort.</p>
+        Above <b>28</b> a house is strong and gives good results easily; below <b>25</b> it needs more effort.
+        <small class="hint">${a.method === 'varahamihira' ? 'Varahamihira' : 'Parashara'} tables · change in Settings.</small></p>
       <div class="stats" style="margin-bottom:6px"><div class="stat"><small>Strongest house</small><b>${ord(best)} · ${byH[best - 1]}</b><em>${esc(THEME[best])}</em></div>
         <div class="stat"><small>Weakest house</small><b>${ord(worst)} · ${byH[worst - 1]}</b><em>${esc(THEME[worst])}</em></div>
         <div class="stat"><small>Strong houses</small><b>${strong.length} of 12</b><em>28 or more</em></div></div>

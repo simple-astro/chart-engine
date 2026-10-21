@@ -34,6 +34,8 @@ class BirthData:
     ayanamsha: str = "krishnamurti"
     node_type: str = "mean"
     house_system: str | None = None  # None: the ayanamsha's default (KP Placidus, Lahiri whole sign…)
+    dasha_year: str = "solar"         # days in a dasha year: "solar" (365.25) or "savana" (360)
+    ashtakavarga: str = "parashara"   # "parashara" or "varahamihira" bindu tables
 
 
 def _r(x: float) -> float:
@@ -108,9 +110,11 @@ def compute_natal_chart(birth: BirthData) -> dict:
     psig = planet_significators(grahas, houses)
     hsig = house_significators(grahas, houses)
 
-    dasha = [_serialize_dasha(md) for md in vimshottari_tree(grahas["Moon"].longitude, local_dt)]
+    from core.dasha import YEAR_DAYS
+    dasha = [_serialize_dasha(md) for md in vimshottari_tree(grahas["Moon"].longitude, local_dt,
+                                                             days_per_year=YEAR_DAYS[birth.dasha_year])]
 
-    return {
+    out = {
         "meta": {
             "name": birth.name,
             "julian_day": _r(jd),
@@ -136,6 +140,12 @@ def compute_natal_chart(birth: BirthData) -> dict:
         "vargas": varga_mod.compute_vargas(grahas),
         "dasha": dasha,
     }
+    # Only when changed from the default, so charts cast before these settings stay byte-for-byte the same.
+    if birth.dasha_year != "solar":
+        out["meta"]["dasha_year"] = birth.dasha_year
+    if birth.ashtakavarga != "parashara":
+        out["meta"]["ashtakavarga"] = birth.ashtakavarga
+    return out
 
 
 def chart_to_json(chart: dict) -> str:
