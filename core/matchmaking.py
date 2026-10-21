@@ -341,6 +341,110 @@ def _verdict(total: float) -> str:
     return "Below the usual 18-point minimum"
 
 
+# ---------- Moon to Moon: the two Moons read against each other, in plain words ----------
+PAIR_LINE = {
+    (1, 1): ("good", "Both Moons are in the same sign: you feel things in a similar way and understand each other's moods."),
+    (7, 7): ("good", "Your Moons face each other (7th from each other): a natural pull and balance, classically a good pair."),
+    (3, 11): ("good", "Your Moons are 3rd and 11th from each other: friendly and encouraging; you push each other forward."),
+    (4, 10): ("ok", "Your Moons are 4th and 10th from each other: one brings comfort at home, the other drive outside; value both roles."),
+    (5, 9): ("care", "Your Moons are 5th and 9th from each other: warm, but views on children, faith or long-term plans can differ; talk them through."),
+    (6, 8): ("care", "Your Moons are 6th and 8th from each other: small everyday frictions are likely; patience and kind routines help."),
+    (2, 12): ("care", "Your Moons are 2nd and 12th from each other: money and spending habits can differ; plan finances together."),
+}
+TARA_MEANING = {"Janma": "the same star group: alike in many ways", "Sampat": "brings prosperity", "Vipat": "brings obstacles",
+                "Kshema": "brings well-being", "Pratyak": "brings friction", "Sadhana": "helps each other achieve",
+                "Naidhana": "traditionally the hardest pairing; needs care", "Mitra": "a friend", "Parama Mitra": "a close friend"}
+HOUSE_PULL = {1: ("good", "a presence that is strongly felt"), 2: ("ok", "a bond with family and shared resources"),
+              3: ("ok", "encouragement and courage"), 4: ("good", "the feeling of home and comfort"),
+              5: ("good", "romance and joy"), 6: ("care", "duty and service, which needs effort to stay warm"),
+              7: ("good", "the classic pull of partnership"), 8: ("care", "depth and intensity; give each other space"),
+              9: ("good", "shared faith and good fortune"), 10: ("ok", "support for work and standing"),
+              11: ("good", "friendship and gains"), 12: ("care", "a quieter bond, with time apart; keep in touch")}
+MOON_SIGN_NOTE = {1: "exalted in Taurus: steady and content", 3: "in its own sign Cancer: caring and secure",
+                  7: "debilitated in Scorpio: feelings run deep; reassurance and patience help"}
+
+
+def _pair(a: int) -> tuple[int, int]:
+    return tuple(sorted((a, (14 - a) % 12 or 12)))
+
+
+def _moon_state(chart: dict) -> str:
+    el = (chart["grahas"]["Moon"]["longitude"] - chart["grahas"]["Sun"]["longitude"]) % 360
+    phase = ("near the full Moon: open and expressive" if 150 <= el <= 210 else
+             "near the new Moon: quieter and more inward; small reassurances matter" if el < 30 or el > 330 else
+             "waxing: growing in confidence" if el < 180 else "waning: reflective and steady")
+    note = MOON_SIGN_NOTE.get(chart["grahas"]["Moon"]["sign_index"])
+    return phase + (f"; {note}" if note else "")
+
+
+def moon_links(groom: dict, bride: dict, names: tuple[str, str]) -> list[dict]:
+    """Plain highlights from the two Moons: sign distance both ways, birth stars, sign lords, each Moon in the other's
+    chart, the Moons in the navamsa, and how steady each Moon is. Facts only; each line says what it rests on."""
+    gn, bn = names
+    g, b = _moon(groom), _moon(bride)
+    out = []
+    d1, d2 = _from(g["sign_index"], b["sign_index"]), _from(b["sign_index"], g["sign_index"])
+    kind, text = PAIR_LINE[_pair(d1)]
+    out.append({"title": "Moon to Moon", "kind": kind, "text": text,
+                "why": f"Both Moons are in {g['sign']}." if d1 == 1 else
+                f"{gn}'s Moon in {g['sign']} is {_ord(d1)} from {bn}'s Moon in {b['sign']}; {bn}'s is {_ord(d2)} from {gn}'s."})
+    r_g, _ = _tara(b["nak_index"], g["nak_index"])
+    r_b, _ = _tara(g["nak_index"], b["nak_index"])
+    tg, tb = TARA_NAMES[r_g - 1], TARA_NAMES[r_b - 1]
+    bad = {"Vipat", "Pratyak", "Naidhana"}
+    out.append({"title": "Birth stars", "kind": "care" if tg in bad and tb in bad else "ok" if tg in bad or tb in bad else "good",
+                "text": f"Counted from {bn}'s star, {gn}'s is {tg} ({TARA_MEANING[tg]}); counted from {gn}'s, {bn}'s is {tb} ({TARA_MEANING[tb]}).",
+                "why": f"{gn}: {g['nak']} pada {g['pada']} · {bn}: {b['nak']} pada {b['pada']}."})
+    gl, bl = SIGN_LORD[g["sign_index"]], SIGN_LORD[b["sign_index"]]
+    rg, rb = _rel(gl, bl), _rel(bl, gl)
+    out.append({"title": "Moon-sign lords", "kind": "good" if "enemy" not in (rg, rb) and "friend" in (rg, rb) else
+                "care" if rg == rb == "enemy" else "ok",
+                "text": ("Both Moons have the same lord: you think along similar lines." if gl == bl else
+                         f"{gl} ({gn}) treats {bl} as a {rg}, and {bl} ({bn}) treats {gl} as a {rb}: "
+                         + ("an easy mental wavelength." if "enemy" not in (rg, rb) and "friend" in (rg, rb)
+                            else "different ways of thinking; patient, clear talk helps." if "enemy" in (rg, rb)
+                            else "a fair, workable wavelength.")),
+                "why": f"Both Moon signs are ruled by {gl}." if gl == bl else f"Lord of {g['sign']} is {gl}; lord of {b['sign']} is {bl}."})
+    for (who, chart_who, other, moon_other) in ((gn, groom, bn, b), (bn, bride, gn, g)):
+        if "lagna" not in chart_who:
+            continue
+        h = _from(moon_other["sign_index"], chart_who["lagna"]["sign_index"])
+        k, what = HOUSE_PULL[h]
+        out.append({"title": f"{other}'s Moon in {who}'s chart", "kind": k,
+                    "text": f"{other}'s Moon falls in {who}'s {_ord(h)} house: {what}.",
+                    "why": f"{who}'s lagna is {chart_who['lagna']['sign']}; {other}'s Moon is in {moon_other['sign']}."})
+    if all("vargas" in c for c in (groom, bride)):
+        out.append(_d9_moons(groom, bride, g, b, gn, bn))
+    if all("longitude" in c["grahas"].get(x, {}) for c in (groom, bride) for x in ("Sun", "Moon")):
+        out.append({"title": "How each Moon feels", "kind": "ok",
+                    "text": f"{gn}: {_moon_state(groom)}. {bn}: {_moon_state(bride)}.",
+                    "why": "From each Moon's distance to the Sun (waxing or waning) and its sign."})
+    return out
+
+
+def _d9_moons(groom: dict, bride: dict, g: dict, b: dict, gn: str, bn: str) -> dict:
+    g9, b9 = (c["vargas"]["D9"]["Moon"]["sign_index"] for c in (groom, bride))
+    vg = [n for n, c, s9 in ((gn, g, g9), (bn, b, b9)) if c["sign_index"] == s9]
+    k9, t9 = PAIR_LINE[_pair(_from(g9, b9))]
+    return {"title": "Moons in the navamsa (D9)", "kind": k9,
+                "text": t9.replace("Your Moons", "In the navamsa your Moons").replace("Both Moons", "In the navamsa both Moons")
+                + (f" {' and '.join(vg)} {'has' if len(vg) == 1 else 'have'} a Vargottama Moon (the same sign in D1 and D9), which steadies the mind." if vg else ""),
+                "why": f"D9 Moon: {gn} in {SIGNS_EN[g9]}, {bn} in {SIGNS_EN[b9]}. The navamsa needs an accurate birth time."}
+
+
+def chart_view(chart: dict) -> dict | None:
+    """What the match page needs to draw the D1 and D9 charts: each lagna sign and every planet's sign."""
+    from core.vargas import varga_sign
+    if "lagna" not in chart or "vargas" not in chart:
+        return None
+    d1 = {p: {"sign": g["sign_index"], "retro": g.get("retrograde", False)} for p, g in chart["grahas"].items()}
+    d9 = {p: {"sign": v["sign_index"], "retro": chart["grahas"][p].get("retrograde", False)}
+          for p, v in chart["vargas"]["D9"].items()}
+    return {"d1": {"lagna": chart["lagna"]["sign_index"], "planets": d1},
+            "d9": {"lagna": varga_sign(chart["lagna"]["ascendant"], 9), "planets": d9},
+            "tob_unknown": bool(chart["meta"].get("tob_unknown"))}
+
+
 def compute_match(groom: dict, bride: dict) -> dict:
     g, b = _moon(groom), _moon(bride)
     kootas = []
@@ -401,6 +505,8 @@ def compute_match(groom: dict, bride: dict) -> dict:
         "bride": {"name": bride["meta"].get("name") or "Bride", "moon_sign": b["sign"], "nakshatra": b["nak"],
                   "pada": b["pada"], "manglik": mb, "promise": pb},
         "manglik_note": mm["text"], "notes": notes,
+        "moon_links": moon_links(groom, bride, (groom["meta"].get("name") or "Groom", bride["meta"].get("name") or "Bride")),
+        "charts": {"groom": chart_view(groom), "bride": chart_view(bride)},
         "disclaimer": "Guna Milan, dosha cancellations and Manglik rules follow common North-Indian practice; "
                       "schools differ on some tables and exceptions. The marriage promise uses the KP 7th cusp "
                       "sub lord. Traditional guidance, not certainty.",

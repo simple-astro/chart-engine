@@ -154,7 +154,13 @@ def test_bnn_chart_shows_retrograde_planets_in_the_sign_before_too():
     draw = _between(INDEX, "  const drawMain=()=>{", "\n  };\n")
     assert "BRANCH==='bnn'" in draw and "(g.sign_index+11)%12" in draw and "n==='Rahu'||n==='Ketu'" in draw
     assert INDEX.count("p.ghost?'<tspan class=\"bnng\">") == 2  # North and South Indian charts
-    assert "wasBnn!==(BRANCH==='bnn')" in _between(INDEX, "function setBranch(b){", "\n}\n")  # redrawn on switch
+    sb = _between(INDEX, "function setBranch(b){", "\n}\n")
+    assert "(was==='bnn')!==(BRANCH==='bnn')" in sb and "(was==='jaimini')!==(BRANCH==='jaimini')" in sb  # redrawn on switch
+
+
+def test_arudha_lagna_and_upapada_only_on_the_jaimini_branch():
+    assert "if(JPTS&&BRANCH==='jaimini'&&V==='lagna'&&c.jaimini)" in INDEX
+    assert "$('jpt').hidden=V!=='lagna'||BRANCH!=='jaimini';" in INDEX
 
 
 def test_yogini_dasha_sits_with_vimshottari_not_jaimini():

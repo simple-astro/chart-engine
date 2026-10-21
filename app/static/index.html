@@ -1259,6 +1259,13 @@
   .sbal-t th,.sbal-t td{padding:4px 6px;text-align:right;border-top:1px solid var(--line);white-space:nowrap}
   .sbal-t th[scope=row]{text-align:left;font-weight:500;color:var(--mut)}
   .sbal-t tr.tot th,.sbal-t tr.tot td{font-weight:600;color:var(--ink)} .sbal-t tr.grand th,.sbal-t tr.grand td{font-weight:700;color:var(--acc)}
+  /* Match making: both charts and Moon to Moon */
+  .mmchead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin-bottom:10px} .mmchead h3{margin:0} .mmchead .seg{width:auto} .mmchead .seg button{white-space:nowrap;padding-left:14px;padding-right:14px}
+  .mmcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px} .mmcgrid figure{margin:0;display:flex;flex-direction:column;gap:6px}
+  .mmcgrid figcaption{font-size:.88rem} .mmcgrid figcaption small{color:var(--mut)} .mmchart{max-width:380px;width:100%;margin:0 auto} .mmchart svg{width:100%;height:auto;display:block}
+  .mmlinks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+  .mmlinks li{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--solid)} .mmlinks p{margin:4px 0 2px} .mmlinks small{color:var(--mut)}
+  .mmlh{display:flex;justify-content:space-between;align-items:center;gap:8px}
   /* Life graph (My Charts › Graphs) */
   .lg{display:flex;flex-direction:column;gap:10px}
   .lgchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin} .lgchips .mdchip{flex:0 0 auto;white-space:nowrap}
@@ -1868,9 +1875,10 @@ const BRANCHES={vedic:'Vedic',graphs:'Graphs',nadi:'KP',bnn:'BNN',jaimini:'Jaimi
 const BRANCH_OF={lifegraph:'graphs',gstrength:'graphs',shadbala:'vedic',planets:'vedic',yogas:'vedic',vargas:'vedic',akv:'vedic',xchg:'vedic',links:'vedic',about:'vedic',reading:'vedic',
   houses:'nadi',bnn:'bnn',events:'nadi',jaimini:'jaimini',chara:'jaimini',lal:'lal',tajika:'tajika',mundane:'mundane'};
 function setBranch(b){
-  const wasBnn=BRANCH==='bnn';
+  const was=BRANCH;
   BRANCH=BRANCHES[b]?b:null;
-  if(wasBnn!==(BRANCH==='bnn'))try{RERENDER&&RERENDER()}catch(e){}  // the faded BNN copies come and go with the branch
+  // the faded BNN copies, and Jaimini's AL and UL, come and go with their branch
+  if((was==='bnn')!==(BRANCH==='bnn')||(was==='jaimini')!==(BRANCH==='jaimini'))try{RERENDER&&RERENDER()}catch(e){}
   $('sthub').hidden=!!BRANCH;$('stcrumb').hidden=!BRANCH;
   $('stgrid').hidden=!BRANCH;$('stgrid').classList.toggle('solo',BRANCH==='lal'||BRANCH==='tajika'||BRANCH==='mundane'||BRANCH==='graphs');
   document.querySelectorAll('#s-chart .stx').forEach(x=>x.hidden=x.dataset.for!==BRANCH);
@@ -3052,6 +3060,7 @@ function renderMatch(d){
     '<div class="hint">Guna Milan '+fmt(d.total)+'/36'+(d.adjusted_total!==d.total?' · '+fmt(d.adjusted_total)+' after cancelled doshas':'')+' · 18+ is the usual minimum</div></div></div>'+
     '<div class="card dd mmsc"><div><h5 class="ok">Where you’ll click</h5>'+list(d.strengths,'No standout strengths in the traditional checks.')+'</div>'+
     '<div><h5 class="bad">Where you may clash</h5>'+list(d.clashes,'No major friction points found.')+'</div></div>'+
+    matchChartsHtml(d)+matchMoonHtml(d)+
     '<div class="card mmsec"><h3>Doshas</h3>'+(d.doshas.length?d.doshas.map(x=>'<div class="mmrow"><span><b>'+esc(x.name)+'</b><small class="hint">'+esc(x.why)+'</small></span>'+
       '<span class="badge '+DS[x.status]+'">'+esc(x.status)+'</span></div>').join(''):'<p class="hint" style="margin:0">No Nadi, Bhakoot or Gana dosha between these charts.</p>')+
     '<div class="mmrow mmm"><span><b>Manglik match</b><small class="hint">'+esc(d.manglik.text)+'</small></span><span class="badge '+MS[d.manglik.status]+'">'+
@@ -3062,8 +3071,31 @@ function renderMatch(d){
     '<p class="hint">'+esc(d.disclaimer)+'</p>';
   table($('mtable'),['Koota','Groom','Bride','Score','','What it looks at'],d.kootas.map(k=>
     ['<b>'+k.name+'</b>',esc(k.groom),esc(k.bride),'<b>'+fmt(k.got)+'</b> / '+k.max,'<div class="bar"><i style="width:'+(k.got/k.max*100)+'%"></i></div>',esc(k.meaning)]));
+  MCH=d;MV='d1';paintMatchCharts();
   $('mres').hidden=false;$('mres').scrollIntoView({behavior:'smooth'});
 }
+// Both charts side by side, D1 or D9 (drawn in the chart style chosen in Settings), and the Moon-to-Moon highlights.
+let MCH=null,MV='d1';
+function matchChartsHtml(d){
+  if(!d.charts||!d.charts.groom||!d.charts.bride)return '';
+  const unsure=d.charts.groom.tob_unknown||d.charts.bride.tob_unknown;
+  return '<div class="card mmsec mmcharts"><div class="mmchead"><h3>Your charts</h3><div class="seg" role="radiogroup" aria-label="Chart" id="mchseg">'+
+    [['d1','D1 · Rasi'],['d9','D9 · Navamsa']].map(([k,t])=>'<button type="button" role="radio" data-mv="'+k+'">'+t+'</button>').join('')+'</div></div>'+
+    '<div class="mmcgrid">'+['groom','bride'].map(k=>'<figure><figcaption><b>'+(k==='groom'?'Groom':'Bride')+':</b> '+esc(d[k].name)+' <small id="mcap-'+k+'"></small></figcaption><div class="chart mmchart" id="mch-'+k+'"></div></figure>').join('')+'</div>'+
+    '<p class="hint" id="mchnote">'+(unsure?'One birth time is unknown, so the lagnas and the D9 chart are only approximate.':'The navamsa (D9) shows the marriage itself; it changes every few minutes of birth time, so it needs an accurate time.')+'</p></div>'}
+function paintMatchCharts(){
+  if(!MCH||!MCH.charts||!$('mch-groom'))return;
+  $('mchseg').querySelectorAll('[data-mv]').forEach(b=>{const on=b.dataset.mv===MV;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))});
+  ['groom','bride'].forEach(k=>{const c=MCH.charts[k][MV],byH={};
+    Object.entries(c.planets).forEach(([p,x])=>{const h=(x.sign-c.lagna+12)%12;(byH[h]=byH[h]||[]).push(ABBR[p]+(x.retro?'ᴿ':''))});
+    drawNorth($('mch-'+k),c.lagna,byH);$('mcap-'+k).textContent='· '+SIGNS[c.lagna]+' lagna'+(MV==='d9'?' in D9':'')})}
+document.addEventListener('click',e=>{const b=e.target.closest('#mchseg [data-mv]');if(!b||b.dataset.mv===MV)return;MV=b.dataset.mv;track('match/'+MV);paintMatchCharts()});
+function matchMoonHtml(d){
+  if(!d.moon_links||!d.moon_links.length)return '';
+  const K={good:['good','Supportive'],ok:['','Steady'],care:['warn','Needs care']};
+  return '<div class="card mmsec mmmoon"><h3>Moon to Moon <small>how your minds and moods meet</small></h3><ul class="mmlinks">'+
+    d.moon_links.map(x=>'<li><div class="mmlh"><b>'+esc(x.title)+'</b><span class="badge '+K[x.kind][0]+'">'+K[x.kind][1]+'</span></div><p>'+esc(x.text)+'</p><small>'+esc(x.why)+'</small></li>').join('')+
+    '</ul><p class="hint">The Moon is the mind and the emotions, so these say how the two of you feel and react together. Tendencies, not certainties.</p></div>'}
 
 // ----- married life (app/marriage.py): first time three short steps (rate, compare, what helps), then one page -----
 let MPAIR=null,LIFE={step:null},LD=null;
@@ -3425,9 +3457,9 @@ function render(c,req){
   if(BRANCH==='bnn'&&(V==='lagna'||V==='moon'))Object.entries(c.grahas).forEach(([n,g])=>{if(!g.retrograde||n==='Rahu'||n==='Ketu')return;
     const prev=(g.sign_index+11)%12,h=(prev-from+12)%12;
     (byH[h]=byH[h]||[]).push({t:ABBR[n],ghost:true,title:n+' is retrograde in '+g.sign+': by the BNN rule it also gives the results of '+SIGNS[prev]})});
-  if(JPTS&&V==='lagna'&&c.jaimini){const J=c.jaimini;  // Jaimini points sit in whole-sign houses, so only on the Lagna view
+  if(JPTS&&BRANCH==='jaimini'&&V==='lagna'&&c.jaimini){const J=c.jaimini;  // Jaimini points sit in whole-sign houses, so only on the Lagna view
     [['AL',J.arudha_lagna.house],['UL',J.upapada.house]].forEach(([t,h])=>(byH[h-1]=byH[h-1]||[]).push({t,jp:true}))}
-  $('jpt').hidden=V!=='lagna';
+  $('jpt').hidden=V!=='lagna'||BRANCH!=='jaimini';  // Arudha Lagna and Upapada belong to Jaimini
   if(V==='gochar')drawComposite($('chart'),gfirst,byH,outer,GFROM==='moon'?'MOON':null);
   else drawNorth($('chart'),from,byH,chalit?c.houses.map(x=>x.sign_index):null,V==='moon'?'MOON':null);
   if(V!=='lagna')SEL_H=null;
