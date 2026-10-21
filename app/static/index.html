@@ -10,6 +10,7 @@
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <script>(function(){try{var t=localStorage.getItem("sj-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);
   var m=localStorage.getItem("sj-mood");if(m)document.documentElement.setAttribute("data-mood",m);
+  var fs=localStorage.getItem("sj-fs");if(fs==="sm"||fs==="lg"||fs==="xl")document.documentElement.setAttribute("data-fs",fs);
   var lv=localStorage.getItem("sj-level");if(lv==="guide"||lv==="learn"||lv==="full")document.documentElement.setAttribute("data-level",lv)}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,6 +77,9 @@
     --shadow:0 1px 2px rgba(0,0,0,.08); --glow:none;
     --serif:"Atkinson Hyperlegible","Noto Sans Devanagari",system-ui,sans-serif; --sans:"Atkinson Hyperlegible","Noto Sans Devanagari",system-ui,sans-serif}
   :root[data-mood="diya"]{font-size:112.5%} :root[data-mood="diya"] body{font-size:18px;line-height:1.65}
+  /* Settings › Text size: everything sized in rem follows the root (after Clear Diya, so a chosen size wins) */
+  :root[data-fs="sm"]{font-size:93.75%} :root[data-fs="lg"]{font-size:112.5%} :root[data-fs="xl"]{font-size:125%}
+  :root[data-fs] body{font-size:1rem}
   :root[data-mood="lotus"]{color-scheme:light;
     --bg:#f3f6f1; --bg2:#e3eae1; --card:rgba(255,255,255,.92); --solid:#ffffff;
     --ink:#1f2a22; --mut:#55645a; --trn:#3e6e8c; --acc:#8a3a4e; --acc2:#4f7a5c; --g1:#5e8a6b; --g2:#4a7356; --onacc:#ffffff;
@@ -186,7 +190,7 @@
   [hidden]{display:none!important}
   html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   button,a,[role=tab],summary{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;
+  body{margin:0;background:var(--bg);color:var(--ink);font:1rem/1.6 var(--sans);-webkit-font-smoothing:antialiased;
     background-image:radial-gradient(1200px 600px at 78% -12%,var(--haze,var(--soft)),transparent 60%),
                      radial-gradient(900px 500px at -12% 4%,var(--haze,var(--soft)),transparent 60%)}
   /* starfield (dark only) */
@@ -415,7 +419,8 @@
   .sethead h2{margin:0;font:600 1.3rem var(--serif)} #setdone{font-weight:700;text-decoration:none;font-size:1rem}
   .setbody{overflow-y:auto;padding:4px max(18px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
   .setbody h5{margin:18px 0 6px;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
-  .setrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)} .setbody h5+.setrow{border-top:0}
+  .setrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .setrow.setstack{flex-direction:column;align-items:stretch} .setstack .setseg{width:100%} .setstack .setseg button{flex:1;white-space:normal} .setbody h5+.setrow{border-top:0}
   .setrow>div:first-child{min-width:0} .setrow small{display:block;color:var(--mut);font-size:.78rem;line-height:1.35}
   .setrow select,.setloc input{border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:10px;padding:8px 10px;font:inherit;font-size:.9rem;max-width:56%}
   .setseg{width:auto;flex:0 0 auto} .setseg button{padding:6px 12px;white-space:nowrap}
@@ -1327,6 +1332,7 @@
       background:color-mix(in srgb,var(--solid) 80%,transparent);-webkit-backdrop-filter:saturate(1.7) blur(22px);backdrop-filter:saturate(1.7) blur(22px);
       border-top-width:.5px;box-shadow:none}
     .sjbar button{flex-direction:column;gap:3px;padding:5px 0 3px;font-size:.68rem;border-radius:0}
+    :root[data-fs="xl"] .sjbar button{font-size:12.2px}  /* six labels must still fit across a phone */
     .sjbar button.on{background:none}
     .sjbar svg{width:24px;height:24px}
     .sjbar .bub{display:grid;place-items:center;width:52px;height:52px;margin-top:-26px;border-radius:50%;color:var(--onacc);
@@ -1413,7 +1419,6 @@
   <div class="sep"></div>
   <button type="button" role="menuitem" class="mi" id="mnew"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New chart</button>
   <button type="button" role="menuitem" class="mi" id="matchbtn"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>Match making</button>
-  <button type="button" role="menuitem" class="mi" id="mlvmenu"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>My level: <b id="mlvname"></b></span></button>
   <a role="menuitem" class="mi" id="madmin" href="/admin" hidden><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/></svg><span>Admin</span></a>
   <button type="button" role="menuitem" class="mi" id="msettings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span>Settings</span></button>
   <button type="button" role="menuitem" class="mi" id="mdefault"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg><span>Make this my default chart</span></button>
@@ -1521,7 +1526,7 @@
     <!-- Timing: when things happen — the running periods, transits, timing by matter, good dates -->
     <div class="scr" id="s-timing" data-scr="timing" hidden>
       <div class="seg lseg tseg" id="tseg" role="tablist" aria-label="Timing">
-        <button type="button" role="tab" class="on" aria-selected="true" data-t="now">Now &amp; next</button><button type="button" role="tab" aria-selected="false" data-t="transits">Transits</button><button type="button" role="tab" aria-selected="false" data-t="matter">By matter</button><button type="button" role="tab" aria-selected="false" data-t="dates">Good dates</button><button type="button" role="tab" aria-selected="false" data-t="sbc">Sarvatobhadra</button>
+        <button type="button" role="tab" class="on" aria-selected="true" data-t="now">Now &amp; next</button><button type="button" role="tab" aria-selected="false" data-t="transits">Transits</button><button type="button" role="tab" aria-selected="false" data-t="matter">Nakshatra Nadi</button><button type="button" role="tab" aria-selected="false" data-t="dates">Good dates</button><button type="button" role="tab" aria-selected="false" data-t="sbc">Sarvatobhadra</button>
       </div>
       <div id="tm-now">
         <div class="card gcard" id="t-vim"><div id="dasha"></div></div>
@@ -1736,8 +1741,8 @@ try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){}
 // ----- theme: auto (system) -> light -> dark -----
 const MQ=matchMedia('(prefers-color-scheme:dark)');
 const themeMode=()=>document.documentElement.getAttribute('data-theme')||'auto';
-// Light / Dark / System is chosen in Settings › Display (no header button). paintTheme keeps the
-// browser's own toolbar colour (theme-color) matched to the theme actually showing.
+// Settings › Display › Theme picks Classic (light), Classic Dark or a colour theme; with no choice the app follows the
+// phone's light or dark setting. paintTheme keeps the browser's own toolbar colour (theme-color) matched to what shows.
 function paintTheme(){
   const m=themeMode(), dark=m==='dark'||(m==='auto'&&MQ.matches);
   let tc=document.querySelector('meta[name="theme-color"]');
@@ -1981,7 +1986,7 @@ const FIND=[
   ['Jamakkol Prashna','jamakkol jamakol jammakkol prasanam prashna udayam arudam kavippu chatra tamil horary','prashna'],
 ];
 const FIND_NAME={year:'My year',plans:'My plans',more:'More',today:'Today',timing:'Timing',ask:'Ask Astropositivism',remedies:'Remedies',prashna:'Prashna',chart:'My Charts',now:'Now & next',transits:'Transits',sbc:'Sarvatobhadra',pakshi:'Panch Pakshi',
-  matter:'By matter',dates:'Good dates',yogini:'Now & next',muhurat:'Good days & muhurat',...BRANCHES};
+  matter:'Nakshatra Nadi',dates:'Good dates',yogini:'Now & next',muhurat:'Good days & muhurat',...BRANCHES};
 const POPULAR=['Today for you','Transit chart','KP timing by matter','Find a good date','Remedies (upaya)','Jamakkol Prashna'];
 const SYN={shani:'saturn',sani:'saturn',guru:'jupiter',brihaspati:'jupiter',shukra:'venus',mangal:'mars',budh:'mercury',budha:'mercury',
   chandra:'moon',chand:'moon',surya:'sun',suraj:'sun',vivah:'marriage',vivaah:'marriage',shaadi:'marriage',shadi:'marriage',viyah:'marriage',
@@ -2753,7 +2758,7 @@ const LEVELS={guide:'Just guide me',learn:'I am learning',full:'I read charts'};
 let LV_ASKED=false;
 const levelNow=()=>document.documentElement.getAttribute('data-level')||'full';
 function savedLevel(){try{return localStorage.getItem('sj-level')}catch(e){return null}}
-function paintLevel(){const lv=levelNow();$('mlvname').textContent=LEVELS[lv];$('mlevelname').textContent=LEVELS[lv];
+function paintLevel(){const lv=levelNow();$('mlevelname').textContent=LEVELS[lv];
   const chosen=savedLevel();$('lvdlg').querySelectorAll('[data-lv]').forEach(b=>b.setAttribute('aria-pressed',String(!!chosen&&b.dataset.lv===lv)))}
 function setLevel(lv,quiet){document.documentElement.setAttribute('data-level',lv);try{localStorage.setItem('sj-level',lv)}catch(e){}
   paintLevel();if(!quiet)track('level/'+lv);
@@ -2764,7 +2769,6 @@ function openLevel(){if(!hasChart)return;paintLevel();$('lvdlg').hidden=false;$(
 function closeLevel(){$('lvdlg').hidden=true;if($('pmenu').hidden&&$('confirm').hidden)$('scrim').hidden=true}
 $('lvdlg').onclick=e=>{const b=e.target.closest('[data-lv]');if(!b)return;setLevel(b.dataset.lv);closeLevel()};
 $('lvdlg').addEventListener('keydown',e=>{if(e.key==='Escape'){if(!savedLevel())setLevel('full',true);closeLevel()}});
-$('mlvname').closest('button').onclick=()=>{closeMenu();openLevel()};
 $('mlevel').onclick=openLevel;
 // buttons that move between screens (Chat | Yes or no?, the More list)
 document.addEventListener('click',e=>{const b=e.target.closest('[data-nav]');if(!b)return;
@@ -3211,7 +3215,9 @@ function setDefaults(){try{return JSON.parse(localStorage.getItem('sj-defaults')
 function saveDefaults(d){try{localStorage.setItem('sj-defaults',JSON.stringify(d))}catch(e){}}
 let SET={pend:null,find:[],busy:false},MOOD_OK=false;
 const moodOn=()=>typeof moodNow==='function'?moodNow():'';  // colour themes may not be loaded
-const MOODS=[['','Classic','#fbf7ef','#c98f2e'],['saffron','Saffron Dawn','#fbf6ec','#c2410c'],['midnight','Midnight Temple','#0b1418','#e0b45c'],
+// The theme showing: a colour theme, else Classic Dark when dark (chosen, or the phone's setting), else Classic.
+const themeNow=()=>moodOn()||((themeMode()==='dark'||(themeMode()==='auto'&&MQ.matches))?'classic-dark':'');
+const MOODS=[['','Classic','#fbf7ef','#c98f2e'],['classic-dark','Classic Dark','#0a0907','#e5bb72'],['saffron','Saffron Dawn','#fbf6ec','#c2410c'],['midnight','Midnight Temple','#0b1418','#e0b45c'],
   ['diya','Clear Diya','#ffffff','#8e1b1b'],['lotus','Lotus Calm','#f3f6f1','#4f7a5c'],
   ['sky','Sky Blue','#f2f7fc','#5fa6dd'],['blossom','Blossom Pink','#fcf4f6','#e3829f'],['mint','Mint','#f1f8f4','#67bd8f'],
   ['lavender','Lavender','#f6f3fb','#9e86db'],['peach','Peach','#fdf5ef','#ec9a6b'],
@@ -3223,7 +3229,6 @@ function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.
   const hsel=(id,cur,ay)=>'<select id="'+id+'"><option value="">'+(ay?'Default: '+HOUSES_FOR[ay].replace(' (KP cusps)',''):'Ayanamsa default')+'</option>'+
     HS_LIST.map(([v,t])=>'<option value="'+v+'"'+(v===cur?' selected':'')+'>'+t+'</option>').join('')+'</select>';
   const sel=(id,cur)=>'<select id="'+id+'">'+AYN_LIST.map(([v,t])=>'<option value="'+v+'"'+(v===cur?' selected':'')+'>'+t+'</option>').join('')+'</select>';
-  const mode=document.documentElement.getAttribute('data-theme')||'auto';
   const P=SET.pend,shift=P&&C?Math.abs(P.shiftDays):0;
   $('setbody').innerHTML=
    (currentId!=null&&R?'<h5>This chart · '+esc(name)+'</h5>'+
@@ -3247,16 +3252,17 @@ function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.
     '<div class="setrow"><div><b>Days in a dasha year</b></div>'+seg('defdy',DY_LIST,D.dy||'solar')+'</div>'+
     '<div class="setrow"><div><b>Ashtakavarga</b></div>'+seg('defakv',AKV_LIST,D.akv||'parashara')+'</div>'+
    '<h5>Display</h5>'+
+    '<div class="setrow setstack"><div><b>My level</b><small>How much astrology the app shows you</small></div>'+seg('level',Object.entries(LEVELS),levelNow())+'</div>'+
+    '<div class="setrow setstack"><div><b>Text size</b><small>Makes all the writing in the app smaller or bigger</small></div>'+seg('fs',[['sm','Small'],['','Default'],['lg','Large'],['xl','Extra large']],document.documentElement.getAttribute('data-fs')||'')+'</div>'+
     '<div class="setrow"><div><b>Chart style</b></div>'+seg('style',[['north','North Indian'],['south','South Indian']],CHART_STYLE==='south'?'south':'north')+'</div>'+
-    '<div class="setrow"><div><b>Theme</b>'+(moodOn()?'<small>A colour theme is on; this switches back to Classic</small>':'')+'</div>'+seg('theme',[['light','Light'],['dark','Dark'],['auto','System']],moodOn()?'':mode)+'</div>'+
-    (MOOD_OK&&typeof setMood==='function'?'<div class="setrow setmoodrow"><div><b>Colour theme</b><small>Testing: only you and your astrologers see this</small></div></div><div class="setmoods" role="radiogroup" aria-label="Colour theme">'+
-      MOODS.map(([v,t,a,b])=>'<button type="button" role="radio" data-set="mood" data-v="'+v+'" aria-checked="'+(moodOn()===v)+'" class="'+(moodOn()===v?'on':'')+'"><i style="background:linear-gradient(135deg,'+a+' 50%,'+b+' 50%)"></i>'+t+'</button>').join('')+'</div>':'')+
+    '<div class="setrow setmoodrow"><div><b>Theme</b>'+(MOOD_OK?'<small>Classic and Classic Dark for everyone; the others are testing, only you and your astrologers see them</small>':'')+'</div></div><div class="setmoods" role="radiogroup" aria-label="Theme">'+
+      MOODS.filter(([v])=>MOOD_OK||v===''||v==='classic-dark').map(([v,t,a,b])=>{const on=themeNow()===v;return '<button type="button" role="radio" data-set="mood" data-v="'+v+'" aria-checked="'+on+'" class="'+(on?'on':'')+'"><i style="background:linear-gradient(135deg,'+a+' 50%,'+b+' 50%)"></i>'+t+'</button>'}).join('')+'</div>'+
    '<h5>Where you are</h5>'+
     '<div class="setrow"><div><b>Current city</b><small>For Today, muhurat, Gochar and Transits times</small></div><span class="hint">'+esc(hereName())+'</span></div>'+
     '<div class="setloc"><input id="setcity" type="search" placeholder="Search a city, e.g. Winnipeg" aria-label="Search a city"><div class="setfind">'+
       SET.find.map((r,i)=>'<button type="button" data-set="city" data-i="'+i+'">'+esc([r.name,r.admin1,r.country].filter(Boolean).join(', '))+'</button>').join('')+'</div>'+
       '<div class="setbtns"><button type="button" class="btn ghost" data-set="gps">Use my current location</button>'+(MU.here?'<button type="button" class="btn ghost" data-set="birth">Use birthplace</button>':'')+'</div></div>'+
-   '<p class="hint setfoot">Reminders and Telegram: in Coming up and the bot’s /settings. Your level: in the chart menu.</p>'}
+   '<p class="hint setfoot">Reminders and Telegram: in Coming up and the bot’s /settings.</p>'}
 async function dashaShift(v,key){// how far the running Mahadasha moves under another ayanamsha (or dasha year)
   try{const r=await fetch('/chart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...lastReq,[key||'ayanamsha']:v})});const c=await r.json();
     const now=Date.now(),f=x=>(x.dasha||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end))||x.dasha[0];
@@ -3288,10 +3294,11 @@ $('setsheet').addEventListener('click',async e=>{const b=e.target.closest('[data
   else if(k==='defnode'){const D=setDefaults();D.node=v;saveDefaults(D);paintSettings()}
   else if(k==='defdy'||k==='defakv'){const D=setDefaults(),f=k==='defdy'?'dy':'akv';if(v===(f==='dy'?'solar':'parashara'))delete D[f];else D[f]=v;saveDefaults(D);track('settings/default-'+(f==='dy'?'dasha-year':'ashtakavarga'));paintSettings()}
   else if(k==='style'){setChartStyle(v);paintSettings()}
-  else if(k==='mood'){if(v!==moodOn())setMood(v);paintSettings()}
-  else if(k==='theme'){if(moodOn()){document.documentElement.removeAttribute('data-mood');try{localStorage.removeItem('sj-mood')}catch(_){}}
-    if(v==='auto'){document.documentElement.removeAttribute('data-theme');try{localStorage.removeItem('sj-theme')}catch(_){}}
-    else{document.documentElement.setAttribute('data-theme',v);try{localStorage.setItem('sj-theme',v)}catch(_){}}paintTheme();paintSettings()}
+  else if(k==='fs'){const r=document.documentElement;v?r.setAttribute('data-fs',v):r.removeAttribute('data-fs');
+    try{v?localStorage.setItem('sj-fs',v):localStorage.removeItem('sj-fs')}catch(_){}track('settings/text-'+(v||'default'));paintSettings();try{RERENDER&&RERENDER()}catch(_){}}
+  else if(k==='level'){if(v!==levelNow())setLevel(v);paintSettings()}
+  else if(k==='mood'){if(v===''||v==='classic-dark'){try{localStorage.setItem('sj-theme',v?'dark':'light')}catch(_){}setMood('')}  // Classic: the base look, light or dark
+    else if(v!==moodOn())setMood(v);paintSettings()}
   else if(k==='city'){const r=SET.find[+b.dataset.i];if(r){window.SJ_LOC.set({lat:+r.latitude.toFixed(4),lon:+r.longitude.toFixed(4),tz_name:r.timezone,name:r.name});SET.find=[];track('settings/city');paintSettings()}}
   else if(k==='birth'){window.SJ_LOC.set(null);paintSettings()}
   else if(k==='gps'){if(!navigator.geolocation)return;b.textContent='Finding you…';
@@ -3530,7 +3537,7 @@ function render(c,req){
     (DR.next.length?'<h4 class="jaih" style="font-size:1rem">Coming next</h4><div class="chrd">'+DR.next.map(dcard).join('')+'</div>':'')+
     '<h4 class="jaih" style="font-size:1rem">All periods</h4><ul class="tree">'+c.dasha.map(d=>node(d)).join('')+'</ul>'+
     '<div class="hint">A period gives the results of the houses its planet rules and the house it sits in (counted from your Lagna sign), shaped by its strength, the planets with it and the yogas it forms. '+
-    'For timing matter by matter (marriage, career, money…) see <button type="button" class="lnkyoga" data-goto="kptime">By matter</button>.</div>';
+    'For timing matter by matter (marriage, career, money…) see <button type="button" class="lnkyoga" data-goto="kptime">Nakshatra Nadi</button>.</div>';
 
   // Each divisional chart can be counted from its own lagna or from the Moon's sign in that chart.
   const vt=$('vtabs');vt.innerHTML='';let vSel=null;

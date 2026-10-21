@@ -203,7 +203,9 @@ def test_colour_moods_for_testers():
         assert f':root[data-mood="{m}"]' in INDEX and f"['{m}'," in _between(INDEX, "const MOODS=", ";")
     assert "#241903" not in INDEX.replace("--onacc:#241903", "")  # button text follows the mood
     assert 'localStorage.getItem("sj-mood")' in INDEX            # applied before first paint
-    assert "MOOD_OK=true" in INDEX and "(MOOD_OK&&typeof setMood" in INDEX         # testers pick them in Settings
+    # Settings › Theme: Classic and Classic Dark for everyone, the colour themes for testers only
+    assert "MOOD_OK=true" in INDEX and "MOODS.filter(([v])=>MOOD_OK||v===''||v==='classic-dark')" in INDEX
+    assert "['classic-dark','Classic Dark'," in INDEX and "data-set=\"theme\"" not in INDEX
 
 
 def test_just_guide_me_level():
