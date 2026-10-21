@@ -1,0 +1,524 @@
+{
+ "Day": {
+  "Sunday": {
+   "1": {
+    "Vulture": "Eating",
+    "Owl": "Walking",
+    "Crow": "Ruling",
+    "Cock": "Sleeping",
+    "Peacock": "Dying"
+   },
+   "2": {
+    "Peacock": "Eating",
+    "Vulture": "Walking",
+    "Owl": "Ruling",
+    "Crow": "Sleeping",
+    "Cock": "Dying"
+   },
+   "3": {
+    "Cock": "Eating",
+    "Peacock": "Walking",
+    "Vulture": "Ruling",
+    "Owl": "Sleeping",
+    "Crow": "Dying"
+   },
+   "4": {
+    "Crow": "Eating",
+    "Cock": "Walking",
+    "Peacock": "Ruling",
+    "Vulture": "Sleeping",
+    "Owl": "Dying"
+   },
+   "5": {
+    "Owl": "Eating",
+    "Crow": "Walking",
+    "Cock": "Ruling",
+    "Peacock": "Sleeping",
+    "Vulture": "Dying"
+   }
+  },
+  "Tuesday": {
+   "1": {
+    "Vulture": "Eating",
+    "Owl": "Walking",
+    "Crow": "Ruling",
+    "Cock": "Sleeping",
+    "Peacock": "Dying"
+   },
+   "2": {
+    "Peacock": "Eating",
+    "Vulture": "Walking",
+    "Owl": "Ruling",
+    "Crow": "Sleeping",
+    "Cock": "Dying"
+   },
+   "3": {
+    "Cock": "Eating",
+    "Peacock": "Walking",
+    "Vulture": "Ruling",
+    "Owl": "Sleeping",
+    "Crow": "Dying"
+   },
+   "4": {
+    "Crow": "Eating",
+    "Cock": "Walking",
+    "Peacock": "Ruling",
+    "Vulture": "Sleeping",
+    "Owl": "Dying"
+   },
+   "5": {
+    "Owl": "Eating",
+    "Crow": "Walking",
+    "Cock": "Ruling",
+    "Peacock": "Sleeping",
+    "Vulture": "Dying"
+   }
+  },
+  "Monday": {
+   "1": {
+    "Owl": "Eating",
+    "Crow": "Walking",
+    "Cock": "Ruling",
+    "Peacock": "Sleeping",
+    "Vulture": "Dying"
+   },
+   "2": {
+    "Vulture": "Eating",
+    "Owl": "Walking",
+    "Crow": "Ruling",
+    "Cock": "Sleeping",
+    "Peacock": "Dying"
+   },
+   "3": {
+    "Peacock": "Eating",
+    "Vulture": "Walking",
+    "Owl": "Ruling",
+    "Crow": "Sleeping",
+    "Cock": "Dying"
+   },
+   "4": {
+    "Cock": "Eating",
+    "Peacock": "Walking",
+    "Vulture": "Ruling",
+    "Owl": "Sleeping",
+    "Crow": "Dying"
+   },
+   "5": {
+    "Crow": "Eating",
+    "Cock": "Walking",
+    "Peacock": "Ruling",
+    "Vulture": "Sleeping",
+    "Owl": "Dying"
+   }
+  },
+  "Wednesday": {
+   "1": {
+    "Owl": "Eating",
+    "Crow": "Walking",
+    "Cock": "Ruling",
+    "Peacock": "Sleeping",
+    "Vulture": "Dying"
+   },
+   "2": {
+    "Vulture": "Eating",
+    "Owl": "Walking",
+    "Crow": "Ruling",
+    "Cock": "Sleeping",
+    "Peacock": "Dying"
+   },
+   "3": {
+    "Peacock": "Eating",
+    "Vulture": "Walking",
+    "Owl": "Ruling",
+    "Crow": "Sleeping",
+    "Cock": "Dying"
+   },
+   "4": {
+    "Cock": "Eating",
+    "Peacock": "Walking",
+    "Vulture": "Ruling",
+    "Owl": "Sleeping",
+    "Crow": "Dying"
+   },
+   "5": {
+    "Crow": "Eating",
+    "Cock": "Walking",
+    "Peacock": "Ruling",
+    "Vulture": "Sleeping",
+    "Owl": "Dying"
+   }
+  },
+  "Thursday": {
+   "1": {
+    "Crow": "Eating",
+    "Cock": "Walking",
+    "Peacock": "Ruling",
+    "Vulture": "Sleeping",
+    "Owl": "Dying"
+   },
+   "2": {
+    "Owl": "Eating",
+    "Crow": "Walking",
+    "Cock": "Ruling",
+    "Peacock": "Sleeping",
+    "Vulture": "Dying"
+   },
+   "3": {
+    "Vulture": "Eating",
+    "Owl": "Walking",
+    "Crow": "Ruling",
+    "Cock": "Sleeping",
+    "Peacock": "Dying"
+   },
+   "4": {
+    "Peacock": "Eating",
+    "Vulture": "Walking",
+    "Owl": "Ruling",
+    "Crow": "Sleeping",
+    "Cock": "Dying"
+   },
+   "5": {
+    "Cock": "Eating",
+    "Peacock": "Walking",
+    "Vulture": "Ruling",
+    "Owl": "Sleeping",
+    "Crow": "Dying"
+   }
+  },
+  "Friday": {
+   "1": {
+    "Cock": "Eating",
+    "Peacock": "Walking",
+    "Vulture": "Ruling",
+    "Owl": "Sleeping",
+    "Crow": "Dying"
+   },
+   "2": {
+    "Crow": "Eating",
+    "Cock": "Walking",
+    "Peacock": "Ruling",
+    "Vulture": "Sleeping",
+    "Owl": "Dying"
+   },
+   "3": {
+    "Owl": "Eating",
+    "Crow": "Walking",
+    "Cock": "Ruling",
+    "Peacock": "Sleeping",
+    "Vulture": "Dying"
+   },
+   "4": {
+    "Vulture": "Eating",
+    "Owl": "Walking",
+    "Crow": "Ruling",
+    "Cock": "Sleeping",
+    "Peacock": "Dying"
+   },
+   "5": {
+    "Peacock": "Eating",
+    "Vulture": "Walking",
+    "Owl": "Ruling",
+    "Crow": "Sleeping",
+    "Cock": "Dying"
+   }
+  },
+  "Saturday": {
+   "1": {
+    "Peacock": "Eating",
+    "Vulture": "Walking",
+    "Owl": "Ruling",
+    "Crow": "Sleeping",
+    "Cock": "Dying"
+   },
+   "2": {
+    "Cock": "Eating",
+    "Peacock": "Walking",
+    "Vulture": "Ruling",
+    "Owl": "Sleeping",
+    "Crow": "Dying"
+   },
+   "3": {
+    "Crow": "Eating",
+    "Cock": "Walking",
+    "Peacock": "Ruling",
+    "Vulture": "Sleeping",
+    "Owl": "Dying"
+   },
+   "4": {
+    "Owl": "Eating",
+    "Crow": "Walking",
+    "Cock": "Ruling",
+    "Peacock": "Sleeping",
+    "Vulture": "Dying"
+   },
+   "5": {
+    "Vulture": "Eating",
+    "Owl": "Walking",
+    "Crow": "Ruling",
+    "Cock": "Sleeping",
+    "Peacock": "Dying"
+   }
+  }
+ },
+ "Night": {
+  "Sunday": {
+   "1": {
+    "Crow": "Eating",
+    "Owl": "Ruling",
+    "Vulture": "Dying",
+    "Peacock": "Walking",
+    "Cock": "Sleeping"
+   },
+   "2": {
+    "Cock": "Eating",
+    "Crow": "Ruling",
+    "Owl": "Dying",
+    "Vulture": "Walking",
+    "Peacock": "Sleeping"
+   },
+   "3": {
+    "Peacock": "Eating",
+    "Cock": "Ruling",
+    "Crow": "Dying",
+    "Owl": "Walking",
+    "Vulture": "Sleeping"
+   },
+   "4": {
+    "Vulture": "Eating",
+    "Peacock": "Ruling",
+    "Cock": "Dying",
+    "Crow": "Walking",
+    "Owl": "Sleeping"
+   },
+   "5": {
+    "Owl": "Eating",
+    "Vulture": "Ruling",
+    "Peacock": "Dying",
+    "Cock": "Walking",
+    "Crow": "Sleeping"
+   }
+  },
+  "Tuesday": {
+   "1": {
+    "Crow": "Eating",
+    "Owl": "Ruling",
+    "Vulture": "Dying",
+    "Peacock": "Walking",
+    "Cock": "Sleeping"
+   },
+   "2": {
+    "Cock": "Eating",
+    "Crow": "Ruling",
+    "Owl": "Dying",
+    "Vulture": "Walking",
+    "Peacock": "Sleeping"
+   },
+   "3": {
+    "Peacock": "Eating",
+    "Cock": "Ruling",
+    "Crow": "Dying",
+    "Owl": "Walking",
+    "Vulture": "Sleeping"
+   },
+   "4": {
+    "Vulture": "Eating",
+    "Peacock": "Ruling",
+    "Cock": "Dying",
+    "Crow": "Walking",
+    "Owl": "Sleeping"
+   },
+   "5": {
+    "Owl": "Eating",
+    "Vulture": "Ruling",
+    "Peacock": "Dying",
+    "Cock": "Walking",
+    "Crow": "Sleeping"
+   }
+  },
+  "Monday": {
+   "1": {
+    "Cock": "Eating",
+    "Crow": "Ruling",
+    "Owl": "Dying",
+    "Vulture": "Walking",
+    "Peacock": "Sleeping"
+   },
+   "2": {
+    "Peacock": "Eating",
+    "Cock": "Ruling",
+    "Crow": "Dying",
+    "Owl": "Walking",
+    "Vulture": "Sleeping"
+   },
+   "3": {
+    "Vulture": "Eating",
+    "Peacock": "Ruling",
+    "Cock": "Dying",
+    "Crow": "Walking",
+    "Owl": "Sleeping"
+   },
+   "4": {
+    "Owl": "Eating",
+    "Vulture": "Ruling",
+    "Peacock": "Dying",
+    "Cock": "Walking",
+    "Crow": "Sleeping"
+   },
+   "5": {
+    "Crow": "Eating",
+    "Owl": "Ruling",
+    "Vulture": "Dying",
+    "Peacock": "Walking",
+    "Cock": "Sleeping"
+   }
+  },
+  "Wednesday": {
+   "1": {
+    "Cock": "Eating",
+    "Crow": "Ruling",
+    "Owl": "Dying",
+    "Vulture": "Walking",
+    "Peacock": "Sleeping"
+   },
+   "2": {
+    "Peacock": "Eating",
+    "Cock": "Ruling",
+    "Crow": "Dying",
+    "Owl": "Walking",
+    "Vulture": "Sleeping"
+   },
+   "3": {
+    "Vulture": "Eating",
+    "Peacock": "Ruling",
+    "Cock": "Dying",
+    "Crow": "Walking",
+    "Owl": "Sleeping"
+   },
+   "4": {
+    "Owl": "Eating",
+    "Vulture": "Ruling",
+    "Peacock": "Dying",
+    "Cock": "Walking",
+    "Crow": "Sleeping"
+   },
+   "5": {
+    "Crow": "Eating",
+    "Owl": "Ruling",
+    "Vulture": "Dying",
+    "Peacock": "Walking",
+    "Cock": "Sleeping"
+   }
+  },
+  "Thursday": {
+   "1": {
+    "Peacock": "Eating",
+    "Cock": "Ruling",
+    "Crow": "Dying",
+    "Owl": "Walking",
+    "Vulture": "Sleeping"
+   },
+   "2": {
+    "Vulture": "Eating",
+    "Peacock": "Ruling",
+    "Cock": "Dying",
+    "Crow": "Walking",
+    "Owl": "Sleeping"
+   },
+   "3": {
+    "Owl": "Eating",
+    "Vulture": "Ruling",
+    "Peacock": "Dying",
+    "Cock": "Walking",
+    "Crow": "Sleeping"
+   },
+   "4": {
+    "Crow": "Eating",
+    "Owl": "Ruling",
+    "Vulture": "Dying",
+    "Peacock": "Walking",
+    "Cock": "Sleeping"
+   },
+   "5": {
+    "Cock": "Eating",
+    "Crow": "Ruling",
+    "Owl": "Dying",
+    "Vulture": "Walking",
+    "Peacock": "Sleeping"
+   }
+  },
+  "Friday": {
+   "1": {
+    "Vulture": "Eating",
+    "Peacock": "Ruling",
+    "Cock": "Dying",
+    "Crow": "Walking",
+    "Owl": "Sleeping"
+   },
+   "2": {
+    "Owl": "Eating",
+    "Vulture": "Ruling",
+    "Peacock": "Dying",
+    "Cock": "Walking",
+    "Crow": "Sleeping"
+   },
+   "3": {
+    "Crow": "Eating",
+    "Owl": "Ruling",
+    "Vulture": "Dying",
+    "Peacock": "Walking",
+    "Cock": "Sleeping"
+   },
+   "4": {
+    "Cock": "Eating",
+    "Crow": "Ruling",
+    "Owl": "Dying",
+    "Vulture": "Walking",
+    "Peacock": "Sleeping"
+   },
+   "5": {
+    "Peacock": "Eating",
+    "Cock": "Ruling",
+    "Crow": "Dying",
+    "Owl": "Walking",
+    "Vulture": "Sleeping"
+   }
+  },
+  "Saturday": {
+   "1": {
+    "Owl": "Eating",
+    "Vulture": "Ruling",
+    "Peacock": "Dying",
+    "Cock": "Walking",
+    "Crow": "Sleeping"
+   },
+   "2": {
+    "Crow": "Eating",
+    "Owl": "Ruling",
+    "Vulture": "Dying",
+    "Peacock": "Walking",
+    "Cock": "Sleeping"
+   },
+   "3": {
+    "Cock": "Eating",
+    "Crow": "Ruling",
+    "Owl": "Dying",
+    "Vulture": "Walking",
+    "Peacock": "Sleeping"
+   },
+   "4": {
+    "Peacock": "Eating",
+    "Cock": "Ruling",
+    "Crow": "Dying",
+    "Owl": "Walking",
+    "Vulture": "Sleeping"
+   },
+   "5": {
+    "Vulture": "Eating",
+    "Peacock": "Ruling",
+    "Cock": "Dying",
+    "Crow": "Walking",
+    "Owl": "Sleeping"
+   }
+  }
+ }
+}

@@ -361,3 +361,14 @@ def test_quota_is_zero_when_everyones_cap_is_used(gated, fake_llm):
     pid = t.post("/profiles", json=BODY).json()["id"]
     assert t.post(f"/profiles/{pid}/chat", json={"message": "How is my career?"}).status_code == 200
     assert _tester().get("/quota").json()["left"] == 0
+
+
+def test_sarvatobhadra_goods_table_is_admin_only_and_feeds_the_market(gated):
+    assert _tester().put("/admin/api/sbc-goods", json={"2": "gold"}).status_code == 403
+    a = _admin()
+    assert a.put("/admin/api/sbc-goods", json={"2": " gold, silver ", "5": ""}).json() == {"saved": 1}
+    assert a.put("/admin/api/sbc-goods", json={"40": "x"}).status_code == 422
+    rows = a.get("/admin/api/sbc-goods").json()["rows"]
+    assert len(rows) == 28 and rows[2]["goods"] == "gold, silver" and rows[27]["nakshatra"] == "Abhijit"
+    m = _tester().get("/sarvatobhadra/market", params={"on": "2026-11-01", "tz_name": "Asia/Kolkata"}).json()
+    assert m["rows"][2]["goods"] == "gold, silver" and m["has_goods"]

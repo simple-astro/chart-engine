@@ -2,14 +2,20 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
-from datetime import date, datetime, timezone
+import json
+from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field
 
 from app import muhurat, storage, today as today_mod
 from app.routes import calc_error, chart as compute_chart, require_tz, with_extras
 from app.schemas import ChartRequest
-from core import horary, jamakkol, lalkitab, matchmaking
+from core import constants as C, horary, jamakkol, lalkitab, matchmaking
+from core import panchapakshi as pakshi, sarvatobhadra as sbc
+from core.ephemeris import julian_day
+from core.grahas import compute_grahas
+from core.panchang import compute_panchang
 
 router = APIRouter(tags=["astrology"])
 
@@ -323,3 +329,111 @@ def daily_muhurat(req: MuhuratRequest) -> dict:
     except Exception as exc:  # polar day without sunrise
         raise calc_error(exc) from exc
     return {"tz_name": req.tz_name, "days": days}
+
+
+class PakshiRequest(BaseModel):
+    birth: ChartRequest
+    date: date
+    days: int = Field(default=1, ge=1, le=7)
+    lat: float = Field(ge=-90, le=90)       # where the person is now: the day's sunrise and sunset
+    lon: float = Field(ge=-180, le=180)
+    tz_name: str
+
+
+def _natal_lahiri(birth: ChartRequest) -> tuple[dict, datetime]:
+    """Sun, Moon and lagna by Lahiri (the reckoning Pancha Pakshi and the Sarvatobhadra use) and the birth moment."""
+    when = datetime.combine(birth.dob, birth.tob, tzinfo=ZoneInfo(birth.tz_name))
+    g = compute_grahas(julian_day(when), "lahiri", node_type=birth.node_type)
+    return g, when
+
+
+def _iso(x):
+    if isinstance(x, datetime):
+        return x.isoformat()
+    if isinstance(x, dict):
+        return {k: _iso(v) for k, v in x.items()}
+    if isinstance(x, list):
+        return [_iso(v) for v in x]
+    return x
+
+
+def pakshi_for(birth: ChartRequest, start: date, days: int, lat: float, lon: float, tz_name: str) -> dict:
+    g, _ = _natal_lahiri(birth)
+    moon, sun = g["Moon"], g["Sun"]
+    paksha = pakshi.paksha_of(sun.longitude, moon.longitude)
+    bird = pakshi.birth_bird(moon.nakshatra_index, paksha)
+    plans = []
+    for i in range(days):
+        plan = pakshi.day_plan(start + timedelta(days=i), lat, lon, tz_name, bird)
+        plans.append({**plan, "best": pakshi.best_windows(plan)})
+    now = datetime.now(timezone.utc)
+    cur = None
+    for plan in [pakshi.day_plan(start - timedelta(days=1), lat, lon, tz_name, bird)] + plans:
+        cur = cur or pakshi.at(plan, now)
+    return _iso({"bird": bird, "birth_paksha": paksha, "birth_nakshatra": moon.nakshatra, "tz_name": tz_name,
+                 "meaning": pakshi.MEANING, "days": plans,
+                 "now": cur and {"activity": cur["yama"]["activity"], "sub": cur["sub"]["activity"],
+                                 "sub_bird": cur["sub"]["bird"], "rating": cur["sub"]["rating"],
+                                 "until": cur["sub"]["end"], "yama_until": cur["yama"]["end"]}})
+
+
+@router.post("/panchapakshi")
+def panchapakshi(req: PakshiRequest) -> dict:
+    require_tz(req.tz_name)
+    require_tz(req.birth.tz_name)
+    try:
+        return pakshi_for(req.birth, req.date, req.days, req.lat, req.lon, req.tz_name)
+    except Exception as exc:  # polar day without sunrise
+        raise calc_error(exc) from exc
+
+
+class SbcRequest(BaseModel):
+    birth: ChartRequest
+    start: date
+    days: int = Field(default=14, ge=1, le=31)
+    tz_name: str
+
+
+def sbc_for(birth: ChartRequest, start: date, days: int, tz_name: str) -> dict:
+    g, when = _natal_lahiri(birth)
+    lagna = compute_chart(ChartRequest(**{**birth.model_dump(), "ayanamsha": "lahiri"}))["lagna"]["sign_index"]
+    sunrise = compute_panchang(birth.dob, birth.lat, birth.lon, birth.tz_name).sunrise
+    born = when if when >= sunrise else when - timedelta(days=1)  # before sunrise: still the Hindu day before
+    weekday = C.WEEKDAY_NAMES[(born.weekday() + 1) % 7]
+    pts = sbc.natal_points(g["Moon"].longitude, g["Sun"].longitude, lagna, weekday)
+    marks: dict = {}
+    for name, rc in pts.items():
+        marks.setdefault(rc, []).append(name)
+    today_sky = sbc.sky(datetime.combine(start, datetime.min.time().replace(hour=12), tzinfo=ZoneInfo(tz_name)))
+    return {"points": {k: list(v) for k, v in pts.items()}, "grid": sbc.grid_view(today_sky, marks),
+            "money_days": sbc.money_days(pts, start, days, tz_name)}
+
+
+@router.post("/sarvatobhadra")
+def sarvatobhadra(req: SbcRequest) -> dict:
+    require_tz(req.tz_name)
+    require_tz(req.birth.tz_name)
+    try:
+        return sbc_for(req.birth, req.start, req.days, req.tz_name)
+    except Exception as exc:
+        raise calc_error(exc) from exc
+
+
+GOODS_KEY = "sbc.goods"
+
+
+def sbc_goods() -> dict[int, str]:
+    try:
+        raw = json.loads(storage.get_setting(GOODS_KEY) or "{}")
+        return {int(k): str(v) for k, v in raw.items() if 0 <= int(k) < 28}
+    except (ValueError, TypeError):
+        return {}
+
+
+@router.get("/sarvatobhadra/market")
+def sbc_market(on: date, tz_name: str) -> dict:
+    require_tz(tz_name)
+    rows = sbc.market(datetime.combine(on, datetime.min.time().replace(hour=12), tzinfo=ZoneInfo(tz_name)),
+                      sbc_goods())
+    grid = sbc.grid_view(sbc.sky(datetime.combine(on, datetime.min.time().replace(hour=12), tzinfo=ZoneInfo(tz_name))))
+    return {"date": on.isoformat(), "rows": rows, "grid": grid, "has_goods": any(r["goods"] for r in rows)}

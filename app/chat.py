@@ -92,8 +92,9 @@ TOOLS = [
                     "birthplace): tithi, nakshatra, yoga, karana, sunrise/sunset, Rahu kalam / Yamaganda / Gulika "
                     "and the best times as LOCAL clock times, plus a personal guide for that day — rating for new "
                     "starts with its reasons, do's and don'ts, colours to wear and to avoid (with reasons), lucky "
-                    "number, travel direction and upaya. Use it for any 'is this day good', muhurat or what-to-wear "
-                    "question.",
+                    "number, travel direction and upaya, and their Pancha Pakshi bird with what it is doing now and that "
+                    "day's strongest Pakshi windows. Use it for any 'is this day good', 'is now a good time', "
+                    "muhurat or what-to-wear question.",
      "input_schema": {"type": "object", "properties": {
          "date": {"type": "string", "description": "YYYY-MM-DD; omit for today"}}}},
     {"name": "get_divisional_chart",
@@ -189,7 +190,26 @@ def day_guide(profile: dict, d: date) -> dict:
             "travel": f"avoid travelling {g['direction']['avoid']}; if you must, {g['direction']['fix']}",
             "upaya": f"{g['upay']['habit']}; if they can, give {g['upay']['daan']} — {g['upay']['why']}",
             "sukh_line": g["sukh"]},
+        "panch_pakshi": _pakshi_brief(profile, d, hm, span),
     }
+
+
+def _pakshi_brief(profile: dict, d: date, hm, span) -> dict | None:
+    """The person's Pancha Pakshi bird, what it is doing now (if d is today) and that day's strongest windows."""
+    from app.astro import pakshi_for
+    from app.schemas import ChartRequest
+    w = where(profile)
+    try:
+        pk = pakshi_for(ChartRequest(**profile["request"]), d, 1, w["lat"], w["lon"], w["tz_name"])
+    except Exception:  # polar day without sunrise, or an old profile without full birth data
+        return None
+    now = pk["now"] if d == local_today(profile) else None
+    return {"bird": pk["bird"], "how": "from the birth Moon's nakshatra and paksha (Pancha Pakshi, Lahiri)",
+            "doing_now": now and f"{now['activity']} (sub-period {now['sub']}, {now['rating']}) until {hm(now['until'])}",
+            "best_windows": [f"{span([b['start'], b['end']])}: {b['main']} / {b['activity']}"
+                             for b in pk["days"][0]["best"]],
+            "rule": "Ruling and Eating are strong times to begin things; Walking is middling; Sleeping and Dying "
+                    "are weak — wait."}
 
 
 def _utc(s: str | None) -> datetime:

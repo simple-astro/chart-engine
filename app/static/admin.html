@@ -432,6 +432,19 @@
     </table></div>
   </section>
 
+  <section class="card" id="sbg" data-roles="owner mentor astrologer">
+    <div class="qhead"><h2>Sarvatobhadra goods</h2>
+      <div class="qbtns"><button class="sbtn" type="button" data-fold="sbg-body" data-fold-default="shut" aria-expanded="true" aria-controls="sbg-body">Collapse</button></div></div>
+    <div id="sbg-body">
+    <p class="sub">Which goods each nakshatra rules, from your own teji-mandi texts. Users see them on Timing › Sarvatobhadra › Market: a malefic strike on the nakshatra reads as prices rising (teji), a benefic one as prices falling (mandi). Leave a row empty to show only the signal.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Nakshatra</th><th>Goods (comma-separated)</th></tr></thead>
+      <tbody id="sbg-list"><tr><td colspan="2" class="empty">Loading…</td></tr></tbody>
+    </table></div>
+    <div class="rlrow"><button class="btn" type="button" id="sbg-save">Save goods</button><span class="status" id="sbg-st" role="status"></span></div>
+    </div>
+  </section>
+
   <section class="card" id="bk" data-roles="owner">
     <div class="qhead"><h2>Backups</h2>
       <div class="qbtns"><button class="sbtn" type="button" data-fold="bk-body" data-fold-default="shut" aria-expanded="true" aria-controls="bk-body">Collapse</button></div></div>
@@ -1618,9 +1631,24 @@ $('lim-form').addEventListener('submit', async e => {
   } catch (err) { st.className = 'status err'; st.textContent = err.message; }
 });
 
+async function loadGoods() {
+  try {
+    const d = await api('/admin/api/sbc-goods');
+    $('sbg-list').innerHTML = d.rows.map(r => `<tr><td class="nowrap">${esc(r.nakshatra)}</td><td><input type="text" data-sbg="${r.index}" maxlength="300" value="${esc(r.goods)}" aria-label="Goods ruled by ${esc(r.nakshatra)}"></td></tr>`).join('');
+  } catch (e) { $('sbg-list').innerHTML = `<tr><td colspan="2" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
+}
+$('sbg-save').addEventListener('click', async () => {
+  const st = $('sbg-st'), body = {};
+  document.querySelectorAll('[data-sbg]').forEach(i => { body[i.dataset.sbg] = i.value; });
+  try {
+    const r = await api('/admin/api/sbc-goods', {method: 'PUT', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
+    st.className = 'status ok'; st.textContent = `Saved goods for ${r.saved} nakshatra${r.saved === 1 ? '' : 's'}.`;
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+});
+
 async function loadAll() {
   try {
-    await loadPlayground(); await loadDrafts(); await loadReview(); await loadRL(); await loadQuality();
+    await loadPlayground(); await loadDrafts(); await loadReview(); await loadRL(); await loadQuality(); await loadGoods();
     if (ROLE !== 'astrologer') { renderOverview(await api('/admin/api/overview')); await loadUsage(); await loadTeam(); await loadAudit(); }
     if (ROLE === 'owner') { await loadCodes(); await loadEvents(); await loadBackups(); }
     await loadQueries(true);

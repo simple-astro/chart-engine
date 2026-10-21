@@ -1,6 +1,7 @@
 """Admin page and its API: settings, usage and cost, testers, and the question log."""
 from __future__ import annotations
 
+import json
 import re
 import secrets
 import sqlite3
@@ -1123,3 +1124,26 @@ def events_backtest(request: Request) -> dict:
     return {"charts": len(people), "events": n, "fits": fits, "expected": round(exp, 1),
             "lift": round(fits / exp, 2) if exp else None, "by_topic": rows,
             "karaka": {"fits": kf, "expected": round(ke, 1), "lift": round(kf / ke, 2) if ke else None}}
+
+
+@router.get("/admin/api/sbc-goods")
+def sbc_goods_get(request: Request) -> dict:
+    _require_role(request, "mentor", "astrologer")
+    from app.astro import sbc_goods
+    from core.sarvatobhadra import NAK28
+    goods = sbc_goods()
+    return {"rows": [{"index": k, "nakshatra": n, "goods": goods.get(k, "")} for k, n in enumerate(NAK28)]}
+
+
+@router.put("/admin/api/sbc-goods")
+async def sbc_goods_put(request: Request) -> dict:
+    """The astrologer's table of which goods each nakshatra rules, for the Sarvatobhadra market reading."""
+    _require_role(request, "mentor", "astrologer")
+    body = await request.json()
+    if not isinstance(body, dict) or not all(str(k).isdigit() and 0 <= int(k) < 28 and isinstance(v, str)
+                                             and len(v) <= 300 for k, v in body.items()):
+        raise HTTPException(status_code=422, detail="Expected {nakshatra index 0-27: goods text (max 300 chars)}")
+    clean = {str(int(k)): v.strip() for k, v in body.items() if v.strip()}
+    storage.set_setting("sbc.goods", json.dumps(clean))
+    _audit(request, "sbc_goods", "sarvatobhadra", f"{len(clean)} nakshatras")
+    return {"saved": len(clean)}
