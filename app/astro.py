@@ -320,6 +320,30 @@ def today(req: TodayRequest) -> dict:
         raise calc_error(exc) from exc
 
 
+class CalendarRequest(BaseModel):
+    year: int = Field(ge=1900, le=2100)
+    month: int = Field(ge=1, le=12)
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    tz_name: str
+    style: str = Field(default="purnimanta", pattern=r"^(purnimanta|amanta)$")
+    nanakshahi: str = Field(default="sgpc", pattern=r"^(sgpc|original)$")
+    birth_nakshatra: int | None = Field(default=None, ge=0, le=26)
+    birth_moon_sign: int | None = Field(default=None, ge=0, le=11)
+
+
+@router.post("/calendar")
+def calendar_month(req: CalendarRequest) -> dict:
+    """The month calendar on Today: panchang per day, festivals, and the Nanakshahi layer (app/hindu_calendar.py)."""
+    from app import hindu_calendar
+    require_tz(req.tz_name)
+    try:
+        return hindu_calendar.month_view(req.year, req.month, req.lat, req.lon, req.tz_name, req.style,
+                                         req.nanakshahi, req.birth_nakshatra, req.birth_moon_sign)
+    except Exception as exc:  # polar day without sunrise
+        raise calc_error(exc) from exc
+
+
 @router.post("/muhurat")
 def daily_muhurat(req: MuhuratRequest) -> dict:
     require_tz(req.tz_name)

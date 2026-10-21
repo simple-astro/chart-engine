@@ -1298,6 +1298,35 @@
   .pk-subs li{display:grid;grid-template-columns:1.3fr 1.2fr auto;gap:6px;align-items:center;padding:3px 0}
   .pk-subs small{color:var(--mut)}
   @media (max-width:620px){.pk-cols{grid-template-columns:1fr}}
+  /* Calendar (Today) */
+  .cal-seg{margin:4px 0 10px}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .cal-head>div{display:flex;flex-direction:column;align-items:center;text-align:center} .cal-head b{font:600 1.35rem var(--serif)} .cal-head small{color:var(--mut);font-size:.78rem}
+  .cal-nav{width:44px;height:44px;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--solid);color:var(--ink);font-size:1.3rem;cursor:pointer}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+  .cal-wd{text-align:center;font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);padding-bottom:4px}
+  .cal-d{position:relative;min-height:70px;padding:4px 1px 6px;border-radius:10px;border:1px solid var(--line);background:var(--solid);color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:0;font:inherit;cursor:pointer;overflow:hidden}
+  .cal-d b{font-size:.95rem;line-height:1.25} .cal-d small{font-size:.6rem;color:var(--mut);line-height:1.3;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis} .cal-d .cal-t{font-weight:600;color:var(--acc)}
+  .cal-d.cal-fest{background:color-mix(in srgb,var(--g1) 18%,var(--solid));border-color:color-mix(in srgb,var(--g1) 70%,transparent)}
+  .cal-d.cal-now{box-shadow:inset 0 0 0 2px var(--ink)} .cal-d.cal-sel{box-shadow:inset 0 0 0 2px var(--acc)}
+  .cal-moon{width:9px;height:9px;border-radius:50%;margin-top:2px} .cal-moon.full{background:var(--g1);border:1px solid var(--g2)} .cal-moon.new{background:var(--ink)}
+  .cal-tara{display:inline-block;box-sizing:border-box;width:7px;height:7px;border-radius:50%;flex:none} .cal-tara.good{background:var(--g2)} .cal-tara.hard{border:1.5px solid var(--ink)} .cal-tara.janma{background:var(--mut);opacity:.5}
+  .cal-d .cal-tara{position:absolute;top:4px;right:4px}
+  .cal-ch{display:inline-block;width:14px;height:3px;border-radius:2px;background:var(--ink)} .cal-d .cal-ch{position:absolute;left:6px;right:6px;bottom:3px;width:auto}
+  .cal-fk{display:inline-block;width:14px;height:10px;border-radius:3px;background:color-mix(in srgb,var(--g1) 18%,var(--solid));border:1px solid var(--g1)}
+  .cal-key{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 12px;font-size:.74rem;color:var(--mut)} .cal-key span{display:flex;align-items:center;gap:5px}
+  .cal-sheet{border:1px solid var(--line);border-radius:14px;background:var(--solid);padding:12px 14px;margin-bottom:12px}
+  .cal-sheet h4{margin:0;font:600 1.15rem var(--serif)} .cal-sub{margin:2px 0 8px;color:var(--mut);font-size:.84rem}
+  .cal-fests{margin:0 0 8px;padding:8px 12px;list-style:none;border-radius:10px;background:color-mix(in srgb,var(--g1) 18%,var(--solid));font-weight:600;font-size:.9rem}
+  .cal-you{list-style:none;margin:0 0 8px;padding:0;font-size:.86rem} .cal-you li{display:flex;align-items:center;gap:8px;padding:2px 0}
+  .cal-rows>div{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--line);font-size:.86rem} .cal-rows span{color:var(--mut)} .cal-rows b{font-weight:600;text-align:right}
+  .cal-h{margin:4px 0 6px;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+  .cal-list{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-direction:column;gap:6px}
+  .cal-list button{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:6px 12px;border-radius:12px;border:1px solid var(--line);background:var(--solid);color:var(--ink);font:inherit;font-size:.88rem;text-align:left;cursor:pointer}
+  .cal-ld{flex:none;width:36px;display:flex;flex-direction:column;align-items:center;line-height:1.15} .cal-ld b{font-size:1.05rem} .cal-ld small{font-size:.66rem;color:var(--mut)}
+  .cal-set{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0} .cal-set span{min-width:110px;color:var(--mut)}
+  .cal-set button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--solid);color:var(--mut);font-family:inherit;font-weight:600;font-size:.8rem;cursor:pointer}
+  .cal-set button[aria-pressed="true"]{border-color:var(--g2);color:var(--acc);background:var(--soft)}
   /* Sarvatobhadra (Timing) */
   .sb-seg{margin:6px 0 12px}
   .sb-days{list-style:none;margin:0;padding:0}
@@ -1545,6 +1574,7 @@
       <section class="card gcard gcouple" id="gcouple" hidden></section>
       <section class="card gcard gacc" id="gacc" hidden></section>
       <section class="card gcard" id="gtoday"><h3>Today for you</h3><div class="hint">Checking today’s panchang…</div></section>
+      <section class="card gcard cal" id="gcal" hidden></section>
       <section class="card gcard pakshi" id="gpakshi" hidden></section>
       <section class="card gcard pltoday lv-guide" id="gplanstep" hidden></section>
       <section class="card gcard" id="gmood"></section>
@@ -1764,6 +1794,7 @@
 <script src="/static/pakshi.js?v=1"></script>
 <script src="/static/shadbala.js?v=2"></script>
 <script src="/static/lifegraph.js?v=1"></script>
+<script src="/static/calendar.js?v=1"></script>
 <script>
 // API errors as one readable line: a string detail, {field, message}, or FastAPI's list of field errors.
 window.apiErr=d=>d==null?'':typeof d==='string'?d:Array.isArray(d)?d.map(x=>x.msg||'').filter(Boolean).join('; '):d.message||'';
@@ -1984,6 +2015,7 @@ const FIND=[
   ['Life graph','life graph timing graph when is my best time event window promise dasha transit lanes best window career marriage money property','chart/lifegraph'],
   ['Strength graphs','strength graphs planet strength house strength shadbala bhava bala bars','chart/gstrength'],
   ['Shadbala','shadbala shad bala six strength planet strength cheshta bala sthana dig kala drik bhava bala house strength ishta kashta rupa virupa','chart/shadbala'],
+  ['Calendar','calendar hindu panchang month tithi festival festivals ekadashi purnima amavasya sankranti diwali vrat nanakshahi sikh gurpurab gurpurb sangrand pooranmashi masya','today/calendar'],
   ['Panch Pakshi','panch pancha pakshi bird five birds ruling eating walking sleeping dying yama best time now','today/pakshi'],
   ['Sarvatobhadra Chakra','sarvatobhadra sarvato bhadra chakra vedha money days financial astrology market teji mandi commodity gold','timing/sbc'],
   ['Best and worst times today','all times muhurat rahu kaal kalam abhijit hora choghadiya good bad time today','today/muhurat'],
@@ -2030,7 +2062,7 @@ const FIND=[
   ['Yes or no? (KP Prashna)','prashna horary question yes no number','prashna'],
   ['Jamakkol Prashna','jamakkol jamakol jammakkol prasanam prashna udayam arudam kavippu chatra tamil horary','prashna'],
 ];
-const FIND_NAME={year:'My year',plans:'My plans',more:'More',today:'Today',timing:'Timing',ask:'Ask Astropositivism',remedies:'Remedies',prashna:'Prashna',chart:'My Charts',now:'Now & next',transits:'Transits',sbc:'Sarvatobhadra',pakshi:'Panch Pakshi',
+const FIND_NAME={calendar:'Calendar',year:'My year',plans:'My plans',more:'More',today:'Today',timing:'Timing',ask:'Ask Astropositivism',remedies:'Remedies',prashna:'Prashna',chart:'My Charts',now:'Now & next',transits:'Transits',sbc:'Sarvatobhadra',pakshi:'Panch Pakshi',
   matter:'Nakshatra Nadi',dates:'Good dates',yogini:'Now & next',muhurat:'Good days & muhurat',...BRANCHES};
 const POPULAR=['Today for you','Transit chart','KP timing by matter','Find a good date','Remedies (upaya)','Jamakkol Prashna'];
 const SYN={shani:'saturn',sani:'saturn',guru:'jupiter',brihaspati:'jupiter',shukra:'venus',mangal:'mars',budh:'mercury',budha:'mercury',
@@ -2123,7 +2155,7 @@ function findGo(b){
   if(q)track('find/pick',q+' → '+label);
   if(FIND.some(f=>f[0]===label)){try{localStorage.setItem('sj-find-recent',JSON.stringify([label,...recent().filter(x=>x!==label)].slice(0,5)))}catch(e){}}
   closeFind();
-  const at={pakshi:'gpakshi',muhurat:'t-muhurat',about:'kabout',events:'gevents',links:'lnkbar',chara:'t-chara',yogini:'t-yogini'}[sub];
+  const at={calendar:'gcal',pakshi:'gpakshi',muhurat:'t-muhurat',about:'kabout',events:'gevents',links:'lnkbar',chara:'t-chara',yogini:'t-yogini'}[sub];
   go(s,sub);
   const el=at?$(at):s==='chart'&&sub&&$('t-'+sub)?$('t-'+sub):null;
   if(el)setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),60);
@@ -2718,6 +2750,7 @@ async function loadToday(){
       post('/muhurat',{...loc,start:day,days:7,birth_nakshatra:moon.nakshatra_index,birth_moon_sign:moon.sign_index})]);
     if(req!==lastReq||!$('gtoday'))return;
     window.renderToday($('gtoday'),t,{place,here:!!MU.here,week:w.days,name:req.name});
+    window.renderCalendar($('gcal'),{birth:req,loc,place,moon});
     window.renderPakshi($('gpakshi'),{birth:req,loc,place});
   }catch(e){if($('gtoday'))$('gtoday').innerHTML='<h3>Today for '+esc((req.name||'').trim().split(/\s+/)[0]||'you')+'</h3><div class="hint">Couldn’t load today: '+esc(e.message)+'</div>'}
 }
