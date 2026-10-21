@@ -1641,6 +1641,7 @@
     <!-- Studies: one card per tradition; each opens a page with only its own sections -->
     <div class="sthub" id="sthub" role="list" aria-label="My Charts">
       <button type="button" role="listitem" data-branch="vedic"><i aria-hidden="true">☉</i><span><b>Vedic</b><small>Rasi chart, planets, yogas, divisional charts, Ashtakavarga, your life areas</small></span></button>
+      <button type="button" role="listitem" data-branch="interp"><i aria-hidden="true">❡</i><span><b>Interpretations</b><small>Your full reading and all 12 houses, in plain words</small></span></button>
       <button type="button" role="listitem" data-branch="graphs"><i aria-hidden="true">▤</i><span><b>Graphs</b><small>Your life graph (when is my best time?) and the strength of your planets and houses</small></span></button>
       <button type="button" role="listitem" data-branch="nadi"><i aria-hidden="true">◎</i><span><b>KP</b><small>Krishnamurti Paddhati: cusps and sub-lords, your life so far</small></span></button>
       <button type="button" role="listitem" data-branch="bnn"><i aria-hidden="true">△</i><span><b>BNN</b><small>Bhrigu Nandi Nadi: planets joined by trines, karaka circuits</small></span></button>
@@ -1675,7 +1676,7 @@
       <div class="card panel">
         <select id="csel" autocomplete="off" hidden aria-hidden="true" tabindex="-1">
           <option value="planets">Planets</option><option value="yogas">Yogas</option><option value="houses">Houses &amp; cusps</option>
-          <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option><option value="shadbala">Shadbala</option><option value="lifegraph">Life graph</option><option value="gstrength">Strength graphs</option>
+          <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option><option value="shadbala">Shadbala</option><option value="reading">Full reading</option><option value="housebyhouse">House by house</option><option value="lifegraph">Life graph</option><option value="gstrength">Strength graphs</option>
           <option value="xchg">Lord exchange</option><option value="jaimini">Jaimini</option><option value="bnn">BNN (Nadi trines)</option><option value="lal">Lal Kitab</option><option value="tajika">Tajika</option><option value="mundane">Mundane</option>
         </select>
         <div class="ctiles" id="ctiles" role="tablist" aria-label="Kundli sections">
@@ -1685,6 +1686,8 @@
           <button type="button" role="tab" data-pane="vargas" data-branch="vedic"><b>Divisional charts</b><small>D9, D10 … D150</small></button>
           <button type="button" role="tab" data-pane="akv" data-branch="vedic"><b>Ashtakavarga</b><small>Points per house</small></button>
           <button type="button" role="tab" data-pane="shadbala" data-branch="vedic"><b>Shadbala</b><small>Every component</small></button>
+          <button type="button" role="tab" data-pane="reading" data-branch="interp"><b>Full reading</b><small>Your chart’s main themes</small></button>
+          <button type="button" role="tab" data-pane="housebyhouse" data-branch="interp"><b>House by house</b><small>All 12 houses</small></button>
           <button type="button" role="tab" data-pane="lifegraph" data-branch="graphs"><b>Life graph</b><small>When is my best time?</small></button>
           <button type="button" role="tab" data-pane="gstrength" data-branch="graphs"><b>Strength</b><small>Planets and houses</small></button>
           <button type="button" role="tab" data-pane="xchg" data-branch="vedic"><b>Lord exchange</b><small>Signs swapped</small></button>
@@ -1703,6 +1706,10 @@
           <div class="vnadi" id="vnadi" hidden></div></div>
         <div class="pane" id="t-akv" hidden><div id="akvbody"></div></div>
         <div class="pane" id="t-shadbala" hidden><div id="sbalbody"></div></div>
+        <div class="pane" id="t-reading" hidden><h3 class="gh">Full reading <small>your chart’s main themes, from traditional rules</small></h3>
+          <div id="interpbody"></div><div class="hint">General guidance, not a prediction or a substitute for a consultation.</div></div>
+        <div class="pane" id="t-housebyhouse" hidden><h3 class="gh">House by house <small>all 12 houses from your ascendant</small></h3>
+          <div id="bhavabody"></div><div class="hint">Whole-sign houses from your ascendant, matching the chart drawing. Traditional guidance, not a certainty.</div></div>
         <div class="pane" id="t-lifegraph" hidden><div id="lgbody"></div></div>
         <div class="pane" id="t-gstrength" hidden><div id="gsbody"></div></div>
         <div class="pane" id="t-xchg" hidden><div id="xbody"></div></div>
@@ -1728,10 +1735,7 @@
     <div id="kabout" class="stx" data-for="vedic" hidden>
       <h3 class="gh">About you</h3>
         <div id="guide"></div>
-        <details class="card gcard more"><summary><b>Full reading</b><small>Your chart’s main themes, from traditional rules</small></summary>
-          <div id="interpbody"></div><div class="hint">General guidance, not a prediction or a substitute for a consultation.</div></details>
-        <details class="card gcard more"><summary><b>House by house</b><small>All 12 houses from your ascendant</small></summary>
-          <div id="bhavabody"></div><div class="hint">Whole-sign houses from your ascendant, matching the chart drawing. Traditional guidance, not a certainty.</div></details>
+        <div class="card gcard tplan"><b>Your full reading and all 12 houses</b><button type="button" class="linkbtn" data-goto="reading">In My Charts › Interpretations →</button></div>
     </div>
     </div>
   </section>
@@ -1871,8 +1875,8 @@ if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.fo
 const SCREENS=['today','timing','prashna','ask','remedies','chart','year','plans','more'];
 let SCREEN=null,TM='now',BRANCH=null;
 // Studies: the Kundli screen (id "chart") opens on a hub; each branch shows only its own sections.
-const BRANCHES={vedic:'Vedic',graphs:'Graphs',nadi:'KP',bnn:'BNN',jaimini:'Jaimini',lal:'Lal Kitab',tajika:'Tajika',mundane:'Mundane'};
-const BRANCH_OF={lifegraph:'graphs',gstrength:'graphs',shadbala:'vedic',planets:'vedic',yogas:'vedic',vargas:'vedic',akv:'vedic',xchg:'vedic',links:'vedic',about:'vedic',reading:'vedic',
+const BRANCHES={vedic:'Vedic',interp:'Interpretations',graphs:'Graphs',nadi:'KP',bnn:'BNN',jaimini:'Jaimini',lal:'Lal Kitab',tajika:'Tajika',mundane:'Mundane'};
+const BRANCH_OF={lifegraph:'graphs',gstrength:'graphs',shadbala:'vedic',planets:'vedic',yogas:'vedic',vargas:'vedic',akv:'vedic',xchg:'vedic',links:'vedic',about:'vedic',reading:'interp',housebyhouse:'interp',
   houses:'nadi',bnn:'bnn',events:'nadi',jaimini:'jaimini',chara:'jaimini',lal:'lal',tajika:'tajika',mundane:'mundane'};
 function setBranch(b){
   const was=BRANCH;
@@ -1880,7 +1884,7 @@ function setBranch(b){
   // the faded BNN copies, and Jaimini's AL and UL, come and go with their branch
   if((was==='bnn')!==(BRANCH==='bnn')||(was==='jaimini')!==(BRANCH==='jaimini'))try{RERENDER&&RERENDER()}catch(e){}
   $('sthub').hidden=!!BRANCH;$('stcrumb').hidden=!BRANCH;
-  $('stgrid').hidden=!BRANCH;$('stgrid').classList.toggle('solo',BRANCH==='lal'||BRANCH==='tajika'||BRANCH==='mundane'||BRANCH==='graphs');
+  $('stgrid').hidden=!BRANCH;$('stgrid').classList.toggle('solo',BRANCH==='lal'||BRANCH==='tajika'||BRANCH==='mundane'||BRANCH==='graphs'||BRANCH==='interp');
   document.querySelectorAll('#s-chart .stx').forEach(x=>x.hidden=x.dataset.for!==BRANCH);
   const tiles=[...$('ctiles').querySelectorAll('[data-pane]')];
   tiles.forEach(t=>t.hidden=t.dataset.branch!==BRANCH);
@@ -2002,7 +2006,8 @@ const FIND=[
   ['Ashtakavarga','ashtakavarga points bindu sav','chart/akv','Vedic'],
   ['Lord exchange','lord exchange parivartana','chart/xchg','Vedic'],
   ['Your life areas','life areas career money love marriage health home family lesson','chart/about','Vedic'],
-  ['Full reading and house by house','full reading interpretation house by house bhava','chart/reading','Vedic'],
+  ['Full reading','full reading interpretation interpretations themes','chart/reading','Interpretations'],
+  ['House by house','house by house bhava houses interpretation interpretations','chart/housebyhouse','Interpretations'],
   ['Houses and cusps','houses cusps bhava kp sub lord placidus','chart/houses','KP'],
   ['Nadi amsha (D150)','nadi amsha 150 d150 chandra kala birth time twins','chart/d150','Vedic'],
   ['BNN (Bhrigu Nandi Nadi)','bnn bhrigu nandi nadi trines karaka circuits retrograde','chart/bnn','BNN'],
@@ -2086,7 +2091,7 @@ function findList(){
     const m=raw.toLowerCase().match(/(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:house|bhava|ghar)|(?:house|bhava|ghar)\s*(\d{1,2})/);
     const h=m&&+(m[1]||m[2]);
     if(h>=1&&h<=12){const sg=(c.lagna.sign_index+h-1)%12;
-      mine.push(findRow('Your '+ORD(h)+' house: '+SIGNS[sg],'My Charts › Vedic › House by house','chart/reading','Vedic'))}
+      mine.push(findRow('Your '+ORD(h)+' house: '+SIGNS[sg],'My Charts › Interpretations › House by house','chart/housebyhouse','Interpretations'))}
   }
   if(mine.length)out.push('<p class="srg">Your chart</p>'+mine.join(''));
   const scored=FIND.map(f=>{const hay=(f[0]+' '+f[1]+' '+(f[3]||'')).toLowerCase(),name=f[0].toLowerCase();
@@ -2118,10 +2123,9 @@ function findGo(b){
   if(q)track('find/pick',q+' → '+label);
   if(FIND.some(f=>f[0]===label)){try{localStorage.setItem('sj-find-recent',JSON.stringify([label,...recent().filter(x=>x!==label)].slice(0,5)))}catch(e){}}
   closeFind();
-  const at={pakshi:'gpakshi',muhurat:'t-muhurat',about:'kabout',events:'gevents',reading:'kabout',links:'lnkbar',chara:'t-chara',yogini:'t-yogini'}[sub];
+  const at={pakshi:'gpakshi',muhurat:'t-muhurat',about:'kabout',events:'gevents',links:'lnkbar',chara:'t-chara',yogini:'t-yogini'}[sub];
   go(s,sub);
   const el=at?$(at):s==='chart'&&sub&&$('t-'+sub)?$('t-'+sub):null;
-  if(sub==='reading')document.querySelectorAll('#kabout details').forEach(d=>d.open=true);
   if(el)setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),60);
 }
 $('srbtn').onclick=openFind;$('srclose').onclick=closeFind;
@@ -2733,7 +2737,7 @@ function scrollWhenReady(id){let n=0;const tick=()=>{const x=$(id);
   else if(n++<40)setTimeout(tick,100)};setTimeout(tick,60)}
 function openTab(name){
   if(name==='times'&&SCREEN==='today'){scrollWhenReady('mtimes');return}  // already on Today: just scroll
-  const to={muhurat:['today'],interp:['chart','vedic'],bhava:['chart','vedic'],dpred:['timing','matter'],kptime:['timing','matter'],dasha:['timing','now'],
+  const to={muhurat:['today'],interp:['chart','reading'],bhava:['chart','housebyhouse'],dpred:['timing','matter'],kptime:['timing','matter'],dasha:['timing','now'],
     chara:['chart','chara'],transit:['timing','transits'],dates:['timing','dates'],lucky:['remedies'],prashna:['prashna'],times:['today']}[name]||['chart',name];
   go(to[0],to[1]);
   const el={muhurat:'t-muhurat',chara:'t-chara',times:'mtimes'}[name];if(el)scrollWhenReady(el);
