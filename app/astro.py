@@ -12,7 +12,7 @@ from app import muhurat, storage, today as today_mod
 from app.routes import calc_error, chart as compute_chart, require_tz, with_extras
 from app.schemas import ChartRequest
 from core import constants as C, horary, jamakkol, lalkitab, matchmaking
-from core import panchapakshi as pakshi, sarvatobhadra as sbc
+from core import panchapakshi as pakshi, sarvatobhadra as sbc, shadbala
 from core.ephemeris import julian_day
 from core.grahas import compute_grahas
 from core.panchang import compute_panchang
@@ -437,3 +437,24 @@ def sbc_market(on: date, tz_name: str) -> dict:
                       sbc_goods())
     grid = sbc.grid_view(sbc.sky(datetime.combine(on, datetime.min.time().replace(hour=12), tzinfo=ZoneInfo(tz_name))))
     return {"date": on.isoformat(), "rows": rows, "grid": grid, "has_goods": any(r["goods"] for r in rows)}
+
+
+def _r2(x):
+    if isinstance(x, float):
+        return round(x, 2)
+    if isinstance(x, dict):
+        return {k: _r2(v) for k, v in x.items()}
+    if isinstance(x, list):
+        return [_r2(v) for v in x]
+    return x
+
+
+@router.post("/shadbala")
+def shadbala_view(req: ChartRequest) -> dict:
+    """Shadbala and Bhava Bala in virupas, for study (core/shadbala.py)."""
+    require_tz(req.tz_name)
+    try:
+        when = datetime.combine(req.dob, req.tob, tzinfo=ZoneInfo(req.tz_name))
+        return _r2(shadbala.compute(when, req.lat, req.lon))
+    except Exception as exc:
+        raise calc_error(exc) from exc

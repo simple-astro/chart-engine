@@ -1170,6 +1170,21 @@
   #s-today>*+*,#tm-now>*+*,#tm-matter>*+*,#kabout>*+*,#s-remedies>*+*{margin-top:18px} #kabout{margin-top:22px}
   #s-today>.gh{margin:30px 0 -4px}
 
+  /* Shadbala (My Charts) */
+  .sbal-sum{margin:2px 0 10px}
+  .sbb{display:flex;gap:6px;align-items:stretch;height:190px;margin:8px 0 4px}
+  .sbb-c{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;font-size:.72rem}
+  .sbb-c b{font-size:.72rem;font-weight:600}
+  .sbb-t{position:relative;flex:1;width:100%;display:flex;align-items:flex-end;background:var(--soft);border-radius:6px 6px 0 0}
+  .sbb-t i{display:block;width:100%;background:var(--g2);border-radius:6px 6px 0 0}
+  .sbb-t i.ok{background:var(--ok)} .sbb-t i.low{background:var(--bad)}
+  .sbb-m{position:absolute;left:-2px;right:-2px;border-top:2px dashed var(--ink);opacity:.6}
+  .sbb-c small{color:var(--mut);margin-top:3px}
+  .sbal-det{margin-top:10px} .sbal-det>summary{cursor:pointer;font-weight:600;padding:6px 0}
+  .sbal-t{width:100%;border-collapse:collapse;font-size:.78rem;font-variant-numeric:tabular-nums}
+  .sbal-t th,.sbal-t td{padding:4px 6px;text-align:right;border-top:1px solid var(--line);white-space:nowrap}
+  .sbal-t th[scope=row]{text-align:left;font-weight:500;color:var(--mut)}
+  .sbal-t tr.tot th,.sbal-t tr.tot td{font-weight:600;color:var(--ink)} .sbal-t tr.grand th,.sbal-t tr.grand td{font-weight:700;color:var(--acc)}
   /* Panch Pakshi (Today) */
   .pakshi .pk-now{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:baseline;margin:4px 0 12px;line-height:1.5}
   .pakshi .pk-now small{color:var(--mut)}
@@ -1568,7 +1583,7 @@
       <div class="card panel">
         <select id="csel" autocomplete="off" hidden aria-hidden="true" tabindex="-1">
           <option value="planets">Planets</option><option value="yogas">Yogas</option><option value="houses">Houses &amp; cusps</option>
-          <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option>
+          <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option><option value="shadbala">Shadbala</option>
           <option value="xchg">Lord exchange</option><option value="jaimini">Jaimini</option><option value="bnn">BNN (Nadi trines)</option><option value="lal">Lal Kitab</option><option value="tajika">Tajika</option><option value="mundane">Mundane</option>
         </select>
         <div class="ctiles" id="ctiles" role="tablist" aria-label="Kundli sections">
@@ -1577,6 +1592,7 @@
           <button type="button" role="tab" data-pane="houses" data-branch="nadi"><b>Houses &amp; cusps</b><small>KP cusps</small></button>
           <button type="button" role="tab" data-pane="vargas" data-branch="vedic"><b>Divisional charts</b><small>D9, D10 … D150</small></button>
           <button type="button" role="tab" data-pane="akv" data-branch="vedic"><b>Ashtakavarga</b><small>Points per house</small></button>
+          <button type="button" role="tab" data-pane="shadbala" data-branch="vedic"><b>Shadbala</b><small>Planet and house strength</small></button>
           <button type="button" role="tab" data-pane="xchg" data-branch="vedic"><b>Lord exchange</b><small>Signs swapped</small></button>
           <button type="button" role="tab" data-pane="jaimini" data-branch="jaimini"><b>Jaimini</b><small>Karakas and Arudha</small></button>
           <button type="button" role="tab" data-pane="bnn" data-branch="bnn"><b>BNN</b><small>Nadi trines</small></button>
@@ -1592,6 +1608,7 @@
         <div class="pane" id="t-vargas" hidden><div id="vtabs" class="vt"></div><div class="seg vfrom" id="vfrom" role="radiogroup" aria-label="Count houses from"><button type="button" role="radio" aria-checked="true" class="on" data-f="lagna">From lagna</button><button type="button" role="radio" aria-checked="false" data-f="moon">From Moon</button></div><div class="vchart"><h4 id="vtitle"></h4><div id="vchart" class="chart"></div></div><div class="scroll"><table id="vtable"></table></div>
           <div class="vnadi" id="vnadi" hidden></div></div>
         <div class="pane" id="t-akv" hidden><div id="akvbody"></div></div>
+        <div class="pane" id="t-shadbala" hidden><div id="sbalbody"></div></div>
         <div class="pane" id="t-xchg" hidden><div id="xbody"></div></div>
         <div class="pane" id="t-jaimini" hidden><div id="jaibody"></div>
           <div class="hint">Jaimini’s 8 chara karakas rank the planets (with Rahu, counted backwards) by their degree in their sign. Used here to describe you — your soul lesson, work style, partner and image — not for timing.</div></div>
@@ -1645,6 +1662,7 @@
 <script src="/static/kptiming.js?v=6"></script>
 <script src="/static/transit.js?v=10"></script>
 <script src="/static/pakshi.js?v=1"></script>
+<script src="/static/shadbala.js?v=1"></script>
 <script>
 // API errors as one readable line: a string detail, {field, message}, or FastAPI's list of field errors.
 window.apiErr=d=>d==null?'':typeof d==='string'?d:Array.isArray(d)?d.map(x=>x.msg||'').filter(Boolean).join('; '):d.message||'';
@@ -1755,7 +1773,7 @@ const SCREENS=['today','timing','prashna','ask','remedies','chart','year','plans
 let SCREEN=null,TM='now',BRANCH=null;
 // Studies: the Kundli screen (id "chart") opens on a hub; each branch shows only its own sections.
 const BRANCHES={vedic:'Vedic',nadi:'KP',bnn:'BNN',jaimini:'Jaimini',lal:'Lal Kitab',tajika:'Tajika',mundane:'Mundane'};
-const BRANCH_OF={planets:'vedic',yogas:'vedic',vargas:'vedic',akv:'vedic',xchg:'vedic',links:'vedic',about:'vedic',reading:'vedic',
+const BRANCH_OF={shadbala:'vedic',planets:'vedic',yogas:'vedic',vargas:'vedic',akv:'vedic',xchg:'vedic',links:'vedic',about:'vedic',reading:'vedic',
   houses:'nadi',bnn:'bnn',events:'nadi',jaimini:'jaimini',chara:'jaimini',lal:'lal',tajika:'tajika',mundane:'mundane'};
 function setBranch(b){
   const wasBnn=BRANCH==='bnn';
@@ -1834,6 +1852,7 @@ function showPane(name){
   $('csel').value=name;
   document.querySelectorAll('#s-chart .pane').forEach(p=>p.hidden=p.id!=='t-'+name);
   $('ctiles').querySelectorAll('[data-pane]').forEach(b=>{const on=b.dataset.pane===name;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on))});
+  if(name==='shadbala')window.renderShadbala($('sbalbody'),lastReq);
 }
 // Wide screens: the five sections sit in the header. Narrower: a row under it. Phones: the bottom bar (CSS).
 // The bar can't live inside the header on phones: the header's blur would trap its fixed position.
@@ -1856,6 +1875,7 @@ showPane('planets');
 const FIND=[
   ['Today for you','today daily panchang day','today'],
   ['How are you feeling?','mood feeling state of mind log','today'],
+  ['Shadbala','shadbala shad bala six strength planet strength cheshta bala sthana dig kala drik bhava bala house strength ishta kashta rupa virupa','chart/shadbala'],
   ['Panch Pakshi','panch pancha pakshi bird five birds ruling eating walking sleeping dying yama best time now','today/pakshi'],
   ['Sarvatobhadra Chakra','sarvatobhadra sarvato bhadra chakra vedha money days financial astrology market teji mandi commodity gold','timing/sbc'],
   ['Best and worst times today','all times muhurat rahu kaal kalam abhijit hora choghadiya good bad time today','today/muhurat'],
