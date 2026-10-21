@@ -7,19 +7,22 @@
   const f = (x, d = 2) => (Math.round(x * 10 ** d) / 10 ** d).toFixed(d);
   let S = { req: null, data: null };
 
-  window.renderShadbala = async function (el, req) {
-    if (!req) return;
-    if (S.req === req && S.data) { paint(el); return; }
+  // One fetch serves both the graphs (My Charts › Graphs) and the tables (My Charts › Vedic › Shadbala).
+  async function load(el, req) {
+    if (!req) return false;
+    if (S.req === req && S.data) return true;
     S = { req, data: null };
     el.innerHTML = '<div class="hint">Working out the six strengths…</div>';
     try {
       const r = await fetch('/shadbala', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(req) });
       const d = await r.json();
       if (!r.ok) throw new Error(window.apiErr(d.detail) || r.statusText);
-      if (S.req !== req) return;
-      S.data = d; paint(el);
-    } catch (e) { el.innerHTML = `<p class="err">Couldn’t work out Shadbala: ${esc(e.message)}</p>`; }
-  };
+      if (S.req !== req) return false;
+      S.data = d; return true;
+    } catch (e) { el.innerHTML = `<p class="err">Couldn’t work out Shadbala: ${esc(e.message)}</p>`; return false; }
+  }
+  window.renderShadbala = async function (el, req) { if (await load(el, req)) paint(el); };
+  window.renderShadbalaGraphs = async function (el, req) { if (await load(el, req)) paintGraphs(el); };
 
   function bars(items, max, mark) {
     return `<div class="sbb">${items.map(it => `<div class="sbb-c" title="${esc(it.title)}">
@@ -28,7 +31,7 @@
   }
   const row = (label, vals, cls) => `<tr class="${cls || ''}"><th scope="row">${label}</th>${vals.map(v => `<td>${v}</td>`).join('')}</tr>`;
 
-  function paint(el) {
+  function paintGraphs(el) {
     const d = S.data, pl = d.planets;
     const maxP = Math.max(...P.map(p => pl[p].rupas), ...P.map(p => pl[p].required)) * 1.08;
     const pbars = bars(P.map(p => ({ n: pl[p].rupas, need: pl[p].required, value: f(pl[p].rupas), label: AB[p],
@@ -36,16 +39,30 @@
     const maxB = Math.max(...d.bhavas.map(b => b.rupas)) * 1.08;
     const bbars = bars(d.bhavas.map(b => ({ n: b.rupas, value: f(b.rupas, 1), label: String(b.house), cls: b.rank <= 3 ? 'ok' : b.rank >= 10 ? 'low' : '',
       title: `House ${b.house} (lord ${b.lord}): ${f(b.rupas, 1)} rupas, rank ${b.rank}` })), maxB, false);
-    const v = (fn, dd) => P.map(p => f(fn(pl[p]), dd));
-    const st = k => v(x => x.sthana[k]), kl = k => v(x => x.kala[k]);
     const strongest = [...P].sort((a, b) => pl[a].rank - pl[b].rank);
     const below = P.filter(p => pl[p].ratio < 1);
     el.innerHTML = `<section class="card gcard sbal">
-      <h3>Shadbala <small>six-fold planet strength</small> <span class="badge">For study only</span></h3>
+      <h3>Planet strength <small>Shadbala</small> <span class="badge">For study only</span></h3>
       <p class="sbal-sum">Strongest: <b>${strongest.slice(0, 2).join(' and ')}</b>. ${below.length ? `Below the minimum: <b>${below.join(', ')}</b>.` : 'Every planet meets its minimum.'}</p>
       ${pbars}
-      <p class="hint">Rupas (60 virupas = 1 rupa). The line on each bar is the classical minimum the planet needs to give its results with ease.</p>
-      <details class="sbal-det"><summary>All components (virupas)</summary><div class="scroll"><table class="sbal-t">
+      <p class="hint">Rupas (60 virupas = 1 rupa). The dashed line on each bar is the classical minimum the planet needs to give its results with ease.</p>
+      <button type="button" class="linkbtn" data-goto="shadbala">See every component →</button>
+    </section>
+    <section class="card gcard sbal">
+      <h3>House strength <small>Bhava Bala</small></h3>
+      ${bbars}
+      <p class="hint">Houses 1 to 12, in rupas. The three strongest are green, the three weakest red.</p>
+    </section>`;
+  }
+
+  function paint(el) {
+    const d = S.data, pl = d.planets;
+    const v = (fn, dd) => P.map(p => f(fn(pl[p]), dd));
+    const st = k => v(x => x.sthana[k]), kl = k => v(x => x.kala[k]);
+    el.innerHTML = `<section class="card gcard sbal">
+      <h3>Shadbala <small>six-fold planet strength</small> <span class="badge">For study only</span></h3>
+      <button type="button" class="linkbtn" data-goto="graphs">See the graphs →</button>
+      <details class="sbal-det" open><summary>All components (virupas)</summary><div class="scroll"><table class="sbal-t">
         <thead><tr><th></th>${P.map(p => `<th>${AB[p]}</th>`).join('')}</tr></thead><tbody>
         ${row('Uchcha', st('uchcha'))}${row('Saptavarga', st('saptavarga'))}${row('Ojayugma', st('ojayugma'))}${row('Kendra', st('kendra'))}${row('Drekkana', st('drekkana'))}
         ${row('1. Sthana Bala', st('total'), 'tot')}${row('2. Dig Bala', v(x => x.dig), 'tot')}
@@ -58,8 +75,7 @@
     </section>
     <section class="card gcard sbal">
       <h3>Bhava Bala <small>house strength</small></h3>
-      ${bbars}
-      <details class="sbal-det"><summary>All components (virupas)</summary><div class="scroll"><table class="sbal-t">
+      <details class="sbal-det" open><summary>All components (virupas)</summary><div class="scroll"><table class="sbal-t">
         <thead><tr><th></th>${d.bhavas.map(b => `<th>${ROMAN[b.house - 1]}</th>`).join('')}</tr></thead><tbody>
         ${row('Lord', d.bhavas.map(b => AB[b.lord]))}${row('Adhipati', d.bhavas.map(b => f(b.adhipati, 1)))}${row('Dig', d.bhavas.map(b => f(b.dig, 1)))}
         ${row('Drishti', d.bhavas.map(b => f(b.drishti, 1)))}${row('Total', d.bhavas.map(b => f(b.total, 1)), 'grand')}
@@ -67,7 +83,7 @@
       </tbody></table></div></details>
       ${d.wars.length ? `<p class="hint"><b>Planetary war:</b> ${d.wars.map(w => `${esc(w.planets.join(' and '))} — ${esc(w.winner)} wins (${f(w.bala)} virupas)`).join('; ')}.</p>` : ''}
       <details class="chrules"><summary>How we work this out</summary>
-        <p>Brihat Parashara Hora Shastra ch. 27–28, with the KP ayanamsha and Sripati (Porphyry) house cusps, checked against a desktop program’s printouts. Where that program differs from the text we follow the text: a birth before sunrise still belongs to the previous weekday, the night’s thirds go Moon, Venus, Mars, and the winner of a planetary war gains what the loser loses.</p>
+        <p>Brihat Parashara Hora Shastra ch. 27–28, with the KP ayanamsha and Sripati (Porphyry) house cusps, checked against a desktop program’s printouts. Where that program differs from the text we follow the text; for a birth after midnight but before sunrise we keep the calendar weekday, as that program does.</p>
         <p>Shown for study: our tests on dated life events found planet self-strength did not improve timing, so readings don’t use it yet.</p></details>
     </section>`;
   }

@@ -201,6 +201,50 @@ def kp_prediction(profile_id: int, topic: str, request: Request, months: int = 2
     return kp_predict.predict(p["chart"], topic, months=max(1, min(60, months)))
 
 
+@router.get("/{profile_id}/graph/life")
+def life_graph(profile_id: int, request: Request, topic: str = "career", ahead: int = 24, back: int = 0) -> dict:
+    """The Life graph: for one life matter, the promise of the chart, each Dasha period's strength, the Jupiter and
+    Saturn transit month by month, the best windows, and (looking back) the person's own events of that kind, so
+    they can see whether their past fell in the lit windows. Same engine as Coming up and the KP timing."""
+    from datetime import timedelta
+    from core import kp_predict as K
+    from app import life_events as L
+    if topic not in K.TOPICS or K.TOPICS[topic][6] != "event":
+        raise HTTPException(status_code=422, detail="Choose a life matter from the list.")
+    p = _require(profile_id, request)
+    chart, today = p["chart"], chat.local_today(p)
+    ahead, back = max(6, min(60, ahead)), max(0, min(120, back))
+    start = today - timedelta(days=round(back * 30.44))
+    r = K.predict(chart, topic, start, back + ahead)
+    _, _, good, bad, _, _, _ = K.TOPICS[topic]
+    ayan = chart["meta"].get("ayanamsha", "krishnamurti")
+    transit = []
+    for i in range(back + ahead):
+        mid = start + timedelta(days=round(i * 30.44) + 15)
+        w = next((w for w in r["windows"] if w["starts"] <= mid.isoformat() < w["ends"]), None)
+        sup = {w[lvl] for lvl in ("maha", "antar", "praty") if w and r["lords"][w[lvl]]["verdict"] in ("supports", "leans good")}
+        score, notes = K.transit_trigger(chart, mid, sup, good, bad, ayan)
+        transit.append({"date": mid.isoformat(), "score": round(score, 2), "notes": notes})
+    events = []
+    for e in storage.event_list(profile_id):
+        if L.KINDS[e["kind"]][1] != topic:
+            continue
+        from datetime import date as _d
+        d = _d.fromisoformat(e["date"])
+        if d < start:
+            continue
+        events.append({"date": e["date"], "precision": e["precision"], "label": L.KINDS[e["kind"]][0],
+                       "fit": L.check(chart, e["kind"], d, e["precision"])["fit"]})
+    return {"topic": topic, "title": r["title"], "houses_for": r["houses_for"], "houses_against": r["houses_against"],
+            "significators": r["significators"], "promise": {k: r["promise"][k] for k in ("cusp", "cusp_sub_lord", "signifies", "verdict")},
+            "from": r["from"], "to": r["to"], "today": today.isoformat(), "windows": r["windows"], "best": r["best"],
+            "best_ahead": [(w["starts"], w["ends"]) for w in sorted(
+                (w for w in r["windows"] if w["ends"] > today.isoformat() and w["verdict"] in ("strong", "favourable")),
+                key=lambda w: -w["score"])[:3]],
+            "transit": transit, "events": events,
+            "topics": [{"key": k, "label": v[0]} for k, v in K.TOPICS.items() if v[6] == "event"]}
+
+
 @router.get("/{profile_id}/kp/{topic}/days")
 def kp_event_days(profile_id: int, topic: str, request: Request, start: str | None = None, days: int = 90) -> dict:
     from datetime import date

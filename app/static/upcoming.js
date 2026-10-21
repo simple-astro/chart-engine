@@ -33,7 +33,7 @@
         <p>${esc(it.meaning)}</p>
         <p class="upprep"><span>Prepare</span>${esc(it.prepare)}</p>
         ${ready(it, i)}
-        <div class="upact"><button type="button" class="linkbtn" data-ask="${i}">Ask Astropositivism →</button>
+        <div class="upact"><button type="button" class="linkbtn" data-upask="${i}">Ask Astropositivism →</button>
           <button type="button" class="linkbtn" data-ics="${i}">Add to calendar</button></div>
       </div></li>`;
   }
@@ -121,7 +121,7 @@
     else if (t.id === 'upmore') { S.all = !S.all; paint(); }
     else if (t.dataset.ready !== undefined) { const i = +t.dataset.ready; S.open.has(i) ? S.open.delete(i) : S.open.add(i); paint(); }
     else if (t.dataset.days !== undefined) { findDays(+t.dataset.days); }
-    else if (t.dataset.ask !== undefined) { window.askSukh && window.askSukh(S.data.items[+t.dataset.ask].ask); }
+    else if (t.dataset.upask !== undefined) { window.askSukh && window.askSukh(S.data.items[+t.dataset.upask].ask); }
     else if (t.dataset.ics !== undefined) { ics(S.data.items[+t.dataset.ics]); }
   });
   document.addEventListener('change', async e => {

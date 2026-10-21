@@ -395,7 +395,6 @@
   .avk{margin:0 0 12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg2)} .avk summary{cursor:pointer}
   .avk dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px;margin:10px 0 0} .avk dt{font-size:.72rem;color:var(--mut);text-transform:uppercase;letter-spacing:.05em} .avk dd{margin:2px 0 0;font-weight:600}
   .mlagna{margin-top:10px} .mlh{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)} .mlt td,.mlt th{padding:5px 10px}
-  .chstyle{width:min(260px,100%)} .chstyle button{font-size:.8rem}
   svg.south .southmid{fill:color-mix(in srgb,var(--acc) 6%,transparent);stroke:none} svg.south .southasc{stroke:var(--acc);stroke-width:2.5}
   svg.south .southh{font-size:9px;fill:var(--mut)} svg.south .southnote{font-size:9px}
   .tslide,.accsheet{flex:1 1 100%;width:100%;min-width:0;max-width:100%} .tslide{margin-top:10px} .tsprev{overflow:hidden} .tsprev .scroll{overflow-x:auto} .tstab{width:100%} .tsrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0}
@@ -483,7 +482,7 @@
     .chartcard>.chhead{flex-direction:row;flex-wrap:wrap;justify-content:center;column-gap:12px;row-gap:10px}
     .chartcard>.chhead>h3,.chartcard>.chhead>.gpanels,.chartcard>.chhead>.lnkbar{flex-basis:100%}
     .chartcard>.chhead>.lnkbar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:auto}
-    .chhead .chstyle{width:auto} .chhead .chstyle button{white-space:nowrap;padding-left:14px;padding-right:14px} .chhead .chseg{width:auto;min-width:340px}
+    .chhead .chseg{width:auto;min-width:340px}
     .gpanels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start}
     .gpanels>.gdasha,.gpanels>.ghits{margin:0;max-width:none} .gpanels .hint{text-align:left}
   }
@@ -561,6 +560,9 @@
   .sukh h2{font:600 2.1rem var(--serif);margin-bottom:8px}
   .sukh .lead{font-size:1.1rem;margin:0 0 6px} .sukh .lead .badge{vertical-align:2px;margin-left:4px}
   .sukh p{max-width:780px;margin:0 0 8px}
+  .askwelcome{padding:4px 0 8px} .askhero{padding:18px 20px;margin:0} .askhero h2{font-size:1.6rem}
+  .askhero .sukh-id{margin-bottom:10px} .askhero .cta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:6px} .askhero .hint{margin:8px 0 0}
+  button.fchip{font:inherit;border:1px solid var(--line);cursor:pointer} button.fchip:hover{border-color:var(--acc)}
   .focusrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0 2px;font-size:.8rem}
   .focusrow>span:first-child{text-transform:uppercase;letter-spacing:1px;font-size:.66rem;color:var(--mut);margin-right:4px}
   .fchip{padding:3px 11px;border-radius:99px;background:var(--soft);color:var(--acc);font-weight:600}
@@ -1257,6 +1259,17 @@
   .sbal-t th,.sbal-t td{padding:4px 6px;text-align:right;border-top:1px solid var(--line);white-space:nowrap}
   .sbal-t th[scope=row]{text-align:left;font-weight:500;color:var(--mut)}
   .sbal-t tr.tot th,.sbal-t tr.tot td{font-weight:600;color:var(--ink)} .sbal-t tr.grand th,.sbal-t tr.grand td{font-weight:700;color:var(--acc)}
+  /* Life graph (My Charts › Graphs) */
+  .lg{display:flex;flex-direction:column;gap:10px}
+  .lgchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin} .lgchips .mdchip{flex:0 0 auto;white-space:nowrap}
+  .lgctl{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.82rem;color:var(--mut)} .lgctl select{font:inherit;color:var(--ink);background:var(--solid);border:1px solid var(--line);border-radius:8px;padding:4px 8px;margin-left:4px}
+  .lgtitle{margin:0;font-size:.9rem} .lgsvg{overflow-x:auto} .lgsvg svg{display:block;font-family:var(--sans)}
+  .lgblk{cursor:pointer} .lgblk:focus-visible rect{stroke:var(--ink);stroke-width:2}
+  .lgkey{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.74rem;color:var(--mut)} .lgk{display:inline-block;box-sizing:border-box;padding:0;min-width:0;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .lgk-dasha{background:color-mix(in srgb,var(--acc) 70%,transparent)} .lgk-tr{background:var(--acc);border-radius:50%} .lgk-against{border:1.5px solid var(--bad);border-radius:50%}
+  .lgk-band{background:color-mix(in srgb,var(--acc) 14%,transparent);border:1px solid var(--line)} .lgk-ev{border:1.5px solid var(--ok);transform:rotate(45deg);width:8px;height:8px}
+  .lgbest{border:1px solid var(--line);border-radius:14px;background:var(--bg2);padding:12px 14px} .lgbest h5{margin:0 0 4px} .lgbest ul{margin:0 0 8px;padding-left:1.1em}
+  .lgcard{border:1px solid var(--line);border-radius:14px;background:var(--solid);padding:12px 14px;display:flex;flex-direction:column;gap:4px} .lgcard small{color:var(--mut)} .lgcard ul{margin:4px 0 0;padding-left:1.1em;font-size:.84rem} .lgcard h6{margin:8px 0 0;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
   /* Panch Pakshi (Today) */
   .pakshi .pk-now{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:baseline;margin:4px 0 12px;line-height:1.5}
   .pakshi .pk-now small{color:var(--mut)}
@@ -1621,6 +1634,7 @@
     <!-- Studies: one card per tradition; each opens a page with only its own sections -->
     <div class="sthub" id="sthub" role="list" aria-label="My Charts">
       <button type="button" role="listitem" data-branch="vedic"><i aria-hidden="true">☉</i><span><b>Vedic</b><small>Rasi chart, planets, yogas, divisional charts, Ashtakavarga, your life areas</small></span></button>
+      <button type="button" role="listitem" data-branch="graphs"><i aria-hidden="true">▤</i><span><b>Graphs</b><small>Your life graph (when is my best time?) and the strength of your planets and houses</small></span></button>
       <button type="button" role="listitem" data-branch="nadi"><i aria-hidden="true">◎</i><span><b>KP</b><small>Krishnamurti Paddhati: cusps and sub-lords, your life so far</small></span></button>
       <button type="button" role="listitem" data-branch="bnn"><i aria-hidden="true">△</i><span><b>BNN</b><small>Bhrigu Nandi Nadi: planets joined by trines, karaka circuits</small></span></button>
       <button type="button" role="listitem" data-branch="jaimini"><i aria-hidden="true">♛</i><span><b>Jaimini</b><small>Karakas, Arudha and Upapada, Chara Dasha</small></span></button>
@@ -1632,7 +1646,6 @@
       <span class="stjump" id="stjump"></span></nav>
     <div class="grid" id="stgrid">
       <aside class="card chartcard"><div class="chhead"><h3 id="charttitle">Rasi chart (D1) · North Indian</h3>
-        <div class="seg chstyle" role="radiogroup" aria-label="Chart style"><button type="button" role="radio" data-style="north">North Indian</button><button type="button" role="radio" data-style="south">South Indian</button></div>
         <div class="seg chseg" role="radiogroup" aria-label="Chart view"><button type="button" role="radio" aria-checked="true" class="on" data-v="lagna">Lagna</button><button type="button" role="radio" aria-checked="false" data-v="chalit">Bhava Chalit</button><button type="button" role="radio" aria-checked="false" data-v="moon" title="Chandra Lagna: houses counted from the Moon">Moon</button><button type="button" role="radio" aria-checked="false" data-v="gochar" title="Where the planets are today, in houses from your lagna">Transit</button></div>
         <div class="gpanels"><div class="gdasha" id="gdasha" hidden></div><div class="ghits" id="ghits" hidden></div></div>
           <button type="button" class="jpt" id="jpt" aria-pressed="false" title="Show the Jaimini Arudha Lagna (AL) and Upapada (UL) on the chart">AL · UL</button>
@@ -1655,7 +1668,7 @@
       <div class="card panel">
         <select id="csel" autocomplete="off" hidden aria-hidden="true" tabindex="-1">
           <option value="planets">Planets</option><option value="yogas">Yogas</option><option value="houses">Houses &amp; cusps</option>
-          <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option><option value="shadbala">Shadbala</option>
+          <option value="vargas">Divisional charts</option><option value="akv">Ashtakavarga</option><option value="shadbala">Shadbala</option><option value="lifegraph">Life graph</option><option value="gstrength">Strength graphs</option>
           <option value="xchg">Lord exchange</option><option value="jaimini">Jaimini</option><option value="bnn">BNN (Nadi trines)</option><option value="lal">Lal Kitab</option><option value="tajika">Tajika</option><option value="mundane">Mundane</option>
         </select>
         <div class="ctiles" id="ctiles" role="tablist" aria-label="Kundli sections">
@@ -1664,7 +1677,9 @@
           <button type="button" role="tab" data-pane="houses" data-branch="nadi"><b>Houses &amp; cusps</b><small>KP cusps</small></button>
           <button type="button" role="tab" data-pane="vargas" data-branch="vedic"><b>Divisional charts</b><small>D9, D10 … D150</small></button>
           <button type="button" role="tab" data-pane="akv" data-branch="vedic"><b>Ashtakavarga</b><small>Points per house</small></button>
-          <button type="button" role="tab" data-pane="shadbala" data-branch="vedic"><b>Shadbala</b><small>Planet and house strength</small></button>
+          <button type="button" role="tab" data-pane="shadbala" data-branch="vedic"><b>Shadbala</b><small>Every component</small></button>
+          <button type="button" role="tab" data-pane="lifegraph" data-branch="graphs"><b>Life graph</b><small>When is my best time?</small></button>
+          <button type="button" role="tab" data-pane="gstrength" data-branch="graphs"><b>Strength</b><small>Planets and houses</small></button>
           <button type="button" role="tab" data-pane="xchg" data-branch="vedic"><b>Lord exchange</b><small>Signs swapped</small></button>
           <button type="button" role="tab" data-pane="jaimini" data-branch="jaimini"><b>Jaimini</b><small>Karakas and Arudha</small></button>
           <button type="button" role="tab" data-pane="bnn" data-branch="bnn"><b>BNN</b><small>Nadi trines</small></button>
@@ -1681,6 +1696,8 @@
           <div class="vnadi" id="vnadi" hidden></div></div>
         <div class="pane" id="t-akv" hidden><div id="akvbody"></div></div>
         <div class="pane" id="t-shadbala" hidden><div id="sbalbody"></div></div>
+        <div class="pane" id="t-lifegraph" hidden><div id="lgbody"></div></div>
+        <div class="pane" id="t-gstrength" hidden><div id="gsbody"></div></div>
         <div class="pane" id="t-xchg" hidden><div id="xbody"></div></div>
         <div class="pane" id="t-jaimini" hidden><div id="jaibody"></div>
           <div class="hint">Jaimini’s 8 chara karakas rank the planets (with Rahu, counted backwards) by their degree in their sign. Used here to describe you — your soul lesson, work style, partner and image — not for timing.</div></div>
@@ -1734,7 +1751,8 @@
 <script src="/static/kptiming.js?v=6"></script>
 <script src="/static/transit.js?v=10"></script>
 <script src="/static/pakshi.js?v=1"></script>
-<script src="/static/shadbala.js?v=1"></script>
+<script src="/static/shadbala.js?v=2"></script>
+<script src="/static/lifegraph.js?v=1"></script>
 <script>
 // API errors as one readable line: a string detail, {field, message}, or FastAPI's list of field errors.
 window.apiErr=d=>d==null?'':typeof d==='string'?d:Array.isArray(d)?d.map(x=>x.msg||'').filter(Boolean).join('; '):d.message||'';
@@ -1846,15 +1864,15 @@ if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.fo
 const SCREENS=['today','timing','prashna','ask','remedies','chart','year','plans','more'];
 let SCREEN=null,TM='now',BRANCH=null;
 // Studies: the Kundli screen (id "chart") opens on a hub; each branch shows only its own sections.
-const BRANCHES={vedic:'Vedic',nadi:'KP',bnn:'BNN',jaimini:'Jaimini',lal:'Lal Kitab',tajika:'Tajika',mundane:'Mundane'};
-const BRANCH_OF={shadbala:'vedic',planets:'vedic',yogas:'vedic',vargas:'vedic',akv:'vedic',xchg:'vedic',links:'vedic',about:'vedic',reading:'vedic',
+const BRANCHES={vedic:'Vedic',graphs:'Graphs',nadi:'KP',bnn:'BNN',jaimini:'Jaimini',lal:'Lal Kitab',tajika:'Tajika',mundane:'Mundane'};
+const BRANCH_OF={lifegraph:'graphs',gstrength:'graphs',shadbala:'vedic',planets:'vedic',yogas:'vedic',vargas:'vedic',akv:'vedic',xchg:'vedic',links:'vedic',about:'vedic',reading:'vedic',
   houses:'nadi',bnn:'bnn',events:'nadi',jaimini:'jaimini',chara:'jaimini',lal:'lal',tajika:'tajika',mundane:'mundane'};
 function setBranch(b){
   const wasBnn=BRANCH==='bnn';
   BRANCH=BRANCHES[b]?b:null;
   if(wasBnn!==(BRANCH==='bnn'))try{RERENDER&&RERENDER()}catch(e){}  // the faded BNN copies come and go with the branch
   $('sthub').hidden=!!BRANCH;$('stcrumb').hidden=!BRANCH;
-  $('stgrid').hidden=!BRANCH;$('stgrid').classList.toggle('solo',BRANCH==='lal'||BRANCH==='tajika'||BRANCH==='mundane');
+  $('stgrid').hidden=!BRANCH;$('stgrid').classList.toggle('solo',BRANCH==='lal'||BRANCH==='tajika'||BRANCH==='mundane'||BRANCH==='graphs');
   document.querySelectorAll('#s-chart .stx').forEach(x=>x.hidden=x.dataset.for!==BRANCH);
   const tiles=[...$('ctiles').querySelectorAll('[data-pane]')];
   tiles.forEach(t=>t.hidden=t.dataset.branch!==BRANCH);
@@ -1927,6 +1945,8 @@ function showPane(name){
   document.querySelectorAll('#s-chart .pane').forEach(p=>p.hidden=p.id!=='t-'+name);
   $('ctiles').querySelectorAll('[data-pane]').forEach(b=>{const on=b.dataset.pane===name;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on))});
   if(name==='shadbala')window.renderShadbala($('sbalbody'),lastReq);
+  if(name==='gstrength')window.renderShadbalaGraphs($('gsbody'),lastReq);
+  if(name==='lifegraph')window.renderLifeGraph($('lgbody'),currentId);
 }
 // Wide screens: the five sections sit in the header. Narrower: a row under it. Phones: the bottom bar (CSS).
 // The bar can't live inside the header on phones: the header's blur would trap its fixed position.
@@ -1949,6 +1969,8 @@ showPane('planets');
 const FIND=[
   ['Today for you','today daily panchang day','today'],
   ['How are you feeling?','mood feeling state of mind log','today'],
+  ['Life graph','life graph timing graph when is my best time event window promise dasha transit lanes best window career marriage money property','chart/lifegraph'],
+  ['Strength graphs','strength graphs planet strength house strength shadbala bhava bala bars','chart/gstrength'],
   ['Shadbala','shadbala shad bala six strength planet strength cheshta bala sthana dig kala drik bhava bala house strength ishta kashta rupa virupa','chart/shadbala'],
   ['Panch Pakshi','panch pancha pakshi bird five birds ruling eating walking sleeping dying yama best time now','today/pakshi'],
   ['Sarvatobhadra Chakra','sarvatobhadra sarvato bhadra chakra vedha money days financial astrology market teji mandi commodity gold','timing/sbc'],
@@ -1984,7 +2006,6 @@ const FIND=[
   ['Composite chart: birth chart + transit','composite combined natal birth transit outer ring gochar chart today planets play day dasha prana sookshma','chart/gochar','Vedic'],
   ['Moon chart (Chandra Lagna)','moon chart chandra lagna chandra kundli from the moon','chart/view-moon','Vedic'],
   ['Bhava Chalit chart','bhava chalit chalit cusp chart nirayana','chart/view-chalit','Vedic'],
-  ['South Indian chart style','south indian chart style square','chart/style-south','Vedic'],
   ['Settings','settings preferences ayanamsa ayanamsha lahiri kp raman node rahu ketu true mean north indian south indian style theme dark light city location default','app/settings'],
   ['Married life','married marriage couple wife husband spouse rate improve talk day patience chandrashtama habits shaadi','match/life'],
   ['Jaimini','jaimini karaka atmakaraka arudha upapada karakamsa','chart/jaimini','Jaimini'],
@@ -2080,7 +2101,6 @@ function findGo(b){
   const inner={'chart/rectify':()=>{go('chart','events');let n=0;const t=()=>{const x=$('evbt');if(x){x.click();x.scrollIntoView({block:'start'})}else if(n++<30)setTimeout(t,100)};setTimeout(t,80)},
     'app/settings':()=>openSettings(),
     'chart/gochar':()=>chartView('gochar'),'chart/view-moon':()=>chartView('moon'),'chart/view-chalit':()=>chartView('chalit'),
-    'chart/style-south':()=>{go('chart','vedic');setTimeout(()=>{const x=document.querySelector('.chstyle [data-style="south"]');if(x)x.click();$('chart').scrollIntoView({block:'center'})},120)},
     'match/life':()=>nav('match')}[b.dataset.to];
   if(inner){const label=b.dataset.label;if(q)track('find/pick',q+' → '+label);
     try{localStorage.setItem('sj-find-recent',JSON.stringify([label,...recent().filter(x=>x!==label)].slice(0,5)))}catch(e){}
@@ -2362,7 +2382,7 @@ async function setAsk(){
     h.forEach(m=>m.role==='user'?addUser(m.content):addBot(m.content));
     const lastQ=[...h].reverse().find(m=>m.role==='user');if(h.length&&h[h.length-1].role==='assistant'&&lastQ)deeper(lastQ.content,h[h.length-1].content);
     $('chips').hidden=h.length>0||limitReached();
-    if(!h.length)$('log').innerHTML='<div class="empty"><span class="big">🙏</span><b>Namaste'+( $('name').value?', '+esc($('name').value.split(' ')[0]):'')+'.</b>I am a Jyotishi trained by the Astropositivism Team. What’s on your mind? Ask me about career, marriage, money, health or travel abroad, and I’ll tell you what your chart says and what you can do about it.</div>';
+    if(!h.length){const hero=window.guideHero&&window.guideHero();$('log').innerHTML=hero?'<div class="askwelcome">'+hero+'</div>':'<div class="empty"><span class="big">🙏</span><b>Namaste'+( $('name').value?', '+esc($('name').value.split(' ')[0]):'')+'.</b>I am a Jyotishi trained by the Astropositivism Team. What’s on your mind? Ask me about career, marriage, money, health or travel abroad, and I’ll tell you what your chart says and what you can do about it.</div>';}
     else toBottom();
   }catch(e){}
 }
@@ -2371,7 +2391,7 @@ $('q').addEventListener('input',()=>{$('q').style.height='auto';$('q').style.hei
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('askf').requestSubmit()}});
 $('askf').addEventListener('submit',async e=>{
   e.preventDefault();const q=$('q').value.trim();if(!q||currentId===null||$('askbtn').disabled||limitReached())return;
-  const id=currentId,empty=$('log').querySelector('.empty');if(empty)empty.remove();
+  const id=currentId,empty=$('log').querySelector('.empty,.askwelcome');if(empty)empty.remove();
   deeper(null);addUser(q);$('q').value='';$('q').style.height='auto';$('chips').hidden=true;$('askbtn').disabled=true;
   const bot=addBot();bot.innerHTML=THINK;
   // Life events mentioned in the message are offered back to confirm (never saved by themselves); asked in parallel with the answer.
@@ -2550,7 +2570,6 @@ function drawSouth(el,lagnaIdx,byH,ascLabel){
   el.innerHTML=v+'</svg>';el.querySelector('svg').dataset.centres=JSON.stringify(centres);
 }
 function setChartStyle(s){CHART_STYLE=s;try{localStorage.setItem('sj-chart-style',s)}catch(e){}
-  document.querySelectorAll('.chstyle button').forEach(b=>{const on=b.dataset.style===s;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))});
   track('chart/style-'+s);if(RERENDER)RERENDER();const v=document.querySelector('#vtabs button.on');if(v)v.click()}
 // ----- main chart: planet tooltip + key highlight -----
 // Vimshottari to five levels: the chart stores three (maha, antar, praty); Sookshma and Prana split the
@@ -2614,8 +2633,6 @@ $('gplay').addEventListener('click',()=>{if(GPLAY){gStop();return}
 $('gdate').addEventListener('change',e=>{if(!e.target.value)return;const t=new Date();t.setHours(0,0,0,0);
   GDAY=Math.round((new Date(e.target.value+'T00:00')-t)/864e5);if(RERENDER)RERENDER()});
 $('gdate').addEventListener('click',e=>{try{e.target.showPicker()}catch(_){}});
-document.querySelector('.chstyle').addEventListener('click',e=>{const b=e.target.closest('[data-style]');if(b&&b.dataset.style!==CHART_STYLE)setChartStyle(b.dataset.style)});
-document.querySelectorAll('.chstyle button').forEach(b=>{const on=b.dataset.style===CHART_STYLE;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))});
 document.querySelector('.chseg').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b||b.dataset.v===CHART_VIEW)return;
   CHART_VIEW=b.dataset.v;if(CHART_VIEW!=='lagna')track('chart/'+CHART_VIEW);document.querySelectorAll('.chseg button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-checked',String(x===b))});
   focusPlanet(null);if(RERENDER)RERENDER()});

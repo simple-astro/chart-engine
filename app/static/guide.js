@@ -17,21 +17,26 @@
   };
   const ic = k => `<svg class="gico" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 
-  // el: Kundli › About you (Astropositivism's summary + life areas); remEl: the Remedies screen.
-  window.renderGuide = function (el, g, who, remEl) {
-    const first = esc((who || '').trim().split(' ')[0] || 'friend');
-    const p = g.period;
-    const hero = `<section class="card sukh">
-        <div class="sukh-id"><img src="/static/sun.svg" alt="" width="52" height="52"><div><b>Astropositivism</b><span class="ai">AI Jyotishi</span>
-          <small>Trained by the Astropositivism Team</small></div></div>
+  // The welcome in Ask Astropositivism (shown until the first message): who you are talking to, the running period and
+  // what it brings into focus. Each focus area is a question one tap away.
+  let HERO = null;
+  window.guideHero = function () {
+    if (!HERO) return '';
+    const { g, who } = HERO, first = esc((who || '').trim().split(' ')[0] || 'friend'), p = g.period;
+    return `<section class="card sukh askhero">
         <h2>Namaste, ${first}.</h2>
-        ${p ? `<p class="lead">You are in your <b>${p.md} period</b> until ${p.until} <span class="badge ${p.verdict.cls}">${p.verdict.label}</span></p>
-          <p><button type="button" class="linkbtn" data-goto="dasha">What this period means for you →</button></p>
-          ${p.focus.length ? `<div class="focusrow"><span>In focus now</span>${p.focus.map(f => `<span class="fchip">${esc(f)}</span>`).join('')}</div>` : ''}`
-        : '<p class="lead">Here is what your chart says, and what you can do about it.</p>'}
-        <div class="cta"><button type="button" class="btn" data-ask="">Ask Astropositivism anything</button>
-          <button type="button" class="btn ghost" data-goto="muhurat">Good days this week</button></div>
+        ${p ? `<p class="lead">You are in your <b>${esc(p.md)} period</b> until ${esc(p.until)} <span class="badge ${p.verdict.cls}">${esc(p.verdict.label)}</span></p>
+          ${p.focus.length ? `<div class="focusrow"><span>In focus now</span>${p.focus.map(f => `<button type="button" class="fchip" data-ask="${esc(`My ${p.md} period brings ${f} into focus. What does that mean for me, and what should I do?`)}">${esc(f)}</button>`).join('')}</div>` : ''}
+          <p class="hint">Tap an area to ask about it, or type your own question below.</p>`
+        : '<p class="lead">What’s on your mind? Ask me about career, marriage, money, health or travel abroad, and I’ll tell you what your chart says and what you can do about it.</p>'}
+        <div class="cta">${p ? '<button type="button" class="linkbtn" data-goto="dasha">What this period means for you →</button>' : ''}
+          <button type="button" class="linkbtn" data-goto="muhurat">Good days this week →</button></div>
       </section>`;
+  };
+
+  // el: Kundli › About you (life's lesson + life areas); remEl: the Remedies screen.
+  window.renderGuide = function (el, g, who, remEl) {
+    HERO = { g, who };
 
     const rem = `<section class="card gcard"><h3>Your remedies <small>upaya</small></h3>
         <ol class="grem">${g.remedies.map(r => `<li><b>${esc(r.title)}</b><p>${esc(r.text)}</p><small>${esc(r.why)}</small></li>`).join('')}</ol>
@@ -51,7 +56,7 @@
 
     const purpose = g.jaimini ? `<section class="card gcard gpurpose"><h3>Your life’s lesson <small>Jaimini</small></h3>
         <p>${esc(g.jaimini.purpose)}</p><button type="button" class="linkbtn" data-goto="jaimini">See your Jaimini chart →</button></section>` : '';
-    el.innerHTML = hero + purpose + `<h3 class="gh">Your life areas</h3><div class="ggrid">${areas}</div>`;
+    el.innerHTML = purpose + `<h3 class="gh">Your life areas</h3><div class="ggrid">${areas}</div>`;
     if (remEl) remEl.innerHTML = rem;
   };
 
