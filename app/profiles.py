@@ -440,6 +440,7 @@ def _events_view(p: dict) -> dict:
     group = {k: g for g, ks in L.GROUPS for k in ks}
     return {"kinds": [{"key": k, "label": v[0], "group": group.get(k, "Other")} for k, v in L.KINDS.items()],
             "groups": [g for g, _ in L.GROUPS], "events": events, "summary": summ, "karaka": kar,
+            "tob_unknown": bool(p["request"].get("tob_unknown")), "saved_tob": p["request"]["tob"][:5],
             "accuracy": L.accuracy(chart, events, summ, bool(p["request"].get("tob_unknown")), rectified)}
 
 
@@ -473,20 +474,42 @@ def events_add(profile_id: int, req: EventRequest, request: Request) -> dict:
     return _events_view(p)
 
 
+PARTS_OF_DAY = {"night": (0, 359), "morning": (360, 719), "afternoon": (720, 1079), "evening": (1080, 1439)}
+
+
+class SuggestRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+
+
+@router.post("/{profile_id}/events/suggest")
+def events_suggest(profile_id: int, req: SuggestRequest, request: Request) -> dict:
+    """Life events the person just mentioned in chat, offered for them to confirm. Nothing is saved here."""
+    from app import memory
+    p = _require(profile_id, request)
+    return {"suggestions": memory.suggest(p, req.message, chat.local_today(p))}
+
+
 @router.get("/{profile_id}/events/birth-time")
-def events_birth_time(profile_id: int, request: Request) -> dict:
-    """Which birth times, an hour either side of the saved one, best explain the person's events."""
+def events_birth_time(profile_id: int, request: Request, scope: str = "hour", part: str = "any") -> dict:
+    """Which birth times best explain the person's events: an hour either side of the saved time (scope=hour), or
+    the whole day, or one part of it, when the time is unknown or doubtful (scope=day, part=night|morning|...)."""
     from app import life_events as L
     p = _require(profile_id, request)
     from app.life_events import checked
     req, events = p["request"], checked(storage.event_list(profile_id))
-    if req.get("tob_unknown"):
-        raise HTTPException(status_code=422, detail="Add a birth time first; rectification refines a known time.")
-    if len(events) < 3:
-        raise HTTPException(status_code=422, detail="Add at least 3 events to rectify your birth time.")
-    at = lambda tob: with_extras(compute_chart(ChartRequest(**{**req, "tob": tob})))
-    out = L.birth_time_check(req, events, at, chat.local_today(p))
-    if out["suggest"] is None:  # the saved time is among the best fits: count it as rectified (for this time only)
+    unknown = bool(req.get("tob_unknown"))
+    if scope not in ("hour", "day") or (part != "any" and part not in PARTS_OF_DAY):
+        raise HTTPException(status_code=422, detail="Unknown scope or part of the day.")
+    wide = unknown or scope == "day"
+    need = 4 if wide else 3
+    if len(events) < need:
+        raise HTTPException(status_code=422, detail=f"Add at least {need} events to {'find' if unknown else 'rectify'} "
+                                                    "your birth time" + (" (with the month if you know it)." if wide else "."))
+    at = lambda tob: with_extras(compute_chart(ChartRequest(**{**req, "tob": tob, "tob_unknown": False})))
+    out = L.birth_time_check(req, events, at, chat.local_today(p), unknown=unknown,
+                             between=PARTS_OF_DAY.get(part) if wide and part != "any" else None)
+    out["part"] = part if wide else "any"
+    if not wide and out["suggest"] is None:  # the saved time is among the best fits: count it as rectified (for this time only)
         storage.set_setting(f"rectified_{profile_id}_{req['tob'][:5]}", chat.local_today(p).isoformat())
     return out
 

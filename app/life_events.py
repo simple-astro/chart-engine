@@ -212,8 +212,12 @@ def accuracy(chart: dict, events: list[dict], summ: dict | None, tob_unknown: bo
     else:
         lvl = 1
     first = mahas[0] if mahas else None
-    if tob_unknown:
-        step = ("time", "Add your birth time", "Even an approximate time, like “around 2 PM”, lets us check your chart.")
+    if tob_unknown and len(dated) >= 4:
+        step = ("find", "Find your birth time from your events",
+                "Your events can narrow it to a part of the day. It is a hint, not a certainty.")
+    elif tob_unknown:
+        step = ("time", "Add your birth time", "Even an approximate time, like “around 2 PM”, lets us check your chart. "
+                                               "Or add 4 events with the month and we will look for it.")
     elif len(dated) < 3:
         need = 3 - len(dated)
         step = ("event", f"Add {need} past event{'s' if need > 1 else ''} with the month",
@@ -246,29 +250,39 @@ def accuracy(chart: dict, events: list[dict], summ: dict | None, tob_unknown: bo
 
 
 def birth_time_check(request: dict, events: list[dict], chart_at, today: date, span_min: int = 60,
-                     step_min: int = 4) -> dict:
+                     step_min: int = 4, between: tuple[int, int] | None = None, unknown: bool = False) -> dict:
     """Birth time rectification: the person's events judged against charts cast a few minutes earlier and later.
 
     ``chart_at(tob)`` returns the chart (with extras) for the same birth with another time of birth. Only the
     time changes; place, date and ayanamsha stay as saved. Times that would cross midnight are left out.
     A best window is the run of times with the most fits; how much it means depends on how many Dasha
     lords the events span and on how many would fit by chance, so the result says that plainly.
+
+    ``between`` (minutes after midnight, inclusive) searches that part of the day instead of an hour either side
+    of the saved time; with ``unknown`` there is no saved time at all. Both are "wide" searches: they also say
+    how many times of day fit almost as well as the best, because events that fit most of the day narrow nothing.
     """
     from datetime import datetime, time as dtime
     events = checked(events)
-    h, m = map(int, request["tob"][:5].split(":"))
-    now = h * 60 + m
+    wide = unknown or between is not None
+    if unknown or between is not None:
+        lo, hi = between or (0, 24 * 60 - 1)
+        times = [(t, t - (lo + hi) // 2) for t in range(lo, hi + 1, step_min)]
+        now = None
+    else:
+        h, m = map(int, request["tob"][:5].split(":"))
+        now = h * 60 + m
+        times = [(now + off, off) for off in range(-span_min, span_min + 1, step_min)]
     birth = date.fromisoformat(request["dob"])
     rows = []
-    for off in range(-span_min, span_min + 1, step_min):
-        t = now + off
+    for t, off in times:
         if not 0 <= t < 24 * 60:
             continue
         tob = f"{t // 60:02d}:{t % 60:02d}"
         c = chart_at(tob + ":00")
         marks = [check(c, e["kind"], date.fromisoformat(e["date"]), e["precision"])["fit"] for e in events]
         rows.append({"tob": tob, "offset": off, "fits": marks.count("fits"), "marks": marks,
-                     "yours": off == 0, "chart": c})
+                     "yours": not wide and off == 0, "lagna": c["lagna"]["sign"], "chart": c})
     best = max(r["fits"] for r in rows)
     # The longest run of neighbouring times at the best score (closest to the saved time when tied).
     runs, cur = [], []
@@ -281,6 +295,9 @@ def birth_time_check(request: dict, events: list[dict], chart_at, today: date, s
     run = max(runs, key=lambda x: (len(x), -min(abs(r["offset"]) for r in x)))
     mid = min(run[(len(run) - 1) // 2:len(run) // 2 + 1], key=lambda r: abs(r["offset"]))
     yours = next((r for r in rows if r["yours"]), None)
+    near = sum(1 for r in rows if r["fits"] >= best - 1) / len(rows)  # share of the times searched that fit about as well
+    at_best = sum(1 for r in rows if r["fits"] == best) / len(rows)
+    narrowing = not wide or (best >= 2 and at_best <= 0.5 and near <= 0.6)
     # How strong is the test? Chance level at the middle time, and how many Mahadashas the events fall in.
     mc = mid["chart"]
     expected = sum(_base_rate(mc, KINDS[e["kind"]][1], birth, today) for e in events)
@@ -290,7 +307,8 @@ def birth_time_check(request: dict, events: list[dict], chart_at, today: date, s
         return next((x["lord"] for x in mc["dasha"] if x["start"][:19] <= iso < x["end"][:19]), None)
     mahas = sorted({x for x in (maha(date.fromisoformat(e["date"])) for e in events) if x})
     n = len(events)
-    if n < 6 or len(mahas) < 2:
+    dated = sum(1 for e in events if e["precision"] in ("day", "month"))
+    if n < 6 or len(mahas) < 2 or not narrowing or (wide and dated < 4):
         strength = "weak"
     elif best - expected >= 2 and n >= 8:
         strength = "good"
@@ -298,26 +316,40 @@ def birth_time_check(request: dict, events: list[dict], chart_at, today: date, s
         strength = "some"
     fmt = lambda t: datetime.strptime(t, "%H:%M").strftime("%-I:%M %p")
     same = yours and yours["fits"] == best and yours in run
-    text = (f"Your saved time, {fmt(request['tob'][:5])}, is already among the best fits ({best} of {n})." if same else
-            f"Your events fit best between {fmt(run[0]['tob'])} and {fmt(run[-1]['tob'])} ({best} of {n})"
-            + (f", against {yours['fits']} at your saved time." if yours else "."))
+    if wide and not narrowing:
+        text = (f"Your events fit {best} of {n} at best, but about as well across much of the time searched "
+                f"({round(near * 100)}% of times fit within one of the best), so they can't narrow your birth time.")
+    else:
+        text = (f"Your saved time, {fmt(request['tob'][:5])}, is already among the best fits ({best} of {n})." if same else
+                f"Your events fit best between {fmt(run[0]['tob'])} and {fmt(run[-1]['tob'])} ({best} of {n})"
+                + (f", against {yours['fits']} at your saved time." if yours else "."))
     others = [x for x in runs if x is not run]
-    if others:
+    if others and narrowing:
         text += " Also " + str(best) + " of " + str(n) + " at " + ", ".join(
             fmt(x[0]["tob"]) + ("" if len(x) == 1 else "–" + fmt(x[-1]["tob"])) for x in others) + "."
-    note = {"weak": (f"This is only a hint. All your events fall in your {mahas[0]} period" if len(mahas) == 1 else
+    note = {"weak": ("This is only a hint, and it does not narrow your birth time. Events that fit much of the day "
+                     "say little about the hour. Add events with their month, from different periods of your life."
+                     if wide and not narrowing else
+                     f"This is only a hint. All your events fall in your {mahas[0]} period" if len(mahas) == 1 else
                      f"This is only a hint. You have {n} events") +
-                    f", and about {expected:.0f} of {n} would fit by chance. Add events from earlier periods "
-                    "(school, a degree, a move, an illness) to make the rectification meaningful.",
+                    ("" if wide and not narrowing else
+                     f", and about {expected:.0f} of {n} would fit by chance. Add events from earlier periods "
+                     "(school, a degree, a move, an illness) to make the rectification meaningful."),
             "some": f"A useful hint: your events span {len(mahas)} periods, but about {expected:.0f} of {n} "
                     "would fit by chance. More events make it firmer.",
             "good": f"A good sign: your events span {len(mahas)} periods and fit well above chance "
                     f"(about {expected:.0f} of {n} by chance)."}[strength]
     for r in rows:
         del r["chart"]
+    windows = [{"from": x[0]["tob"], "to": x[-1]["tob"], "fits": best, "minutes": len(x) * step_min,
+                "lagna": list(dict.fromkeys(r["lagna"] for r in x))}
+               for x in sorted(runs, key=lambda x: (-len(x), x[0]["tob"]))[:6]]
+    suggest = None if same or not narrowing else mid["tob"]
     return {"rows": rows, "best": best, "events": n, "expected": round(expected, 1), "strength": strength,
-            "window": [run[0]["tob"], run[-1]["tob"]], "suggest": None if same else mid["tob"], "mahadashas": mahas,
+            "window": [run[0]["tob"], run[-1]["tob"]], "suggest": suggest, "mahadashas": mahas,
             "text": text, "note": note, "step": step_min, "ayanamsha": request.get("ayanamsha", "krishnamurti"),
+            "scope": "day" if wide else "hour", "windows": windows, "near_best": round(near, 2),
+            "narrowing": narrowing, "unknown": unknown,
             "labels": [f"{KINDS[e['kind']][0]} ({e['date'][:4]})" for e in events]}
 
 

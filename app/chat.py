@@ -433,6 +433,14 @@ def revise(profile: dict, history: list[dict], message: str, draft: str, note: s
     return "".join(b.text for b in resp.content if getattr(b, "type", "") == "text").strip(), use
 
 
+def _sum_use(a: dict | None, b: dict | None) -> dict | None:
+    if not b:
+        return a
+    if not a:
+        return dict(b)
+    return {k: a.get(k, 0) + b.get(k, 0) for k in ("input", "output", "cache_read", "cache_write")}
+
+
 def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs: list, model: str | None = None):
     """Check the answer against the chart; revise once, then drop any sentence that is still wrong.
     Yields status events and finally {"type": "checked", "text", "report", "usage"}."""
@@ -460,6 +468,29 @@ def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs
         if issues:
             report["removed"] = [i["sentence"] for i in issues]
             text = factcheck.strip(text, issues)
+    # The critic: tone and policy on sensitive questions, judged by a second small AI call (app/critic.py).
+    from app import critic
+    why = critic.wanted(config.get("critic"), message) if text else None
+    if why:
+        yield {"type": "status", "text": "Reading it once more for tone…"}
+        try:
+            verdict, cuse = critic.review(message, text)
+        except Exception:  # no key or the call failed: the draft stands as it is
+            verdict, cuse = None, None
+        if verdict:
+            report["critic"] = {"why": why, "verdict": verdict["verdict"], "problems": verdict["problems"], "revised": False}
+            use = _sum_use(use, cuse)
+            if verdict["verdict"] == "revise":
+                try:
+                    fixed, ruse = revise(profile, history, message, text, critic.note(verdict["problems"], _word_limit()), model)
+                except Exception:
+                    fixed, ruse = "", None
+                use = _sum_use(use, ruse)
+                if fixed and not factcheck.check(fixed, facts):  # keep the rewrite only if it still agrees with the chart
+                    text = fixed
+                    report["critic"]["revised"] = True
+                elif fixed:
+                    report["critic"]["rejected"] = "the rewrite contradicted the chart"
     yield {"type": "checked", "text": text, "report": report, "usage": use}
 
 

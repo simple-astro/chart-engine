@@ -347,6 +347,7 @@
       <div><label for="l-per">Questions per tester per day</label><input id="l-per" type="number" min="0" max="1000" required><div class="help">0 pauses chat for testers.</div></div>
       <div><label for="l-total">Questions per day, all testers</label><input id="l-total" type="number" min="0" max="10000" required><div class="help">Your daily spending ceiling.</div></div>
       <div><label for="l-tg">Telegram questions per person per day</label><input id="l-tg" type="number" min="0" max="1000" required><div class="help">The free morning guide is not counted. 0 turns Telegram chat off.</div></div>
+      <div><label for="l-critic">Second read for tone and rules (the critic)</label><select id="l-critic"><option value="auto">Sensitive topics only (recommended)</option><option value="always">Every answer</option><option value="off">Off</option></select><div class="help">A small extra AI call reads the draft for fear wording, false certainty, medical, legal or financial advice, talk of death, an answer that dodges the question, or a self-contradiction, and rewrites it once if it finds something. Sensitive topics: marriage, health, children, money, family, mood, business. Adds roughly 10–20% to those answers.</div></div>
       <div><label for="l-consult">Consult an astrologer (Telegram link)</label><input id="l-consult" type="url" placeholder="https://t.me/YourName" maxlength="140"><div class="help">Shown after Prashna and Jamakkol: “Consult your astrologer on Telegram”. Leave empty to hide it.</div></div>
         <div class="actions"><button class="btn" type="submit" id="lim-save">Save limits</button><span class="status" id="lim-st" role="status"></span></div>
       </form>
@@ -622,6 +623,7 @@ function toggle(tr) {
     <div><b>Answer</b><div class="ans">${r.answer ? md(r.answer) : '<span style="color:var(--mut)">Not recorded (asked before answer logging was added).</span>'}</div></div>
     ${r.factcheck && r.factcheck.found.length ? `<div><b>Fact check</b><div style="font-size:.88rem">Caught in the draft and ${r.factcheck.revised ? 'corrected by a rewrite' : 'removed'}:<ul style="margin:4px 0">${r.factcheck.found.map(x => `<li>${esc(x)}</li>`).join('')}</ul>${r.factcheck.removed.length ? `<div style="color:var(--bad)">Still wrong after the rewrite, so removed: ${r.factcheck.removed.map(esc).join(' | ')}</div>` : ''}</div></div>` : ''}
     ${styleNote(r.factcheck) ? `<div><b>Style</b><div style="font-size:.88rem">${styleNote(r.factcheck)}</div></div>` : ''}
+    ${criticNote(r.factcheck) ? `<div><b>Critic</b><div style="font-size:.88rem">${criticNote(r.factcheck)}</div></div>` : ''}
     <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><b>Admin notes</b>
     <div style="display:flex;gap:8px;align-items:flex-start">
     <textarea id="rem-${r.id}" style="flex:1;min-height:60px;padding:8px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--bg2);color:var(--ink)" placeholder="Add a private note to personalize future responses (admin only)">${esc(r.admin_remarks || '')}</textarea>
@@ -670,6 +672,15 @@ function styleNote(fc) {
   if (!fc || !fc.style || !fc.style.length) return '';
   const left = fc.style_left || [];
   return `Style check: ${esc(fc.style.join(' | '))}${fc.revised ? (left.length ? ' · still after the rewrite: ' + esc(left.join(' | ')) : ' (fixed by a rewrite)') : ''}`;
+}
+// The critic's read (tone and rules, sensitive questions): its verdict, what it found, and whether a rewrite followed.
+const CRITIC_TYPE = {fear: 'fear wording', certainty: 'false certainty', advice: 'medical, legal or financial advice', death: 'talk of death',
+  generic: 'generic', off_question: 'dodged the question', inconsistent: 'contradiction', tone: 'tone'};
+function criticNote(fc) {
+  const c = fc && fc.critic; if (!c) return '';
+  if (c.verdict === 'ok') return `Critic (${esc(c.why)}): read it, nothing to change.`;
+  return `Critic (${esc(c.why)}) asked for changes: ${c.problems.map(p => esc((CRITIC_TYPE[p.type] || p.type) + (p.detail ? ' — ' + p.detail : ''))).join(' | ')}` +
+    (c.revised ? ' · fixed by a rewrite' : c.rejected ? ' · rewrite not used: ' + esc(c.rejected) : '');
 }
 function md(t) {
   const inl = x => esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`(.+?)`/g, '<code>$1</code>');
@@ -1238,7 +1249,7 @@ function paintBudget(b) {
 function fillLimits(s) {
   if (!s) return;
   $('l-words').value = s.word_limit; $('l-per').value = s.daily_limit_per_tester;
-  $('l-total').value = s.daily_limit_total; $('l-tg').value = s.telegram_daily_limit; $('l-consult').value = s.consult_telegram || '';
+  $('l-total').value = s.daily_limit_total; $('l-tg').value = s.telegram_daily_limit; $('l-consult').value = s.consult_telegram || ''; $('l-critic').value = s.critic || 'auto';
 }
 async function loadPlayground() {
   try {
@@ -1625,7 +1636,7 @@ $('lim-form').addEventListener('submit', async e => {
   const st = $('lim-st'); st.className = 'status'; st.textContent = 'Saving…';
   try {
     const r = await api('/admin/api/limits', {method: 'PUT', headers: {'content-type': 'application/json'}, body: JSON.stringify({
-      word_limit: +$('l-words').value, daily_limit_per_tester: +$('l-per').value, daily_limit_total: +$('l-total').value, telegram_daily_limit: +$('l-tg').value, consult_telegram: $('l-consult').value.trim()})});
+      word_limit: +$('l-words').value, daily_limit_per_tester: +$('l-per').value, daily_limit_total: +$('l-total').value, telegram_daily_limit: +$('l-tg').value, consult_telegram: $('l-consult').value.trim(), critic: $('l-critic').value})});
     fillLimits(r); st.className = 'status ok'; st.textContent = 'Saved. The next question uses these limits.'; await loadAudit();
     if (PG) { PG.live.word_limit = r.word_limit; $('pg-words').value = r.word_limit; }
   } catch (err) { st.className = 'status err'; st.textContent = err.message; }

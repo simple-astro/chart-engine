@@ -1099,6 +1099,17 @@
   .evbt{display:block;margin:-4px 0 12px;font-weight:600;text-decoration:none}
   .btbox{border:1px solid var(--line);border-radius:14px;background:var(--bg2);padding:14px;margin:0 0 14px;display:flex;flex-direction:column;gap:10px}
   .btbox p{margin:0} .bthead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px} .bthead h4{margin:0;font:600 1.02rem var(--serif)}
+  .evfind0{border:1px dashed var(--line);border-radius:14px;padding:14px;margin:0 0 14px;display:flex;flex-direction:column;gap:6px;align-items:flex-start} .evfind0 p{margin:0}
+  .finder .fdrow{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;align-items:center;margin:8px 0;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  .finder .fdrow label{grid-column:1/-1;font-weight:600;font-size:.88rem} .finder .fdrow select:first-of-type{grid-column:1/-1}
+  .finder select,.finder input{font:inherit;color:var(--ink);background:var(--solid);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;width:100%;box-sizing:border-box}
+  .memchip{display:flex;flex-direction:column;gap:8px;max-width:100%;font-size:.88rem}
+  .memone{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 10px;border:1px dashed var(--line);border-radius:12px;background:var(--soft)}
+  .memone span{flex:1 1 220px} .memone .btn{padding:6px 12px;font-size:.82rem} .memone .err{flex-basis:100%;color:var(--bad)}
+  .btstrip{display:flex;align-items:flex-end;gap:1px;height:64px;border-bottom:1px solid var(--line)} .btstrip i{flex:1;background:color-mix(in srgb,var(--mut) 45%,transparent);border-radius:2px 2px 0 0;min-width:0}
+  .btstrip i.best{background:var(--acc)} .btaxis{display:flex;justify-content:space-between;font-size:.72rem;color:var(--mut);margin-top:2px}
+  .btwins{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px} .btwins li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--solid)}
+  .btwins li div{display:flex;flex-direction:column} .btwins small{color:var(--mut)}
   .btrows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:.82rem;font-variant-numeric:tabular-nums}
   .btrows li{display:grid;grid-template-columns:6.6em 1fr 2.6em auto;align-items:center;gap:8px;padding:3px 6px;border-radius:6px}
   .btrows li.best{background:color-mix(in srgb,var(--acc) 14%,transparent)} .btrows li.yours{outline:1px solid var(--acc)}
@@ -2233,6 +2244,23 @@ async function loadProfile(id){
   currentId=p.id;unsaved=null;TS={base:null,baseChart:null,off:0};paintPill();render(p.chart,q);setAsk();showResults();
 }
 
+// ----- memory: life events mentioned in chat, offered to Your life so far (app/memory.py) -----
+function showMemory(pid,sugs){
+  if(!sugs.length||pid!==currentId)return;
+  const r=document.createElement('div');r.className='row-a memrow';
+  r.innerHTML='<div class="memchip" role="group" aria-label="Remember this?">'+sugs.map((x,i)=>'<div class="memone" data-i="'+i+'"><span>'+(x.sensitive?'Shall I remember this in Your life so far?':'Add to Your life so far?')+' <b>'+esc(x.label)+' · '+esc(x.when)+'</b></span>'+
+    '<button type="button" class="btn" data-mem="add">Add</button><button type="button" class="btn ghost" data-mem="no">Not now</button></div>').join('')+'</div>';
+  r.querySelectorAll('.memone').forEach((el,i)=>el._s=sugs[i]);
+  $('log').appendChild(r);if(nearBottom())toBottom();track('memory/shown')}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-mem]');if(!b)return;
+  const one=b.closest('.memone'),x=one._s,pid=currentId;
+  if(b.dataset.mem==='no'){one.remove();track('memory/dismiss');if(!document.querySelector('.memchip .memone'))document.querySelectorAll('.memrow').forEach(m=>m.remove());return}
+  b.disabled=true;
+  try{const r=await fetch('/profiles/'+pid+'/events',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({kind:x.kind,year:x.year,month:x.month,day:null})});
+    if(!r.ok)throw new Error(apiErr((await r.json().catch(()=>({}))).detail)||r.statusText);
+    one.innerHTML='<span>Added to Your life so far: <b>'+esc(x.label)+' · '+esc(x.when)+'</b> ✓</span>';track('memory/add');
+    if($('gevents')&&window.renderEvents)window.renderEvents($('gevents'),pid);if(window.loadAccuracy)window.loadAccuracy(pid)}
+  catch(err){b.disabled=false;one.insertAdjacentHTML('beforeend','<small class="err">'+esc(err.message)+'</small>')}});
 // ----- chat popup -----
 function openChat(){go('ask')}
 $('tgbtn').onclick=async()=>{try{const r=await fetch('/api/telegram/link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({profile_id:currentId})});const j=await r.json();if(!r.ok)throw new Error(apiErr(j.detail)||r.statusText);window.location.href=j.deep_link}catch(e){alert('Error: '+e.message)}};
@@ -2346,6 +2374,8 @@ $('askf').addEventListener('submit',async e=>{
   const id=currentId,empty=$('log').querySelector('.empty');if(empty)empty.remove();
   deeper(null);addUser(q);$('q').value='';$('q').style.height='auto';$('chips').hidden=true;$('askbtn').disabled=true;
   const bot=addBot();bot.innerHTML=THINK;
+  // Life events mentioned in the message are offered back to confirm (never saved by themselves); asked in parallel with the answer.
+  const memo=fetch('/profiles/'+id+'/events/suggest',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:q})}).then(r=>r.ok?r.json():{suggestions:[]}).catch(()=>({suggestions:[]}));
   let text='',mode='llm',failed=false,started=false,uid=null;
   const paint=()=>{const stick=nearBottom();bot.innerHTML=md(text)+(started?'':'');bot.classList.add('cursor');if(stick)toBottom()};
   try{
@@ -2372,6 +2402,7 @@ $('askf').addEventListener('submit',async e=>{
   else{bot.innerHTML=md(text)+(mode==='lookup'?'<small class="src">from your chart data</small>':mode==='cache'?'<small class="src">reused from an earlier answer today</small>':'')+
     (uid?'<div class="rate" data-u="'+uid+'" data-p="'+id+'"><span>Was this helpful?</span><button type="button" data-r="1" aria-label="Helpful">👍</button><button type="button" data-r="-1" aria-label="Not helpful">👎</button></div>':'')}
   if(id===currentId){await paintAskMeta();if(!failed){deeper(q,text);toBottom()}}
+  if(!failed&&id===currentId)memo.then(m=>showMemory(id,m.suggestions||[]));
   paintLimit();if(!$('q').disabled)$('q').focus();
 });
 
@@ -3078,7 +3109,7 @@ document.addEventListener('click',async e=>{const box=$('mlife');if(!box||!box.c
 // and a one-line nudge on Today while a step is waiting (hidden for a week after "Not now").
 let ACC=null;
 function accLadder(a){return '<div class="acclad">'+a.levels.map((n,i)=>'<span class="'+(i<a.level?'done':i===a.level?'cur':'')+'">'+n+'</span>').join('')+'</div>'}
-function accNext(a,wrap){const n=a.next;return n?'<div class="accnext"><b>Next step: '+esc(n.title)+'</b><p>'+esc(n.text)+'</p><button type="button" class="btn" data-acc="'+n.action+'">'+({event:'Add an event',rect:'Run it',time:'Add birth time'})[n.action]+'</button>'+(wrap||'')+'</div>':'<p class="accok">All steps done. Add an event now and then to keep it Strong.</p>'}
+function accNext(a,wrap){const n=a.next;return n?'<div class="accnext"><b>Next step: '+esc(n.title)+'</b><p>'+esc(n.text)+'</p><button type="button" class="btn" data-acc="'+n.action+'">'+({event:'Add an event',rect:'Run it',time:'Add birth time',find:'Find my birth time'})[n.action]+'</button>'+(wrap||'')+'</div>':'<p class="accok">All steps done. Add an event now and then to keep it Strong.</p>'}
 window.accCard=a=>'<div class="acccard"><h4>How well we know your chart</h4>'+accLadder(a)+'<p class="hint">'+esc(a.why)+'</p><ul class="accck">'+a.checks.map(c=>'<li class="'+(c.ok?'ok':'')+'"><i>'+(c.ok?'✓':'○')+'</i>'+esc(c.text)+'</li>').join('')+'</ul>'+accNext(a)+
   '<details class="accrules"><summary>How we work this out</summary><p><b>Rough</b>: fewer than 3 events, or birth time not known. <b>Fair</b>: 3 or more events with the month. <b>Good</b>: 6 or more events in 2 or more Dasha periods, fitting better than chance. <b>Strong</b>: 8 or more events in 2 or more periods, well above chance, and the birth time rectified.</p><p class="hint">It never claims more than your events show. A level is about how well we can check your chart, not a grade of your chart.</p></details></div>';
 // The Today nudge ("One step to a more accurate chart") is switched off for now; the accuracy badge stays.
@@ -3088,11 +3119,11 @@ async function loadAccuracy(pid){const n=$('gacc');n.hidden=true;ACC=null;if(pid
   const b=$('accbadge');if(b){b.textContent=ACC.label+' ›';b.className='accbadge l'+ACC.level}
   let snooze=0;try{snooze=+localStorage.getItem('sj-acc-snooze-'+pid)||0}catch(e){}
   if(ACC_NUDGE&&ACC.next&&Date.now()>snooze){n.innerHTML='<p>🎯 <b>One step to a more accurate chart:</b> '+esc(ACC.next.title.charAt(0).toLowerCase()+ACC.next.title.slice(1))+'. '+
-    '<button type="button" class="linkbtn" data-acc="'+ACC.next.action+'">'+({event:'Add it',rect:'Run it',time:'Add it'})[ACC.next.action]+' →</button> <button type="button" class="linkbtn accnot" data-acc="snooze">Not now</button></p>';n.hidden=false}}
+    '<button type="button" class="linkbtn" data-acc="'+ACC.next.action+'">'+({event:'Add it',rect:'Run it',time:'Add it',find:'Find it'})[ACC.next.action]+' →</button> <button type="button" class="linkbtn accnot" data-acc="snooze">Not now</button></p>';n.hidden=false}}
 function accGo(action){
   if(action==='snooze'){try{localStorage.setItem('sj-acc-snooze-'+currentId,String(Date.now()+7*864e5))}catch(e){}$('gacc').hidden=true;return}
   if(action==='time'){$('medit').click();return}
-  go('chart','events');let k=0;const t=()=>{const x=$(action==='rect'?'evbt':'evadd');if(x){x.click();($('gevents')||x).scrollIntoView({block:'start'})}else if(k++<30)setTimeout(t,100)};setTimeout(t,80)}
+  go('chart','events');let k=0;const t=()=>{const x=$({rect:'evbt',find:'fdopen'}[action]||'evadd');if(x){x.click();($('gevents')||x).scrollIntoView({block:'start'})}else if(k++<30)setTimeout(t,100)};setTimeout(t,80)}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-acc]');if(b){track('accuracy/'+b.dataset.acc);accGo(b.dataset.acc);return}
   const bd=e.target.closest('#accbadge');if(bd&&ACC){const s=$('accsheet'),open=s.hidden;s.hidden=!open;bd.setAttribute('aria-expanded',String(open));
     if(open)s.innerHTML='<div class="acccard">'+accLadder(ACC)+'<p class="hint">'+esc(ACC.why)+'</p>'+accNext(ACC)+'</div>'}});

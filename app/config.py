@@ -72,6 +72,8 @@ FIELDS = {
     "daily_limit_per_tester": ("CHAT_DAILY_LIMIT_PER_TESTER", 30, lambda v: isinstance(v, int) and 0 <= v <= 1000),
     "daily_limit_total": ("CHAT_DAILY_LIMIT_TOTAL", 300, lambda v: isinstance(v, int) and 0 <= v <= 10000),
     "telegram_daily_limit": ("TELEGRAM_DAILY_LIMIT", 5, lambda v: isinstance(v, int) and 0 <= v <= 1000),
+    # The critic: a small second AI read of a draft for tone and policy. auto = only on sensitive topics.
+    "critic": ("CHAT_CRITIC", "auto", lambda v: v in ("off", "auto", "always")),
     # Where Prashna sends people to consult an astrologer (a Telegram link); empty hides the button.
     "consult_telegram": ("CONSULT_TELEGRAM_URL", "", lambda v: isinstance(v, str) and (
         v == "" or (re.fullmatch(r"https://t\.me/[A-Za-z0-9_+/?=&-]{3,120}", v) is not None))),
@@ -83,6 +85,7 @@ LIMITS_TEXT = {
     "daily_limit_total": "must be a whole number from 0 to 10000",
     "telegram_daily_limit": "must be a whole number from 0 to 1000",
     "consult_telegram": "must be empty or a Telegram link like https://t.me/YourName",
+    "critic": "must be off, auto or always",
 }
 
 
@@ -100,7 +103,7 @@ def get(key: str):
             return value
     raw = os.environ.get(env)
     if raw:
-        value = (_model_id(raw) if key == "model" else raw.strip() if key == "consult_telegram"
+        value = (_model_id(raw) if key == "model" else raw.strip() if key in ("consult_telegram", "critic")
                  else (int(raw) if raw.strip().isdigit() else None))
         if value is not None and valid(value):
             return value

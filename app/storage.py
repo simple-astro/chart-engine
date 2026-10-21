@@ -456,8 +456,8 @@ def _today() -> str:
 def recent_queries(limit: int = 50, before_id: int | None = None) -> list[dict]:
     """Newest-first chat log with the chart name and admin remarks, for the admin page."""
     # Studio Playground runs are experiments, not testers' questions: they stay out of this log.
-    where, args = ("WHERE u.kind != 'playground' AND u.id < ?", (before_id,)) if before_id else \
-        ("WHERE u.kind != 'playground'", ())
+    where, args = ("WHERE u.kind NOT IN ('playground', 'memory') AND u.id < ?", (before_id,)) if before_id else \
+        ("WHERE u.kind NOT IN ('playground', 'memory')", ())
     with _lock, _connect() as conn:
         rows = conn.execute(
             "SELECT u.id, u.ts, u.kind, u.model, u.input_tokens, u.output_tokens, u.cache_read_tokens,"
@@ -493,7 +493,7 @@ def tester_summary() -> list[dict]:
             " FROM profiles GROUP BY owner").fetchall()
         q = conn.execute(
             "SELECT owner, COUNT(*) total, SUM(substr(ts, 1, 10) = ?) today, SUM(kind = 'llm') paid,"
-            " MAX(ts) last_seen FROM usage_log WHERE kind != 'playground' GROUP BY owner", (_today(),)).fetchall()
+            " MAX(ts) last_seen FROM usage_log WHERE kind NOT IN ('playground', 'memory') GROUP BY owner", (_today(),)).fetchall()
     rows = {r["owner"]: {"owner": r["owner"], "charts": r["charts"], "chart_names": r["names"],
                          "first_seen": r["first_seen"], "questions": 0, "questions_today": 0,
                          "paid_questions": 0, "last_seen": None} for r in prof}
@@ -859,7 +859,7 @@ def usage_sources(since: str) -> dict:
         first = conn.execute("SELECT MIN(ts) FROM events").fetchone()[0]
         return {
             "events": q("SELECT ts, owner, name, detail FROM events WHERE ts >= ?"),
-            "questions": q("SELECT ts, owner, question FROM usage_log WHERE ts >= ? AND kind NOT IN ('compare', 'playground')"),
+            "questions": q("SELECT ts, owner, question FROM usage_log WHERE ts >= ? AND kind NOT IN ('compare', 'playground', 'memory')"),
             "mood": q("SELECT m.ts AS ts, p.owner AS owner FROM mood_logs m JOIN profiles p ON p.id = m.profile_id WHERE m.ts >= ?"),
             "lifeevents": q("SELECT e.created_at AS ts, p.owner AS owner FROM life_events e JOIN profiles p ON p.id = e.profile_id WHERE e.created_at >= ?"),
             "getready": q("SELECT d.done_at AS ts, p.owner AS owner FROM prep_done d JOIN profiles p ON p.id = d.profile_id WHERE d.done_at >= ?"),

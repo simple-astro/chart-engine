@@ -85,8 +85,10 @@ def overview(request: Request) -> dict:
         "models": config.MODELS,
         "providers": config.providers_status(),
         "gated": access.enabled(),
-        "today": {"paid_questions": sum(r["n"] for r in today), "cost": _cost(today), "studio_cost": _studio_cost(True)},
-        "all_time": {"paid_questions": sum(r["n"] for r in ever), "cost": _cost(ever), "studio_cost": _studio_cost(False)},
+        "today": {"paid_questions": sum(r["n"] for r in today), "cost": _cost(today), "studio_cost": _studio_cost(True),
+                  "memory_cost": _cost(storage.token_totals(True, ("memory",)))},
+        "all_time": {"paid_questions": sum(r["n"] for r in ever), "cost": _cost(ever), "studio_cost": _studio_cost(False),
+                     "memory_cost": _cost(storage.token_totals(False, ("memory",)))},
         "charts": sum(t["charts"] for t in testers),
         "testers": [{**t, "label": _tester(t["owner"], labels), "owner": None} for t in testers],
     }
