@@ -20,7 +20,9 @@ def test_life_graph_shape(tmp_path, monkeypatch):
     assert d["windows"][0]["starts"] < d["windows"][-1]["ends"] and d["from"] <= d["today"] <= d["to"]
     assert all({"date", "score", "notes"} <= set(t) for t in d["transit"])
     assert {t["key"] for t in d["topics"]} >= {"career", "marriage", "money", "property", "foreign"}
-    assert all(t["key"] not in ("illness", "accident", "divorce") for t in d["topics"])  # no risk topics in the picker
+    assert d["kind"] == "event"
+    kinds = {t["key"]: t["kind"] for t in d["topics"]}
+    assert kinds["illness"] == kinds["accident"] == "risk"  # risk topics are in the picker; their colours flip
 
 
 def test_looking_back_adds_months_and_the_persons_own_events(tmp_path, monkeypatch):
@@ -37,6 +39,11 @@ def test_looking_back_adds_months_and_the_persons_own_events(tmp_path, monkeypat
 
 def test_bad_topic_and_other_peoples_charts(tmp_path, monkeypatch):
     c, pid = _client(tmp_path, monkeypatch)
-    assert c.get(f"/profiles/{pid}/graph/life?topic=illness").status_code == 422
     assert c.get(f"/profiles/{pid}/graph/life?topic=nonsense").status_code == 422
     assert c.get("/profiles/999/graph/life?topic=career").status_code == 404
+
+
+def test_risk_topic_is_served_with_its_kind(tmp_path, monkeypatch):
+    c, pid = _client(tmp_path, monkeypatch)
+    d = c.get(f"/profiles/{pid}/graph/life?topic=illness&ahead=12").json()
+    assert d["kind"] == "risk" and d["windows"] and d["best_ahead"] == []  # no "best windows" for a risk

@@ -23,6 +23,8 @@
     --acc:#8a5e14; --acc2:#6a3fc2; --g1:#e0b05f; --g2:#c98f2e;
     --soft:rgba(138,94,20,.09); --line:rgba(36,30,49,.12);
     --ok:#2e7d32; --bad:#c0392b; --cmb:#c46a12;
+    /* traffic-light tones (Life graph, My year): go, good, steady, take care, hold off; each with its text colour */
+    --tl-go:#2f7d50; --tl-go-on:#ffffff; --tl-good:#a6d8b0; --tl-good-on:#14321d; --tl-steady:#f2d267; --tl-steady-on:#3a2c00; --tl-care:#e8913e; --tl-care-on:#2b1400; --tl-hold:#b42318; --tl-hold2:#8f1b12; --tl-hold-on:#ffffff;
     --mood-low:#5f70ab; --mood-mid:#9c8b66; --mood-high:#c98f2e;   /* mood: calm slate blue → sand → gold */
     --shadow:0 1px 2px rgba(36,30,49,.05),0 10px 30px rgba(36,30,49,.08);
     color-scheme:light;
@@ -38,6 +40,7 @@
     --acc:#e5bb72; --acc2:#8fc7a3; --g1:#e8c178; --g2:#c79440;
     --soft:rgba(229,187,114,.11); --line:rgba(238,224,196,.11); --haze:rgba(229,187,114,.045);
     --ok:#7fdca0; --bad:#ff8a80; --cmb:#ffb25e;
+    --tl-go:#5cc285; --tl-go-on:#06180d; --tl-good:#2e5e40; --tl-good-on:#e6f4ea; --tl-steady:#d8b744; --tl-steady-on:#1c1500; --tl-care:#e0843a; --tl-care-on:#1a0a00; --tl-hold:#f06b5e; --tl-hold2:#c4473c; --tl-hold-on:#1d0201;
     --mood-low:#7f93c9; --mood-mid:#b9ab8c; --mood-high:#e5bb72;
     --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 40px rgba(0,0,0,.55);
     --glow:0 0 22px rgba(229,187,114,.16);
@@ -49,6 +52,7 @@
     --acc:#e5bb72; --acc2:#8fc7a3; --g1:#e8c178; --g2:#c79440;
     --soft:rgba(229,187,114,.11); --line:rgba(238,224,196,.11); --haze:rgba(229,187,114,.045);
     --ok:#7fdca0; --bad:#ff8a80; --cmb:#ffb25e;
+    --tl-go:#5cc285; --tl-go-on:#06180d; --tl-good:#2e5e40; --tl-good-on:#e6f4ea; --tl-steady:#d8b744; --tl-steady-on:#1c1500; --tl-care:#e0843a; --tl-care-on:#1a0a00; --tl-hold:#f06b5e; --tl-hold2:#c4473c; --tl-hold-on:#1d0201;
     --mood-low:#7f93c9; --mood-mid:#b9ab8c; --mood-high:#e5bb72;
     --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 40px rgba(0,0,0,.55);
     --glow:0 0 22px rgba(229,187,114,.16);
@@ -144,6 +148,8 @@
     --shadow:0 1px 2px rgba(0,0,0,.5),0 14px 40px rgba(0,0,0,.55); --glow:0 0 22px rgba(245,185,71,.16);
     --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif; --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,"Segoe UI",sans-serif}
   :root[data-mood]:not([data-mood="midnight"]):not([data-mood="indigo"]):not([data-mood="ocean"]):not([data-mood="amber"]) body::before{opacity:0}
+  :root[data-mood]:not([data-mood="midnight"]):not([data-mood="indigo"]):not([data-mood="ocean"]):not([data-mood="amber"]){--tl-go:#2f7d50; --tl-go-on:#ffffff; --tl-good:#a6d8b0; --tl-good-on:#14321d; --tl-steady:#f2d267; --tl-steady-on:#3a2c00; --tl-care:#e8913e; --tl-care-on:#2b1400; --tl-hold:#b42318; --tl-hold2:#8f1b12; --tl-hold-on:#ffffff;}
+  :root[data-mood="midnight"],:root[data-mood="indigo"],:root[data-mood="ocean"],:root[data-mood="amber"]{--tl-go:#5cc285; --tl-go-on:#06180d; --tl-good:#2e5e40; --tl-good-on:#e6f4ea; --tl-steady:#d8b744; --tl-steady-on:#1c1500; --tl-care:#e0843a; --tl-care-on:#1a0a00; --tl-hold:#f06b5e; --tl-hold2:#c4473c; --tl-hold-on:#1d0201;}
   .mh small{font-weight:500;color:var(--mut);margin-left:4px}
   /* ---------- reader level (the "How do you use astrology?" choice). guide = "Just guide me": no charts, no jargon,
      its own bottom bar (Today · My year · Ask · Plans · More). learn and full show everything for now. ---------- */
@@ -1275,6 +1281,17 @@
   .lgkey{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.74rem;color:var(--mut)} .lgk{display:inline-block;box-sizing:border-box;padding:0;min-width:0;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
   .lgk-dasha{background:color-mix(in srgb,var(--acc) 70%,transparent)} .lgk-tr{background:var(--acc);border-radius:50%} .lgk-against{border:1.5px solid var(--bad);border-radius:50%}
   .lgk-band{background:color-mix(in srgb,var(--acc) 14%,transparent);border:1px solid var(--line)} .lgk-ev{border:1.5px solid var(--ok);transform:rotate(45deg);width:8px;height:8px}
+  .tl{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:18px;height:16px;padding:0 3px;border-radius:4px;font-size:.62rem;font-weight:800;line-height:1;vertical-align:-2px}
+  .tl-go{background:var(--tl-go);color:var(--tl-go-on)} .tl-good{background:var(--tl-good);color:var(--tl-good-on)} .tl-steady{background:var(--tl-steady);color:var(--tl-steady-on)}
+  .tl-care{background:var(--tl-care);color:var(--tl-care-on)} .tl-hold{background:repeating-linear-gradient(135deg,var(--tl-hold) 0 5px,var(--tl-hold2) 5px 8px);color:var(--tl-hold-on)}
+  .lgrisk{flex:0 0 auto;align-self:center;margin-left:4px;padding-left:10px;border-left:1px solid var(--line);font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+  .lgnow{display:flex;align-items:center;gap:10px;margin:2px 0 10px;font-size:.9rem;line-height:1.4} .lgnow .tl{min-width:30px;height:28px;font-size:.85rem;border-radius:8px;flex:none}
+  .lgcard .lgtone{display:flex;align-items:center;gap:8px} .lgcard .lgtone .tl{min-width:26px;height:22px;font-size:.75rem;border-radius:6px}
+  .lgbest li{list-style:none;display:flex;align-items:center;gap:8px} .lgbest ul{padding-left:0}
+  .ystrip{display:grid;grid-template-columns:auto repeat(12,minmax(0,1fr));gap:3px;align-items:center;margin:4px 0 12px;font-size:.66rem;color:var(--mut)}
+  .ystrip .tl{width:100%;height:24px;border-radius:5px;font-size:.66rem} .ystrip b{font-weight:600;padding-right:6px;font-size:.74rem;color:var(--ink)} .ystrip span.ym{text-align:center}
+  .ykey{margin:-4px 0 12px} .lgkey .tl{margin-right:5px}
+  .ystrip.one{grid-template-columns:repeat(12,minmax(0,1fr))} .ystrip.one .tl{height:40px;font-size:.85rem;border-radius:8px}
   .lgbest{border:1px solid var(--line);border-radius:14px;background:var(--bg2);padding:12px 14px} .lgbest h5{margin:0 0 4px} .lgbest ul{margin:0 0 8px;padding-left:1.1em}
   .lgcard{border:1px solid var(--line);border-radius:14px;background:var(--solid);padding:12px 14px;display:flex;flex-direction:column;gap:4px} .lgcard small{color:var(--mut)} .lgcard ul{margin:4px 0 0;padding-left:1.1em;font-size:.84rem} .lgcard h6{margin:8px 0 0;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
   /* Panch Pakshi (Today) */
@@ -2884,6 +2901,18 @@ async function loadYear(){const box=$('gyear');
     if(pid!==currentId)return;YR.data=d;paintYear();
     plansData().then(()=>{if(SCREEN==='year'&&pid===currentId)paintYear()}).catch(()=>{})}
   catch(e){YR.pid=null;box.innerHTML='<h3>Your year ahead</h3><p class="err">⚠ '+esc(e.message)+'</p>'}}
+// The year as traffic-light months (the Life graph's colours): one row per area, or one big row for the chosen area.
+const YTL={best:'go',good:'good',steady:'steady',slow:'care',care:'care'},YTLW={go:'Best',good:'Good',steady:'Steady',care:'Take care'},YSYM={go:'✓',good:'✓',steady:'~',care:'!'};
+function yearStrip(d){
+  const months=[];for(let i=0;i<12;i++){const m=new Date(d.from.slice(0,7)+'-15T12:00:00Z');m.setUTCMonth(m.getUTCMonth()+i);
+    const iso=m.toISOString().slice(0,10);months.push({iso:iso<d.from?d.from:iso,label:m.toLocaleDateString(undefined,{month:'short',timeZone:'UTC'})})}
+  const toneAt=(a,iso)=>{const st=d.areas[a].stretches.find(x=>x.starts<=iso&&iso<x.ends);const k=YTL[st?st.tone:'steady']||'steady';return a==='health'&&k==='good'?'go':k};
+  const cell=(a,m)=>{const k=toneAt(a,m.iso);return '<span class="tl tl-'+k+'" role="img" aria-label="'+esc(d.areas[a].label+', '+m.label+': '+YTLW[k])+'">'+YSYM[k]+'</span>'};
+  const head=months.map(m=>'<span class="ym">'+esc(m.label)+'</span>').join('');
+  if(YR.area!=='all')return '<div class="ystrip one">'+months.map(m=>cell(YR.area,m)).join('')+head+'</div>';
+  return '<div class="ystrip"><span></span>'+head+Object.keys(d.areas).map(a=>'<b>'+esc(d.areas[a].label)+'</b>'+months.map(m=>cell(a,m)).join('')).join('')+'</div>'+
+    '<div class="lgkey ykey">'+['go','good','steady','care'].map(k=>'<span><span class="tl tl-'+k+'" aria-hidden="true">'+YSYM[k]+'</span>'+YTLW[k]+'</span>').join('')+'</div>';
+}
 function paintYear(){const d=YR.data,box=$('gyear');if(!d)return;
   const fd=s=>new Date(s+'T12:00:00Z').toLocaleDateString(undefined,{month:'long',year:'numeric',timeZone:'UTC'});
   const tabs=[['all','All']].concat(Object.entries(d.areas).map(([k,a])=>[k,a.label]));
@@ -2894,6 +2923,7 @@ function paintYear(){const d=YR.data,box=$('gyear');if(!d)return;
   const pl=(PL.data&&PL.data.pid===currentId?PL.data.plans:[]).find(p=>p.best);
   box.innerHTML='<h3>Your year ahead <small>'+fd(d.from)+' to '+fd(d.to)+'</small></h3>'+
     '<div class="ychips" role="group" aria-label="Show">'+tabs.map(([k,n])=>'<button type="button" data-area="'+k+'" aria-pressed="'+(YR.area===k)+'">'+n+'</button>').join('')+'</div>'+
+    yearStrip(d)+
     (items.length?'<ol class="ylist">'+items.map(li).join('')+'</ol>':'<p class="gsub">No big ups or downs this year. A steady year: keep going.</p>')+
     (pl?'<p class="ynote"><b>For your plan “'+esc(pl.title)+'”:</b> the best time to act is '+esc(monthSpan(pl.best.starts,pl.best.ends))+'. Have your steps done before then.</p>':
       '<p class="ynote">Have a goal in mind? <button type="button" class="linkbtn" data-nav="plans">Make a plan →</button></p>')+

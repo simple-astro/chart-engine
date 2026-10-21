@@ -209,14 +209,14 @@ def life_graph(profile_id: int, request: Request, topic: str = "career", ahead: 
     from datetime import timedelta
     from core import kp_predict as K
     from app import life_events as L
-    if topic not in K.TOPICS or K.TOPICS[topic][6] != "event":
+    if topic not in K.TOPICS:
         raise HTTPException(status_code=422, detail="Choose a life matter from the list.")
     p = _require(profile_id, request)
     chart, today = p["chart"], chat.local_today(p)
     ahead, back = max(6, min(60, ahead)), max(0, min(120, back))
     start = today - timedelta(days=round(back * 30.44))
     r = K.predict(chart, topic, start, back + ahead)
-    _, _, good, bad, _, _, _ = K.TOPICS[topic]
+    _, _, good, bad, _, _, kind = K.TOPICS[topic]  # kind "risk": a strong period means more risk (colours flip)
     ayan = chart["meta"].get("ayanamsha", "krishnamurti")
     transit = []
     for i in range(back + ahead):
@@ -235,14 +235,14 @@ def life_graph(profile_id: int, request: Request, topic: str = "career", ahead: 
             continue
         events.append({"date": e["date"], "precision": e["precision"], "label": L.KINDS[e["kind"]][0],
                        "fit": L.check(chart, e["kind"], d, e["precision"])["fit"]})
-    return {"topic": topic, "title": r["title"], "houses_for": r["houses_for"], "houses_against": r["houses_against"],
+    return {"topic": topic, "kind": kind, "title": r["title"], "houses_for": r["houses_for"], "houses_against": r["houses_against"],
             "significators": r["significators"], "promise": {k: r["promise"][k] for k in ("cusp", "cusp_sub_lord", "signifies", "verdict")},
             "from": r["from"], "to": r["to"], "today": today.isoformat(), "windows": r["windows"], "best": r["best"],
             "best_ahead": [(w["starts"], w["ends"]) for w in sorted(
                 (w for w in r["windows"] if w["ends"] > today.isoformat() and w["verdict"] in ("strong", "favourable")),
-                key=lambda w: -w["score"])[:3]],
+                key=lambda w: -w["score"])[:3]] if kind == "event" else [],
             "transit": transit, "events": events,
-            "topics": [{"key": k, "label": v[0]} for k, v in K.TOPICS.items() if v[6] == "event"]}
+            "topics": [{"key": k, "label": v[0], "kind": v[6]} for k, v in K.TOPICS.items()]}
 
 
 @router.get("/{profile_id}/kp/{topic}/days")
