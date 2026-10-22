@@ -3511,8 +3511,7 @@ function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.
     '<div class="setrow"><div><b>Chart style</b></div>'+seg('style',[['north','North Indian'],['south','South Indian']],CHART_STYLE==='south'?'south':'north')+'</div>'+
     '<div class="setrow"><div><b>Uranus, Neptune, Pluto</b><small>Shown on the chart and planet tables; Vedic rules and readings never use them</small></div>'+seg('outer',[['off','Hide'],['on','Show']],SHOW_OUTER?'on':'off')+'</div>'+
    '<h5>Calendar on Today</h5>'+
-    '<div class="setrow"><div><b>Nanakshahi (Sikh) calendar</b><small>Gurpurabs and the Sikh months beside the Hindu calendar</small></div>'+seg('nson',[['off','Off'],['on','On']],nsOn()?'on':'off')+'</div>'+
-    (nsOn()?'<div class="setrow setstack"><div><b>Show</b><small>The Nanakshahi calendar alone, or both side by side</small></div>'+seg('calview',[['sikh','Nanakshahi'],['both','Both']],calPref('sj_calview','both')==='sikh'?'sikh':'both')+'</div>':'')+
+    '<div class="setrow setstack"><div><b>Nanakshahi (Sikh) calendar</b><small>Gurpurabs and the Sikh months, with the Hindu calendar or alone</small></div>'+seg('calview',[['hindu','Off'],['both','With Hindu'],['sikh','Alone']],calPref('sj_calview','hindu'))+'</div>'+
     '<div class="setrow"><div><b>Month ends at</b></div>'+seg('calstyle',[['purnimanta','Purnima'],['amanta','Amavasya']],calPref('sj_calstyle','purnimanta'))+'</div>'+
     (nsOn()?'<div class="setrow"><div><b>Gurpurab dates</b><small>The SGPC jantri keeps several on lunar dates; the 2003 calendar fixes them</small></div>'+seg('nsv',[['sgpc','SGPC jantri'],['original','Original 2003']],calPref('sj_nsv','sgpc'))+'</div>':'')+
     '<div class="setrow setmoodrow"><div><b>Theme</b>'+(MOOD_OK?'<small>Classic and Classic Dark for everyone; the others are testing, only you and your astrologers see them</small>':'')+'</div></div><div class="setmoods" role="radiogroup" aria-label="Theme">'+
@@ -3656,8 +3655,6 @@ $('setsheet').addEventListener('click',async e=>{const b=e.target.closest('[data
     catch(err){SET.busy=false;paintSettings()}}
   else if(k==='defnode'){const D=setDefaults();D.node=v;saveDefaults(D);paintSettings()}
   else if(k==='defdy'||k==='defakv'){const D=setDefaults(),f=k==='defdy'?'dy':'akv';if(v===(f==='dy'?'solar':'parashara'))delete D[f];else D[f]=v;saveDefaults(D);track('settings/default-'+(f==='dy'?'dasha-year':'ashtakavarga'));paintSettings()}
-  else if(k==='nson'){try{localStorage.setItem('sj_calview',v==='on'?'both':'hindu')}catch(e){}
-    track('settings/calendar-nanakshahi-'+v);paintSettings();if(window.refreshCalendar)window.refreshCalendar()}
   else if(k==='calview'||k==='calstyle'||k==='nsv'){try{localStorage.setItem({calview:'sj_calview',calstyle:'sj_calstyle',nsv:'sj_nsv'}[k],v)}catch(e){}
     track('settings/calendar-'+k);paintSettings();if(window.refreshCalendar)window.refreshCalendar()}
   else if(k==='style'){setChartStyle(v);paintSettings()}
