@@ -445,6 +445,19 @@ def chart_view(chart: dict) -> dict | None:
             "tob_unknown": bool(chart["meta"].get("tob_unknown"))}
 
 
+def _links(cg: dict | None, cb: dict | None, kootas: list[dict], names: tuple[str, str]) -> dict | None:
+    """The connections between the two charts (core/match_links.py), for D1 and D9, with a summary each."""
+    from core import match_links
+    if not cg or not cb:
+        return None
+    nadi_same = next((k["got"] == 0 for k in kootas if k["name"] == "Nadi"), False)
+    out = {}
+    for v in ("d1", "d9"):
+        ls = match_links.links(cg[v], cb[v], names, nadi_same)
+        out[v] = {"links": ls, "summary": match_links.summary(ls)}
+    return out
+
+
 def compute_match(groom: dict, bride: dict) -> dict:
     g, b = _moon(groom), _moon(bride)
     kootas = []
@@ -493,6 +506,7 @@ def compute_match(groom: dict, bride: dict) -> dict:
     mg, mb = manglik(groom), manglik(bride)
     mm = _manglik_match(groom, bride, mg, mb)
     pg, pb = marriage_promise(groom), marriage_promise(bride)
+    cg, cb = chart_view(groom), chart_view(bride)
     promises = [("groom", pg), ("bride", pb)]
     strengths, clashes = _strengths_clashes(kootas, doshas, mm, promises)
     notes = [f"{x['name']}: {x['status']} — {x['why']}." for x in doshas]
@@ -506,7 +520,9 @@ def compute_match(groom: dict, bride: dict) -> dict:
                   "pada": b["pada"], "manglik": mb, "promise": pb},
         "manglik_note": mm["text"], "notes": notes,
         "moon_links": moon_links(groom, bride, (groom["meta"].get("name") or "Groom", bride["meta"].get("name") or "Bride")),
-        "charts": {"groom": chart_view(groom), "bride": chart_view(bride)},
+        "charts": {"groom": cg, "bride": cb},
+        "links": _links(cg, cb, kootas, ((groom["meta"].get("name") or "Groom").split()[0],
+                                         (bride["meta"].get("name") or "Bride").split()[0])),  # first names keep lines short
         "disclaimer": "Guna Milan, dosha cancellations and Manglik rules follow common North-Indian practice; "
                       "schools differ on some tables and exceptions. The marriage promise uses the KP 7th cusp "
                       "sub lord. Traditional guidance, not certainty.",

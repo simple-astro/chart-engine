@@ -1304,7 +1304,29 @@
   .sbal-t tr.tot th,.sbal-t tr.tot td{font-weight:600;color:var(--ink)} .sbal-t tr.grand th,.sbal-t tr.grand td{font-weight:700;color:var(--acc)}
   /* Match making: both charts and Moon to Moon */
   .mmchead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin-bottom:10px} .mmchead h3{margin:0} .mmchead .seg{width:auto} .mmchead .seg button{white-space:nowrap;padding-left:14px;padding-right:14px}
-  .mmcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px} .mmcgrid figure{margin:0;display:flex;flex-direction:column;gap:6px}
+  .mmcgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;position:relative}
+  @media (max-width:640px){.mmcgrid{gap:8px} .mmcgrid figcaption{font-size:.76rem}}
+  /* links between the two charts (matchlinks.js) */
+  .mmcgrid.mlon{padding:46px 0 70px} .mlsvg{position:absolute;inset:0;pointer-events:none;overflow:visible}
+  .ml-g{--mlc:var(--tl-go)} .ml-y{--mlc:color-mix(in srgb,var(--tl-steady) 62%,var(--ink))} .ml-r{--mlc:var(--tl-hold)}
+  .mlp{fill:none;stroke:var(--mlc);stroke-linecap:round} .mlp.ml-y{stroke-dasharray:9 7} .mlp.ml-r{stroke-dasharray:2 6}
+  .mlm{fill:var(--mlc)} .mlg{fill:var(--mlc);opacity:.2}
+  .mlhit{fill:none;stroke:transparent;stroke-width:16;pointer-events:stroke;cursor:pointer}
+  .mlb{pointer-events:all;cursor:pointer} .mlb circle{fill:var(--mlc)} .mlb text{fill:#fff;font-size:11px;font-weight:800;text-anchor:middle}
+  .mlsum{margin:4px 0 10px;font-size:.95rem}
+  .mlchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .mlchip{display:flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--solid);color:var(--ink);font:inherit;font-size:.82rem;font-weight:600;cursor:pointer}
+  .mlchip[aria-pressed="false"]{opacity:.5} .mlchip i{width:22px;height:4px;border-radius:2px;background:var(--mlc)}
+  .mlstep{display:flex;align-items:center;gap:8px;margin-bottom:10px} .mlstep>div{flex:1;display:flex;flex-direction:column;align-items:center;font-size:.78rem;font-weight:600;color:var(--mut)}
+  .mlnav{width:44px;height:44px;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--solid);color:var(--ink);font-size:1.2rem;cursor:pointer}
+  .mlall{min-height:44px;padding:0 12px;flex:none;border-radius:12px;border:1px solid var(--line);background:var(--solid);color:var(--ink);font:inherit;font-weight:600;cursor:pointer} .mlall[aria-pressed="true"]{background:var(--soft)}
+  .mldots{display:flex;gap:4px;margin-top:4px} .mldots i{width:7px;height:7px;border-radius:4px;background:var(--mlc);opacity:.35} .mldots i.on{width:18px;opacity:1}
+  .mlcard{display:flex;gap:10px;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--mlc) 45%,transparent);background:color-mix(in srgb,var(--mlc) 10%,var(--solid));margin-bottom:10px}
+  .mlcard>div{display:flex;flex-direction:column;gap:2px} .mlcard small{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mlc)} .mlcard p{margin:0;font-size:.92rem} .mlcard small.mlwhy{text-transform:none;letter-spacing:0;font-weight:400;color:var(--mut);font-size:.8rem}
+  .mln{flex:none;width:26px;height:26px;border-radius:50%;background:var(--mlc);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem}
+  .mllist{list-style:none;margin:0 0 8px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px}
+  .mllist button{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--solid);color:var(--ink);font:inherit;cursor:pointer}
+  .mllist button[aria-pressed="true"]{border:2px solid var(--mlc,var(--ink))} .mllist button.off{opacity:.45} .mllist button>span:last-child{display:flex;flex-direction:column;line-height:1.35} .mllist small{color:var(--mut);font-size:.8rem} .mmcgrid figure{margin:0;display:flex;flex-direction:column;gap:6px}
   .mmcgrid figcaption{font-size:.88rem} .mmcgrid figcaption small{color:var(--mut)} .mmchart{max-width:380px;width:100%;margin:0 auto} .mmchart svg{width:100%;height:auto;display:block}
   .mmlinks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
   .mmlinks li{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--solid)} .mmlinks p{margin:4px 0 2px} .mmlinks small{color:var(--mut)}
@@ -1848,6 +1870,7 @@
 <script src="/static/shadbala.js?v=2"></script>
 <script src="/static/lifegraph.js?v=1"></script>
 <script src="/static/calendar.js?v=1"></script>
+<script src="/static/matchlinks.js?v=1"></script>
 <script>
 // API errors as one readable line: a string detail, {field, message}, or FastAPI's list of field errors.
 window.apiErr=d=>d==null?'':typeof d==='string'?d:Array.isArray(d)?d.map(x=>x.msg||'').filter(Boolean).join('; '):d.message||'';
@@ -3251,13 +3274,14 @@ function matchChartsHtml(d){
   return '<div class="card mmsec mmcharts"><div class="mmchead"><h3>Your charts</h3><div class="seg" role="radiogroup" aria-label="Chart" id="mchseg">'+
     [['d1','D1 · Rasi'],['d9','D9 · Navamsa']].map(([k,t])=>'<button type="button" role="radio" data-mv="'+k+'">'+t+'</button>').join('')+'</div></div>'+
     '<div class="mmcgrid">'+['groom','bride'].map(k=>'<figure><figcaption><b>'+(k==='groom'?'Groom':'Bride')+':</b> '+esc(d[k].name)+' <small id="mcap-'+k+'"></small></figcaption><div class="chart mmchart" id="mch-'+k+'"></div></figure>').join('')+'</div>'+
-    '<p class="hint" id="mchnote">'+(unsure?'One birth time is unknown, so the lagnas and the D9 chart are only approximate.':'The navamsa (D9) shows the marriage itself; it changes every few minutes of birth time, so it needs an accurate time.')+'</p></div>'}
+    '<div id="mlinks"></div><p class="hint" id="mchnote">'+(unsure?'One birth time is unknown, so the lagnas and the D9 chart are only approximate.':'The navamsa (D9) shows the marriage itself; it changes every few minutes of birth time, so it needs an accurate time.')+'</p></div>'}
 function paintMatchCharts(){
   if(!MCH||!MCH.charts||!$('mch-groom'))return;
   $('mchseg').querySelectorAll('[data-mv]').forEach(b=>{const on=b.dataset.mv===MV;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))});
   ['groom','bride'].forEach(k=>{const c=MCH.charts[k][MV],byH={};
     Object.entries(c.planets).forEach(([p,x])=>{const h=(x.sign-c.lagna+12)%12;(byH[h]=byH[h]||[]).push(ABBR[p]+(x.retro?'ᴿ':''))});
-    drawNorth($('mch-'+k),c.lagna,byH);$('mcap-'+k).textContent='· '+SIGNS[c.lagna]+' lagna'+(MV==='d9'?' in D9':'')})}
+    drawNorth($('mch-'+k),c.lagna,byH);$('mcap-'+k).textContent='· '+SIGNS[c.lagna]+' lagna'+(MV==='d9'?' in D9':'')});
+  if(window.paintMatchLinks)window.paintMatchLinks(MCH,MV)}
 document.addEventListener('click',e=>{const b=e.target.closest('#mchseg [data-mv]');if(!b||b.dataset.mv===MV)return;MV=b.dataset.mv;track('match/'+MV);paintMatchCharts()});
 function matchMoonHtml(d){
   if(!d.moon_links||!d.moon_links.length)return '';
