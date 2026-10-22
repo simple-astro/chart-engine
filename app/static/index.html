@@ -3371,6 +3371,7 @@ const HOUSES_FOR={krishnamurti:'Placidus (KP cusps)',lahiri:'Whole sign',pushya:
 const HS_LIST=[['placidus','Placidus (KP)'],['koch','Koch'],['sripati','Sripati'],['equal','Equal'],['whole_sign','Whole sign']];
 let FORM_HS=null,FORM_DY=null,FORM_AKV=null;  // house system, dasha year and Ashtakavarga method the chart form sends: the edited chart's, or Settings › Defaults
 const DY_LIST=[['solar','Solar · 365.25'],['savana','Savana · 360']],AKV_LIST=[['parashara','Parashara'],['varahamihira','Varahamihira']];
+const calPref=(k,d)=>{try{return localStorage.getItem(k)||d}catch(e){return d}};  // the Today calendar's choices (calendar.js)
 function setDefaults(){try{return JSON.parse(localStorage.getItem('sj-defaults')||'{}')}catch(e){return {}}}
 function saveDefaults(d){try{localStorage.setItem('sj-defaults',JSON.stringify(d))}catch(e){}}
 let SET={pend:null,find:[],busy:false},MOOD_OK=false;
@@ -3561,6 +3562,8 @@ $('setsheet').addEventListener('click',async e=>{const b=e.target.closest('[data
     catch(err){SET.busy=false;paintSettings()}}
   else if(k==='defnode'){const D=setDefaults();D.node=v;saveDefaults(D);paintSettings()}
   else if(k==='defdy'||k==='defakv'){const D=setDefaults(),f=k==='defdy'?'dy':'akv';if(v===(f==='dy'?'solar':'parashara'))delete D[f];else D[f]=v;saveDefaults(D);track('settings/default-'+(f==='dy'?'dasha-year':'ashtakavarga'));paintSettings()}
+  else if(k==='calview'||k==='calstyle'||k==='nsv'){try{localStorage.setItem({calview:'sj_calview',calstyle:'sj_calstyle',nsv:'sj_nsv'}[k],v)}catch(e){}
+    track('settings/calendar-'+k);paintSettings();if(window.refreshCalendar)window.refreshCalendar()}
   else if(k==='style'){setChartStyle(v);paintSettings()}
   else if(k==='outer'){SHOW_OUTER=v==='on';try{localStorage.setItem('sj-outer',SHOW_OUTER?'1':'0')}catch(_){}track('settings/outer-'+v);paintSettings();
     if(lastChart){if(RERENDER)RERENDER();drawKpTables(lastChart)}}
