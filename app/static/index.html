@@ -3498,7 +3498,7 @@ function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.
        :P.key==='ashtakavarga'?'Changing <b>'+esc(name)+'</b> to <b>'+(P.v==='varahamihira'?'Varahamihira':'Parashara')+'</b> moves a few Moon and Venus bindus (the Sarvashtakavarga by up to a few points per sign).'
        :'Changing <b>'+esc(name)+'</b> to the <b>'+(P.v==='true'?'True':'Mean')+'</b> node moves Rahu and Ketu slightly.')+
       ' Readings, Coming up and rectification will use it.<div class="setbtns"><button type="button" class="btn" data-set="apply"'+(SET.busy?' disabled':'')+'>'+(SET.busy?'Recalculating…':'Recalculate '+esc(name))+'</button><button type="button" class="btn ghost" data-set="cancel">Cancel</button></div></div>':''):
-    '<h5>This chart</h5><p class="hint">Save a chart to change its ayanamsa, node or houses here.</p>')+
+    '')+
    '<h5>Defaults for new charts</h5>'+
     '<div class="setrow"><div><b>Ayanamsa</b></div>'+sel('setdefay',D.ayanamsha||'lahiri')+'</div>'+
     '<div class="setrow"><div><b>Rahu and Ketu</b></div>'+seg('defnode',[['mean','Mean'],['true','True']],D.node||'mean')+'</div>'+
