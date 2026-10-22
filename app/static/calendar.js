@@ -5,7 +5,6 @@
     .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(window.apiErr(d.detail) || r.statusText); return d; });
   const tzToday = tz => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const pref = (k, d) => { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
-  const save = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
   // "2026-11-24T06:56+05:30" → "6:56 am" (already local to the place)
   const hm = iso => { const [h, m] = iso.slice(11, 16).split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`; };
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -15,6 +14,8 @@
   const TARA_LINE = { good: 'a good star for you', hard: 'go gently with new starts', janma: 'your birth star returns: keep it simple' };
   let S = { el: null, o: null, y: 0, m: 0, sel: null, data: null };
 
+  // Settings › Calendar on Today changed: redraw with the new choices.
+  window.refreshCalendar = () => { if (S.el && S.o) load(); };
   window.renderCalendar = function (el, o) {
     const same = S.o && S.o.birth === o.birth && S.o.loc.tz_name === o.loc.tz_name && S.o.loc.lat === o.loc.lat;
     S = same ? { ...S, el, o } : { el, o, y: 0, m: 0, sel: null, data: null };
@@ -47,7 +48,6 @@
     const ns = [...new Set(days.map(x => x.nanakshahi.month))].join(' → ');
     const sub = view === 'sikh' ? `${ns} · Nanakshahi ${d.nanakshahi_year}` : view === 'both' ? `${lunar} · ${ns} ${d.nanakshahi_year}`
       : `${lunar} · Vikram Samvat ${d.vikram_samvat} · ${d.samvatsara}`;
-    const seg = (k, label) => `<button type="button" data-calview="${k}" aria-pressed="${view === k}"${view === k ? ' class="on"' : ''}>${label}</button>`;
     const cell = x => {
       const fest = marks(x, view).length, n = +x.date.slice(8);
       const top = view === 'sikh' ? `${x.nanakshahi.day} ${x.nanakshahi.month.slice(0, 3)}` : tithiShort(x);
@@ -62,7 +62,6 @@
         <span class="cal-ld"><b>${+x.date.slice(8)}</b><small>${WD[new Date(x.date + 'T12:00').getDay()]}</small></span>
         <span>${esc(marks(x, view).join(' · '))}</span></button></li>`).join('');
     S.el.innerHTML = `<h3>Calendar <small>${esc(S.o.place)}</small></h3>
-      <div class="seg cal-seg" role="group" aria-label="Calendar">${seg('hindu', 'Hindu')}${seg('sikh', 'Nanakshahi')}${seg('both', 'Both')}</div>
       <div class="cal-head"><button type="button" class="cal-nav" data-calmove="-1" aria-label="Previous month">‹</button>
         <div><b>${MONTHS[S.m - 1]} ${S.y}</b><small>${esc(sub)}</small></div>
         <button type="button" class="cal-nav" data-calmove="1" aria-label="Next month">›</button></div>
@@ -72,15 +71,7 @@
         <span><i class="cal-ch"></i>Chandrashtama</span><span><i class="cal-fk"></i>Festival</span></div>
       ${daySheet(sel, view)}
       ${list ? `<h4 class="cal-h">This month</h4><ul class="cal-list">${list}</ul>` : ''}
-      <details class="chrules"><summary>Calendar settings</summary>
-        <div class="cal-set"><span>Month ends at</span>
-          <button type="button" data-calstyle="purnimanta" aria-pressed="${d.style === 'purnimanta'}">Purnima</button>
-          <button type="button" data-calstyle="amanta" aria-pressed="${d.style === 'amanta'}">Amavasya</button></div>
-        <div class="cal-set"><span>Gurpurab dates</span>
-          <button type="button" data-nsv="sgpc" aria-pressed="${d.nanakshahi === 'sgpc'}">SGPC jantri</button>
-          <button type="button" data-nsv="original" aria-pressed="${d.nanakshahi === 'original'}">Original 2003</button></div>
-        <p class="hint">The 2003 Nanakshahi calendar fixed most Gurpurabs to solar dates; the SGPC jantri keeps several on lunar dates, so they move each year. Pick the one your Gurdwara follows.</p></details>
-      <p class="hint">Tithi and nakshatra at sunrise for ${esc(S.o.place)}. Festival dates follow the common North Indian rules; check the exact day with your temple or Gurdwara.</p>`;
+      <p class="hint">Tithi and nakshatra at sunrise for ${esc(S.o.place)}. Festival dates follow the common North Indian rules; check the exact day with your temple or Gurdwara. Hindu, Nanakshahi or both: in Settings.</p>`;
   }
 
   function daySheet(x, view) {
@@ -104,12 +95,9 @@
 
   document.addEventListener('click', e => {
     if (!S.el || !S.el.contains(e.target)) return;
-    const t = e.target.closest('[data-cald],[data-calmove],[data-calview],[data-calstyle],[data-nsv]'); if (!t) return;
+    const t = e.target.closest('[data-cald],[data-calmove]'); if (!t) return;
     if (t.dataset.cald) { S.sel = t.dataset.cald; paint(); S.el.querySelector('.cal-sheet').scrollIntoView({ block: 'nearest' }); return; }
-    if (t.dataset.calview) { save('sj_calview', t.dataset.calview); paint(); return; }
     if (t.dataset.calmove) { S.m += +t.dataset.calmove; if (S.m < 1) { S.m = 12; S.y--; } if (S.m > 12) { S.m = 1; S.y++; } S.sel = null; }
-    if (t.dataset.calstyle) save('sj_calstyle', t.dataset.calstyle);
-    if (t.dataset.nsv) save('sj_nsv', t.dataset.nsv);
     load();
   });
 })();

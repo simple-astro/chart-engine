@@ -1325,7 +1325,6 @@
   .pk-subs small{color:var(--mut)}
   @media (max-width:620px){.pk-cols{grid-template-columns:1fr}}
   /* Calendar (Today) */
-  .cal-seg{margin:4px 0 10px}
   .cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
   .cal-head>div{display:flex;flex-direction:column;align-items:center;text-align:center} .cal-head b{font:600 1.35rem var(--serif)} .cal-head small{color:var(--mut);font-size:.78rem}
   .cal-nav{width:44px;height:44px;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--solid);color:var(--ink);font-size:1.3rem;cursor:pointer}
@@ -1350,9 +1349,6 @@
   .cal-list{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-direction:column;gap:6px}
   .cal-list button{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:6px 12px;border-radius:12px;border:1px solid var(--line);background:var(--solid);color:var(--ink);font:inherit;font-size:.88rem;text-align:left;cursor:pointer}
   .cal-ld{flex:none;width:36px;display:flex;flex-direction:column;align-items:center;line-height:1.15} .cal-ld b{font-size:1.05rem} .cal-ld small{font-size:.66rem;color:var(--mut)}
-  .cal-set{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0} .cal-set span{min-width:110px;color:var(--mut)}
-  .cal-set button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--solid);color:var(--mut);font-family:inherit;font-weight:600;font-size:.8rem;cursor:pointer}
-  .cal-set button[aria-pressed="true"]{border-color:var(--g2);color:var(--acc);background:var(--soft)}
   /* Sarvatobhadra (Timing) */
   .sb-seg{margin:6px 0 12px}
   .sb-days{list-style:none;margin:0;padding:0}
@@ -3372,6 +3368,8 @@ const HS_LIST=[['placidus','Placidus (KP)'],['koch','Koch'],['sripati','Sripati'
 let FORM_HS=null,FORM_DY=null,FORM_AKV=null;  // house system, dasha year and Ashtakavarga method the chart form sends: the edited chart's, or Settings › Defaults
 const DY_LIST=[['solar','Solar · 365.25'],['savana','Savana · 360']],AKV_LIST=[['parashara','Parashara'],['varahamihira','Varahamihira']];
 const calPref=(k,d)=>{try{return localStorage.getItem(k)||d}catch(e){return d}};  // the Today calendar's choices (calendar.js)
+// The Nanakshahi calendar is on when the calendar shows it (alone or beside the Hindu one); off = Hindu only.
+const nsOn=()=>calPref('sj_calview','hindu')!=='hindu';
 function setDefaults(){try{return JSON.parse(localStorage.getItem('sj-defaults')||'{}')}catch(e){return {}}}
 function saveDefaults(d){try{localStorage.setItem('sj-defaults',JSON.stringify(d))}catch(e){}}
 let SET={pend:null,find:[],busy:false},MOOD_OK=false;
@@ -3418,9 +3416,10 @@ function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.
     '<div class="setrow"><div><b>Chart style</b></div>'+seg('style',[['north','North Indian'],['south','South Indian']],CHART_STYLE==='south'?'south':'north')+'</div>'+
     '<div class="setrow"><div><b>Uranus, Neptune, Pluto</b><small>Shown on the chart and planet tables; Vedic rules and readings never use them</small></div>'+seg('outer',[['off','Hide'],['on','Show']],SHOW_OUTER?'on':'off')+'</div>'+
    '<h5>Calendar on Today</h5>'+
-    '<div class="setrow setstack"><div><b>Show</b><small>Hindu panchang, the Nanakshahi (Sikh) calendar, or both</small></div>'+seg('calview',[['hindu','Hindu'],['sikh','Nanakshahi'],['both','Both']],calPref('sj_calview','hindu'))+'</div>'+
+    '<div class="setrow"><div><b>Nanakshahi (Sikh) calendar</b><small>Gurpurabs and the Sikh months beside the Hindu calendar</small></div>'+seg('nson',[['off','Off'],['on','On']],nsOn()?'on':'off')+'</div>'+
+    (nsOn()?'<div class="setrow setstack"><div><b>Show</b><small>The Nanakshahi calendar alone, or both side by side</small></div>'+seg('calview',[['sikh','Nanakshahi'],['both','Both']],calPref('sj_calview','both')==='sikh'?'sikh':'both')+'</div>':'')+
     '<div class="setrow"><div><b>Month ends at</b></div>'+seg('calstyle',[['purnimanta','Purnima'],['amanta','Amavasya']],calPref('sj_calstyle','purnimanta'))+'</div>'+
-    '<div class="setrow"><div><b>Gurpurab dates</b><small>The SGPC jantri keeps several on lunar dates; the 2003 calendar fixes them</small></div>'+seg('nsv',[['sgpc','SGPC jantri'],['original','Original 2003']],calPref('sj_nsv','sgpc'))+'</div>'+
+    (nsOn()?'<div class="setrow"><div><b>Gurpurab dates</b><small>The SGPC jantri keeps several on lunar dates; the 2003 calendar fixes them</small></div>'+seg('nsv',[['sgpc','SGPC jantri'],['original','Original 2003']],calPref('sj_nsv','sgpc'))+'</div>':'')+
     '<div class="setrow setmoodrow"><div><b>Theme</b>'+(MOOD_OK?'<small>Classic and Classic Dark for everyone; the others are testing, only you and your astrologers see them</small>':'')+'</div></div><div class="setmoods" role="radiogroup" aria-label="Theme">'+
       MOODS.filter(([v])=>MOOD_OK||v===''||v==='classic-dark').map(([v,t,a,b])=>{const on=themeNow()===v;return '<button type="button" role="radio" data-set="mood" data-v="'+v+'" aria-checked="'+on+'" class="'+(on?'on':'')+'"><i style="background:linear-gradient(135deg,'+a+' 50%,'+b+' 50%)"></i>'+t+'</button>'}).join('')+'</div>'+
    '<h5>Where you are</h5>'+
@@ -3562,6 +3561,8 @@ $('setsheet').addEventListener('click',async e=>{const b=e.target.closest('[data
     catch(err){SET.busy=false;paintSettings()}}
   else if(k==='defnode'){const D=setDefaults();D.node=v;saveDefaults(D);paintSettings()}
   else if(k==='defdy'||k==='defakv'){const D=setDefaults(),f=k==='defdy'?'dy':'akv';if(v===(f==='dy'?'solar':'parashara'))delete D[f];else D[f]=v;saveDefaults(D);track('settings/default-'+(f==='dy'?'dasha-year':'ashtakavarga'));paintSettings()}
+  else if(k==='nson'){try{localStorage.setItem('sj_calview',v==='on'?'both':'hindu')}catch(e){}
+    track('settings/calendar-nanakshahi-'+v);paintSettings();if(window.refreshCalendar)window.refreshCalendar()}
   else if(k==='calview'||k==='calstyle'||k==='nsv'){try{localStorage.setItem({calview:'sj_calview',calstyle:'sj_calstyle',nsv:'sj_nsv'}[k],v)}catch(e){}
     track('settings/calendar-'+k);paintSettings();if(window.refreshCalendar)window.refreshCalendar()}
   else if(k==='style'){setChartStyle(v);paintSettings()}
