@@ -183,13 +183,58 @@ def tajika_year(profile_id: int, request: Request, years: int | None = None) -> 
         elif datetime.fromisoformat(r["next"]) <= now:
             years += 1
         else:
-            return {**r, "current": True}
+            return {**r, "current": True, "reading": _reading(p, r)}
     try:
         r = tajika.annual(p["chart"], p["request"], years)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail="Pick a year within 120 years of birth.") from exc
     now = datetime.now(timezone.utc)
-    return {**r, "current": datetime.fromisoformat(r["varsha_pravesh"]) <= now < datetime.fromisoformat(r["next"])}
+    return {**r, "current": datetime.fromisoformat(r["varsha_pravesh"]) <= now < datetime.fromisoformat(r["next"]),
+            "reading": _reading(p, r)}
+
+
+def _reading(p: dict, r: dict) -> dict:
+    from app import varshaphal
+    return varshaphal.reading(p["chart"], r)
+
+
+@router.get("/{profile_id}/tajika/polish")
+def tajika_polish(profile_id: int, request: Request, years: int) -> dict:
+    """The same Varshaphal reading reworded by the AI (app/varshaphal_polish.py), to compare with the rules. For the
+    admin while we judge it, or for everyone (Admin › Limits)."""
+    from core import tajika
+    from app import varshaphal, varshaphal_polish as VP
+    mode = config.get("varshaphal_ai")  # Admin › Limits: off, studio or everyone
+    if mode == "off" or (mode == "studio" and not request.state.admin):  # "studio": the admin alone, to compare
+        raise HTTPException(status_code=403, detail="The AI wording is switched off for now. The rules reading is complete.")
+    p = _require(profile_id, request)
+    try:
+        r = tajika.annual(p["chart"], p["request"], years)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Pick a year within 120 years of birth.") from exc
+    reading = varshaphal.reading(p["chart"], r)
+    model = config.get("model") if config.provider_of(config.get("model")) == "anthropic" else VP.MODEL
+    try:
+        out, use = VP.polish(reading, f"{profile_id}|{years}", model)
+    except Exception as exc:  # no key, or the AI is unavailable
+        raise HTTPException(status_code=503, detail="The AI wording isn't available right now. The rules reading "
+                                                    "above is complete.") from exc
+    if use:
+        storage.log_usage(profile_id, "varshaphal", f"Varshaphal polish, age {years}", model=use["model"],
+                          input_tokens=use["input"], output_tokens=use["output"], cache_read=use["cache_read"],
+                          cache_write=use["cache_write"], owner=_owner(request))
+    return out
+
+
+@router.get("/{profile_id}/tajika/years")
+def tajika_life(profile_id: int, request: Request) -> dict:
+    """Life by years (app/varshaphal.py): one line per Varshaphal year from birth to ten years ahead, with the
+    person's own events placed in their year and whether that year's chart pointed to them."""
+    from app import varshaphal
+    p = _require(profile_id, request)
+    now = varshaphal.years_now(p["request"], chat.local_today(p))
+    rows = varshaphal.life(p["chart"], p["request"], min(110, now + 10), storage.event_list(profile_id))
+    return {"now": now, "years": rows}
 
 
 @router.get("/{profile_id}/kp/{topic}")

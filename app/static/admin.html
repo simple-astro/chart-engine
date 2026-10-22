@@ -349,6 +349,7 @@
       <div><label for="l-total">Questions per day, all testers</label><input id="l-total" type="number" min="0" max="10000" required><div class="help">Your daily spending ceiling.</div></div>
       <div><label for="l-tg">Telegram questions per person per day</label><input id="l-tg" type="number" min="0" max="1000" required><div class="help">The free morning guide is not counted. 0 turns Telegram chat off.</div></div>
       <div><label for="l-critic">Second read for tone and rules (the critic)</label><select id="l-critic"><option value="auto">Sensitive topics only (recommended)</option><option value="always">Every answer</option><option value="off">Off</option></select><div class="help">A small extra AI call reads the draft for fear wording, false certainty, medical, legal or financial advice, talk of death, an answer that dodges the question, or a self-contradiction, and rewrites it once if it finds something. Sensitive topics: marriage, health, children, money, family, mood, business. Adds roughly 10–20% to those answers.</div></div>
+      <div><label for="l-vai">AI polishing of the Varshaphal reading</label><select id="l-vai"><option value="studio">Admin only, to compare (recommended)</option><option value="everyone">Everyone</option><option value="off">Off</option></select><div class="help">The rules decide every colour and fact; the AI only rewrites the sentences, and any line that adds a planet, house, sign or date keeps the rules’ wording. Only you see the Rules / AI polished / Compare switch. With Everyone, users read the AI wording. One small AI call per year opened.</div></div>
       <div><label for="l-consult">Consult an astrologer (Telegram link)</label><input id="l-consult" type="url" placeholder="https://t.me/YourName" maxlength="140"><div class="help">Shown after Prashna and Jamakkol: “Consult your astrologer on Telegram”. Leave empty to hide it.</div></div>
         <div class="actions"><button class="btn" type="submit" id="lim-save">Save limits</button><span class="status" id="lim-st" role="status"></span></div>
       </form>
@@ -1251,7 +1252,7 @@ function paintBudget(b) {
 function fillLimits(s) {
   if (!s) return;
   $('l-words').value = s.word_limit; $('l-per').value = s.daily_limit_per_tester;
-  $('l-total').value = s.daily_limit_total; $('l-tg').value = s.telegram_daily_limit; $('l-consult').value = s.consult_telegram || ''; $('l-critic').value = s.critic || 'auto';
+  $('l-total').value = s.daily_limit_total; $('l-tg').value = s.telegram_daily_limit; $('l-consult').value = s.consult_telegram || ''; $('l-critic').value = s.critic || 'auto'; $('l-vai').value = s.varshaphal_ai || 'studio';
 }
 async function loadPlayground() {
   try {
@@ -1638,7 +1639,7 @@ $('lim-form').addEventListener('submit', async e => {
   const st = $('lim-st'); st.className = 'status'; st.textContent = 'Saving…';
   try {
     const r = await api('/admin/api/limits', {method: 'PUT', headers: {'content-type': 'application/json'}, body: JSON.stringify({
-      word_limit: +$('l-words').value, daily_limit_per_tester: +$('l-per').value, daily_limit_total: +$('l-total').value, telegram_daily_limit: +$('l-tg').value, consult_telegram: $('l-consult').value.trim(), critic: $('l-critic').value})});
+      word_limit: +$('l-words').value, daily_limit_per_tester: +$('l-per').value, daily_limit_total: +$('l-total').value, telegram_daily_limit: +$('l-tg').value, consult_telegram: $('l-consult').value.trim(), critic: $('l-critic').value, varshaphal_ai: $('l-vai').value})});
     fillLimits(r); st.className = 'status ok'; st.textContent = 'Saved. The next question uses these limits.'; await loadAudit();
     if (PG) { PG.live.word_limit = r.word_limit; $('pg-words').value = r.word_limit; }
   } catch (err) { st.className = 'status err'; st.textContent = err.message; }

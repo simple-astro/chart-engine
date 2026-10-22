@@ -114,6 +114,12 @@ def test_admin_changes_limits_astrologer_cannot(env):
     assert r.status_code == 200 and r.json()["word_limit"] == 350
     log = m.get("/admin/api/audit").json()[0]
     assert log["actor"] == "Guruji" and "word limit 300 → 350" in log["detail"]
+    # the whole Limits form saves in one go, including the critic, the consult link and Varshaphal AI polishing
+    form = {"word_limit": 350, "daily_limit_per_tester": 20, "daily_limit_total": 300, "telegram_daily_limit": 5,
+            "consult_telegram": "", "critic": "auto", "varshaphal_ai": "everyone"}
+    r = m.put("/admin/api/limits", json=form)
+    assert r.status_code == 200 and r.json()["varshaphal_ai"] == "everyone"
+    assert "Varshaphal AI polishing studio → everyone" in m.get("/admin/api/audit").json()[0]["detail"]
     assert m.put("/admin/api/limits", json={"model": "claude-opus-4-1"}).status_code == 422   # model is the owner's
     assert m.put("/admin/api/limits", json={"word_limit": 5}).status_code == 422
     assert a.put("/admin/api/limits", json={"word_limit": 400}).status_code == 403

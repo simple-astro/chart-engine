@@ -83,7 +83,7 @@ def test_admin_sign_in_from_a_tester_browser_keeps_their_charts(gated):
     _admin(t)
     assert "Settings" in t.get("/admin").text
     assert [p["id"] for p in t.get("/profiles").json()] == [pid]
-    assert t.get("/me").json() == {"admin": True, "gated": True, "role": "owner"}
+    assert t.get("/me").json() == {"admin": True, "gated": True, "role": "owner", "varshaphal_ai": "studio"}
     # signing in again with the tester code does not drop admin
     t.post("/login", data={"code": "tester-code"}, follow_redirects=False)
     assert t.get("/admin/api/overview").status_code == 200
@@ -99,14 +99,16 @@ def test_settings_roundtrip_and_validation(gated):
     a = _admin()
     s = a.get("/admin/api/overview").json()["settings"]
     assert s == {"model": "claude-haiku-4-5", "word_limit": 300, "daily_limit_per_tester": 30,
-                 "daily_limit_total": 300, "telegram_daily_limit": 5, "consult_telegram": "", "critic": "auto"}
+                 "daily_limit_total": 300, "telegram_daily_limit": 5, "consult_telegram": "", "critic": "auto",
+                 "varshaphal_ai": "studio"}
     new = {"model": "claude-sonnet-5-5", "word_limit": 200, "daily_limit_per_tester": 5, "daily_limit_total": 50,
-           "telegram_daily_limit": 3, "consult_telegram": "https://t.me/simple_astro", "critic": "always"}
+           "telegram_daily_limit": 3, "consult_telegram": "https://t.me/simple_astro", "critic": "always",
+           "varshaphal_ai": "everyone"}
     assert a.put("/admin/api/settings", json=new).json() == new
     for bad in ({"model": "gpt-4"}, {"word_limit": 20}, {"daily_limit_total": -1}, {"word_limit": True},
                 {"word_limit": "300"}, {"nope": 1}, {"model": "claude-opus-5-5", "word_limit": 5},
                 {"consult_telegram": "https://evil.example/x"}, {"consult_telegram": "javascript:alert(1)"},
-                {"critic": "sometimes"}, {"critic": True}):
+                {"critic": "sometimes"}, {"critic": True}, {"varshaphal_ai": "on"}):
         assert a.put("/admin/api/settings", json=bad).status_code == 422, bad
     assert a.get("/admin/api/overview").json()["settings"] == new  # rejected saves changed nothing
     assert _tester().put("/admin/api/settings", json=new).status_code == 403
@@ -181,7 +183,7 @@ def test_local_mode_admin_is_open(tmp_path, monkeypatch):
     monkeypatch.delenv("ADMIN_ACCESS_CODE", raising=False)
     c = TestClient(app)
     assert "Settings" in c.get("/admin").text and c.get("/admin/api/overview").status_code == 200
-    assert c.get("/me").json() == {"admin": True, "gated": False, "role": "owner"}
+    assert c.get("/me").json() == {"admin": True, "gated": False, "role": "owner", "varshaphal_ai": "studio"}
 
 
 def test_admin_can_add_remarks_to_questions(gated, fake_llm):

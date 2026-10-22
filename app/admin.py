@@ -62,7 +62,8 @@ def _studio_cost(today_only: bool) -> float:
 @router.get("/me")
 def me(request: Request) -> dict:
     role = "owner" if request.state.admin else getattr(request.state, "role", None)
-    out = {"admin": bool(request.state.admin), "gated": access.enabled(), "role": role}
+    out = {"admin": bool(request.state.admin), "gated": access.enabled(), "role": role,
+           "varshaphal_ai": config.get("varshaphal_ai")}  # the app shows the AI wording switch from this
     if role in access.STUDIO:
         out["name"] = _actor(request)[0]
     return out
@@ -564,9 +565,11 @@ async def compare(request: Request) -> dict:
 
 
 # ----- Studio Playground: try any question on any chart with test settings; nothing reaches users -----
-LIMIT_KEYS = ("word_limit", "daily_limit_per_tester", "daily_limit_total", "telegram_daily_limit")
+LIMIT_KEYS = ("word_limit", "daily_limit_per_tester", "daily_limit_total", "telegram_daily_limit", "consult_telegram",
+              "critic", "varshaphal_ai")
 LIMIT_NAMES = {"word_limit": "word limit", "daily_limit_per_tester": "questions per tester per day",
-               "daily_limit_total": "questions per day, all testers", "telegram_daily_limit": "Telegram questions per day"}
+               "daily_limit_total": "questions per day, all testers", "telegram_daily_limit": "Telegram questions per day",
+               "consult_telegram": "consult link", "critic": "critic", "varshaphal_ai": "Varshaphal AI polishing"}
 
 
 def _budget_left(request: Request) -> dict:

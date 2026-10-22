@@ -392,6 +392,34 @@
   .accnext{margin-top:8px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--acc) 12%,transparent)} .accnext p{margin:4px 0 8px;font-size:.88rem}
   .accrules{margin-top:10px;font-size:.86rem} .accrules summary{cursor:pointer;font-weight:600} .accok{margin:8px 0 0;color:var(--mut)}
   .gacc p{margin:0;line-height:1.6} .accnot{color:var(--mut)}
+  .tjnav{display:flex;align-items:center;gap:8px;margin-bottom:4px} .tjnav .btn{min-width:44px;min-height:44px;padding:0 12px;flex:none}
+  .tjnav select{flex:1;min-width:0;max-width:none;min-height:44px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:10px;padding:0 10px;font:inherit;font-size:.95rem;font-weight:600}
+  .tjrange{margin:0 0 10px;text-align:center;font-size:.84rem;color:var(--mut)}
+  .tjmonths li.tjyr{border:0;padding:12px 0 2px;font-size:.72rem;font-weight:700;letter-spacing:.12em;color:var(--mut)}
+  .tjmonths small.tjrole{color:var(--mut);font-size:.78rem} .tjmonths small.tjtip{color:var(--acc);font-size:.82rem;margin-top:2px}
+  i.tl-go{background:var(--tl-go)} i.tl-good{background:var(--tl-good)} i.tl-steady{background:var(--tl-steady)} i.tl-care{background:var(--tl-care)}
+  .tjseg{margin:2px 0 12px}
+  .tjhead{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;background:var(--solid);padding:12px 14px;margin-bottom:12px}
+  .tjhead>.tl{min-width:32px;height:30px;font-size:.9rem;border-radius:8px;flex:none} .tjhead p{margin:0 0 6px;font-size:1.02rem;font-weight:500;line-height:1.45}
+  .tjchips{display:flex;flex-wrap:wrap;gap:6px} .tjchips span{padding:2px 10px;border-radius:999px;background:var(--soft);color:var(--acc);font-size:.76rem;font-weight:600}
+  .tjareas,.tjmonths,.tjlife{list-style:none;margin:0 0 12px;padding:0}
+  .tjareas li,.tjmonths li{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line)} .tjareas li:first-child{border-top:0}
+  .tjareas .tl,.tjmonths .tl{min-width:24px;height:22px;font-size:.7rem;border-radius:6px;flex:none;margin-top:2px}
+  .tjareas div,.tjmonths div{display:flex;flex-direction:column;line-height:1.4} .tjareas b span,.tjmonths b span{font-weight:500;color:var(--mut)}
+  .tjareas small{color:var(--mut);font-size:.76rem}
+  .tjmonths li.tjnow{border:2px solid var(--ink);border-radius:12px;padding:8px 10px}
+  .tjmonths em{font-style:normal;font-size:.68rem;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--ink);color:var(--bg);margin-left:4px}
+  .tjdasha{border:1px solid color-mix(in srgb,var(--g1) 60%,transparent);background:color-mix(in srgb,var(--g1) 12%,var(--solid));border-radius:14px;padding:12px 14px;margin:4px 0 12px}
+  .tjdasha h4{margin:0 0 6px;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)} .tjdasha p{margin:0 0 6px;font-size:.92rem}
+  .tjfull{margin-top:12px}
+  .tjmode{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 10px} .tjmode>span{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)} .tjmode .seg{flex:1 1 240px} .tjmode .seg button{white-space:nowrap}
+  small.tjwas{display:block;margin-top:3px;padding-left:8px;border-left:2px solid var(--line);color:var(--mut);font-size:.76rem}
+  .tjlife li{border-top:1px solid var(--line)}
+  .tjlife button{display:grid;grid-template-columns:44px 8px minmax(0,1fr);gap:10px;align-items:center;width:100%;padding:8px 4px;background:none;border:0;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+  .tjlife button[aria-current="true"]{background:var(--soft);border-radius:10px} .tjlife i{width:8px;height:32px;border-radius:4px}
+  .tjage{display:flex;flex-direction:column;align-items:center;line-height:1.1} .tjage small{font-size:.68rem;color:var(--mut)}
+  .tjline{display:flex;flex-direction:column;line-height:1.35;min-width:0} .tjline small{color:var(--mut);font-size:.76rem}
+  .tjline small.tjev{color:var(--ink);font-weight:600} .tjline small.tjev.fit{color:var(--ok)}
   .tjstep{display:flex;align-items:center;gap:10px;margin-bottom:12px} .tjstep>div{display:flex;flex-direction:column;flex:1;min-width:0;text-align:center} .tjstep .linkbtn{white-space:nowrap}
   .tjstep small{color:var(--mut)} .tjstep .btn{min-width:44px;padding:8px 12px}
   .tjyog{margin:4px 0 12px;padding-left:18px} .tjyog li{margin:4px 0} .tjyog li.ok b{color:var(--ok)} .tjyog li.bad b{color:var(--bad)}
@@ -3027,49 +3055,116 @@ async function loadMundane(year){
 }
 $('mundbody').addEventListener('click',e=>{const b=e.target.closest('[data-md]');if(b)loadMundane(MD.year+(+b.dataset.md))});
 
-// ----- Tajika (Varshaphal): the year from one solar return to the next (core/tajika.py) -----
-const TJ={pid:null,years:null,data:null};
+// ----- Tajika (Varshaphal): the year from one solar return to the next (core/tajika.py), read in plain words by
+// app/varshaphal.py; the year strip and Life by years come from /tajika/years -----
+const TJ={pid:null,years:null,data:null,life:null,view:'year',mode:'rules',ai:{}};
+let TJ_AI='studio',TJ_ADMIN=false;  // from /me: the admin's AI polishing setting, and whether this is the admin  // mode: rules | ai | compare (AI wording, owner and astrologers)
+const TJT={go:['✓','Go'],good:['✓','Good'],steady:['~','Steady'],care:['!','Take care']};
+const tjTone=k=>'<span class="tl tl-'+k+'" aria-hidden="true">'+TJT[k][0]+'</span>';
+// One line as the chosen wording: the rules', the AI's, or the AI's with the rules' underneath to compare.
+function tjSay(rules,ai){const A=TJ.mode!=='rules'&&ai!=null?ai:null;if(A==null)return esc(rules);
+  return esc(A)+(TJ.mode==='compare'&&A!==rules?'<small class="tjwas">Rules: '+esc(rules)+'</small>':'')}
+async function loadTjAi(){const k=TJ.pid+'|'+TJ.years;if(TJ.ai[k])return;TJ.ai[k]={loading:true};
+  try{const r=await fetch('/profiles/'+TJ.pid+'/tajika/polish?years='+TJ.years);const d=await r.json();
+    if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);TJ.ai[k]=d}
+  catch(e){TJ.ai[k]={error:e.message}}
+  if(TJ.data&&TJ.pid+'|'+TJ.years===k)paintTajika(TJ.data)}
 async function loadTajika(years){
   if(currentId==null){$('tajbody').innerHTML='<p class="hint">Save this chart to see its Varshaphal.</p>';return}
   if(years===undefined&&TJ.pid===currentId&&TJ.data)return;
-  const box=$('tajbody'),pid=currentId;if(!TJ.data||TJ.pid!==pid)box.innerHTML='<div class="hint">Casting the annual chart…</div>';
-  try{const r=await fetch('/profiles/'+pid+'/tajika'+(years!=null?'?years='+years:''));const d=await r.json();
-    if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);if(pid!==currentId)return;
+  const box=$('tajbody'),pid=currentId;if(!TJ.data||TJ.pid!==pid){box.innerHTML='<div class="hint">Casting the annual chart…</div>';TJ.life=null}
+  try{const [r,l]=await Promise.all([fetch('/profiles/'+pid+'/tajika'+(years!=null?'?years='+years:'')),
+      TJ.life&&TJ.pid===pid?null:fetch('/profiles/'+pid+'/tajika/years')]);
+    const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);
+    if(l){const ld=await l.json();if(l.ok)TJ.life=ld}
+    if(pid!==currentId)return;
     TJ.pid=pid;TJ.years=d.years;TJ.data=d;paintTajika(d)}
   catch(e){box.innerHTML='<p class="err">⚠ '+esc(e.message)+'</p>'}
 }
 function paintTajika(d){
   const tz=d.tz,dt=iso=>new Date(iso).toLocaleString([],{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',timeZone:tz}),
-    dd=iso=>new Date(iso).toLocaleDateString([],{day:'numeric',month:'short',year:'numeric',timeZone:tz}),ord=n=>n+muhurat_ord(n),now=Date.now();
-  const yl=d.year_lord,m=d.muntha,P=d.planets;
+    dd=iso=>new Date(iso).toLocaleDateString([],{day:'numeric',month:'short',year:'numeric',timeZone:tz}),
+    dm=iso=>new Date(iso).toLocaleDateString([],{day:'numeric',month:'short',timeZone:tz}),ord=n=>n+muhurat_ord(n),now=Date.now();
+  const yl=d.year_lord,m=d.muntha,P=d.planets,R=d.reading||{},L=TJ.life;
   const byH={};Object.values(P).forEach(p=>{(byH[p.house-1]=byH[p.house-1]||[]).push({t:ABBR[p.name],d:Math.floor(p.deg)+'°',p:p.name,
     b:[p.dignity==='exalted'?'ex':p.dignity==='debilitated'?'db':p.dignity==='own'?'own':null,p.retrograde&&p.name!=='Rahu'&&p.name!=='Ketu'?'R':null].filter(Boolean)})});
   (byH[m.house-1]=byH[m.house-1]||[]).push({t:'Mu',jp:true});
   const cur=d.mudda_dasha.find(x=>now>=Date.parse(x.start)&&now<Date.parse(x.end));
-  $('tajbody').innerHTML=
-    '<div class="tjstep"><button type="button" class="btn ghost" data-tj="-1" aria-label="Previous year">‹</button>'+
-      '<div><b>Age '+d.years+' → '+(d.years+1)+'</b><small>'+dd(d.varsha_pravesh)+' – '+dd(d.next)+(d.current?' · this year':'')+'</small></div>'+
-      '<button type="button" class="btn ghost" data-tj="1" aria-label="Next year">›</button>'+(d.current?'':'<button type="button" class="linkbtn" data-tj="0">This year</button>')+'</div>'+
+  // Admin › Limits › AI polishing: off (rules only), studio (the admin alone sees the AI wording, to compare) or
+  // everyone (AI wording for all users; only the admin sees the switch)
+  const tjSwitch=TJ_AI!=='off'&&TJ_ADMIN;  // the Rules / AI / Compare switch is for the admin onlyif(!tjSwitch)TJ.mode=TJ_AI==='everyone'?'ai':'rules';
+  let AI=TJ.mode!=='rules'?TJ.ai[TJ.pid+'|'+TJ.years]:null;if(TJ.mode!=='rules'&&!AI){loadTjAi();AI=TJ.ai[TJ.pid+'|'+TJ.years]}
+  const A=AI&&!AI.loading&&!AI.error?AI:{};
+  const wording=tjSwitch?'<div class="tjmode"><span>Wording</span><div class="seg" role="radiogroup" aria-label="Wording">'+[['rules','Rules'],['ai','AI polished'],['compare','Compare']].map(([k,t])=>
+      '<button type="button" role="radio" data-tjm="'+k+'" aria-checked="'+(TJ.mode===k)+'"'+(TJ.mode===k?' class="on"':'')+'>'+t+'</button>').join('')+'</div></div>'+
+    (AI&&AI.loading?'<p class="hint">Polishing the wording…</p>':AI&&AI.error?'<p class="hint err">'+esc(AI.error)+'</p>':
+     TJ.mode==='compare'&&A.kept?'<p class="hint">'+(A.kept.length?A.kept.length+' line'+(A.kept.length>1?'s':'')+' kept the rules’ wording because the AI tried to add a fact: '+A.kept.map(k=>esc(k.field)+' ('+esc(k.why)+')').join('; ')+'.':'Every AI line passed the fact check.')+'</p>':''):'';
+  // pick any year from birth to ten years ahead from a list (each with its tone)
+  // one row: ‹ the year list › ; the dates below. The list shows every year from birth with its tone.
+  const strip='<div class="tjnav"><button type="button" class="btn ghost" data-tj="-1" aria-label="Previous year">‹</button>'+
+      (L?'<select id="tjyear" aria-label="Year">'+L.years.map(y=>'<option value="'+y.years+'"'+(y.years===d.years?' selected':'')+'>Age '+y.years+' · '+y.year+
+        (y.years===L.now?' · this year':'')+' · '+TJT[y.tone][1]+'</option>').join('')+'</select>':'<b>Age '+d.years+'</b>')+
+      '<button type="button" class="btn ghost" data-tj="1" aria-label="Next year">›</button></div>';
+  const seg='<div class="seg tjseg" role="tablist" aria-label="Varshaphal">'+[['year','Your year'],['months','Month by month'],['life','Life by years']].map(([k,t])=>
+      '<button type="button" role="tab" data-tjv="'+k+'" aria-selected="'+(TJ.view===k)+'"'+(TJ.view===k?' class="on"':'')+'>'+t+'</button>').join('')+'</div>';
+  const head='<p class="tjrange">'+dd(d.varsha_pravesh)+' – '+dd(d.next)+(d.current?' · this year':' · <button type="button" class="linkbtn" data-tj="0">Back to this year</button>')+'</p>';
+  if(TJ.view==='months'){
+    let yr=null;
+    $('tajbody').innerHTML=strip+head+seg+wording+'<p class="gsub">The nine planets take turns through the year (Mudda dasha). Each period is read from that planet’s strength and the houses it rules in this year’s chart.</p>'+
+      '<ol class="tjmonths">'+(R.months||[]).map((x,i)=>{const on=now>=Date.parse(x.start)&&now<Date.parse(x.end),
+          y=new Date(x.start).toLocaleDateString([],{year:'numeric',timeZone:tz}),sep=y!==yr?'<li class="tjyr" aria-hidden="true">'+y+'</li>':'';yr=y;
+        return sep+'<li'+(on?' class="tjnow"':'')+'>'+tjTone(x.tone)+'<div><b>'+dm(x.start)+' – '+dm(x.end)+(on?' <em>Now</em>':'')+(x.best?' <em>Best</em>':'')+'</b>'+
+          '<small class="tjrole">'+esc(x.lord)+' · '+esc(x.role||'')+'</small><span>'+tjSay(x.text,(A.months||[])[i])+'</span>'+
+          (x.tip?'<small class="tjtip">'+esc(x.tip)+'</small>':'')+'</div></li>'}).join('')+'</ol>';
+    return;
+  }
+  if(TJ.view==='life'){
+    $('tajbody').innerHTML=strip+seg+(!L?'<div class="hint">Working out every year…</div>':
+      '<p class="gsub">One line per year of your life. Tap a year to open its reading. Life events you’ve added show in their year, with whether that year’s chart pointed to them.</p>'+
+      '<ol class="tjlife">'+L.years.slice().reverse().map(y=>'<li><button type="button" data-tjy="'+y.years+'"'+(y.years===d.years?' aria-current="true"':'')+'>'+
+        '<span class="tjage"><b>'+y.years+'</b><small>'+y.year+'</small></span><i class="tl-'+y.tone+'" aria-hidden="true"></i>'+
+        '<span class="tjline"><b>'+esc(y.theme)+(y.years===L.now?' · this year':'')+'</b><small>Muntha '+ord(y.muntha_house)+' · year lord '+esc(y.year_lord)+'</small>'+
+        y.events.map(e=>'<small class="tjev'+(e.fit?' fit':'')+'">'+esc(e.label)+(e.checked?(e.fit?' · the year’s chart pointed to it ('+esc(e.why)+')':' · not shown by this year’s chart'):'')+'</small>').join('')+
+        '</span></button></li>').join('')+'</ol>');
+    return;
+  }
+  const D=R.dasha||{};
+  $('tajbody').innerHTML=strip+head+seg+wording+
+    (R.headline?'<section class="tjhead">'+tjTone(R.tone)+'<div><p>'+tjSay(R.headline,A.headline)+'</p><div class="tjchips">'+R.chips.map(c=>'<span>'+esc(c)+'</span>').join('')+'</div></div></section>':'')+
+    '<div class="lk"><div class="chart" id="tjchart"></div><div>'+
+      '<h4 class="jaih" style="font-size:1rem;margin-top:0">This year, area by area</h4>'+
+      '<ul class="tjareas">'+(R.areas||[]).map(a=>'<li>'+tjTone(a.tone)+'<div><b>'+esc(a.label)+' <span>· '+TJT[a.tone][1]+'</span></b><span>'+tjSay(a.text,(A.areas||{})[a.key])+'</span><small>'+esc(a.why)+'</small></div></li>').join('')+'</ul></div></div>'+
+    (D.text?'<section class="tjdasha"><h4>With your main Dasha</h4><p><b>'+({agrees:'Agrees.',softens:'Softens.',neutral:'Neutral.'}[D.verdict])+'</b> '+tjSay(D.text,A.dasha||null)+'</p>'+
+      D.key.map(k=>'<p><b>Key stretch: '+dd(k.start)+' – '+dd(k.end)+'.</b> '+esc(k.why[0].toUpperCase()+k.why.slice(1))+'.</p>').join('')+
+      '<button type="button" class="linkbtn" data-tjv="months">See month by month →</button></section>':'')+
+    '<button type="button" class="btn ghost" data-ask="How will my year from '+esc(dd(d.varsha_pravesh))+' to '+esc(dd(d.next))+' be? (Varshaphal, age '+d.years+')">Ask about this year →</button>'+
+    '<details class="chrules tjfull"><summary>Full tables: year lord, Muntha, office-bearers, yogas, Mudda dasha, Sahams, aspects</summary>'+
     '<div class="tjcards">'+
       '<div class="jai"><small>Year lord (Varshesha)</small><b>'+esc(yl.planet)+'</b><p>'+esc(yl.why)+'</p></div>'+
       '<div class="jai"><small>Muntha</small><b>'+esc(m.sign)+' · '+ord(m.house)+' house</b><p>Lord '+esc(m.lord)+'. Your birth Lagna moved on one sign for each year of age ('+d.years+').</p></div>'+
       '<div class="jai"><small>Varsha Pravesh</small><b>'+dt(d.varsha_pravesh)+'</b><p>'+(d.day?'Day':'Night')+' return; annual Lagna '+esc(d.lagna.sign)+' '+d.lagna.deg.toFixed(1)+'°. The Sun back on its birth degree, cast for your birthplace.</p></div>'+
     '</div>'+
-    '<div class="lk"><div class="chart" id="tjchart"></div><div>'+
-      '<h4 class="jaih" style="font-size:1rem;margin-top:0">Office-bearers (Pancha-adhikari)</h4><div class="scroll"><table id="tjoff"></table></div></div></div>'+
+    '<h4 class="jaih" style="font-size:1rem">Office-bearers (Pancha-adhikari)</h4><div class="scroll"><table id="tjoff"></table></div>'+
     '<h4 class="jaih" style="font-size:1rem">Tajika yogas <small>how the planets work together this year</small></h4>'+
       (d.yogas.length?'<ul class="tjyog">'+d.yogas.map(y=>'<li class="'+(y.good?'ok':'bad')+'"><b>'+esc(y.yoga)+'</b> '+esc(y.text)+'</li>').join('')+'</ul>':'<p class="hint">No Tajika yoga between the seven planets this year.</p>')+
     '<h4 class="jaih" style="font-size:1rem">Mudda dasha <small>Vimshottari within this year</small></h4><div class="scroll"><table id="tjmd"></table></div>'+
     '<h4 class="jaih" style="font-size:1rem">Sahams <small>sensitive points for each matter</small></h4><div class="scroll"><table id="tjsah"></table></div>'+
     '<h4 class="jaih" style="font-size:1rem">Tajika aspects <small>3/11 and 5/9 friendly · 4/10 and 1/7 inimical</small></h4><div class="scroll"><table id="tjasp"></table></div>'+
-    '<p class="hint">Year lord: the strongest office-bearer aspecting the annual Lagna, strength judged by dignity in the annual chart (the full Pancha-vargeeya bala is not used yet). Sahams: A − B + C, reversed for a night return where the rule says so. Eight of the sixteen Tajika yogas are computed. Mu = Muntha.</p>';
+    '<p class="hint">Year lord: the strongest office-bearer aspecting the annual Lagna, strength judged by dignity in the annual chart (the full Pancha-vargeeya bala is not used yet). Sahams: A − B + C, reversed for a night return where the rule says so. Eight of the sixteen Tajika yogas are computed. Mu = Muntha.</p></details>'+
+    '<p class="hint">The reading follows set rules: Muntha’s house, the year lord and Lagna lord, each area’s house lord, Tajika yogas and Saham, and your running Dasha. Tendencies, not promises.</p>';
   drawNorth($('tjchart'),d.lagna.sign_index,byH);
   table($('tjoff'),['Office','Planet','Dignity','Aspects the Lagna'],d.office_bearers.map(b=>[esc(b.office),(b.planet===yl.planet&&b.office===yl.office?'<b>'+b.planet+' ◀ year lord</b>':b.planet),b.dignity,b.aspects_lagna?b.aspect:'—']));
   table($('tjsah'),['Saham','Shows','Sign','House','Lord'],d.sahams.map(x=>['<b>'+esc(x.name)+'</b>',esc(x.shows),esc(x.sign)+' '+Math.floor(x.deg)+'°',ord(x.house),esc(x.lord)+' <small class="hint">('+esc(x.lord_dignity)+', H'+x.lord_house+')</small>']));
   table($('tjmd'),['Lord','From','To'],d.mudda_dasha.map(x=>[x===cur?'<b>'+x.lord+' ◀ now</b>':x.lord,dd(x.start),dd(x.end)]));
   table($('tjasp'),['Planets','Aspect','Nature','Within orbs'],d.aspects.map(a=>[a.a+' – '+a.b,a.kind,a.nature,a.within_orbs?'yes':'no ('+a.off_by+'° off)']));
 }
-$('tajbody').addEventListener('click',e=>{const b=e.target.closest('[data-tj]');if(!b||!TJ.data)return;const k=+b.dataset.tj;
+$('tajbody').addEventListener('change',e=>{if(e.target.id!=='tjyear'||!TJ.data)return;
+  TJ.view=TJ.view==='life'?'year':TJ.view;loadTajika(+e.target.value);track('studies/tajika-year')});
+$('tajbody').addEventListener('click',e=>{if(!TJ.data)return;
+  const m=e.target.closest('[data-tjm]');if(m){TJ.mode=m.dataset.tjm;paintTajika(TJ.data);track('studies/tajika-'+TJ.mode);return}
+  const v=e.target.closest('[data-tjv]');if(v){TJ.view=v.dataset.tjv;paintTajika(TJ.data);track('studies/tajika-'+TJ.view);return}
+  const y=e.target.closest('[data-tjy]');if(y){if(TJ.view==='life')TJ.view='year';loadTajika(+y.dataset.tjy);track('studies/tajika-year');return}
+  const b=e.target.closest('[data-tj]');if(!b)return;const k=+b.dataset.tj;
   loadTajika(k===0?null:Math.max(0,Math.min(120,TJ.years+k)));track('studies/tajika-year')});
 
 // ----- match making -----
