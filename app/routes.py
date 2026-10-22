@@ -132,6 +132,9 @@ def with_extras(c: dict) -> dict:
     c["bnn"] = bnn.analyse(c)
     # KP: the houses each planet signifies by itself (Rahu and Ketu also through the planets they act for)
     c["kp_houses"] = {p: sorted(kp_predict.own_houses(c, p)) for p in c["grahas"]}
+    if "outer" not in c:  # Uranus, Neptune, Pluto: shown only when Settings turns them on (core/outer.py)
+        from core.outer import outer_planets
+        c["outer"] = outer_planets(c)
     return c
 
 

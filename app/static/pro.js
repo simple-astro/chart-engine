@@ -6,7 +6,10 @@
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const P9 = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'], P7 = P9.slice(0, 7);
-  const AB = { Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke' };
+  const AB = { Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke', Uranus: 'Ur', Neptune: 'Ne', Pluto: 'Pl' };
+  // Uranus, Neptune and Pluto: off by default; the same switch as the app's Settings (shared in this browser)
+  let SHOW_OUTER = false; try { SHOW_OUTER = localStorage.getItem('sj-outer') === '1'; } catch (e) {}
+  const outerOn = () => SHOW_OUTER && S.c && S.c.outer ? Object.entries(S.c.outer) : [];
   const FULL = Object.fromEntries(Object.entries(AB).map(([k, v]) => [v, k]));
   const SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
   const SA = ['Ari', 'Tau', 'Gem', 'Can', 'Leo', 'Vir', 'Lib', 'Sco', 'Sag', 'Cap', 'Aqu', 'Pis'];
@@ -16,7 +19,7 @@
   const VIM_YRS = { Ketu: 7, Venus: 20, Sun: 6, Moon: 10, Mars: 7, Rahu: 18, Jupiter: 16, Saturn: 19, Mercury: 17 };
   // Natural planet colours (Sun saffron, Moon white, Mars red, Mercury green, Jupiter yellow, Venus pink, Saturn blue,
   // Rahu smoky, Ketu earthy): real hex values, so a transparency suffix like col(p) + '33' stays a valid colour.
-  const HEX = { Sun: '#ff8c1a', Moon: '#f5f5f5', Mars: '#ff3b30', Mercury: '#34c759', Jupiter: '#ffd60a', Venus: '#ff8fd1', Saturn: '#4f7cff', Rahu: '#a1a1aa', Ketu: '#c48a5a' };
+  const HEX = { Sun: '#ff8c1a', Moon: '#f5f5f5', Mars: '#ff3b30', Mercury: '#34c759', Jupiter: '#ffd60a', Venus: '#ff8fd1', Saturn: '#4f7cff', Rahu: '#a1a1aa', Ketu: '#c48a5a', Uranus: '#5ec8c8', Neptune: '#7fa6d9', Pluto: '#b48ad0' };
   const col = p => HEX[p] || HEX[FULL[p]] || '#9a9a9a';
   const pn = (p, short) => `<span class="p" data-p="${p}" style="color:${col(p)}">${short ? AB[p] : p}</span>`;
   const dms = x => { const d = Math.floor(x), mf = (x - d) * 60, m = Math.floor(mf), s = Math.round((mf - m) * 60);
@@ -93,10 +96,13 @@
     return v + '</svg>';
   }
   const retro = (p, g) => g.retrograde && p !== 'Rahu' && p !== 'Ketu' ? 'ᴿ' : '';
+  const NATAL = p => S.c.grahas[p].sign_index;  // the birth chart's signs: only these charts also take the outer planets
   function byHouse(signOf, lag, extra = [], deg) {
     const o = {};
     P9.forEach(p => { const s = signOf(p); if (s == null) return; const h = (s - lag + 12) % 12; (o[h] = o[h] || []).push({ t: AB[p] + retro(p, S.c.grahas[p]), p, d: deg ? dm(S.c.grahas[p].degrees_in_sign) : null }); });
     extra.forEach(([t, s]) => { const h = (s - lag + 12) % 12; (o[h] = o[h] || []).push({ t }); });
+    if (signOf === NATAL) outerOn().forEach(([p, g]) => { const h = (g.sign_index - lag + 12) % 12;
+      (o[h] = o[h] || []).push({ t: AB[p] + (g.retrograde ? 'ᴿ' : ''), p, d: deg ? dm(g.degrees_in_sign) : null }); });
     return o;
   }
   const savHouses = lag => { const sav = S.c.ashtakavarga && S.c.ashtakavarga.sav; return sav ? sav.map((_, i) => sav[(lag + i) % 12]) : null; };
@@ -131,14 +137,14 @@
     return kv(bx.avakhada.rows.filter(x => !/Tithi|Yoga at|Karana|Birth day|Ayanamsha|Lagna/.test(x.label)).map(x => [esc(x.label), esc(x.value)])); }, { kw: 'avakhada varna yoni gana nadi' });
 
   // Primary charts
-  add('d1', 'Lagna · D1', G.prim, 1, () => { const L = S.c.lagna.sign_index; return chartSVG(L, byHouse(p => S.c.grahas[p].sign_index, L), { label: 'D1' }); }, { kw: 'rasi birth chart' });
+  add('d1', 'Lagna · D1', G.prim, 1, () => { const L = S.c.lagna.sign_index; return chartSVG(L, byHouse(NATAL, L), { label: 'D1' }); }, { kw: 'rasi birth chart' });
   add('d9', 'Navamsha · D9', G.prim, 1, () => { const v = S.c.vargas.D9, L = S.c.varga_lagna.D9;
     const vo = P9.filter(p => v[p].sign_index === S.c.grahas[p].sign_index), own = P7.filter(p => LORDS[v[p].sign_index] === p), deb = P7.filter(p => dignity(p, v[p].sign_index) === 'debilitated'), ex = P7.filter(p => dignity(p, v[p].sign_index) === 'exalted');
     return vargaChart('D9') + `<div class="note">D9 Lagna ${SIGNS[L]}${vo.length ? ' · Vargottama ' + vo.map(p => pn(p, 1)).join(' ') : ''}${ex.length ? ' · Exalted ' + ex.map(p => pn(p, 1)).join(' ') : ''}${own.length ? ' · Own ' + own.map(p => pn(p, 1)).join(' ') : ''}${deb.length ? ' · Debilitated ' + deb.map(p => pn(p, 1)).join(' ') : ''}</div>`; }, { kw: 'navamsa marriage' });
   add('chalit', 'Bhava Chalit', G.prim, 1, () => { const o = {}; P9.forEach(p => { const h = S.c.grahas[p].house - 1; (o[h] = o[h] || []).push({ t: AB[p] + retro(p, S.c.grahas[p]), p }); });
     return chartSVG(0, o, { houseSigns: S.c.houses.map(h => h.sign_index), label: 'Chalit' }) + `<div class="note">Houses from the ${esc(S.c.meta.house_system)} cusps</div>`; }, { kw: 'chalit cusps bhava' });
-  add('moonchart', 'Moon chart', G.prim, 1, () => { const L = S.c.grahas.Moon.sign_index; return chartSVG(L, byHouse(p => S.c.grahas[p].sign_index, L, [['As', S.c.lagna.sign_index]]), { label: 'Chandra' }); }, { kw: 'chandra lagna' });
-  add('sunchart', 'Sun chart', G.prim, 1, () => { const L = S.c.grahas.Sun.sign_index; return chartSVG(L, byHouse(p => S.c.grahas[p].sign_index, L, [['As', S.c.lagna.sign_index]]), { label: 'Surya' }); }, { kw: 'surya lagna' });
+  add('moonchart', 'Moon chart', G.prim, 1, () => { const L = S.c.grahas.Moon.sign_index; return chartSVG(L, byHouse(NATAL, L, [['As', S.c.lagna.sign_index]]), { label: 'Chandra' }); }, { kw: 'chandra lagna' });
+  add('sunchart', 'Sun chart', G.prim, 1, () => { const L = S.c.grahas.Sun.sign_index; return chartSVG(L, byHouse(NATAL, L, [['As', S.c.lagna.sign_index]]), { label: 'Surya' }); }, { kw: 'surya lagna' });
 
   // Divisional charts
   const VN = { D2: 'Hora', D3: 'Drekkana', D4: 'Chaturthamsa', D7: 'Saptamsa', D10: 'Dasamsa', D12: 'Dwadasamsa', D16: 'Shodasamsa', D20: 'Vimsamsa',
@@ -152,7 +158,8 @@
       P9.map(p => { const g = S.c.grahas[p], k = g.kp || {}, d = dignity(p, g.sign_index);
         return [pn(p) + (retro(p, g) ? ' ℞' : ''), g.sign, dms(g.degrees_in_sign), `${g.nakshatra} ${g.pada}`, pn(g.sign_lord, 1), pn(k.star_lord || g.nakshatra_lord, 1), k.sub_lord ? pn(k.sub_lord, 1) : '–', g.house,
           [d && `<span class="tag ${d === 'debilitated' ? 'bad' : 'good'}">${d}</span>`, g.combust && '<span class="tag mid">combust</span>'].filter(Boolean).join('')]; }));
-    return tbl(['Planet', 'Sign', 'Degree', 'Nakshatra', 'Lord', 'Star', 'Sub', 'House', ''], rows, [7]); }, { kw: 'positions degrees sub lord' });
+    outerOn().forEach(([p, g]) => rows.push([pn(p) + (g.retrograde ? ' ℞' : ''), g.sign, dms(g.degrees_in_sign), `${g.nakshatra} ${g.pada}`, pn(g.kp.sign_lord, 1), pn(g.kp.star_lord, 1), pn(g.kp.sub_lord, 1), g.house, '<span class="tag neu">outer</span>']));
+    return tbl(['Planet', 'Sign', 'Degree', 'Nakshatra', 'Lord', 'Star', 'Sub', 'House', ''], rows, [7]); }, { kw: 'positions degrees sub lord uranus neptune pluto' });
   add('retro', 'Retrograde & combust', G.pos, 1, () => tbl(['Planet', 'Speed °/day', 'Motion'], P9.map(p => { const g = S.c.grahas[p];
     return [pn(p), g.speed.toFixed(3), [g.retrograde && (p === 'Rahu' || p === 'Ketu' ? 'always retrograde' : '<span class="tag mid">retrograde</span>'), g.combust && '<span class="tag bad">combust</span>'].filter(Boolean).join(' ') || '<span class="tag neu">direct</span>']; }), [1]), { kw: 'vakri asta' });
 
@@ -184,7 +191,7 @@
     return tbl(['Upagraha', 'Sign', 'Degree', 'House'], t.upagrahas.map(u => [esc(u.name), SA[u.sign_index], dm(u.degrees_in_sign), u.house]).concat(mg.map(x => [esc(x.name), esc(x.sign).slice(0, 3), x.degrees_in_sign == null ? '–' : dm(x.degrees_in_sign), x.house])), [3]); }, { kw: 'dhuma vyatipata gulika mandi' });
 
   // Ashtakavarga
-  add('d1sav', 'D1 with Ashtakavarga', G.ak, 1, () => { const L = S.c.lagna.sign_index; return chartSVG(L, byHouse(p => S.c.grahas[p].sign_index, L), { sav: savHouses(L), label: 'D1' }) +
+  add('d1sav', 'D1 with Ashtakavarga', G.ak, 1, () => { const L = S.c.lagna.sign_index; return chartSVG(L, byHouse(NATAL, L), { sav: savHouses(L), label: 'D1' }) +
     '<div class="note">Frame: Sarva Ashtakavarga bindus per house · teal 30+, red 22 or less · total ' + S.c.ashtakavarga.sav_total + '</div>'; }, { kw: 'rasi sav bindus frame' });
   add('sav', 'Sarva Ashtakavarga', G.ak, 2, () => { const a = S.c.ashtakavarga, L = S.c.lagna.sign_index, cls = v => v >= 30 ? 'good' : v <= 22 ? 'bad' : 'neu';
     return tbl(['', ...SA, 'Σ'], [['Sign', ...a.sav.map(v => `<span class="tag ${cls(v)}">${v}</span>`), `<b>${a.sav_total}</b>`],
@@ -328,7 +335,7 @@
   G.nadi = 'Nadi · KP';
   const VORDER = [['Ketu', 'Moon', 'Jupiter'], ['Venus', 'Mars', 'Saturn'], ['Sun', 'Rahu', 'Mercury']];
   const fullDT = (d, tz) => d.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: tz }).replace(',', '');
-  add('nlagdeg', 'Lagna chart with degrees', G.nadi, 1, () => { const L = S.c.lagna.sign_index, o = byHouse(p => S.c.grahas[p].sign_index, L, [], true);
+  add('nlagdeg', 'Lagna chart with degrees', G.nadi, 1, () => { const L = S.c.lagna.sign_index, o = byHouse(NATAL, L, [], true);
     (o[0] = o[0] || []).unshift({ t: 'Asc', d: dm(S.c.lagna.ascendant % 30) }); return chartSVG(L, o, { deg: true, label: 'D1' }); }, { kw: 'degrees rasi nadi' });
   add('ncusp', 'Nirayana cusps chart', G.nadi, 1, () => { const o = {};
     P9.forEach(p => { const g = S.c.grahas[p], h = g.house - 1; (o[h] = o[h] || []).push({ t: AB[p] + retro(p, g), p, d: dm(g.degrees_in_sign) }); });
@@ -361,7 +368,7 @@
       '<div class="note">KP significator levels, strongest first</div>'; }, { kw: 'significator levels kp prime' });
   add('nrevolve', 'House revolve', G.nadi, 1, el => { const n = +(el.dataset.rev || 1), L = (S.c.lagna.sign_index + n - 1) % 12;
     return `<select class="sel" data-rev-sel>${[...Array(12).keys()].map(i => `<option value="${i + 1}"${i + 1 === n ? ' selected' : ''}>Treat house ${i + 1} as Lagna</option>`).join('')}</select>` +
-      chartSVG(L, byHouse(p => S.c.grahas[p].sign_index, L), { label: 'From H' + n }) + `<div class="note">Bhavat bhavam: houses counted from house ${n} (${SIGNS[L]})</div>`; }, { kw: 'house revolve bhavat bhavam rotate' });
+      chartSVG(L, byHouse(NATAL, L), { label: 'From H' + n }) + `<div class="note">Bhavat bhavam: houses counted from house ${n} (${SIGNS[L]})</div>`; }, { kw: 'house revolve bhavat bhavam rotate' });
   const ASP = [[0, 'Conjunction', 8], [60, 'Sextile', 6], [90, 'Square', 7], [120, 'Trine', 7], [180, 'Opposition', 8]];
   const aspect = (a, b) => { const d = Math.abs(((a - b) % 360 + 540) % 360 - 180); const sep = 180 - d; for (const [ang, n, orb] of ASP) { if (Math.abs(sep - ang) <= orb) return [n, Math.abs(sep - ang)]; } return null; };
   add('naspp', 'Aspects to planets', G.nadi, 2, () => { const rows = [];
@@ -561,6 +568,8 @@
   }
   function openCust(t) { tab = t || tab; $('cust').hidden = false; $('scrim').hidden = false; paintCust(); }
   function closeCust() { $('cust').hidden = true; $('scrim').hidden = true; }
+  $('outerchk').checked = SHOW_OUTER;
+  $('outerchk').onchange = e => { SHOW_OUTER = e.target.checked; try { localStorage.setItem('sj-outer', SHOW_OUTER ? '1' : '0'); } catch (_) {} renderAll(); };
   $('custbtn').onclick = () => openCust(); $('custx').onclick = closeCust; $('scrim').onclick = closeCust;
   document.querySelector('.cust .tabs').onclick = e => { const b = e.target.closest('[data-tab]'); if (b) { tab = b.dataset.tab; paintCust(); } };
   $('libq').oninput = paintCust;

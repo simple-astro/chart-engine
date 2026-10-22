@@ -518,7 +518,7 @@
   .chart .bd{font-size:.66em;font-weight:700}
   .chart .pg{cursor:pointer}
   .chart.hl .pg{fill-opacity:.2} .chart.hl .pg.on{fill-opacity:1}
-  .chart .pn.ex{fill:var(--ok)} .chart .pn.db{fill:var(--bad)}
+  .chart .pn.ex{fill:var(--ok)} .chart .pn.db{fill:var(--bad)} .chart .pn.outer{fill:var(--mut);font-style:italic}
   .chart .bnng{fill:var(--mut);opacity:.75;font-style:italic}
   .bd.ex{fill:var(--ok);color:var(--ok)} .bd.db{fill:var(--bad);color:var(--bad)} .bd.own{fill:var(--acc);color:var(--acc)}
   .bd.rt{fill:var(--acc2);color:var(--acc2)} .bd.cb{fill:var(--cmb);color:var(--cmb)}
@@ -1835,7 +1835,10 @@ const SIGNS=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio',
 const VNAME={D1:'Rasi',D2:'Hora · wealth',D3:'Drekkana · siblings',D4:'Chaturthamsa · property',D7:'Saptamsa · children',
   D9:'Navamsa · marriage',D10:'Dasamsa · career',D12:'Dwadasamsa · parents',D16:'Shodasamsa · vehicles',D20:'Vimsamsa · spirituality',
   D24:'Chaturvimsamsa · education',D27:'Bhamsa · strength',D30:'Trimsamsa · misfortunes',D40:'Khavedamsa',D45:'Akshavedamsa',D60:'Shashtiamsa · past karma',D150:'Nadi amsha · birth time'};
-const ABBR={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'};
+const ABBR={Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke',Uranus:'Ur',Neptune:'Ne',Pluto:'Pl'};
+// Uranus, Neptune and Pluto: off by default (no Vedic rule uses them); Settings › Display shows them on the chart and planet tables.
+let SHOW_OUTER=false;try{SHOW_OUTER=localStorage.getItem('sj-outer')==='1'}catch(e){}
+const outerOn=c=>SHOW_OUTER&&c&&c.outer?Object.entries(c.outer):[];
 try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){}
 
 // ----- theme: auto (system) -> light -> dark -----
@@ -3318,7 +3321,9 @@ function drawKpTables(c,other){
   table($('grahas'),['Planet','Sign','Degree','Nakshatra','Pada','House','Sign lord','Star lord','Sub lord','Notes'],
     Object.entries(c.grahas).map(([n,g])=>{const o=other&&other.grahas[n].kp;return [n,g.sign,dms(g.degrees_in_sign),g.nakshatra,g.pada,'H'+g.house,
       at(g.kp.sign_lord),at(g.kp.star_lord,o&&df(g.kp.star_lord,o.star_lord)),at(g.kp.sub_lord,o&&df(g.kp.sub_lord,o.sub_lord)),
-      [g.retrograde?'Retrograde':'',g.combust?'Combust':'',((c.vargas||{}).D9||{})[n]&&c.vargas.D9[n].sign_index===g.sign_index?'Vargottama':''].filter(Boolean).join(', ')]}));
+      [g.retrograde?'Retrograde':'',g.combust?'Combust':'',((c.vargas||{}).D9||{})[n]&&c.vargas.D9[n].sign_index===g.sign_index?'Vargottama':''].filter(Boolean).join(', ')]})
+    .concat(outerOn(c).map(([n,g])=>['<i>'+n+'</i>',g.sign,dms(g.degrees_in_sign),g.nakshatra,g.pada,'H'+g.house,at(g.kp.sign_lord),at(g.kp.star_lord),at(g.kp.sub_lord),
+      [g.retrograde?'Retrograde':'','outer planet, not used in Vedic rules'].filter(Boolean).join(', ')])));
   table($('houses'),['House','Sign','Planets in house','House lord','Star lord','Sub lord'],
     c.houses.map((x,i)=>{const inH=Object.entries(c.grahas).filter(([,g])=>g.house===x.house).map(([n])=>n),o=other&&other.houses[i].kp;
       return ['<b>H'+x.house+'</b>',x.sign+' <small>'+dms(x.degrees_in_sign)+'</small>',inH.join(', ')||'—',
@@ -3410,6 +3415,11 @@ function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.
     '<div class="setrow setstack"><div><b>My level</b><small>How much astrology the app shows you</small></div>'+seg('level',Object.entries(LEVELS),levelNow())+'</div>'+
     '<div class="setrow setstack"><div><b>Text size</b><small>Makes all the writing in the app smaller or bigger</small></div>'+seg('fs',[['sm','Small'],['','Default'],['lg','Large'],['xl','Extra large']],document.documentElement.getAttribute('data-fs')||'')+'</div>'+
     '<div class="setrow"><div><b>Chart style</b></div>'+seg('style',[['north','North Indian'],['south','South Indian']],CHART_STYLE==='south'?'south':'north')+'</div>'+
+    '<div class="setrow"><div><b>Uranus, Neptune, Pluto</b><small>Shown on the chart and planet tables; Vedic rules and readings never use them</small></div>'+seg('outer',[['off','Hide'],['on','Show']],SHOW_OUTER?'on':'off')+'</div>'+
+   '<h5>Calendar on Today</h5>'+
+    '<div class="setrow setstack"><div><b>Show</b><small>Hindu panchang, the Nanakshahi (Sikh) calendar, or both</small></div>'+seg('calview',[['hindu','Hindu'],['sikh','Nanakshahi'],['both','Both']],calPref('sj_calview','hindu'))+'</div>'+
+    '<div class="setrow"><div><b>Month ends at</b></div>'+seg('calstyle',[['purnimanta','Purnima'],['amanta','Amavasya']],calPref('sj_calstyle','purnimanta'))+'</div>'+
+    '<div class="setrow"><div><b>Gurpurab dates</b><small>The SGPC jantri keeps several on lunar dates; the 2003 calendar fixes them</small></div>'+seg('nsv',[['sgpc','SGPC jantri'],['original','Original 2003']],calPref('sj_nsv','sgpc'))+'</div>'+
     '<div class="setrow setmoodrow"><div><b>Theme</b>'+(MOOD_OK?'<small>Classic and Classic Dark for everyone; the others are testing, only you and your astrologers see them</small>':'')+'</div></div><div class="setmoods" role="radiogroup" aria-label="Theme">'+
       MOODS.filter(([v])=>MOOD_OK||v===''||v==='classic-dark').map(([v,t,a,b])=>{const on=themeNow()===v;return '<button type="button" role="radio" data-set="mood" data-v="'+v+'" aria-checked="'+on+'" class="'+(on?'on':'')+'"><i style="background:linear-gradient(135deg,'+a+' 50%,'+b+' 50%)"></i>'+t+'</button>'}).join('')+'</div>'+
    '<h5>Where you are</h5>'+
@@ -3429,12 +3439,12 @@ $('setbtn').onclick=openSettings;
 // share sheet opens straight to WhatsApp, a computer downloads the PNG.
 const P9=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
 const NAK27=['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
-const IMG_COL={Sun:'#e06c00',Moon:'#6f7c8c',Mars:'#d62d20',Mercury:'#1f9d55',Jupiter:'#b98a00',Venus:'#d6409f',Saturn:'#2f5bd3',Rahu:'#4f5560',Ketu:'#9a6236'};
+const IMG_COL={Sun:'#e06c00',Moon:'#6f7c8c',Mars:'#d62d20',Mercury:'#1f9d55',Jupiter:'#b98a00',Venus:'#d6409f',Saturn:'#2f5bd3',Rahu:'#4f5560',Ketu:'#9a6236',Uranus:'#0e8a8a',Neptune:'#3b6fa8',Pluto:'#7a4a8c'};
 const imgDms=x=>{const d=Math.floor(x),mf=(x-d)*60,m=Math.floor(mf),s=Math.round((mf-m)*60);const [mm,ss]=s===60?[m+1,0]:[m,s];
   return String(d).padStart(2,'0')+'°'+String(mm).padStart(2,'0')+'′'+String(ss).padStart(2,'0')+'″'};
 const imgDate=x=>{const d=new Date(x);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()};
 function kundliCanvas(c,req,bx,pan){
-  const W=1080,P=48,cv=document.createElement('canvas'),H=1960;cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  const W=1080,P=48,cv=document.createElement('canvas'),H=1960+outerOn(c).length*38;cv.width=W;cv.height=H;const x=cv.getContext('2d');
   const BG='#fbf7ef',INK='#1f1a14',MUT='#6b5a43',ACC='#a8701f',LINE='#e4d6bb',SOFT='#f3e7cf',SANS='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif',SER='Georgia,"Times New Roman",serif';
   x.fillStyle=BG;x.fillRect(0,0,W,H);
   const T=(t,X,Y,o={})=>{x.font=o.f||('400 26px '+SANS);x.fillStyle=o.c||INK;x.textAlign=o.a||'left';x.textBaseline='alphabetic';
@@ -3463,10 +3473,10 @@ function kundliCanvas(c,req,bx,pan){
   // charts: D1 and D9 (North or South Indian, as chosen in the app)
   const NP=[[200,95],[100,45],[45,100],[95,200],[45,300],[100,355],[200,305],[300,355],[355,300],[305,200],[355,100],[300,45]],SC=[[1,0],[2,0],[3,0],[3,1],[3,2],[3,3],[2,3],[1,3],[0,3],[0,2],[0,1],[0,0]];
   const SAB=['Ari','Tau','Gem','Can','Leo','Vir','Lib','Sco','Sag','Cap','Aqu','Pis'];
-  function chart(X,Y,S,lag,signOf,title){T(title,X,Y-14,{f:'600 30px '+SER});const k=S/400,byH={};
-    P9.forEach(p=>{const sg=signOf(p);if(sg==null)return;const h=(sg-lag+12)%12;(byH[h]=byH[h]||[]).push(p)});
+  function chart(X,Y,S,lag,signOf,title,extra){T(title,X,Y-14,{f:'600 30px '+SER});const k=S/400,byH={};
+    P9.concat(extra||[]).forEach(p=>{const sg=signOf(p);if(sg==null)return;const h=(sg-lag+12)%12;(byH[h]=byH[h]||[]).push(p)});
     x.save();x.translate(X,Y);x.fillStyle='#fffdf9';x.fillRect(0,0,S,S);x.strokeStyle=ACC;x.lineWidth=2.5;x.strokeRect(0,0,S,S);x.lineWidth=1.6;x.strokeStyle='#c9a868';
-    const ab=p=>({Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'})[p]+(c.grahas[p].retrograde&&p!=='Rahu'&&p!=='Ketu'?'ᴿ':'');
+    const ab=p=>ABBR[p]+((c.grahas[p]||c.outer[p]).retrograde&&p!=='Rahu'&&p!=='Ketu'?'ᴿ':'');
     const put=(cx,cy,ps,num,numPos)=>{if(num!=null)T(num,cx+(numPos?numPos[0]:0),cy+(numPos?numPos[1]:(ps.length?-28*k*1.15:8*k)),{f:'400 '+Math.round(19*k*1.1)+'px '+SANS,c:'#9c8a6c',a:'center'});
       const rows=Math.ceil(ps.length/2),lh=34*k,t=cy-(rows-1)*lh/2+12*k;
       for(let r=0;r<rows;r++){const row=ps.slice(r*2,r*2+2),fs=Math.round((ps.length>4?25:30)*k);x.font='700 '+fs+'px '+SANS;
@@ -3477,10 +3487,11 @@ function kundliCanvas(c,req,bx,pan){
         T(SAB[sg],ci*100*k+92*k,cj*100*k+20*k,{f:'400 '+Math.round(16*k*1.1)+'px '+SANS,c:'#9c8a6c',a:'right'});put(ci*100*k+50*k,cj*100*k+56*k,byH[h]||[],null)}}
     else{x.fillStyle=SOFT;x.beginPath();x.moveTo(200*k,0);x.lineTo(300*k,100*k);x.lineTo(200*k,200*k);x.lineTo(100*k,100*k);x.closePath();x.fill();
       x.beginPath();x.moveTo(0,0);x.lineTo(S,S);x.moveTo(S,0);x.lineTo(0,S);x.moveTo(200*k,0);x.lineTo(S,200*k);x.lineTo(200*k,S);x.lineTo(0,200*k);x.closePath();x.stroke();
-      NP.forEach(([px,py],h)=>put(px*k,py*k,byH[h]||[],(lag+h)%12+1,py<60&&(byH[h]||[]).length?[0,44*k]:null))}
+      NP.forEach(([px,py],h)=>{const n=(byH[h]||[]).length;  // top triangles: the number goes under one planet row, or into the inner corner when there are two
+      put(px*k,py*k,byH[h]||[],(lag+h)%12+1,py<60&&n?(n>2?[(px<200?58:-58)*k,-12*k]:[0,44*k]):null)})}
     x.restore()}
   y+=50;const S=(W-2*P-36)/2;
-  chart(P,y,S,l.sign_index,p=>c.grahas[p].sign_index,'Lagna chart · D1');
+  const OU=outerOn(c);chart(P,y,S,l.sign_index,p=>(c.grahas[p]||c.outer[p]).sign_index,'Lagna chart · D1',OU.map(([n])=>n));
   const L9=c.varga_lagna&&c.varga_lagna.D9;if(L9!=null&&c.vargas.D9)chart(P+S+36,y,S,L9,p=>c.vargas.D9[p]&&c.vargas.D9[p].sign_index,'Navamsa · D9');
   y+=S+66;
   // planets
@@ -3488,7 +3499,8 @@ function kundliCanvas(c,req,bx,pan){
   const cols=[['Planet',P+10],['Sign',P+170],['Degree',P+330],['Nakshatra',P+490],['Lord',P+760],['Star',P+850],['Sub',P+930]];
   x.fillStyle=SOFT;x.fillRect(P,y,W-2*P,40);cols.forEach(([h,cx])=>T(h,cx,y+28,{f:'600 22px '+SANS,c:MUT}));y+=40;
   const lk=l.kp||{},rowsP=[['Lagna',l.sign,l.ascendant%30,NAK27[Math.floor(l.ascendant/(360/27))%27]+' '+(Math.floor((l.ascendant%(360/27))/(360/108))+1),lk.sign_lord||'',lk.star_lord||'',lk.sub_lord||'',ACC]]
-    .concat(P9.map(p=>{const g=c.grahas[p],k=g.kp||{};return [p+(g.retrograde&&p!=='Rahu'&&p!=='Ketu'?' ℞':''),g.sign,g.degrees_in_sign,g.nakshatra+' '+g.pada,k.sign_lord||g.sign_lord,k.star_lord||g.nakshatra_lord,k.sub_lord||'–',IMG_COL[p]]}));
+    .concat(P9.map(p=>{const g=c.grahas[p],k=g.kp||{};return [p+(g.retrograde&&p!=='Rahu'&&p!=='Ketu'?' ℞':''),g.sign,g.degrees_in_sign,g.nakshatra+' '+g.pada,k.sign_lord||g.sign_lord,k.star_lord||g.nakshatra_lord,k.sub_lord||'–',IMG_COL[p]]}))
+    .concat(OU.map(([p,g])=>[p+(g.retrograde?' ℞':''),g.sign,g.degrees_in_sign,g.nakshatra+' '+g.pada,g.kp.sign_lord,g.kp.star_lord,g.kp.sub_lord,IMG_COL[p]]));
   const sh=p=>({Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'})[p]||p;
   rowsP.forEach((r,i)=>{const cy=y+i*38+27;if(i%2)  {x.fillStyle='#f8f1e3';x.fillRect(P,y+i*38,W-2*P,38)}
     T(r[0],cols[0][1],cy,{f:'700 23px '+SANS,c:r[7]});T(r[1],cols[1][1],cy,{f:'400 23px '+SANS});T(imgDms(r[2]),cols[2][1],cy,{f:'400 23px '+SANS});
@@ -3550,6 +3562,8 @@ $('setsheet').addEventListener('click',async e=>{const b=e.target.closest('[data
   else if(k==='defnode'){const D=setDefaults();D.node=v;saveDefaults(D);paintSettings()}
   else if(k==='defdy'||k==='defakv'){const D=setDefaults(),f=k==='defdy'?'dy':'akv';if(v===(f==='dy'?'solar':'parashara'))delete D[f];else D[f]=v;saveDefaults(D);track('settings/default-'+(f==='dy'?'dasha-year':'ashtakavarga'));paintSettings()}
   else if(k==='style'){setChartStyle(v);paintSettings()}
+  else if(k==='outer'){SHOW_OUTER=v==='on';try{localStorage.setItem('sj-outer',SHOW_OUTER?'1':'0')}catch(_){}track('settings/outer-'+v);paintSettings();
+    if(lastChart){if(RERENDER)RERENDER();drawKpTables(lastChart)}}
   else if(k==='fs'){const r=document.documentElement;v?r.setAttribute('data-fs',v):r.removeAttribute('data-fs');
     try{v?localStorage.setItem('sj-fs',v):localStorage.removeItem('sj-fs')}catch(_){}track('settings/text-'+(v||'default'));paintSettings();try{RERENDER&&RERENDER()}catch(_){}}
   else if(k==='level'){if(v!==levelNow())setLevel(v);paintSettings()}
@@ -3632,6 +3646,8 @@ function render(c,req){
   else $('ghits').hidden=true;
   if(V!=='gochar')Object.entries(c.grahas).forEach(([n,g])=>{const h=houseOf([n,g]),b=status(n);
     (byH[h]=byH[h]||[]).push({t:ABBR[n],d:Math.floor(g.degrees_in_sign)+'°',p:n,b,cls:b.find(k=>k==='ex'||k==='db')})});
+  if(V!=='gochar')outerOn(c).forEach(([n,g])=>{const h=houseOf([n,g]);
+    (byH[h]=byH[h]||[]).push({t:ABBR[n],d:Math.floor(g.degrees_in_sign)+'°',b:g.retrograde?['R']:[],cls:'outer'})});  // no data-p: the planet tips are for the nine grahas
   if(V==='moon'){const h=(l.sign_index-from+12)%12;(byH[h]=byH[h]||[]).push({t:'Asc',jp:true})}
   // BNN: a retrograde planet (not Rahu or Ketu) also gives the results of the sign before its own; shown faded there.
   if(BRANCH==='bnn'&&(V==='lagna'||V==='moon'))Object.entries(c.grahas).forEach(([n,g])=>{if(!g.retrograde||n==='Rahu'||n==='Ketu')return;
