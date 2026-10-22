@@ -8,7 +8,7 @@ from app import factcheck as F, synthesis
 from app.main import app
 from core import kp_predict as K
 
-BIRTH = {"name": "Sukh", "dob": "1987-09-01", "tob": "14:30:00", "lat": 30.73629, "lon": 76.7884, "tz_name": "Asia/Kolkata"}
+BIRTH = {"name": "Sukh", "dob": "1987-09-01", "tob": "14:30:00", "lat": 30.73629, "lon": 76.7884, "tz_name": "Asia/Kolkata", "ayanamsha": "krishnamurti"}
 START = date(2026, 10, 8)
 
 
@@ -138,7 +138,7 @@ def test_bhava_chalit_matches_the_book_example():
     """Taneja's illustration H1 (7 June 1950, 22:30, Delhi): every planet's houses by position and lordship
     in the Nirayana Bhava Chalit, including Rahu/Ketu as agents, exactly as printed in the book."""
     c = TestClient(app).post("/chart", json={"dob": "1950-06-07", "tob": "22:30:00", "lat": 28.6667,
-                                             "lon": 77.2167, "tz_name": "Asia/Kolkata"}).json()
+                                             "lon": 77.2167, "tz_name": "Asia/Kolkata", "ayanamsha": "krishnamurti"}).json()
     book = {"Sun": {5, 8}, "Moon": {2, 7}, "Mars": {4, 8, 11}, "Mercury": {4, 6, 9}, "Jupiter": {1, 3, 12},
             "Saturn": {1, 2, 7}, "Venus": {3, 5, 10}, "Rahu": {1, 2, 3, 4, 8, 11, 12}, "Ketu": {4, 6, 8, 9, 11}}
     assert {p: K.own_houses(c, p) for p in book} == book

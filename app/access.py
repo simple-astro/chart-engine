@@ -18,6 +18,7 @@ import os
 import secrets
 import time
 from collections import defaultdict, deque
+from pathlib import Path
 from urllib.parse import parse_qs
 
 from fastapi import APIRouter, Request
@@ -26,10 +27,15 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from app import storage
 
 COOKIE = "sj_session"
+SPACE = "sj_space"  # one cookie per role and code remembers that code's private space, so logging out and in keeps charts
+
+
+def space_cookie(role: str, code_id: int) -> str:
+    return f"{SPACE}_{role}_{code_id}"
 STUDIO = ("mentor", "astrologer")  # roles that may open the admin page (each sees only its own sections)
 MAX_AGE = 180 * 24 * 3600
-OPEN_PATHS = {"/health", "/version", "/login", "/favicon.ico", "/telegram/webhook"}  # webhook checks its own secret
-NEXT_PAGES = {"/admin"}  # where a login form may send the browser afterwards
+OPEN_PATHS = {"/health", "/version", "/home", "/login", "/logout", "/favicon.ico", "/telegram/webhook"}  # webhook checks its own secret
+NEXT_PAGES = {"/admin", "/pro"}  # where a login form may send the browser afterwards
 FAIL_WINDOW, FAIL_PER_IP, FAIL_TOTAL = 15 * 60, 10, 100
 _fails: dict[str, deque] = defaultdict(deque)
 
@@ -86,6 +92,20 @@ def read_session(raw: str) -> tuple[str, bool, int] | None:
     return owner, admin == "1", int(cid or 0)
 
 
+def make_space(owner: str, role: str, code_id: int) -> str:
+    value = f"{owner}.{role}.{code_id}"
+    return f"{value}.{_sign('space:' + value)}"
+
+
+def read_space(raw: str, role: str, code_id: int) -> str | None:
+    """The owner this browser last had, only for the same kind of code (never another role's or code's space)."""
+    parts = raw.split(".")
+    if len(parts) != 4 or parts[1] != role or parts[2] != str(code_id):
+        return None
+    owner, r, cid, sig = parts
+    return owner if _eq(sig, _sign(f"space:{owner}.{r}.{cid}")) else None
+
+
 def _client_ip(request: Request) -> str:
     fwd = request.headers.get("x-forwarded-for", "")
     return fwd.split(",")[0].strip() or (request.client.host if request.client else "?")
@@ -123,10 +143,12 @@ async def gate(request: Request, call_next):
         return resp
     if path in OPEN_PATHS or path.startswith("/static/"):
         return await call_next(request)
-    if path == "/":
-        return HTMLResponse(login_page())
+    if path == "/":  # signed out: the homepage, whose buttons open the access-code form
+        return HTMLResponse(home_page())
     if path == "/admin":
         return HTMLResponse(login_page(admin=True))
+    if path == "/pro":
+        return HTMLResponse(login_page(admin=True, nxt="/pro"))
     return JSONResponse({"detail": "Access code required"}, status_code=401)
 
 
@@ -158,18 +180,20 @@ async def login(request: Request):
     code = (form.get("code") or [""])[0]
     nxt = (form.get("next") or ["/"])[0]
     nxt = nxt if nxt in NEXT_PAGES else "/"
-    want_admin = nxt == "/admin"
+    want_admin = nxt in ("/admin", "/pro")  # both need an admin, mentor or astrologer code
     found = check_code(code)
     role, code_id = found or (None, 0)
     if role is None:
         _fails[ip].append(time.monotonic())
-        return HTMLResponse(login_page("That code isn't right. Please check it and try again.", admin=want_admin),
+        return HTMLResponse(login_page("That code isn't right. Please check it and try again.", admin=want_admin, nxt=nxt),
                             status_code=401)
     if want_admin and role != "admin" and role not in STUDIO:
-        return HTMLResponse(login_page("That's a tester code. The admin page needs an admin, mentor or astrologer "
-                                       "code.", admin=True), status_code=401)
+        page = "Pro dashboard" if nxt == "/pro" else "admin page"
+        return HTMLResponse(login_page(f"That's a tester code. The {page} needs an admin, mentor or astrologer code.",
+                                       admin=True, nxt=nxt), status_code=401)
     existing = read_session(request.cookies.get(COOKIE, ""))
-    owner = existing[0] if existing else secrets.token_hex(16)  # keep the same private space
+    # keep the same private space: from the open session, else the one this browser had before logging out
+    owner = existing[0] if existing else read_space(request.cookies.get(space_cookie(role, code_id), ""), role, code_id) or secrets.token_hex(16)
     admin = role == "admin" or bool(existing and existing[1])  # a tester code never removes admin
     if code_id:
         storage.note_code_login(code_id, owner)
@@ -179,11 +203,63 @@ async def login(request: Request):
     return resp
 
 
-def login_page(error: str = "", admin: bool = False) -> str:
+TITHIS = ["Pratipada", "Dwitiya", "Tritiya", "Chaturthi", "Panchami", "Shashthi", "Saptami", "Ashtami", "Navami",
+          "Dashami", "Ekadashi", "Dwadashi", "Trayodashi", "Chaturdashi"]
+_HOME = Path(__file__).resolve().parent / "home.html"
+_today_chip: tuple[str, str] = ("", "")
+
+
+def today_chip() -> str:
+    """'Today in India · Shukla Ekadashi · Shatabhisha': the day's tithi and nakshatra at sunrise in Delhi."""
+    global _today_chip
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    day = datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()
+    if _today_chip[0] != day:
+        try:
+            from datetime import date
+            from core.panchang import compute_panchang
+            p = compute_panchang(date.fromisoformat(day), 28.6139, 77.209, "Asia/Kolkata")
+            n = p.tithi_number
+            tithi = "Purnima" if n == 15 else "Amavasya" if n == 30 else f"{p.paksha} {TITHIS[(n - 1) % 15]}"
+            _today_chip = (day, f"Today in India · {tithi} · {p.nakshatra}")
+        except Exception:  # the page must still load if the panchang can't be worked out
+            return "Today in India"
+    return _today_chip[1]
+
+
+def home_page() -> str:
+    return _HOME.read_text().replace("{{TODAY}}", today_chip())
+
+
+@router.get("/home")
+def home():
+    """The homepage, for anyone (signed-out visitors also get it at /)."""
+    return HTMLResponse(home_page(), headers={"Cache-Control": "no-cache"})
+
+
+@router.post("/logout")
+def logout(request: Request):
+    """End this browser's session. The private space is remembered for the same code, so the charts are still
+    there after signing back in; nobody else's code can open them."""
+    session = read_session(request.cookies.get(COOKIE, ""))
+    resp = Response(status_code=204)
+    resp.delete_cookie(COOKIE)
+    if session:
+        owner, admin, cid = session
+        role = "admin" if admin else (storage.code_role(cid) if cid else None) or "tester"
+        resp.set_cookie(space_cookie(role, cid), make_space(owner, role, cid), max_age=MAX_AGE, httponly=True, samesite="lax",
+                        secure=request.headers.get("x-forwarded-proto", request.url.scheme) == "https")
+    return resp
+
+
+def login_page(error: str = "", admin: bool = False, nxt: str = "/admin") -> str:
     err = f'<p class="err" role="alert">{error}</p>' if error else ""
     if admin:
-        intro = "Admin sign-in. Enter your admin code to manage settings and review questions."
-        label, hidden, foot = "Admin code", '<input type="hidden" name="next" value="/admin">', \
+        intro = ("Pro dashboard sign-in. Enter your astrologer, mentor or admin code." if nxt == "/pro" else
+                 "Admin sign-in. Enter your admin code to manage settings and review questions.")
+        label, hidden, foot = "Astrologer code" if nxt == "/pro" else "Admin code", \
+            f'<input type="hidden" name="next" value="{nxt if nxt in NEXT_PAGES else "/admin"}">', \
             '<small><a href="/">Back to the app</a></small>'
     else:
         intro = "This is a private test version. Enter the access code you were given."

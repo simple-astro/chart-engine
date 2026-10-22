@@ -6,7 +6,7 @@ from app import storage, synthesis
 from app.main import app
 from tests.test_admin import _admin, _tester, gated  # noqa: F401  (fixture)
 
-H1 = {"name": "H1", "dob": "1950-06-07", "tob": "22:30:00", "lat": 28.6667, "lon": 77.2167, "tz_name": "Asia/Kolkata"}
+H1 = {"name": "H1", "dob": "1950-06-07", "tob": "22:30:00", "lat": 28.6667, "lon": 77.2167, "tz_name": "Asia/Kolkata", "ayanamsha": "krishnamurti"}
 BOOK = [("engaged", 1978, 12, 4), ("married", 1979, 6, 29), ("home", 1986, 3, 10), ("home", 1994, 5, 25),
         ("sold", 1994, 5, 13), ("vehicle", 1995, 6, 3), ("vehicle", 1995, 12, 13), ("court_win", 1997, 10, 15)]
 

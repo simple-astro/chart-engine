@@ -65,7 +65,8 @@ def test_chat_switches_off_at_the_daily_limit():
 
 
 def test_ayanamsha_is_remembered_and_place_search_is_debounced():
-    assert "localStorage.setItem('sj-ayanamsha'" in INDEX and "lastAyan()" in INDEX
+    # new charts start on Lahiri (no remembered "last used"); Settings › Defaults can choose another
+    assert '<select id="ayan"><option value="lahiri" selected>' in INDEX and "sj-ayanamsha" not in INDEX and "lastAyan" not in INDEX
     assert "SEARCH_T=setTimeout(search," in INDEX and "AbortController" in INDEX and 'class="spin"' in INDEX
 
 
@@ -228,3 +229,31 @@ def test_just_guide_me_level():
     tools = (Path(__file__).resolve().parent.parent / "app" / "static" / "tools.js").read_text()
     assert 'class="chart hqchart lv-pro"' in tools and '<ul class="hqr lv-pro">' in tools
     assert "level:levelNow()" in INDEX  # the chat answers in plain words
+
+
+def test_chart_banner_states_how_it_was_calculated():
+    assert 'id="bcalc"' in INDEX
+    for label in ("Lahiri ayanamsa", "KP (Krishnamurti) ayanamsa", "Whole-sign houses", "Placidus houses", "Swiss Ephemeris"):
+        assert label in INDEX
+
+
+def test_settings_gear_sits_in_the_header():
+    top = _between(INDEX, '<header class="top"', "</header>")
+    assert 'id="setbtn"' in top and 'aria-label="Settings"' in top and 'M7 10h3V7' in top
+    assert "$('setbtn').onclick=openSettings" in INDEX
+
+
+def test_settings_lives_in_the_header_not_the_profile_menu():
+    menu = _between(INDEX, 'id="pmenu"', "</div>")
+    assert 'id="msettings"' not in INDEX and "Settings" not in menu
+
+
+def test_share_image_one_page_kundli():
+    banner = _between(INDEX, '<div class="card banner">', '<div class="stats"')
+    assert 'id="pdfbtn"' in banner and "Share image" in banner        # at the top of the chart screen
+    assert "$('pdfbtn').onclick=shareImage" in INDEX and "Save PDF" not in INDEX and 'id="psheet"' not in INDEX
+    assert "cv.width=W" in INDEX and "navigator.canShare" in INDEX and "navigator.share({files" in INDEX
+    assert "download=" in INDEX                                          # a computer downloads the PNG
+    for col in ("'Lagna chart · D1'", "'Navamsa · D9'", "'Vimshottari dasha'", "['Star',", "['Sub',", "'Nakshatra',"):
+        assert col in INDEX
+    assert "d.getFullYear()" in INDEX                                    # four-digit years

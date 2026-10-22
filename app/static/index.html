@@ -454,6 +454,15 @@
   /* ---------- results ---------- */
   .banner{padding:26px 28px;display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;margin-bottom:22px}
   .banner h2{font:600 2rem var(--serif)} .banner .meta{color:var(--mut);margin-top:5px;font-size:.92rem}
+  .banner .meta.calc{margin-top:2px;font-size:.78rem;letter-spacing:.01em}
+  .banner{position:relative} .bnamebox{padding-right:120px}
+  .pdfbtn{position:absolute;top:16px;right:16px;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);
+    color:var(--ink);border-radius:999px;padding:7px 12px;font:600 .82rem var(--sans);cursor:pointer}
+  .pdfbtn:hover{border-color:var(--acc);color:var(--acc)} .pdfbtn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .pdfbtn[disabled]{opacity:.6;cursor:wait}
+  .imgdlg{position:fixed;inset:0;z-index:120;background:#000000eb;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+  .imgdlg img{max-width:min(520px,100%);max-height:calc(100dvh - 130px);border-radius:10px;box-shadow:0 10px 40px #0008;background:#fff}
+  .imgdlg .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
   .stats{display:flex;flex-wrap:wrap;gap:10px}
   .stat{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:10px 16px;min-width:108px;transition:.18s}
   .stat:hover{border-color:var(--acc);transform:translateY(-2px)}
@@ -1480,6 +1489,7 @@
     </button>
   </div>
   <button type="button" class="srfield" id="srbtn" aria-label="Search your chart, pages and meanings" aria-keyshortcuts="Control+K Meta+K /" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="srlbl">Search</span><kbd class="srkey" id="srkey">Ctrl K</kbd></button>
+  <button type="button" class="icon round" id="setbtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8L7 10"/></svg></button>
   <button type="button" class="icon round gold" id="newbtn" title="New chart" aria-label="New chart"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 </div></header>
 <div class="scrim" id="scrim" hidden></div>
@@ -1497,10 +1507,11 @@
   <button type="button" role="menuitem" class="mi" id="mnew"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New chart</button>
   <button type="button" role="menuitem" class="mi" id="matchbtn"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>Match making</button>
   <a role="menuitem" class="mi" id="madmin" href="/admin" hidden><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/></svg><span>Admin</span></a>
-  <button type="button" role="menuitem" class="mi" id="msettings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span>Settings</span></button>
   <button type="button" role="menuitem" class="mi" id="mdefault"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg><span>Make this my default chart</span></button>
   <button type="button" role="menuitem" class="mi" id="medit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg><span>Edit details</span></button>
   <button type="button" role="menuitem" class="mi danger" id="mdel"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg><span>Delete chart</span></button>
+  <div class="sep" id="mlosep" hidden></div>
+  <button type="button" role="menuitem" class="mi" id="mlogout" hidden><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span>Log out</span></button>
 </div>
 <div class="dlg lvdlg" id="lvdlg" role="dialog" aria-modal="true" aria-labelledby="lvt" hidden>
   <h3 id="lvt">How do you use astrology?</h3><p>We will show you just what you need. You can change this any time.</p>
@@ -1546,7 +1557,7 @@
           <datalist id="tzlist"></datalist><div id="tzerr" class="ferr" role="alert" hidden></div></div>
         <details class="adv full"><summary>Advanced options</summary>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
-            <div><label for="ayan">Ayanamsha</label><select id="ayan"><option value="krishnamurti">Krishnamurti (KP)</option><option value="lahiri">Lahiri</option><option value="pushya">Pushya Paksha</option><option value="raman">Raman</option><option value="fagan">Fagan-Bradley</option><option value="tropical">Tropical (no ayanamsha)</option></select></div>
+            <div><label for="ayan">Ayanamsha</label><select id="ayan"><option value="lahiri" selected>Lahiri</option><option value="krishnamurti">Krishnamurti (KP)</option><option value="pushya">Pushya Paksha</option><option value="raman">Raman</option><option value="fagan">Fagan-Bradley</option><option value="tropical">Tropical (no ayanamsha)</option></select></div>
             <div><label for="node">Rahu/Ketu</label><select id="node"><option value="mean">Mean node</option><option value="true">True node</option></select></div>
           </div></details>
         <div class="full chk"><input id="save" type="checkbox" checked><label for="save">Save this profile so I can chat about it later</label></div>
@@ -1682,7 +1693,8 @@
     <!-- Kundli: the chart, its sections as tiles, and what it says about you -->
     <div class="scr" id="s-chart" data-scr="chart" hidden>
     <div class="card banner">
-      <div><h2 id="bname"></h2><div class="meta" id="bmeta"></div></div>
+      <button type="button" class="pdfbtn" id="pdfbtn" title="Share your kundli as one image (WhatsApp and more)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7 8l5-5 5 5M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/></svg>Share image</button>
+      <div class="bnamebox"><h2 id="bname"></h2><div class="meta" id="bmeta"></div><div class="meta calc" id="bcalc"></div></div>
       <div class="stats" id="summary"></div><div class="accsheet" id="accsheet" hidden></div><div class="tslide" id="tslide"></div>
     </div>
     <!-- Studies: one card per tradition; each opens a page with only its own sections -->
@@ -1870,15 +1882,12 @@ function showResults(){hasChart=true;
   else if(h==='edit')nav(LAST_SCREEN||'today',{replace:true});
   else route()}
 function openNew(){editId=null;$('go').textContent='Generate chart';$('f').reset();try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){};
-  const ay=lastAyan();if(ay)$('ayan').value=ay;
   const D=setDefaults();if(D.ayanamsha)$('ayan').value=D.ayanamsha;if(D.node)$('node').value=D.node;FORM_HS=D.house||null;FORM_DY=D.dy||null;FORM_AKV=D.akv||null;  // Settings › Defaults
   tzError('');$('placeinfo').textContent='Search and pick a city, or enter coordinates below.';showForm()}
 $('newbtn').onclick=()=>{AFTER_NEW=null;nav('new')};
 $('cancel').onclick=()=>{editId=null;$('go').textContent='Generate chart';nav(LAST_SCREEN||'today')};
 
 // The ayanamsha last used for a new chart is offered again next time (this device only).
-const lastAyan=()=>{try{const v=localStorage.getItem('sj-ayanamsha');return v&&[...$('ayan').options].some(o=>o.value===v)?v:null}catch(e){return null}};
-{const ay=lastAyan();if(ay)$('ayan').value=ay}
 
 // ----- routing: the address (#today, #timing/dates, #chart/planets, #match, #new…) decides the view -----
 // route() is the one place that picks the view. It runs on load, on every hashchange (typed links, back and
@@ -2526,7 +2535,6 @@ $('f').addEventListener('submit',async e=>{
   if(body.tob.length>8)body.tob=body.tob.slice(0,8);
   tzError('');
   if(!validTz(body.tz_name)){tzError(TZ_MSG);return}
-  if(!editId)try{localStorage.setItem('sj-ayanamsha',body.ayanamsha)}catch(e){}
   $('go').disabled=true;$('msg').className='hint full';$('msg').textContent='Calculating…';
   try{
     const r=await fetch(editId?'/profiles/'+editId:$('save').checked?'/profiles':'/chart',{method:editId?'PUT':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
@@ -3393,7 +3401,7 @@ function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.
       ' Readings, Coming up and rectification will use it.<div class="setbtns"><button type="button" class="btn" data-set="apply"'+(SET.busy?' disabled':'')+'>'+(SET.busy?'Recalculating…':'Recalculate '+esc(name))+'</button><button type="button" class="btn ghost" data-set="cancel">Cancel</button></div></div>':''):
     '<h5>This chart</h5><p class="hint">Save a chart to change its ayanamsa, node or houses here.</p>')+
    '<h5>Defaults for new charts</h5>'+
-    '<div class="setrow"><div><b>Ayanamsa</b></div>'+sel('setdefay',D.ayanamsha||'krishnamurti')+'</div>'+
+    '<div class="setrow"><div><b>Ayanamsa</b></div>'+sel('setdefay',D.ayanamsha||'lahiri')+'</div>'+
     '<div class="setrow"><div><b>Rahu and Ketu</b></div>'+seg('defnode',[['mean','Mean'],['true','True']],D.node||'mean')+'</div>'+
     '<div class="setrow"><div><b>House system</b></div>'+hsel('setdefhs',D.house||'')+'</div>'+
     '<div class="setrow"><div><b>Days in a dasha year</b></div>'+seg('defdy',DY_LIST,D.dy||'solar')+'</div>'+
@@ -3414,7 +3422,108 @@ async function dashaShift(v,key){// how far the running Mahadasha moves under an
   try{const r=await fetch('/chart',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...lastReq,[key||'ayanamsha']:v})});const c=await r.json();
     const now=Date.now(),f=x=>(x.dasha||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end))||x.dasha[0];
     return Math.round((new Date(f(c).start)-new Date(f(lastChart).start))/864e5)}catch(e){return 0}}
-$('msettings').onclick=()=>{closeMenu();openSettings()};
+$('mlogout').onclick=async()=>{closeMenu();try{await fetch('/logout',{method:'POST'})}catch(e){}location.href='/'};  // back to the sign-in page
+$('setbtn').onclick=openSettings;
+// ----- Share image: the kundli on one tall image (1080 px wide) for WhatsApp: birth details, D1 and D9, planets with
+// sign, star and sub lords, and the Vimshottari Dasha. Drawn on a canvas so it works the same on every phone; the phone's
+// share sheet opens straight to WhatsApp, a computer downloads the PNG.
+const P9=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
+const NAK27=['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
+const IMG_COL={Sun:'#e06c00',Moon:'#6f7c8c',Mars:'#d62d20',Mercury:'#1f9d55',Jupiter:'#b98a00',Venus:'#d6409f',Saturn:'#2f5bd3',Rahu:'#4f5560',Ketu:'#9a6236'};
+const imgDms=x=>{const d=Math.floor(x),mf=(x-d)*60,m=Math.floor(mf),s=Math.round((mf-m)*60);const [mm,ss]=s===60?[m+1,0]:[m,s];
+  return String(d).padStart(2,'0')+'°'+String(mm).padStart(2,'0')+'′'+String(ss).padStart(2,'0')+'″'};
+const imgDate=x=>{const d=new Date(x);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()};
+function kundliCanvas(c,req,bx,pan){
+  const W=1080,P=48,cv=document.createElement('canvas'),H=1960;cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  const BG='#fbf7ef',INK='#1f1a14',MUT='#6b5a43',ACC='#a8701f',LINE='#e4d6bb',SOFT='#f3e7cf',SANS='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif',SER='Georgia,"Times New Roman",serif';
+  x.fillStyle=BG;x.fillRect(0,0,W,H);
+  const T=(t,X,Y,o={})=>{x.font=o.f||('400 26px '+SANS);x.fillStyle=o.c||INK;x.textAlign=o.a||'left';x.textBaseline='alphabetic';
+    let s=String(t);if(o.mw){while(s.length>1&&x.measureText(s).width>o.mw)s=s.slice(0,-1);if(s!==String(t))s=s.slice(0,-1)+'…'}x.fillText(s,X,Y)};
+  const hr=(Y,c=LINE,w=1.5)=>{x.strokeStyle=c;x.lineWidth=w;x.beginPath();x.moveTo(P,Y);x.lineTo(W-P,Y);x.stroke()};
+  const m=c.meta,l=c.lagna,mo=c.grahas.Moon,now=Date.now();
+  const av=k=>{const r=bx&&bx.avakhada.rows.find(r=>r.label===k);return r?r.value:'–'};
+  const tm=iso=>iso?new Date(iso).toLocaleTimeString([],{hour:'numeric',minute:'2-digit',timeZone:req.tz_name}):'–';
+  const md=(c.dasha||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end)),ad=md&&(md.children||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end)),
+    pd=ad&&(ad.children||[]).find(d=>now>=new Date(d.start)&&now<new Date(d.end));
+  // header
+  let y=P+44;T(req.name||m.name||'Birth chart',P,y,{f:'600 52px '+SER,mw:620});T('SimpleJyotish',W-P,y-8,{f:'600 30px '+SER,c:ACC,a:'right'});
+  T('simplejyotish.com',W-P,y+22,{f:'400 22px '+SANS,c:MUT,a:'right'});y+=30;T('Kundli',P,y,{f:'400 24px '+SANS,c:MUT});y+=18;hr(y,ACC,3);
+  // birth details: 3 columns × 6 rows
+  const AYS={krishnamurti:'KP',lahiri:'Lahiri',pushya:'Pushya',raman:'Raman',fagan:'Fagan-Bradley',tropical:'Tropical'},HS={placidus:'Placidus',koch:'Koch',sripati:'Sripati',equal:'Equal',whole_sign:'Whole sign'};
+  const info=[['Date',new Date(req.dob+'T12:00:00Z').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'})],['Time',req.tob_unknown?'Unknown':req.tob.slice(0,5)],['Day',av('Birth day (Vedic)')],
+    ['Place',(req.place||'').split(',').slice(0,2).join(',')||'–'],['Lat · Long',Math.abs(req.lat).toFixed(2)+(req.lat>=0?'N':'S')+' '+Math.abs(req.lon).toFixed(2)+(req.lon>=0?'E':'W')],['Timezone',req.tz_name],
+    ['Lagna',l.sign+' '+imgDms(l.ascendant%30).slice(0,6)],['Rasi',mo.sign+' · '+mo.sign_lord],['Nakshatra',mo.nakshatra+' '+mo.pada],
+    ['Tithi',av('Tithi at birth')],['Yoga',av('Yoga at birth')],['Karana',av('Karana at birth')],
+    ['Sunrise',tm(pan&&pan.sunrise)],['Sunset',tm(pan&&pan.sunset)],['Dasha now',[md,ad,pd].filter(Boolean).map(d=>d.lord.slice(0,3)).join(' › ')||'–'],
+    ['Ayanamsa',(AYS[m.ayanamsha]||m.ayanamsha)+' '+imgDms(m.ayanamsha_value||0).slice(0,6)],['Houses',HS[m.house_system]||m.house_system],['Node',m.node_type==='true'?'True':'Mean']];
+  const cw=(W-2*P)/3;y+=12;
+  info.forEach(([k,v],i)=>{const cx=P+(i%3)*cw,cy=y+Math.floor(i/3)*42+32;T(k,cx,cy,{f:'500 22px '+SANS,c:MUT});T(v,cx+cw-14,cy,{f:'600 23px '+SANS,a:'right',mw:cw-150});
+    if(i%3===2){x.strokeStyle=LINE;x.lineWidth=1;x.beginPath();x.moveTo(P,cy+12);x.lineTo(W-P,cy+12);x.stroke()}});
+  y+=6*42+26;
+  // charts: D1 and D9 (North or South Indian, as chosen in the app)
+  const NP=[[200,95],[100,45],[45,100],[95,200],[45,300],[100,355],[200,305],[300,355],[355,300],[305,200],[355,100],[300,45]],SC=[[1,0],[2,0],[3,0],[3,1],[3,2],[3,3],[2,3],[1,3],[0,3],[0,2],[0,1],[0,0]];
+  const SAB=['Ari','Tau','Gem','Can','Leo','Vir','Lib','Sco','Sag','Cap','Aqu','Pis'];
+  function chart(X,Y,S,lag,signOf,title){T(title,X,Y-14,{f:'600 30px '+SER});const k=S/400,byH={};
+    P9.forEach(p=>{const sg=signOf(p);if(sg==null)return;const h=(sg-lag+12)%12;(byH[h]=byH[h]||[]).push(p)});
+    x.save();x.translate(X,Y);x.fillStyle='#fffdf9';x.fillRect(0,0,S,S);x.strokeStyle=ACC;x.lineWidth=2.5;x.strokeRect(0,0,S,S);x.lineWidth=1.6;x.strokeStyle='#c9a868';
+    const ab=p=>({Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'})[p]+(c.grahas[p].retrograde&&p!=='Rahu'&&p!=='Ketu'?'ᴿ':'');
+    const put=(cx,cy,ps,num,numPos)=>{if(num!=null)T(num,cx+(numPos?numPos[0]:0),cy+(numPos?numPos[1]:(ps.length?-28*k*1.15:8*k)),{f:'400 '+Math.round(19*k*1.1)+'px '+SANS,c:'#9c8a6c',a:'center'});
+      const rows=Math.ceil(ps.length/2),lh=34*k,t=cy-(rows-1)*lh/2+12*k;
+      for(let r=0;r<rows;r++){const row=ps.slice(r*2,r*2+2),fs=Math.round((ps.length>4?25:30)*k);x.font='700 '+fs+'px '+SANS;
+        const wd=row.map(p=>x.measureText(ab(p)).width),tot=wd.reduce((a,b)=>a+b,0)+(row.length-1)*8*k;let sx=cx-tot/2;
+        row.forEach((p,i)=>{x.fillStyle=IMG_COL[p];x.textAlign='left';x.fillText(ab(p),sx,t+r*lh);sx+=wd[i]+8*k})}};
+    if(CHART_STYLE==='south'){x.beginPath();[100,200,300].forEach(v=>{x.moveTo(0,v*k);x.lineTo(S,v*k);x.moveTo(v*k,0);x.lineTo(v*k,S)});x.stroke();x.fillStyle=SOFT;x.fillRect(100*k+1,100*k+1,200*k-2,200*k-2);
+      for(let h=0;h<12;h++){const sg=(lag+h)%12,[ci,cj]=SC[sg];if(h===0){x.strokeStyle=ACC;x.lineWidth=3;x.beginPath();x.moveTo(ci*100*k,cj*100*k+30*k);x.lineTo(ci*100*k+30*k,cj*100*k);x.stroke()}
+        T(SAB[sg],ci*100*k+92*k,cj*100*k+20*k,{f:'400 '+Math.round(16*k*1.1)+'px '+SANS,c:'#9c8a6c',a:'right'});put(ci*100*k+50*k,cj*100*k+56*k,byH[h]||[],null)}}
+    else{x.fillStyle=SOFT;x.beginPath();x.moveTo(200*k,0);x.lineTo(300*k,100*k);x.lineTo(200*k,200*k);x.lineTo(100*k,100*k);x.closePath();x.fill();
+      x.beginPath();x.moveTo(0,0);x.lineTo(S,S);x.moveTo(S,0);x.lineTo(0,S);x.moveTo(200*k,0);x.lineTo(S,200*k);x.lineTo(200*k,S);x.lineTo(0,200*k);x.closePath();x.stroke();
+      NP.forEach(([px,py],h)=>put(px*k,py*k,byH[h]||[],(lag+h)%12+1,py<60&&(byH[h]||[]).length?[0,44*k]:null))}
+    x.restore()}
+  y+=50;const S=(W-2*P-36)/2;
+  chart(P,y,S,l.sign_index,p=>c.grahas[p].sign_index,'Lagna chart · D1');
+  const L9=c.varga_lagna&&c.varga_lagna.D9;if(L9!=null&&c.vargas.D9)chart(P+S+36,y,S,L9,p=>c.vargas.D9[p]&&c.vargas.D9[p].sign_index,'Navamsa · D9');
+  y+=S+66;
+  // planets
+  T('Planets',P,y,{f:'600 30px '+SER});y+=16;
+  const cols=[['Planet',P+10],['Sign',P+170],['Degree',P+330],['Nakshatra',P+490],['Lord',P+760],['Star',P+850],['Sub',P+930]];
+  x.fillStyle=SOFT;x.fillRect(P,y,W-2*P,40);cols.forEach(([h,cx])=>T(h,cx,y+28,{f:'600 22px '+SANS,c:MUT}));y+=40;
+  const lk=l.kp||{},rowsP=[['Lagna',l.sign,l.ascendant%30,NAK27[Math.floor(l.ascendant/(360/27))%27]+' '+(Math.floor((l.ascendant%(360/27))/(360/108))+1),lk.sign_lord||'',lk.star_lord||'',lk.sub_lord||'',ACC]]
+    .concat(P9.map(p=>{const g=c.grahas[p],k=g.kp||{};return [p+(g.retrograde&&p!=='Rahu'&&p!=='Ketu'?' ℞':''),g.sign,g.degrees_in_sign,g.nakshatra+' '+g.pada,k.sign_lord||g.sign_lord,k.star_lord||g.nakshatra_lord,k.sub_lord||'–',IMG_COL[p]]}));
+  const sh=p=>({Sun:'Su',Moon:'Mo',Mars:'Ma',Mercury:'Me',Jupiter:'Ju',Venus:'Ve',Saturn:'Sa',Rahu:'Ra',Ketu:'Ke'})[p]||p;
+  rowsP.forEach((r,i)=>{const cy=y+i*38+27;if(i%2)  {x.fillStyle='#f8f1e3';x.fillRect(P,y+i*38,W-2*P,38)}
+    T(r[0],cols[0][1],cy,{f:'700 23px '+SANS,c:r[7]});T(r[1],cols[1][1],cy,{f:'400 23px '+SANS});T(imgDms(r[2]),cols[2][1],cy,{f:'400 23px '+SANS});
+    T(r[3],cols[3][1],cy,{f:'400 23px '+SANS,mw:260});[4,5,6].forEach(j=>T(sh(r[j]),cols[j][1],cy,{f:'600 23px '+SANS,c:IMG_COL[r[j]]||INK}))});
+  y+=rowsP.length*38+50;
+  // Vimshottari: the Mahadashas, and the Antardashas of the running one
+  T('Vimshottari dasha',P,y,{f:'600 30px '+SER});y+=16;const half=(W-2*P-30)/2;
+  const dtab=(X,title,list,isNow)=>{x.fillStyle=SOFT;x.fillRect(X,y,half,38);T(title,X+10,y+27,{f:'600 21px '+SANS,c:MUT,mw:half-20});
+    list.forEach((d,i)=>{const cy=y+38+i*34+25,on=isNow(d);if(on){x.fillStyle='#f0dcb0';x.fillRect(X,y+38+i*34,half,34)}
+      T(d.lord,X+10,cy,{f:(on?'700':'600')+' 22px '+SANS,c:IMG_COL[d.lord]});T(imgDate(d.start)+' – '+imgDate(d.end),X+half-10,cy,{f:(on?'600':'400')+' 21px '+SANS,a:'right'})})};
+  const inNow=d=>now>=new Date(d.start)&&now<new Date(d.end);
+  dtab(P,'Mahadasha',c.dasha||[],inNow);if(md)dtab(P+half+30,'Antardasha in '+md.lord,md.children||[],inNow);
+  y+=38+9*34+40;
+  // footer
+  hr(y-16);T(['Lahiri','KP'].includes(AYS[m.ayanamsha])?AYS[m.ayanamsha]+' ayanamsa · '+(HS[m.house_system]||m.house_system)+' · '+(m.node_type==='true'?'True':'Mean')+' node · Swiss Ephemeris':(AYS[m.ayanamsha]||m.ayanamsha)+' · Swiss Ephemeris',P,y+16,{f:'400 20px '+SANS,c:MUT});
+  T('Free kundli at simplejyotish.com',W-P,y+16,{f:'600 20px '+SANS,c:ACC,a:'right'});
+  return cv}
+async function shareImage(){const c=lastChart,req=lastReq;if(!c||!req)return;const b=$('pdfbtn');b.disabled=true;
+  let bx=null,pan=null;
+  try{const [r1,r2]=await Promise.all([fetch('/birth-extras',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(req)}),
+      fetch('/panchang',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({on:req.dob,lat:req.lat,lon:req.lon,tz_name:req.tz_name})})]);
+    bx=r1.ok?await r1.json():null;pan=r2.ok?await r2.json():null}catch(e){}
+  const cv=kundliCanvas(c,req,bx,pan),nm=(req.name||'kundli').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-')||'kundli',file='kundli-'+nm+'.png';
+  cv.toBlob(blob=>{b.disabled=false;if(!blob)return;const url=URL.createObjectURL(blob),f=new File([blob],file,{type:'image/png'});
+    const can=!!(navigator.canShare&&navigator.canShare({files:[f]}));
+    const d=document.createElement('div');d.className='imgdlg';d.setAttribute('role','dialog');d.setAttribute('aria-label','Your kundli image');
+    d.innerHTML='<img alt="Kundli image" src="'+url+'"><div class="row">'+(can?'<button type="button" class="btn" data-share>Share (WhatsApp…)</button>':'')+
+      '<a class="btn'+(can?' ghost':'')+'" href="'+url+'" download="'+file+'">Download image</a><button type="button" class="btn ghost" data-close>Close</button></div>'+
+      (can?'':'<p class="hint" style="color:#ddd;margin:0">Download, then attach it in WhatsApp.</p>');
+    const close=()=>{d.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+    d.addEventListener('click',async e=>{if(e.target===d||e.target.closest('[data-close]'))return close();
+      if(e.target.closest('[data-share]')){try{await navigator.share({files:[f],title:'Kundli · '+(req.name||''),text:'My kundli · free at simplejyotish.com'});track('chart/share-image')}catch(err){}}
+      if(e.target.closest('a[download]'))track('chart/download-image')});
+    document.body.appendChild(d)},'image/png')}
+$('pdfbtn').onclick=shareImage;
 $('setdone').onclick=closeSettings;$('setscrim').onclick=closeSettings;
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('setsheet').hidden)closeSettings()});
 $('setsheet').addEventListener('change',async e=>{const t=e.target;
@@ -3466,6 +3575,10 @@ function render(c,req){
   $('bname').textContent=(req&&req.name)||m.name||'Birth chart';
   const where=req&&(req.place||(Math.abs(req.lat).toFixed(2)+'°'+(req.lat>=0?'N':'S')+', '+Math.abs(req.lon).toFixed(2)+'°'+(req.lon>=0?'E':'W')));
   $('bmeta').textContent=req?[req.dob,req.tob_unknown?'time unknown':req.tob.slice(0,5),where,req.tz_name].join(' · '):'';
+  // The settings this chart was calculated with, stated plainly under the birth details.
+  const CALC_AYN={krishnamurti:'KP (Krishnamurti) ayanamsa',lahiri:'Lahiri ayanamsa',pushya:'Pushya Paksha ayanamsa',raman:'Raman ayanamsa',fagan:'Fagan-Bradley ayanamsa',tropical:'Tropical (no ayanamsa)'},
+    CALC_HS={placidus:'Placidus houses',koch:'Koch houses',sripati:'Sripati houses',equal:'Equal houses',whole_sign:'Whole-sign houses'};
+  $('bcalc').textContent=[CALC_AYN[m.ayanamsha]||m.ayanamsha,CALC_HS[m.house_system]||m.house_system,(m.node_type==='true'?'True':'Mean')+' node','Swiss Ephemeris'].filter(Boolean).join(' · ');
   const noTime=!!(req&&req.tob_unknown);
   $('summary').innerHTML=[
     ['Lagna',l.sign],['Moon',c.grahas.Moon.sign],['Nakshatra',c.grahas.Moon.nakshatra+' '+c.grahas.Moon.pada],
@@ -3706,8 +3819,11 @@ function render(c,req){
 }
 loadList().then(l=>{if(l.length)loadProfile(startChart(l).id);else route()});
 // Admins reach the admin page from the chart menu (kept out of the header to leave room for the name).
-fetch('/me').then(r=>r.ok?r.json():null).then(m=>{if(m&&m.gated&&(m.admin||m.role==='mentor'||m.role==='astrologer'))$('madmin').hidden=false;
-  if(m&&(!m.gated||m.admin||m.role==='mentor'||m.role==='astrologer'))MOOD_OK=true}).catch(()=>{});  // colour themes: in Settings
+fetch('/me').then(r=>r.ok?r.json():null).then(m=>{
+  if(m&&m.gated)$('mlogout').hidden=$('mlosep').hidden=false;  // access codes are on: there is a session to end
+if(m&&m.gated&&(m.admin||m.role==='mentor'||m.role==='astrologer'))$('madmin').hidden=false;
+  if(m&&(!m.gated||m.admin||m.role==='mentor'||m.role==='astrologer'))MOOD_OK=true;
+  if(m&&m.varshaphal_ai){TJ_AI=m.varshaphal_ai;TJ_ADMIN=!!m.admin;if(TJ_AI==='everyone')TJ.mode='ai'}}).catch(()=>{});  // colour themes: in Settings
 </script>
 </body>
 </html>

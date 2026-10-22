@@ -12,6 +12,7 @@ CHART_BODY = {
     "lat": 28.6139,
     "lon": 77.2090,
     "tz_name": "Asia/Kolkata",
+    "ayanamsha": "krishnamurti",
 }
 
 
@@ -26,7 +27,7 @@ def test_version():
     assert r.status_code == 200
     body = r.json()
     assert body["engine_version"]
-    assert body["default_ayanamsha"] == "krishnamurti"
+    assert body["default_ayanamsha"] == "lahiri"
 
 
 def test_chart_endpoint():

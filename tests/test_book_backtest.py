@@ -45,7 +45,7 @@ def verdicts():
     cl = TestClient(app)
     out = {}
     for label, dob, tob, (lat, lon), topic, when, dba in EVENTS:
-        c = cl.post("/chart", json={"dob": dob, "tob": tob + ":00", "lat": lat, "lon": lon, "tz_name": "Asia/Kolkata"}).json()
+        c = cl.post("/chart", json={"dob": dob, "tob": tob + ":00", "lat": lat, "lon": lon, "tz_name": "Asia/Kolkata", "ayanamsha": "krishnamurti"}).json()
         out[label] = verdict_at_book_dba(c, topic, dob, when, dba)
     return out
 
@@ -58,6 +58,6 @@ def test_book_events_fall_in_favourable_windows(verdicts):
 
 def test_dasha_balance_matches_the_book():
     c = TestClient(app).post("/chart", json={"dob": "1950-06-07", "tob": "22:30:00", "lat": 28.6667, "lon": 77.2167,
-                                             "tz_name": "Asia/Kolkata"}).json()
+                                             "tz_name": "Asia/Kolkata", "ayanamsha": "krishnamurti"}).json()
     first = c["dasha"][0]
     assert first["lord"] == "Jupiter" and first["end"][:10] in ("1959-05-22", "1959-05-23")  # book: Jup 8y 11m 15d

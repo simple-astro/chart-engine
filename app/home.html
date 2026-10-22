@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fbf7ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0907" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Professional grade Vedic astrology, explained simply. Made by astrologers: KP, divisional charts, Dasha timing and daily guidance in plain words.">
+<title>SimpleJyotish — Professional grade astrology, explained simply</title>
+<link rel="icon" type="image/svg+xml" href="/static/sun.svg">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&display=swap">
+<style>
+:root{--bg:#fbf7ef;--card:#fffdf9;--soft:#f3e7cf;--ink:#2a2116;--mut:#6b5a43;--acc:#a8701f;--gold:#c98f2e;--onacc:#241903;
+  --line:#e4d6bb;--dark:#2a2116;--darkink:#f3eee4;--darkmut:#d9ccb2;--serif:'Cormorant Garamond',Georgia,serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#0a0907;--card:#14120f;--soft:#211b12;--ink:#f3eee4;--mut:#b9aa8c;--acc:#e0b45c;
+  --gold:#d9a441;--line:#2e271c;--dark:#1a160f;--darkink:#f3eee4;--darkmut:#c9bb9f}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;font-variant-numeric:lining-nums}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:8px;text-decoration:none;font:600 1.3rem var(--serif)}
+.brand img{width:28px;height:28px} .brand em{font-style:normal;color:var(--acc)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:999px;padding:12px 22px;font:500 1rem var(--sans);
+  text-decoration:none;cursor:pointer;border:1px solid transparent}
+.btn.gold{background:var(--gold);color:var(--onacc)} .btn.gold:hover{filter:brightness(1.05)}
+.btn.line{border-color:var(--line);background:var(--card);color:var(--ink)} .btn.line:hover{border-color:var(--acc)}
+.btn.sm{padding:8px 16px;font-size:.92rem}
+.chip{display:inline-flex;align-items:center;gap:8px;font:500 .72rem var(--mono);letter-spacing:.09em;text-transform:uppercase;
+  color:var(--acc);background:var(--soft);border-radius:999px;padding:6px 12px}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--gold);display:block}
+.hero{padding:44px 0 24px}
+h1{font:600 clamp(2.3rem,7vw,4rem)/1.04 var(--serif);margin:16px 0 14px;letter-spacing:-.01em;max-width:15ch}
+.lead{font-size:1.12rem;color:var(--mut);max-width:34em;margin:0 0 22px}
+.ctas{display:flex;flex-wrap:wrap;gap:10px}
+.note{font-size:.84rem;color:var(--mut);margin:12px 0 0}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:30px 0 8px}
+.facts div{background:var(--bg);padding:14px 16px}
+.facts b{display:block;font:600 1.9rem/1 var(--serif);color:var(--acc)}
+.facts small{font:500 .68rem var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--mut)}
+section{padding:40px 0}
+.mk{font:500 .72rem var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--acc);margin:0 0 6px}
+h2{font:600 clamp(1.7rem,4.5vw,2.4rem)/1.12 var(--serif);margin:0 0 20px;max-width:22ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.card .n{font:500 .72rem var(--mono);color:var(--acc)}
+.card h3{font:600 1.25rem/1.2 var(--serif);margin:4px 0 6px}
+.card p{margin:0;color:var(--mut);font-size:.95rem}
+.card .ans{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);color:var(--ink)}
+.feat h3{display:flex;align-items:center;gap:8px} .feat h3 span{font-size:1rem;color:var(--acc)}
+.check{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:var(--soft);border-radius:16px;padding:20px}
+.check b{font:600 3rem/1 var(--serif);color:var(--acc);white-space:nowrap} .check small{display:block;font:500 .68rem var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--mut)}
+.check p{margin:0}
+.pro{background:var(--dark);color:var(--darkink);border-radius:20px;padding:28px 22px}
+.pro .mk{color:#e0b45c} .pro h2{color:var(--darkink)}
+.pro ul{list-style:none;padding:0;margin:0 0 22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.pro li{border:1px solid rgba(243,238,228,.14);border-radius:12px;padding:12px 14px;color:var(--darkmut);font-size:.95rem}
+.pro li b{display:block;color:var(--darkink);font-weight:500}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.how div{border-top:2px solid var(--gold);padding-top:10px} .how b{display:block;font:600 1.15rem var(--serif)} .how p{margin:4px 0 0;color:var(--mut);font-size:.92rem}
+.end{text-align:center;padding:48px 0 30px} .end h2{margin:0 auto 18px}
+footer{border-top:1px solid var(--line);padding:22px 0 96px;color:var(--mut);font-size:.84rem}
+.stick{display:none}
+dialog{border:0;border-radius:18px;padding:0;width:min(420px,calc(100vw - 32px));background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(10,9,7,.55)}
+.dlg{padding:24px 22px 20px}
+.dlg h3{font:600 1.6rem var(--serif);margin:0 0 6px}
+.dlg p{margin:0 0 14px;color:var(--mut);font-size:.95rem}
+.dlg label{display:block;font:500 .72rem var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.dlg input{width:100%;font:500 1.05rem var(--sans);padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+.dlg input:focus{outline:none;border-color:var(--gold)}
+.dlg .btn{width:100%;margin-top:12px}
+.dlg small{display:block;color:var(--mut);margin-top:12px;font-size:.8rem;line-height:1.5}
+.x{float:right;background:none;border:0;color:var(--mut);font-size:1.4rem;cursor:pointer;line-height:1}
+h1,h2,h3,.facts b,.check b,.card .n{font-variant-numeric:lining-nums}
+@media (max-width:640px){
+  .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hero{padding-top:28px}
+  .stick{display:flex;position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:6;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+  .check{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <a class="brand" href="/home"><img src="/static/sun.svg" alt=""><span>Simple<em>Jyotish</em></span></a>
+  <button type="button" class="btn line sm" data-signin>Sign in</button>
+</div></header>
+
+<main class="wrap">
+  <div class="hero">
+    <span class="chip"><i></i>{{TODAY}}</span>
+    <h1>Professional grade astrology, explained simply.</h1>
+    <p class="lead">Made by astrologers, so you get the same calculations a professional uses, in plain words: what to do today, when your good windows come, and why.</p>
+    <div class="ctas"><button type="button" class="btn gold" data-signin>Make my free kundli</button><a class="btn line" href="#astrologers">I'm an astrologer →</a></div>
+    <p class="note">SimpleJyotish is in private testing: you'll need the access code you were given.</p>
+    <div class="facts">
+      <div><b>16</b><small>Divisional charts</small></div>
+      <div><b>5</b><small>Ayanamsas</small></div>
+      <div><b>5</b><small>House systems</small></div>
+      <div><b>KP</b><small>Sub lords and Prashna</small></div>
+    </div>
+  </div>
+
+  <section>
+    <p class="mk">01 · Why most apps fall short</p>
+    <h2>Astrology apps tell you a lot and help you little.</h2>
+    <div class="grid">
+      <div class="card"><span class="n">01</span><h3>Chatbots guess your degrees</h3><p>A general chatbot invents planet positions and mixes traditions.</p>
+        <p class="ans">Every position comes from the Swiss Ephemeris. Our AI only explains it, and each answer is checked against your chart.</p></div>
+      <div class="card"><span class="n">02</span><h3>Long lists, no next step</h3><p>Twenty yogas and transits, and nothing about what to do.</p>
+        <p class="ans">Each day opens with what to do and what to avoid, with the reason in one line.</p></div>
+      <div class="card"><span class="n">03</span><h3>Fear without an end date</h3><p>“Avoid this year”, and no word on when it eases.</p>
+        <p class="ans">Every slower period comes with its end date and a short list of what helps.</p></div>
+      <div class="card"><span class="n">04</span><h3>Hidden settings</h3><p>You never learn which ayanamsa or house system made your chart.</p>
+        <p class="ans">They are named under every chart, and you can change them in Settings.</p></div>
+      <div class="card"><span class="n">05</span><h3>Costly remedies first</h3><p>A gemstone before anything else.</p>
+        <p class="ans">Habits and seva come first. A gemstone only with a substitute and a consultation.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="mk">02 · What you get</p>
+    <h2>Daily guidance and professional depth, in one app.</h2>
+    <div class="grid">
+      <div class="card feat"><h3><span>☀</span>Today</h3><p>What to do and avoid, the day's panchang, and your best hours.</p></div>
+      <div class="card feat"><h3><span>⏳</span>When is my best time?</h3><p>Your good windows for work, money, home and more, from your Dasha and transits.</p></div>
+      <div class="card feat"><h3><span>✦</span>Ask Astropositivism</h3><p>Ask anything. Answers come from your own chart and are fact-checked before you see them.</p></div>
+      <div class="card feat"><h3><span>❀</span>Remedies</h3><p>Simple 43-day habit plans for the planets that need support.</p></div>
+      <div class="card feat"><h3><span>◈</span>Your kundli</h3><p>North and South Indian charts, D1 to D60, KP, Jaimini, BNN, Lal Kitab and Tajika.</p></div>
+      <div class="card feat"><h3><span>?</span>Prashna and muhurat</h3><p>Yes-or-no questions by KP and Jamakkol, and a good date for what you're planning.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="mk">03 · Check it yourself</p>
+    <h2>See how well your chart fits your life.</h2>
+    <div class="check">
+      <div><b>12 of 18</b><small>Example · chance about 10</small></div>
+      <p>Add the big dates of your life, like marriage, a new job or a home, and see how many your chart explains, compared with how many chance alone would. If the fit is weak, we tell you, and help you check your birth time.</p>
+    </div>
+  </section>
+
+  <section id="astrologers">
+    <div class="pro">
+      <p class="mk">For astrologers</p>
+      <h2>Professional tools, one tap from the reading.</h2>
+      <ul>
+        <li><b>Shadbala and Bhava Bala</b>Planet and house strength, with Cheshta Bala</li>
+        <li><b>KP and Jamakkol Prashna</b>With a time slider to recast for any day or minute</li>
+        <li><b>Your choice of method</b>Five ayanamsas, five house systems, mean or true node</li>
+        <li><b>Birth-time rectification</b>Tested against your client's dated life events</li>
+        <li><b>Every chart you've saved</b>Birth details, settings and the running Dasha in one place</li>
+        <li><b>Coming soon: Life Book</b>A personal report you review before your client sees it</li>
+      </ul>
+      <button type="button" class="btn gold" data-signin>Sign in with your code</button>
+    </div>
+  </section>
+
+  <section>
+    <p class="mk">04 · How we work it out</p>
+    <h2>Calculated properly. Explained honestly.</h2>
+    <div class="how">
+      <div><b>Swiss Ephemeris</b><p>The same planetary engine professional software uses.</p></div>
+      <div><b>Fact-checked AI</b><p>The AI explains what the engine worked out; every answer is checked against your chart.</p></div>
+      <div><b>Private by default</b><p>The charts you save are private to your browser.</p></div>
+      <div><b>No fear</b><p>No predictions of illness, length of life or separation. Guidance you can act on.</p></div>
+    </div>
+  </section>
+
+  <div class="end">
+    <h2>Start with your free kundli.</h2>
+    <button type="button" class="btn gold" data-signin>Make my free kundli</button>
+  </div>
+</main>
+
+<footer><div class="wrap"><b>SimpleJyotish</b> · Founded by Astropositivism Team.<br>Charts computed with the Swiss Ephemeris. Readings and remedies are traditional guidance, not certainties, and not medical, legal or financial advice.</div></footer>
+
+<button type="button" class="btn gold stick" data-signin>Make my free kundli</button>
+
+<dialog id="signin" aria-labelledby="sit">
+  <form class="dlg" method="post" action="/login">
+    <button type="button" class="x" aria-label="Close" data-close>×</button>
+    <h3 id="sit">Enter your access code</h3>
+    <p>SimpleJyotish is in private testing. Use the code you were given.</p>
+    <label for="code">Access code</label>
+    <input id="code" name="code" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+    <button type="submit" class="btn gold">Continue</button>
+    <small>The charts you save are private to this browser, so come back on the same browser to see them. The SimpleJyotish team may review questions and answers, and which sections people open, to improve the service.</small>
+  </form>
+</dialog>
+
+<script>
+const dlg = document.getElementById('signin');
+document.querySelectorAll('[data-signin]').forEach(b => b.addEventListener('click', () => { dlg.showModal(); document.getElementById('code').focus(); }));
+dlg.querySelector('[data-close]').addEventListener('click', () => dlg.close());
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+</script>
+</body>
+</html>

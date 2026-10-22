@@ -239,6 +239,7 @@
   <div class="brand"><img class="logo" src="/static/sun.svg" alt=""><b>Simple<em>Jyotish</em></b><span id="who-role">Admin</span></div>
   <button class="btn ghost" id="refresh" type="button">Refresh</button>
   <a href="/">Back to app</a>
+  <button class="btn ghost" id="logout" type="button">Log out</button>
 </div></header>
 
 <main class="pending">
@@ -529,6 +530,7 @@
 
 <script>
 const $ = id => document.getElementById(id);
+$('logout').addEventListener('click', async () => { try { await fetch('/logout', {method: 'POST'}); } catch (e) {} location.href = '/admin'; });  // the sign-in page
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const compact = n => n >= 1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M' : n >= 1e4 ? (n/1e3).toFixed(0) + 'K' : n >= 1e3 ? (n/1e3).toFixed(1).replace(/\.0$/,'') + 'K' : String(n);
 const money = v => v == null ? '–' : v === 0 ? '$0' : v < 0.01 ? '$' + v.toFixed(4) : v < 100 ? '$' + v.toFixed(2) : '$' + Math.round(v).toLocaleString();

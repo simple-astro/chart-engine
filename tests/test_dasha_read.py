@@ -12,7 +12,7 @@ FEAR = ("death", "die ", "accident", "disease", "illness", "ruin", "curse", "dis
 
 
 def chart(dob="1987-09-01", tob="14:20:00", lat=30.7333, lon=76.7794, tz="Asia/Kolkata"):
-    return TestClient(app).post("/chart", json={"dob": dob, "tob": tob, "lat": lat, "lon": lon, "tz_name": tz}).json()
+    return TestClient(app).post("/chart", json={"dob": dob, "tob": tob, "lat": lat, "lon": lon, "tz_name": tz, "ayanamsha": "krishnamurti"}).json()
 
 
 @pytest.fixture(scope="module")

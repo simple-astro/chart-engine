@@ -72,7 +72,7 @@ def version() -> dict:
         "engine_version": ENGINE_VERSION,
         "swe_version": ephemeris.swe_version(),
         "ephemeris_mode": ephemeris.ephe_mode(),
-        "default_ayanamsha": "krishnamurti",
+        "default_ayanamsha": "lahiri",
     }
 
 

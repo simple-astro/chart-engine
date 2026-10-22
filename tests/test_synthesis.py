@@ -10,7 +10,7 @@ NOW = datetime(2026, 10, 8, tzinfo=timezone.utc)
 
 
 def _chart(**over):
-    body = {"dob": "1987-09-01", "tob": "14:30:00", "lat": 30.73629, "lon": 76.7884, "tz_name": "Asia/Kolkata", **over}
+    body = {"dob": "1987-09-01", "tob": "14:30:00", "lat": 30.73629, "lon": 76.7884, "tz_name": "Asia/Kolkata", "ayanamsha": "krishnamurti", **over}
     return {"chart": TestClient(app).post("/chart", json=body).json(), "request": body}
 
 

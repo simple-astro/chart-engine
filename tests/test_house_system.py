@@ -19,9 +19,11 @@ def cusps(c):
 
 
 def test_default_follows_the_ayanamsha():
-    assert chart()["meta"]["house_system"] == "placidus"
-    assert chart(ayanamsha="lahiri")["meta"]["house_system"] == "whole_sign"
-    assert cusps(chart()) == cusps(chart(house_system="placidus"))
+    assert chart()["meta"]["ayanamsha"] == "lahiri"  # new charts start on Lahiri
+    assert chart()["meta"]["house_system"] == "whole_sign"
+    assert chart(ayanamsha="krishnamurti")["meta"]["house_system"] == "placidus"
+    kp = chart(ayanamsha="krishnamurti")
+    assert cusps(kp) == cusps(chart(ayanamsha="krishnamurti", house_system="placidus"))
 
 
 @pytest.mark.parametrize("hs", ["placidus", "koch", "sripati", "equal", "whole_sign"])

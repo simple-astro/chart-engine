@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0a0a">
+<title>SimpleJyotish Pro — astrologer's dashboard</title>
+<link rel="icon" type="image/svg+xml" href="/static/sun.svg">
+<style>
+:root{--bg:#0a0a0a;--panel:#151515;--panel2:#101010;--line:#2a2a2a;--line2:#1e1e1e;--ink:#ececec;--mut:#9a9a9a;--dim:#6e6e6e;
+  --gold:#f5c76a;--teal:#5eead4;--red:#ff7a7a;--amber:#facc15;
+  --Su:#ff8c1a;--Mo:#f5f5f5;--Ma:#ff3b30;--Me:#34c759;--Ju:#ffd60a;--Ve:#ff8fd1;--Sa:#4f7cff;--Ra:#a1a1aa;--Ke:#c48a5a;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;--sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:12.5px/1.4 var(--sans)}
+a{color:var(--gold)}
+button,select,input{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 14px;
+  background:linear-gradient(90deg,#111111f2,#171717f2);border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.brand{font:700 12px var(--mono);letter-spacing:.12em;color:var(--gold);text-decoration:none;margin-right:4px}
+.chip{background:#1b1b1b;border:1px solid #343434;border-radius:99px;padding:3px 10px;color:#c8c8c8;white-space:nowrap}
+.chip.g{color:var(--teal);border-color:#134e4a} .chip.t{color:var(--gold);border-color:#5a4520}
+.sel{background:#1b1b1b;border:1px solid #3a3a3a;border-radius:8px;padding:4px 8px;max-width:220px}
+.sp{flex:1}
+.btn{background:#202020;border:1px solid #3a3a3a;border-radius:8px;padding:5px 11px;cursor:pointer}
+.btn:hover{border-color:var(--gold)} .btn.gold{background:var(--gold);color:#1a1204;border-color:var(--gold);font-weight:600}
+main{padding:12px 14px 60px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:stretch}
+.w{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:12px;min-width:0;
+  display:flex;flex-direction:column;transition:border-color .15s}
+.w.ghost{position:fixed;z-index:60;pointer-events:none;opacity:.92;box-shadow:0 18px 50px #000c,0 0 0 1px var(--gold);transform:rotate(.6deg);transition:none}
+.w.ph{border:2px dashed var(--gold);background:#f5c76a0d;box-shadow:inset 0 0 30px #f5c76a14}
+body.dragging,body.dragging *{cursor:grabbing!important;user-select:none!important}
+.w[data-w="2"]{grid-column:span 2}.w[data-w="3"]{grid-column:span 3}.w[data-w="4"]{grid-column:span 4}
+.wh{display:flex;align-items:center;gap:6px;padding:7px 10px 5px;cursor:grab;touch-action:none;user-select:none}
+.wh .grip{color:#4c4c4c;font-size:14px;line-height:1;letter-spacing:-1px} .wh:hover .grip{color:var(--gold)}
+.wh b{font:700 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#a8a8a8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wh small{color:var(--dim);font:10px var(--mono)}
+.wh button{background:none;border:0;color:var(--dim);cursor:pointer;padding:0 3px;font-size:13px}
+.wh button:hover{color:var(--gold)}
+.wb{padding:2px 10px 10px;min-width:0;overflow-x:auto;flex:1;display:flex;flex-direction:column}
+/* cards in a row share one height: charts sit centred with their note at the foot, short lists spread evenly */
+.wb>svg{margin:auto 0}.wb>.note:last-child{margin-top:auto;padding-top:5px}.wb>svg+.note{margin-top:4px}
+.wb>.kv:first-child{flex:1;align-content:space-evenly}
+.wb>table:first-child{flex:1}  /* a table's rows share out the card's height evenly */
+.wb>table:first-child td,.wb>table:first-child th{vertical-align:middle}
+.wb.empty{color:var(--dim)}
+svg{display:block;width:100%;height:auto} svg text{font-family:var(--sans)}
+table{width:100%;border-collapse:collapse}
+th{color:#8c8c8c;font-weight:500;text-align:left;padding:3px 4px;border-bottom:1px solid var(--line);font-size:11.5px;white-space:nowrap}
+td{padding:3px 4px;border-bottom:1px solid var(--line2);white-space:nowrap;font-size:12px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:hover td{background:#ffffff06}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px}.kv span{color:var(--mut)}.kv b{font-weight:500;text-align:right}
+.bar{display:grid;grid-template-columns:62px 1fr 46px;gap:6px;align-items:center;margin:4px 0}
+.bt{height:8px;border-radius:4px;background:#1e1e1e;position:relative}.bt i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.bt .mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:#ececec;border-radius:1px}
+.tag{display:inline-block;border-radius:5px;padding:1px 7px;font-size:11px;margin:1px 2px 1px 0}
+.good{background:#5eead41f;color:var(--teal)}.mid{background:#facc151c;color:var(--amber)}.bad{background:#ff7a7a1c;color:var(--red)}.neu{background:#9a9a9a1a;color:var(--mut)}
+.mtx{display:grid;gap:2px;font-size:11px;text-align:center}
+.mtx div{border-radius:4px;padding:3px 0;background:#1b1b1b;color:var(--dim)}
+.p{cursor:pointer;font-weight:600}
+.note{color:var(--dim);font-size:11px;margin-top:5px}
+.vg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.vg div{background:#101010;border:1px solid var(--line2);border-radius:8px;padding:3px}
+.vg span{display:block;font:600 10px var(--mono);color:var(--gold);padding:1px 3px}
+.tc{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tc input[type=range]{flex:1;min-width:120px;accent-color:var(--gold)}
+details summary{cursor:pointer;color:var(--mut);padding:3px 0}
+details[open] summary{color:var(--ink)}
+.ribbon{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:6px 0 2px;position:relative}
+.ribbon i{display:block;height:100%}
+.ribbon .now{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff}
+body[data-sel] [data-p]{opacity:.55} body[data-sel] .sel-on{opacity:1!important;text-shadow:0 0 10px currentColor;filter:drop-shadow(0 0 4px currentColor)}
+/* customize drawer */
+[hidden]{display:none!important}
+.scrim{position:fixed;inset:0;background:#0009;z-index:30}
+.cust{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);background:#0f0f0f;border-left:1px solid var(--line);z-index:31;display:flex;flex-direction:column}
+.cust header{padding:14px 16px 8px;display:flex;align-items:center;justify-content:space-between}
+.cust h2{margin:0;font-size:17px}
+.cust .tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#1b1b1b;border-radius:10px;padding:4px;margin:0 16px}
+.cust .tabs button{background:none;border:0;padding:6px;border-radius:7px;cursor:pointer;color:var(--mut)}
+.cust .tabs button.on{background:#2a2a2a;color:var(--ink)}
+.cust .tools{display:flex;gap:6px;padding:10px 16px;flex-wrap:wrap}
+.cust .tools input{flex:1;min-width:140px;background:#1b1b1b;border:1px solid #3a3a3a;border-radius:8px;padding:6px 9px}
+.cust .body{overflow-y:auto;padding:0 16px 20px;flex:1}
+.grp{margin-top:10px}.grp h4{display:flex;justify-content:space-between;margin:0 0 4px;font:700 10.5px var(--mono);letter-spacing:.1em;color:var(--gold)}
+.grp h4 button{background:none;border:0;color:var(--dim);cursor:pointer;font:inherit}
+.lib{display:flex;align-items:center;gap:8px;padding:4px 2px;cursor:pointer;border-radius:6px}.lib:hover{background:#ffffff08}
+.lib input{accent-color:var(--gold);width:15px;height:15px}
+.lay{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:6px 8px;margin-bottom:6px;background:#151515;cursor:grab}
+.lay.drag{opacity:.4}.lay.over{border-color:var(--gold)}
+.lay .nm{flex:1;min-width:0}.lay .nm small{display:block;color:var(--dim)}
+.wd{display:inline-flex;border:1px solid #3a3a3a;border-radius:7px;overflow:hidden}
+.wd button{background:none;border:0;padding:2px 8px;cursor:pointer;color:var(--mut)}.wd button.on{background:var(--gold);color:#1a1204}
+.x{background:none;border:0;color:var(--dim);cursor:pointer;font-size:15px}
+/* command palette */
+.pal{position:fixed;left:50%;top:12vh;transform:translateX(-50%);width:min(520px,92vw);background:#0f0f0f;border:1px solid #3a3a3a;border-radius:14px;z-index:32;box-shadow:0 20px 60px #000a}
+.pal input{width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:13px 16px;font-size:15px;outline:none}
+.pal ul{list-style:none;margin:0;padding:6px;max-height:50vh;overflow-y:auto}
+.pal li{padding:7px 10px;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between}.pal li.on,.pal li:hover{background:#202020}
+.pal li small{color:var(--dim)}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#202020;border:1px solid #3a3a3a;border-radius:10px;padding:8px 14px;z-index:40}
+@media(max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.w[data-w="3"],.w[data-w="4"]{grid-column:span 2}}
+@media(max-width:640px){.grid{grid-template-columns:1fr}.w[data-w]{grid-column:span 1}}
+</style>
+</head>
+<body>
+<div class="top">
+  <a class="brand" href="/">SIMPLEJYOTISH · PRO</a>
+  <select class="sel" id="client" aria-label="Choose a chart"></select>
+  <span class="chip" id="cbirth">…</span>
+  <span class="chip" id="csun" hidden></span>
+  <span class="chip g" id="cdasha" hidden></span>
+  <span class="chip t" id="csel" hidden title="Click to clear the highlight" style="cursor:pointer"></span>
+  <span class="chip t" id="ctime" title="The time every timing widget is showing">…</span>
+  <span class="sp"></span>
+  <select class="sel" id="preset" aria-label="Layout preset"><option value="">Preset…</option></select>
+  <button class="btn" id="palbtn" title="Add a widget (Ctrl K)">⌘K Add widget</button>
+  <button class="btn" id="autoarr" title="Group related widgets and fill every row">⇲ Auto-arrange</button>
+  <button class="btn" id="resetdef" title="Back to the default layout">↺ Reset</button>
+  <button class="btn gold" id="custbtn">Customize</button>
+  <a class="btn" href="/" style="text-decoration:none">App</a>
+</div>
+<main><div class="grid" id="grid"></div></main>
+<div class="scrim" id="scrim" hidden></div>
+<aside class="cust" id="cust" hidden aria-label="Customize dashboard">
+  <header><div><h2>Customize dashboard</h2><div class="note" style="margin:2px 0 0">Arrange your widgets and pick new ones from the library.</div></div><button class="x" id="custx" aria-label="Close">✕</button></header>
+  <div class="tabs"><button class="on" data-tab="lay">Layout <span id="nlay"></span></button><button data-tab="lib">Library <span id="nlib"></span></button></div>
+  <div class="tools" id="libtools" hidden><input id="libq" type="search" placeholder="Search widgets…"><button class="btn" id="showall">Show all</button><button class="btn" id="hideall">Hide all</button><button class="btn" id="reset">Reset</button></div>
+  <div class="body" id="custbody"></div>
+</aside>
+<div class="scrim" id="palscrim" hidden></div>
+<div class="pal" id="pal" hidden><input id="palq" placeholder="Add a widget: D10, Shadbala, Sade Sati…" autocomplete="off"><ul id="pallist"></ul></div>
+<script src="/static/pro.js"></script>
+</body>
+</html>

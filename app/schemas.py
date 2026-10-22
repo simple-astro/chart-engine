@@ -20,7 +20,7 @@ class ChartRequest(BaseModel):
     lon: float = Field(ge=-180, le=180)
     tz_name: str = Field(description="IANA timezone, e.g. Asia/Kolkata")
     tob_unknown: bool = False
-    ayanamsha: Ayanamsha = "krishnamurti"
+    ayanamsha: Ayanamsha = "lahiri"
     node_type: NodeType = "mean"
     house_system: HouseSystem | None = None  # None: the ayanamsha's default
     dasha_year: Literal["solar", "savana"] = "solar"           # days in a dasha year: 365.25 or 360
@@ -29,7 +29,7 @@ class ChartRequest(BaseModel):
 
 class TransitRequest(BaseModel):
     when: datetime = Field(description="Timezone-aware datetime")
-    ayanamsha: Ayanamsha = "krishnamurti"
+    ayanamsha: Ayanamsha = "lahiri"
     node_type: NodeType = "mean"
 
 
@@ -43,5 +43,5 @@ class PanchangRequest(BaseModel):
 class TransitScanRequest(BaseModel):
     start: datetime = Field(description="Timezone-aware UTC datetime; naive is treated as UTC")
     days: int = Field(default=7, ge=1, le=31)
-    ayanamsha: Ayanamsha = "krishnamurti"
+    ayanamsha: Ayanamsha = "lahiri"
     node_type: NodeType = "mean"

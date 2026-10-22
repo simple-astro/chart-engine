@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from app import chat, factcheck as F, storage, synthesis
 from app.main import app
 
-BIRTH = {"name": "Sukh", "dob": "1987-09-01", "tob": "14:30:00", "lat": 30.73629, "lon": 76.7884, "tz_name": "Asia/Kolkata"}
+BIRTH = {"name": "Sukh", "dob": "1987-09-01", "tob": "14:30:00", "lat": 30.73629, "lon": 76.7884, "tz_name": "Asia/Kolkata", "ayanamsha": "krishnamurti"}
 NOW = datetime(2026, 10, 8, tzinfo=timezone.utc)
 
 GOOD = """You are in Venus mahadasha (major period) with Mercury antardasha (sub-period) until April 2029. Mercury rules your 10th house of career and your 7th house of partnerships, and it sits in your 9th house of luck.
