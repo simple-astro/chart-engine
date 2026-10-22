@@ -460,7 +460,7 @@
   .setwarn{margin:6px 0 4px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--acc) 12%,transparent);font-size:.88rem;line-height:1.5}
   .setbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px} .setloc input{width:100%;max-width:none}
   .setfind{display:flex;flex-direction:column;gap:4px;margin-top:6px} .setfind button{text-align:left;border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:10px;padding:9px 12px;font:inherit;font-size:.88rem;cursor:pointer}
-  .setfoot{margin-top:18px}
+  .setfoot{margin-top:18px} .setpro{white-space:nowrap;text-decoration:none}
   .setmoodrow{padding-bottom:4px} .setmoods{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:2px 0 6px}
   .setmoods button{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);border-radius:12px;padding:8px 10px;font:inherit;font-size:.86rem;cursor:pointer;text-align:left}
   .setmoods button.on{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)} .setmoods i{width:20px;height:20px;border-radius:50%;flex:0 0 20px;border:1px solid var(--line)}
@@ -3491,7 +3491,7 @@ const calPref=(k,d)=>{try{return localStorage.getItem(k)||d}catch(e){return d}};
 const nsOn=()=>calPref('sj_calview','hindu')!=='hindu';
 function setDefaults(){try{return JSON.parse(localStorage.getItem('sj-defaults')||'{}')}catch(e){return {}}}
 function saveDefaults(d){try{localStorage.setItem('sj-defaults',JSON.stringify(d))}catch(e){}}
-let SET={pend:null,find:[],busy:false},MOOD_OK=false;
+let SET={pend:null,find:[],busy:false},MOOD_OK=false,PRO_OK=false;  // PRO_OK: may open the Pro dashboard (/pro)
 const moodOn=()=>typeof moodNow==='function'?moodNow():'';  // colour themes may not be loaded
 // The theme showing: a colour theme, else Classic Dark when dark (chosen, or the phone's setting), else Classic.
 const themeNow=()=>moodOn()||((themeMode()==='dark'||(themeMode()==='auto'&&MQ.matches))?'classic-dark':'');
@@ -3508,7 +3508,9 @@ function paintSettings(){const R=lastReq,C=lastChart,D=setDefaults(),name=(R&&R.
     HS_LIST.map(([v,t])=>'<option value="'+v+'"'+(v===cur?' selected':'')+'>'+t+'</option>').join('')+'</select>';
   const sel=(id,cur)=>'<select id="'+id+'">'+AYN_LIST.map(([v,t])=>'<option value="'+v+'"'+(v===cur?' selected':'')+'>'+t+'</option>').join('')+'</select>';
   const P=SET.pend,shift=P&&C?Math.abs(P.shiftDays):0;
-  $('setbody').innerHTML=
+  // The Pro dashboard is a desktop page for the owner and the astrologers (app/pro.py): offer it on wide screens only.
+  const pro=PRO_OK&&matchMedia('(min-width:1024px)').matches?'<h5>Pro</h5><div class="setrow"><div><b>Pro dashboard</b><small>Every table and chart on one screen, laid out your way</small></div><a class="btn ghost setpro" href="/pro">Open Pro →</a></div>':'';
+  $('setbody').innerHTML=pro+
    (currentId!=null&&R?'<h5>This chart · '+esc(name)+'</h5>'+
     '<div class="setrow"><div><b>Ayanamsa</b><small>Moves every position slightly, and the Dasha dates</small></div>'+sel('setay',P&&P.key==='ayanamsha'?P.v:R.ayanamsha)+'</div>'+
     '<div class="setrow"><div><b>Rahu and Ketu</b><small>Mean node is the classical default</small></div>'+seg('node',[['mean','Mean'],['true','True']],P&&P.key==='node_type'?P.v:R.node_type||'mean')+'</div>'+
@@ -3958,7 +3960,7 @@ loadList().then(l=>{if(l.length)loadProfile(startChart(l).id);else route()});
 fetch('/me').then(r=>r.ok?r.json():null).then(m=>{
   if(m&&m.gated)$('mlogout').hidden=$('mlosep').hidden=false;  // access codes are on: there is a session to end
 if(m&&m.gated&&(m.admin||m.role==='mentor'||m.role==='astrologer'))$('madmin').hidden=false;
-  if(m&&(!m.gated||m.admin||m.role==='mentor'||m.role==='astrologer'))MOOD_OK=true;
+  if(m&&(!m.gated||m.admin||m.role==='mentor'||m.role==='astrologer'))MOOD_OK=PRO_OK=true;
   if(m&&m.varshaphal_ai){TJ_AI=m.varshaphal_ai;TJ_ADMIN=!!m.admin;if(TJ_AI==='everyone')TJ.mode='ai'}}).catch(()=>{});  // colour themes: in Settings
 </script>
 </body>

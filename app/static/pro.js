@@ -19,8 +19,10 @@
   const VIM_YRS = { Ketu: 7, Venus: 20, Sun: 6, Moon: 10, Mars: 7, Rahu: 18, Jupiter: 16, Saturn: 19, Mercury: 17 };
   // Natural planet colours (Sun saffron, Moon white, Mars red, Mercury green, Jupiter yellow, Venus pink, Saturn blue,
   // Rahu smoky, Ketu earthy): real hex values, so a transparency suffix like col(p) + '33' stays a valid colour.
-  const HEX = { Sun: '#ff8c1a', Moon: '#f5f5f5', Mars: '#ff3b30', Mercury: '#34c759', Jupiter: '#ffd60a', Venus: '#ff8fd1', Saturn: '#4f7cff', Rahu: '#a1a1aa', Ketu: '#c48a5a', Uranus: '#5ec8c8', Neptune: '#7fa6d9', Pluto: '#b48ad0' };
-  const col = p => HEX[p] || HEX[FULL[p]] || '#9a9a9a';
+  // Planet colours come from the theme (pro.html), so they read on dark and light pages alike.
+  const HEX = { Sun: 'var(--Su)', Moon: 'var(--Mo)', Mars: 'var(--Ma)', Mercury: 'var(--Me)', Jupiter: 'var(--Ju)', Venus: 'var(--Ve)', Saturn: 'var(--Sa)', Rahu: 'var(--Ra)', Ketu: 'var(--Ke)', Uranus: 'var(--Ur)', Neptune: 'var(--Ne)', Pluto: 'var(--Pl)' };
+  const col = p => HEX[p] || HEX[FULL[p]] || 'var(--mut)';
+  const tint = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, transparent)`;
   const pn = (p, short) => `<span class="p" data-p="${p}" style="color:${col(p)}">${short ? AB[p] : p}</span>`;
   const dms = x => { const d = Math.floor(x), mf = (x - d) * 60, m = Math.floor(mf), s = Math.round((mf - m) * 60);
     return `${String(d).padStart(2, '0')}°${String(s === 60 ? m + 1 : m).padStart(2, '0')}′${String(s === 60 ? 0 : s).padStart(2, '0')}″`; };
@@ -64,35 +66,35 @@
     [3, -11, -2, 9, 132], [4, -11, 130, 9, 140], [5, -11, 270, 9, 132],
     [6, -11, 402, 129, 9], [7, 118, 402, 164, 9], [8, 282, 402, 129, 9],
     [11, 402, -2, 9, 132], [10, 402, 130, 9, 140], [9, 402, 270, 9, 132]];
-  const savCol = s => s >= 30 ? '#5eead4' : s <= 22 ? '#ff7a7a' : '#bdbdbd';
+  const savCol = s => s >= 30 ? 'var(--teal)' : s <= 22 ? 'var(--red)' : 'var(--ink2)';
   const SC = [[1, 0], [2, 0], [3, 0], [3, 1], [3, 2], [3, 3], [2, 3], [1, 3], [0, 3], [0, 2], [0, 1], [0, 0]];
-  const lab = it => it.p ? `<tspan data-p="${it.p}" fill="${col(it.p)}">${it.t}</tspan>` : `<tspan fill="${it.c || 'var(--gold)'}">${it.t}</tspan>`;
+  const lab = it => it.p ? `<tspan data-p="${it.p}" style="fill:${col(it.p)}">${it.t}</tspan>` : `<tspan style="fill:${it.c || 'var(--gold)'}">${it.t}</tspan>`;
   function chartSVG(lag, byH, o = {}) {
     const ring = !!o.sav && STYLE !== 'south', vb = ring ? '-13 -13 426 426' : '-2 -2 404 404', big = o.big !== false;
     let v = `<svg viewBox="${vb}" role="img" aria-label="${esc(o.label || 'chart')}">`;
     if (STYLE === 'south' && !o.houseSigns) {
-      v += '<rect x="0" y="0" width="400" height="400" fill="#0f0f0f" stroke="#3e3e3e" stroke-width="3"/><path d="M0 100H400M0 300H400M100 0V400M300 0V400M0 200H100M300 200H400M200 0V100M200 300V400" stroke="#3e3e3e" stroke-width="2.5"/>';
-      v += `<text x="200" y="205" text-anchor="middle" font-size="18" fill="#6e6e6e">${esc(o.label || '')}</text>`;
+      v += '<rect x="0" y="0" width="400" height="400" style="fill:var(--chartbg);stroke:var(--chartline)" stroke-width="3"/><path d="M0 100H400M0 300H400M100 0V400M300 0V400M0 200H100M300 200H400M200 0V100M200 300V400" style="stroke:var(--chartline)" stroke-width="2.5"/>';
+      v += `<text x="200" y="205" text-anchor="middle" font-size="18" style="fill:var(--dim)">${esc(o.label || '')}</text>`;
       for (let h = 0; h < 12; h++) {
         const sg = (lag + h) % 12, [cx, cy] = SC[sg], x = cx * 100, y = cy * 100, pl = byH[h] || [];
-        if (h === 0) v += `<path d="M${x} ${y + 28}L${x + 28} ${y}" stroke="var(--gold)" stroke-width="3"/>`;
-        v += `<text x="${x + 94}" y="${y + 16}" text-anchor="end" font-size="13" fill="#6e6e6e">${SA[sg]}</text>`;
+        if (h === 0) v += `<path d="M${x} ${y + 28}L${x + 28} ${y}" style="stroke:var(--gold)" stroke-width="3"/>`;
+        v += `<text x="${x + 94}" y="${y + 16}" text-anchor="end" font-size="13" style="fill:var(--dim)">${SA[sg]}</text>`;
         const rows = Math.ceil(pl.length / 2), t = y + 52 - (rows - 1) * 12;
         for (let r = 0; r < rows; r++) v += `<text x="${x + 50}" y="${t + r * 24}" text-anchor="middle" font-size="22" font-weight="700">${pl.slice(r * 2, r * 2 + 2).map(lab).join(' ')}</text>`;
-        if (o.sav) { const sc = o.sav[h]; v += `<text x="${x + 6}" y="${y + 94}" font-size="15" font-weight="700" fill="${savCol(sc)}">${sc}</text>`; }  // South: score in the box corner
+        if (o.sav) { const sc = o.sav[h]; v += `<text x="${x + 6}" y="${y + 94}" font-size="15" font-weight="700" style="fill:${savCol(sc)}">${sc}</text>`; }  // South: score in the box corner
       }
     } else {
-      v += '<rect x="0" y="0" width="400" height="400" fill="#0f0f0f" stroke="#3e3e3e" stroke-width="3"/><polygon points="200,0 300,100 200,200 100,100" fill="#f5c76a14" stroke="#f5c76a" stroke-width="2.5"/><path d="M0 0L400 400M400 0L0 400M200 0L400 200L200 400L0 200Z" fill="none" stroke="#3e3e3e" stroke-width="2.5"/>';
+      v += '<rect x="0" y="0" width="400" height="400" style="fill:var(--chartbg);stroke:var(--chartline)" stroke-width="3"/><polygon points="200,0 300,100 200,200 100,100" style="fill:color-mix(in srgb,var(--gold) 9%,transparent);stroke:var(--gold)" stroke-width="2.5"/><path d="M0 0L400 400M400 0L0 400M200 0L400 200L200 400L0 200Z" fill="none" style="stroke:var(--chartline)" stroke-width="2.5"/>';
       NP.forEach(([x, y], h) => {
         const pl = byH[h] || [], per = o.deg ? 1 : 2, rows = Math.ceil(pl.length / per), lh = o.deg ? (pl.length > 3 ? 17 : 20) : 27, t = y - (rows - 1) * lh / 2 + 12;
         const sg = o.houseSigns ? o.houseSigns[h] : (lag + h) % 12;
-        v += `<text x="${x}" y="${pl.length ? t - (o.deg ? 20 : 24) : y + 6}" text-anchor="middle" font-size="15" fill="#6e6e6e">${sg + 1}${o.cuspDeg ? `<tspan font-size="11" fill="#9a9a9a" dx="3">${o.cuspDeg[h]}</tspan>` : ''}</text>`;
-        for (let r = 0; r < rows; r++) v += `<text x="${x}" y="${t + r * lh}" text-anchor="middle" font-size="${o.deg ? (pl.length > 3 ? 15 : 17) : pl.length > 4 ? 20 : 24}" font-weight="700">${pl.slice(r * per, r * per + per).map(it => lab(it) + (o.deg && it.d ? `<tspan font-size="${pl.length > 3 ? 10 : 11}" font-weight="500" fill="#bdbdbd" dy="-6">${it.d}</tspan>${it.f || ''}<tspan dy="6"> </tspan>` : '')).join(' ')}</text>`;
+        v += `<text x="${x}" y="${pl.length ? t - (o.deg ? 20 : 24) : y + 6}" text-anchor="middle" font-size="15" style="fill:var(--dim)">${sg + 1}${o.cuspDeg ? `<tspan font-size="11" style="fill:var(--mut)" dx="3">${o.cuspDeg[h]}</tspan>` : ''}</text>`;
+        for (let r = 0; r < rows; r++) v += `<text x="${x}" y="${t + r * lh}" text-anchor="middle" font-size="${o.deg ? (pl.length > 3 ? 15 : 17) : pl.length > 4 ? 20 : 24}" font-weight="700">${pl.slice(r * per, r * per + per).map(it => lab(it) + (o.deg && it.d ? `<tspan font-size="${pl.length > 3 ? 10 : 11}" font-weight="500" style="fill:var(--ink2)" dy="-6">${it.d}</tspan>${it.f || ''}<tspan dy="6"> </tspan>` : '')).join(' ')}</text>`;
       });
     }
     if (ring) FRAME.forEach(([h, x, y, w, ht]) => { const s = o.sav[h - 1], c = savCol(s), side = w < ht, cx = x + w / 2, cy = y + ht / 2;
-      v += `<rect x="${x}" y="${y}" width="${w}" height="${ht}" fill="${c}10" stroke="#333333" stroke-width=".6"/>` +
-        `<text x="${cx}" y="${cy + 2.6}" text-anchor="middle" font-size="7.5" font-weight="700" fill="${c}"${side ? '' : ' letter-spacing=".3"'}><title>House ${h}: ${s} bindus</title>${s}</text>`; });
+      v += `<rect x="${x}" y="${y}" width="${w}" height="${ht}" style="fill:${tint(c, 7)};stroke:var(--line)" stroke-width=".6"/>` +
+        `<text x="${cx}" y="${cy + 2.6}" text-anchor="middle" font-size="7.5" font-weight="700" style="fill:${c}"${side ? '' : ' letter-spacing=".3"'}><title>House ${h}: ${s} bindus</title>${s}</text>`; });
     return v + '</svg>';
   }
   const retro = (p, g) => g.retrograde && p !== 'Rahu' && p !== 'Ketu' ? 'ᴿ' : '';
@@ -232,29 +234,29 @@
   // Drishti
   add('drishti', 'Drishti matrix', G.dr, 2, () => { const A = S.c.strength.aspects;
     return `<div class="mtx" style="grid-template-columns:repeat(10,1fr)"><div style="background:none">→</div>${P9.map(p => `<div style="background:none">${pn(p, 1)}</div>`).join('')}${P9.map(r =>
-      `<div style="background:none">${pn(r, 1)}</div>${P9.map(c => { const on = A[r] && A[r].planets.includes(c); return r === c ? '<div>·</div>' : `<div style="${on ? `background:${col(r)}33;color:${col(r)}` : ''}">${on ? '●' : ''}</div>`; }).join('')}`).join('')}</div>
+      `<div style="background:none">${pn(r, 1)}</div>${P9.map(c => { const on = A[r] && A[r].planets.includes(c); return r === c ? '<div>·</div>' : `<div style="${on ? `background:${tint(col(r), 20)};color:${col(r)}` : ''}">${on ? '●' : ''}</div>`; }).join('')}`).join('')}</div>
       <div class="note">Row aspects column (sign aspects).</div>${tbl(['Planet', 'Aspects houses'], P9.map(p => [pn(p), (A[p] ? A[p].houses : []).join(', ') || '–']))}`; }, { kw: 'aspects graha drishti' });
 
   // D1 with every aspect drawn as an arrow, and the exchanges of lordship
   add('d1asp', 'D1 with aspects', G.dr, 2, el => {
     const L = S.c.lagna.sign_index, A = S.c.strength.aspects, off = new Set((el.dataset.off || '').split(',').filter(Boolean));
     const flags = (p, g) => { const d = dignity(p, g.sign_index), f = [];
-      if (retro(p, g) || ((p === 'Rahu' || p === 'Ketu') && g.retrograde)) f.push('<tspan fill="#5eead4" font-weight="700" font-size="11"> R</tspan>');
-      if (g.combust) f.push('<tspan fill="#facc15" font-weight="700" font-size="11"> c</tspan>');
-      if (d === 'debilitated') f.push('<tspan fill="#ff7a7a" font-size="11"> ▼</tspan>'); else if (d === 'exalted') f.push('<tspan fill="#5eead4" font-size="11"> ▲</tspan>');
+      if (retro(p, g) || ((p === 'Rahu' || p === 'Ketu') && g.retrograde)) f.push('<tspan style="fill:var(--teal)" font-weight="700" font-size="11"> R</tspan>');
+      if (g.combust) f.push('<tspan style="fill:var(--amber)" font-weight="700" font-size="11"> c</tspan>');
+      if (d === 'debilitated') f.push('<tspan style="fill:var(--red)" font-size="11"> ▼</tspan>'); else if (d === 'exalted') f.push('<tspan style="fill:var(--teal)" font-size="11"> ▲</tspan>');
       return f.join(''); };
     const o = {}; P9.forEach(p => { const g = S.c.grahas[p], h = (g.sign_index - L + 12) % 12; (o[h] = o[h] || []).push({ t: AB[p], p, d: Math.floor(g.degrees_in_sign) + '°', f: flags(p, g) }); });
-    const j = S.c.jaimini; [[j.arudha_lagna && j.arudha_lagna.house, 'AL'], [j.upapada && j.upapada.house, 'UL']].forEach(([h, t]) => { if (h) (o[h - 1] = o[h - 1] || []).push({ t, c: '#5eead4' }); });
+    const j = S.c.jaimini; [[j.arudha_lagna && j.arudha_lagna.house, 'AL'], [j.upapada && j.upapada.house, 'UL']].forEach(([h, t]) => { if (h) (o[h - 1] = o[h - 1] || []).push({ t, c: 'var(--teal)' }); });
     let svg = chartSVG(L, o, { deg: true, label: 'D1 aspects' });
     // arrows: from the planet's house to each house it aspects, in the planet's colour, bowed so they do not overlap
     let arr = '', k = 0;
     P9.forEach(p => { if (off.has(p) || !A[p]) return; const from = (S.c.grahas[p].sign_index - L + 12) % 12;
       A[p].houses.forEach(hn => { const to = hn - 1, [x1, y1] = NP[from], [x2, y2] = NP[to], mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
         const bow = 34 + (k++ % 3) * 14, cx = mx - dy / len * bow, cy = my + dx / len * bow, c = col(p);
-        arr += `<path data-p="${p}" d="M${x1} ${y1 - 8}Q${cx} ${cy} ${x2} ${y2 - 2}" fill="none" stroke="${c}" stroke-width="1.3" stroke-opacity=".55" stroke-linecap="round" marker-end="url(#ah-${AB[p]})"/>`; }); });
-    const defs = '<defs>' + P9.map(p => `<marker id="ah-${AB[p]}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 1L10 5L0 9z" fill="${col(p)}" fill-opacity=".75"/></marker>`).join('') + '</defs>';
+        arr += `<path data-p="${p}" d="M${x1} ${y1 - 8}Q${cx} ${cy} ${x2} ${y2 - 2}" fill="none" style="stroke:${c}" stroke-width="1.3" stroke-opacity=".55" stroke-linecap="round" marker-end="url(#ah-${AB[p]})"/>`; }); });
+    const defs = '<defs>' + P9.map(p => `<marker id="ah-${AB[p]}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 1L10 5L0 9z" style="fill:${col(p)}" fill-opacity=".75"/></marker>`).join('') + '</defs>';
     svg = svg.replace(/<rect /, defs + '<rect ').replace('</svg>', arr + '</svg>');
-    const toggles = `<div class="tc" style="margin-bottom:6px">${P9.map(p => `<button class="btn" data-asp="${p}" style="padding:3px 8px;${off.has(p) ? 'opacity:.4' : `border-color:${col(p)}66`}"><span style="color:${col(p)};font-weight:700">${AB[p]}</span></button>`).join('')}<button class="btn" data-asp="*" style="padding:3px 8px">All</button></div>`;
+    const toggles = `<div class="tc" style="margin-bottom:6px">${P9.map(p => `<button class="btn" data-asp="${p}" style="padding:3px 8px;${off.has(p) ? 'opacity:.4' : `border-color:${tint(col(p), 40)}`}"><span style="color:${col(p)};font-weight:700">${AB[p]}</span></button>`).join('')}<button class="btn" data-asp="*" style="padding:3px 8px">All</button></div>`;
     return toggles + svg + '<div class="note">Arrows: each planet to the houses it aspects (7th for all; Mars 4 · 8, Jupiter 5 · 9, Saturn 3 · 10; Rahu and Ketu per the chart setting) · R retrograde · c combust · ▼ debilitated · ▲ exalted · AL / UL Arudha and Upapada</div>'; }, { kw: 'drishti aspects arrows' });
   G.lord = 'Lordship';
   add('lordx', 'Exchange of lordships', G.lord, 2, () => {
@@ -353,7 +355,7 @@
     const judge = q => { const hh = H[q] || [], g = ev[2].filter(h => hh.includes(h)).length, b = ev[3].filter(h => hh.includes(h)).length;
       return g && !b ? ['good', 'supports'] : b && !g ? ['bad', 'against'] : g && b ? ['mid', 'mixed'] : ['neu', 'neutral']; };
     const cell = p => { const k = S.c.grahas[p].kp || {}, st = k.star_lord || S.c.grahas[p].nakshatra_lord, sb = k.sub_lord, j = ev ? judge(sb) : null;
-      return (j ? `<div style="padding:1px 6px 3px"><span class="tag ${j[0]}">sub lord: ${j[1]}</span></div>` : '') + [p, st, sb].map((q, i) => `<div style="display:grid;grid-template-columns:54px 1fr;gap:4px;padding:2px 6px;${i ? '' : 'background:#1b1b1b;border-radius:5px'}"><span>${pn(q, 1)}${i ? `<span class="note" style="margin:0 0 0 4px">${i === 1 ? 'star' : 'sub'}</span>` : ''}</span><b style="font-weight:${i ? 500 : 700}">${hs(H[q])}</b></div>`).join(''); };
+      return (j ? `<div style="padding:1px 6px 3px"><span class="tag ${j[0]}">sub lord: ${j[1]}</span></div>` : '') + [p, st, sb].map((q, i) => `<div style="display:grid;grid-template-columns:54px 1fr;gap:4px;padding:2px 6px;${i ? '' : 'background:var(--field);border-radius:5px'}"><span>${pn(q, 1)}${i ? `<span class="note" style="margin:0 0 0 4px">${i === 1 ? 'star' : 'sub'}</span>` : ''}</span><b style="font-weight:${i ? 500 : 700}">${hs(H[q])}</b></div>`).join(''); };
     const sel = `<select class="sel" data-ev-sel><option value="">Show an event…</option>${EVENTS.map(e => `<option value="${e[0]}"${ev && ev[0] === e[0] ? ' selected' : ''}>${e[1]}</option>`).join('')}</select>`;
     const key = ev ? `<span class="note" style="margin-left:8px"><span style="color:var(--teal);font-weight:700">${ev[2].join(', ')}</span> support · <span style="color:var(--red);font-weight:700">${ev[3].join(', ')}</span> negate</span>` : '';
     return `<div style="margin-bottom:6px">${sel}${key}</div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">${VORDER.flat().map(p => `<div style="border:1px solid var(--line2);border-radius:8px;padding:3px">${cell(p)}</div>`).join('')}</div>
@@ -569,6 +571,12 @@
   function openCust(t) { tab = t || tab; $('cust').hidden = false; $('scrim').hidden = false; paintCust(); }
   function closeCust() { $('cust').hidden = true; $('scrim').hidden = true; }
   $('outerchk').checked = SHOW_OUTER;
+  // Theme: every colour is a CSS variable (pro.html), so switching needs no redraw. Saved in this browser.
+  const BG = { midnight: '#0a0a0a', slate: '#0e131a', amber: '#120d08', light: '#fbf7ef', paper: '#ffffff' };
+  const setTheme = t => { if (!BG[t]) t = 'midnight'; document.documentElement.setAttribute('data-theme', t); $('theme').value = t;
+    document.querySelector('meta[name="theme-color"]').content = BG[t]; try { localStorage.setItem('sj-pro-theme', t); } catch (e) {} };
+  setTheme(document.documentElement.getAttribute('data-theme') || 'midnight');
+  $('theme').onchange = e => setTheme(e.target.value);
   $('outerchk').onchange = e => { SHOW_OUTER = e.target.checked; try { localStorage.setItem('sj-outer', SHOW_OUTER ? '1' : '0'); } catch (_) {} renderAll(); };
   $('custbtn').onclick = () => openCust(); $('custx').onclick = closeCust; $('scrim').onclick = closeCust;
   document.querySelector('.cust .tabs').onclick = e => { const b = e.target.closest('[data-tab]'); if (b) { tab = b.dataset.tab; paintCust(); } };

@@ -126,3 +126,19 @@ def test_auto_arrange_and_reset_controls():
     assert 'id="autoarr"' in html and 'id="resetdef"' in html
     assert "function autoArrange()" in js and "target.w += 1; room--" in js  # rows always end flush
     assert "function resetDefault()" in js and "fromPreset('parashari')" in js
+
+
+def test_settings_offers_pro_on_desktop_to_those_who_may_open_it():
+    html = open("app/static/index.html", encoding="utf-8").read()
+    assert 'href="/pro">Open Pro' in html and "PRO_OK&&matchMedia('(min-width:1024px)')" in html
+    assert "MOOD_OK=PRO_OK=true" in html  # set only for the owner, mentors and astrologers (or with the gate off)
+
+
+def test_pro_themes_cover_every_colour():
+    import re
+    page = open("app/static/pro.html", encoding="utf-8").read()
+    js = open("app/static/pro.js", encoding="utf-8").read()
+    for t in ("midnight", "slate", "amber", "light", "paper"):
+        assert f'[data-theme="{t}"]' in page and f'<option value="{t}"' in page
+    # every colour in the dashboard comes from the theme: no fixed colours left in the widgets' code
+    assert not re.findall(r"#[0-9a-fA-F]{3,8}\b", js.split("const BG =")[0])
