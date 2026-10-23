@@ -32,6 +32,7 @@ CITY, LAT, LON = "New Delhi", 28.6139, 77.2090
 SITE = "simplejyotish.com"
 LINK = "https://simplejyotish.com/?s=panchang"
 FONTS = Path(__file__).resolve().parent / "fonts"
+LOGO = Path(__file__).resolve().parent / "static" / "sun-card.png"  # static/sun.svg, drawn at 240px
 TITHI = ["Pratipada", "Dwitiya", "Tritiya", "Chaturthi", "Panchami", "Shashthi", "Saptami", "Ashtami", "Navami",
          "Dashami", "Ekadashi", "Dwadashi", "Trayodashi", "Chaturdashi"]
 # Month names as North Indian panchangs print them (the app's calendar uses the pan-Indian spellings)
@@ -290,11 +291,11 @@ def render(p: dict) -> bytes:
         t = x / W
         dr.line([(x, 0), (x, 14)], fill=tuple(int(a + (b - a) * t) for a, b in zip((0xE0, 0xB0, 0x5F), (0xC9, 0x8F, 0x2E))))
     # header: the sun mark and the name, and what the card is, kept small
-    dr.ellipse([M, 38, M + 38, 76], fill=GOLD)
-    dr.ellipse([M + 7, 45, M + 31, 69], fill="#F2CF86")
+    logo = Image.open(LOGO).convert("RGBA").resize((60, 60), Image.LANCZOS)
+    im.paste(logo, (M - 6, 27), logo)
     f = _font("serif", 38, "SemiBold")
-    dr.text((M + 52, 57), "Simple", font=f, fill=INK, anchor="lm")
-    dr.text((M + 52 + dr.textlength("Simple", font=f), 57), "Jyotish", font=f, fill=GOLDTXT, anchor="lm")
+    dr.text((M + 62, 57), "Simple", font=f, fill=INK, anchor="lm")
+    dr.text((M + 62 + dr.textlength("Simple", font=f), 57), "Jyotish", font=f, fill=GOLDTXT, anchor="lm")
     _spaced(dr, W - M, 46, "DAILY PANCHANG", _font("sans", 21, "ExtraBold"), GOLDTXT, anchor="r")
     # the gold panel: Hindu month, paksha and Vikram Samvat large, the date beside them
     py, ph, bw_, bh_ = 96, 252, 184, 200
