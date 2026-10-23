@@ -75,21 +75,17 @@
     let full = '';
     if (P) {
       const nowMs = Date.now(), hi = P.horas.findIndex(h => +new Date(h.start) <= nowMs && nowMs < +new Date(h.end));
-      const hora = hi >= 0 ? `<b>${esc(P.horas[hi].lord)}</b><em>until ${t(P.horas[hi].end)} · next ${esc(P.horas[hi + 1] ? P.horas[hi + 1].lord : '')}</em>`
-        : `<b>${esc(P.horas[0].lord)}</b><em>at sunrise · ${P.horas.slice(1, 4).map(h => esc(h.lord)).join(', ')} follow</em>`;
-      const cell = (k, v, e) => `<div><small>${k}</small><b>${v}</b>${e ? `<em>${e}</em>` : ''}</div>`;
-      full = `<details class="mfull"><summary>Full panchang</summary><div class="mfgrid">
-        <div><small>${hi >= 0 ? 'Hora now' : 'Hora'}</small>${hora}</div>
-        ${cell('Vedic day', esc(day.weekday), 'sunrise to the next sunrise')}
-        ${cell('Nakshatra lord · deity', `${esc(P.nakshatra_lord)} · ${esc(P.nakshatra_deity)}`)}
-        ${cell('Tithi lord · deity', `${esc(P.tithi_lord)} · ${esc(P.tithi_deity)}`)}
-        ${cell('Samvatsara', esc(P.samvatsara), 'the year’s name')}
-        ${cell('Lunar month · ritu', `${esc(P.lunar_month)} · ${esc(P.ritu)}`)}
-        ${cell('Solar month', esc(P.solar_month), 'the Sun’s sign')}
-        ${cell('Naming letters', P.naming.letters.map((x, i) => i + 1 === P.naming.pada ? `<u>${esc(x)}</u>` : esc(x)).join(' · '), `pada ${P.naming.pada} at sunrise is underlined`)}
-        ${cell('Brahma muhurta', span(w.brahma))}
-        ${cell('Sunrise · sunset', `${t(w.sunrise)} · ${t(w.sunset)}`)}
-      </div><div class="mlagna" data-date="${esc(day.date)}"><button type="button" class="linkbtn" data-lagna>When each lagna rises today →</button></div></details>`;
+      const hora = hi >= 0 ? `<b>${esc(P.horas[hi].lord)} hora</b> until ${t(P.horas[hi].end)}${P.horas[hi + 1] ? ` · next ${esc(P.horas[hi + 1].lord)}` : ''}`
+        : `<b>${esc(P.horas[0].lord)} hora</b> at sunrise`;
+      // Ten items clubbed into five rows of things that belong together (label, then the values)
+      const row = (k, v) => `<div><dt>${k}</dt><dd>${v}</dd></div>`;
+      full = `<details class="mfull"><summary>Full panchang</summary><dl class="mfrows">
+        ${row('Day', `<b>${esc(day.weekday)}</b> <small>(sunrise to sunrise)</small> · ${hora}`)}
+        ${row('Sun', `Rises <b>${t(w.sunrise)}</b> · sets <b>${t(w.sunset)}</b> · Brahma muhurta <b>${span(w.brahma)}</b>`)}
+        ${row('Lords · deities', `Nakshatra: <b>${esc(P.nakshatra_lord)}</b> · ${esc(P.nakshatra_deity)} &nbsp;|&nbsp; Tithi: <b>${esc(P.tithi_lord)}</b> · ${esc(P.tithi_deity)}`)}
+        ${row('Year · season', `<b>${esc(P.samvatsara)}</b> year · <b>${esc(P.lunar_month)}</b> (lunar month) · <b>${esc(P.solar_month)}</b> (solar month) · <b>${esc(P.ritu)}</b>`)}
+        ${row('Naming letters', `<b>${P.naming.letters.map((x, i) => i + 1 === P.naming.pada ? `<u>${esc(x)}</u>` : esc(x)).join(' · ')}</b> <small>(pada ${P.naming.pada} at sunrise underlined)</small>`)}
+      </dl><div class="mlagna" data-date="${esc(day.date)}"><button type="button" class="linkbtn" data-lagna>When each lagna rises today →</button></div></details>`;
     }
 
     const grid = `<div class="scroll"><table class="mgrid"><thead><tr><th>Activity</th>${days.map((d, i) =>
