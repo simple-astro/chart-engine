@@ -18,7 +18,7 @@ def gated(tmp_path, monkeypatch):
 
 def test_signed_out_visitors_get_the_homepage(gated):
     page = TestClient(app).get("/").text
-    assert "Professional grade astrology, explained simply." in page
+    assert "Precise Jyotish Calculations. Simple-word Guidance." in page
     assert 'action="/login"' in page and 'name="code"' in page      # the access-code form opens from the buttons
     assert "{{TODAY}}" not in page and "Today in India" in page      # today's tithi and nakshatra, filled in
 
@@ -26,7 +26,7 @@ def test_signed_out_visitors_get_the_homepage(gated):
 def test_signed_in_users_still_get_the_app(gated):
     c = TestClient(app)
     c.post("/login", data={"code": "tester-code"}, follow_redirects=False)
-    assert "Professional grade astrology, explained simply." not in c.get("/").text
+    assert "Precise Jyotish Calculations. Simple-word Guidance." not in c.get("/").text
 
 
 def test_home_is_public_for_review(gated):
