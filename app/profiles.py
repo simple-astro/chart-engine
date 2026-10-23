@@ -494,6 +494,83 @@ def mood_delete_all(profile_id: int, request: Request) -> dict:
     return {"deleted": storage.mood_delete(profile_id)}
 
 
+# ----- the Life Book (app/lifebook.py): questions first, written in the background, read once approved -----
+class BookEvent(BaseModel):
+    kind: str
+    year: int = Field(ge=1900, le=2100)
+    month: int | None = Field(default=None, ge=1, le=12)
+
+
+class LifeBookRequest(BaseModel):
+    focus: list[str] = Field(default_factory=list, max_length=3)
+    stage: dict[str, str] = Field(default_factory=dict)
+    questions: list[str] = Field(default_factory=list, max_length=3)
+    events: list[BookEvent] = Field(default_factory=list, max_length=5)
+    ratings: dict[str, int] = Field(default_factory=dict)
+    prefs: dict[str, str] = Field(default_factory=dict)
+    consent: bool
+
+    @field_validator("questions")
+    @classmethod
+    def _short(cls, v: list[str]) -> list[str]:
+        return [q.strip()[:300] for q in v if q.strip()]
+
+    @field_validator("ratings")
+    @classmethod
+    def _scale(cls, v: dict[str, int]) -> dict[str, int]:
+        return {k: max(1, min(5, int(n))) for k, n in v.items()}
+
+
+@router.get("/{profile_id}/lifebook")
+def lifebook_get(profile_id: int, request: Request) -> dict:
+    from app import lifebook
+    _require(profile_id, request)
+    return lifebook.view(storage.lifebook_latest(profile_id))
+
+
+@router.get("/{profile_id}/lifebook.pdf")
+def lifebook_pdf(profile_id: int, request: Request):
+    """The approved book as a PDF to keep (the reviewer can download it before approving)."""
+    import re
+    from fastapi.responses import Response
+    from app import lifebook, lifebook_pdf
+    p = _require(profile_id, request)
+    v = lifebook.view(storage.lifebook_latest(profile_id), reviewer=bool(request.state.admin))
+    if not v.get("book"):
+        raise HTTPException(status_code=404, detail="Your Life Book is not ready yet.")
+    slug = re.sub(r"[^a-z0-9]+", "-", (p.get("name") or "life").lower()).strip("-") or "life"
+    return Response(lifebook_pdf.render(v["book"]), media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{slug}-life-book.pdf"'})
+
+
+@router.post("/{profile_id}/lifebook")
+def lifebook_start(profile_id: int, req: LifeBookRequest, request: Request) -> dict:
+    """Saves the answers (and any life dates given) and starts writing the book."""
+    from datetime import date
+    from app import life_events, lifebook
+    p = _require(profile_id, request)
+    if not req.consent:
+        raise HTTPException(status_code=422, detail="Please agree that your astrologer reviews the book first.")
+    last = storage.lifebook_latest(profile_id)
+    if last and last["status"] in ("writing", "review"):
+        raise HTTPException(status_code=409, detail="Your Life Book is already being written or reviewed.")
+    if access.enabled() and not request.state.admin and storage.lifebooks_today(_owner(request)) >= lifebook.DAILY_LIMIT:
+        raise HTTPException(status_code=429, detail="You can start up to 3 Life Books a day. Please try again tomorrow.")
+    birth, today = date.fromisoformat(p["request"]["dob"]), chat.local_today(p)
+    have = {(e["kind"], e["date"][:7]) for e in storage.event_list(profile_id)}
+    for e in req.events:
+        if e.kind not in life_events.KINDS:
+            continue
+        d = date(e.year, e.month or 1, 1)
+        if birth.replace(day=1) <= d <= today and (e.kind, d.isoformat()[:7]) not in have:
+            storage.event_add(profile_id, e.kind, d.isoformat(), "month" if e.month else "year")
+    answers = req.model_dump(exclude={"events", "consent"})
+    answers["focus"] = [f for f in answers["focus"] if f in lifebook.FOCUS]
+    b = storage.lifebook_add(profile_id, _owner(request), answers)
+    lifebook.start(b["id"])
+    return lifebook.view(b)
+
+
 # ----- life events: what really happened, checked against the chart (app/life_events.py) -----
 class EventRequest(BaseModel):
     kind: str

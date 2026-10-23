@@ -435,6 +435,19 @@
     </table></div>
   </section>
 
+  <section class="card" id="lb" data-roles="owner mentor astrologer">
+    <div class="qhead"><h2>Life Books</h2>
+      <div class="qbtns"><button class="sbtn" type="button" data-fold="lb-body" aria-expanded="true" aria-controls="lb-body">Collapse</button></div></div>
+    <div id="lb-body">
+    <p class="sub">Books people asked for. Read each one, add your notes (they appear as “Notes from your astrologer”) and approve it: only then can the person read it.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Person</th><th>Status</th><th>Asked</th><th></th></tr></thead>
+      <tbody id="lb-list"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+    </table></div>
+    <div id="lb-one" hidden></div>
+    </div>
+  </section>
+
   <section class="card" id="sbg" data-roles="owner mentor astrologer">
     <div class="qhead"><h2>Sarvatobhadra goods</h2>
       <div class="qbtns"><button class="sbtn" type="button" data-fold="sbg-body" data-fold-default="shut" aria-expanded="true" aria-controls="sbg-body">Collapse</button></div></div>
@@ -1660,9 +1673,60 @@ $('sbg-save').addEventListener('click', async () => {
   } catch (err) { st.className = 'status err'; st.textContent = err.message; }
 });
 
+// ----- Life Books: the list, then one book to read, note and approve (app/lifebook.py) -----
+async function loadBooks() {
+  try {
+    const {books} = await api('/admin/api/lifebooks');
+    $('lb-list').innerHTML = books.length ? books.map(b => `<tr><td>${esc(b.name || 'Chart ' + b.profile_id)}</td>
+      <td><span class="tag"${b.status === 'review' ? ' style="background:rgba(201,143,46,.18)"' : ''}>${esc(b.status_text)}</span></td>
+      <td>${esc(new Date(b.created_at).toLocaleString())}</td><td><button class="sbtn" type="button" data-lbopen="${b.id}">Open</button></td></tr>`).join('')
+      : '<tr><td colspan="4" class="empty">No Life Books yet.</td></tr>';
+  } catch (e) { $('lb-list').innerHTML = `<tr><td colspan="4" class="empty">Couldn't load: ${esc(e.message)}</td></tr>`; }
+}
+function lbBlock(b) {
+  if (b.type === 'p') return `<p>${esc(b.text)}</p>`;
+  if (b.type === 'list') return (b.title ? `<h4>${esc(b.title)}</h4>` : '') + `<ul>${b.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+  if (b.type === 'rows') return `<table>${b.rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}</table>`;
+  if (b.type === 'qa') return b.items.map(x => `<p><b>${esc(x.q)}</b></p><p style="white-space:pre-line">${esc(x.a)}</p>`).join('');
+  if (b.type === 'cards') return `<ul>${b.items.map(c => `<li><b>${esc(c.title)}</b>${c.tag ? ` · ${esc(c.tag)}` : ''}: ${esc(c.text)}${c.sub ? ` <i>(${esc(c.sub)})</i>` : ''}</li>`).join('')}</ul>`;
+  return '';
+}
+async function openBook(id) {
+  const box = $('lb-one'); box.hidden = false; box.innerHTML = '<p class="sub">Loading…</p>';
+  try {
+    const b = await api('/admin/api/lifebooks/' + id), a = b.answers || {};
+    const chapters = (b.book && b.book.chapters || []).filter(c => c.key !== 'notes');
+    box.innerHTML = `<h3 class="ush">${esc(b.name || '')} · ${esc(b.status_text)}</h3>
+      <p class="sub"><b>Focus:</b> ${esc((a.focus || []).join(', ') || '–')} · <b>Life:</b> ${esc(b.about || '–')} · <b>Ratings:</b> ${esc(Object.entries(a.ratings || {}).map(([k, v]) => k + ' ' + v).join(', ') || '–')}</p>
+      ${b.error ? `<p class="status err">${esc(b.error)}</p>` : ''}
+      ${chapters.map(c => `<details${c.key === 'questions' ? ' open' : ''}><summary><b>${esc(c.title)}</b></summary>${c.intro ? `<p class="sub">${esc(c.intro)}</p>` : ''}${c.blocks.map(lbBlock).join('')}</details>`).join('') || '<p class="sub">Not written yet.</p>'}
+      <label class="sub" for="lb-notes" style="display:block;margin-top:12px">Your notes for ${esc(b.name || 'them')}</label>
+      <textarea id="lb-notes" rows="5" style="width:100%">${esc(b.notes || '')}</textarea>
+      <div class="rlrow"><button class="btn" type="button" data-lbsave="${b.id}" data-st="ready"${b.book ? '' : ' disabled'}>${b.status === 'ready' ? 'Save notes' : 'Approve and send'}</button>
+        <button class="sbtn" type="button" data-lbsave="${b.id}" data-st="">Save notes only</button>
+        ${b.status === 'ready' ? `<button class="sbtn" type="button" data-lbsave="${b.id}" data-st="review">Take back for review</button>` : ''}
+        <button class="sbtn" type="button" data-lbrewrite="${b.id}">Write again</button>
+        ${b.book && ROLE === 'owner' ? `<a class="sbtn" href="/profiles/${b.profile_id}/lifebook.pdf" download>PDF</a>` : ''}<span class="status" id="lb-st" role="status"></span></div>`;
+  } catch (e) { box.innerHTML = `<p class="status err">${esc(e.message)}</p>`; }
+}
+document.addEventListener('click', async e => {
+  const o = e.target.closest('[data-lbopen]'); if (o) return openBook(o.dataset.lbopen);
+  const s = e.target.closest('[data-lbsave]'), w = e.target.closest('[data-lbrewrite]');
+  if (!s && !w) return;
+  const st = $('lb-st');
+  try {
+    if (s) {
+      const body = {notes: $('lb-notes').value}; if (s.dataset.st) body.status = s.dataset.st;
+      await api('/admin/api/lifebooks/' + s.dataset.lbsave, {method: 'PUT', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
+    } else await api(`/admin/api/lifebooks/${w.dataset.lbrewrite}/rewrite`, {method: 'POST'});
+    await loadBooks(); await openBook((s || w).dataset.lbsave || w.dataset.lbrewrite);
+    $('lb-st').className = 'status ok'; $('lb-st').textContent = s ? (s.dataset.st === 'ready' ? 'Approved: they can read it now.' : 'Saved.') : 'Writing it again…';
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+});
+
 async function loadAll() {
   try {
-    await loadPlayground(); await loadDrafts(); await loadReview(); await loadRL(); await loadQuality(); await loadGoods();
+    await loadPlayground(); await loadDrafts(); await loadReview(); await loadRL(); await loadQuality(); await loadGoods(); await loadBooks();
     if (ROLE !== 'astrologer') { renderOverview(await api('/admin/api/overview')); await loadUsage(); await loadTeam(); await loadAudit(); }
     if (ROLE === 'owner') { await loadCodes(); await loadEvents(); await loadBackups(); }
     await loadQueries(true);

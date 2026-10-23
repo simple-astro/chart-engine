@@ -918,6 +918,43 @@
   .vt button:hover{border-color:var(--acc);color:var(--acc)}
   .vt button.on{background:linear-gradient(140deg,var(--g1),var(--g2));border-color:transparent;color:var(--onacc);font-weight:600}
   .sec{margin-bottom:12px;border:1px solid var(--line);border-radius:14px;padding:14px 18px;background:var(--bg2);transition:.18s}
+  /* Life Book (lifebook.js): a card on My Charts, the six questions and the reader in a full-screen sheet */
+  .lbcard{display:flex;flex-direction:column;gap:10px;align-items:flex-start} .lbcard p{margin:0;color:var(--mut);line-height:1.5}
+  .lb-head{display:flex;align-items:center;gap:12px} .lb-head h3{margin:0} .lb-head small{color:var(--acc);font-weight:600}
+  .lb-ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--soft);color:var(--acc);font-size:1.2rem}
+  .lb-track{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.88rem;color:var(--mut)}
+  .lb-track li::before{content:'○ ';color:var(--mut)} .lb-track li.done::before{content:'● ';color:var(--tl-go)} .lb-track li.now{color:var(--ink);font-weight:600} .lb-track li.now::before{content:'◐ ';color:var(--acc)}
+  body.lb-open{overflow:hidden}
+  .lb-sheet{position:fixed;inset:0;z-index:60;overflow-y:auto;background:var(--bg)} .lb-sheet[hidden]{display:none}
+  .lb-wrap{max-width:720px;margin:0 auto;padding:14px 18px 40px;min-height:100%;box-sizing:border-box;display:flex;flex-direction:column}
+  .lb-top{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.88rem;color:var(--mut);min-height:44px}
+  .lb-bar{height:4px;border-radius:4px;background:var(--line);overflow:hidden;margin-bottom:18px} .lb-bar i{display:block;height:100%;background:var(--acc)}
+  .lb-body{flex:1} .lb-body h2{margin:0 0 6px;font:700 1.7rem/1.15 var(--serif)} .lb-body .hint{margin:0 0 14px}
+  .lb-chips{display:flex;flex-wrap:wrap;gap:8px}
+  .lb-chips button,.lb-seg button,.lb-rate button{min-height:44px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:500 .92rem var(--sans);cursor:pointer}
+  .lb-chips button[aria-pressed="true"],.lb-seg button[aria-pressed="true"],.lb-rate button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .lb-seg,.lb-rate{border:0;margin:0 0 14px;padding:0;display:flex;flex-wrap:wrap;gap:6px} .lb-seg legend,.lb-rate legend{font-size:.82rem;color:var(--mut);margin-bottom:6px;padding:0}
+  .lb-rate button{width:48px;padding:0}
+  .lb-field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;font-size:.82rem;color:var(--mut)}
+  .lb-field textarea{font:400 1rem var(--sans);padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);resize:vertical}
+  .lb-ev{display:grid;grid-template-columns:1fr 84px 92px;gap:6px;margin-bottom:8px}
+  .lb-ev select,.lb-ev input{min-height:44px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:400 .92rem var(--sans);min-width:0}
+  .lb-consent{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;line-height:1.45;margin-top:6px} .lb-consent input{width:20px;height:20px;flex:none;margin-top:2px}
+  .lb-err{color:var(--tl-hold);font-size:.88rem;min-height:1.2em}
+  .lb-nav{display:flex;justify-content:space-between;gap:10px;margin-top:22px} .lb-nav .btn{min-height:48px;max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lb-cover{padding:28px 0 18px} .lb-cover small{letter-spacing:.14em;color:var(--acc);font-weight:700} .lb-cover h2{font-size:2.3rem}
+  .lb-start{width:100%;min-height:50px;margin-bottom:16px} a.lb-dl{display:flex;align-items:center;justify-content:center;box-sizing:border-box;margin-top:-6px}
+  .lb-acts{display:flex;flex-wrap:wrap;gap:8px} .lb-acts .btn{min-height:44px;display:inline-flex;align-items:center}
+  .lb-toc{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .lb-toc button{width:100%;display:flex;align-items:center;gap:12px;min-height:50px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);text-align:left;font:500 .98rem var(--sans);cursor:pointer}
+  .lb-toc button span{width:26px;font:700 1.2rem var(--serif);color:var(--acc)}
+  .lb-page small{color:var(--acc);font-weight:600;font-size:.8rem} .lb-page h4{margin:16px 0 6px;font-size:1rem} .lb-page ul{padding-left:20px;line-height:1.55} .lb-page p{line-height:1.6}
+  .lb-intro{color:var(--mut)}
+  .lb-rows{margin:8px 0} .lb-rows div{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)} .lb-rows dt{color:var(--mut);font-size:.85rem} .lb-rows dd{margin:0;line-height:1.5}
+  @media(max-width:560px){.lb-rows div{grid-template-columns:1fr;gap:2px}}
+  .lb-cards{display:flex;flex-direction:column;gap:10px;margin-top:10px} .lb-cards article{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--bg2)}
+  .lb-ct{display:flex;justify-content:space-between;gap:10px;align-items:flex-start} .lb-cards p{margin:6px 0} .lb-cards small{color:var(--mut);font-size:.82rem}
+  .lb-qa{border-left:3px solid var(--acc);padding:2px 0 2px 14px;margin:14px 0}
   /* Today › the daily panchang card (the public /panchang image) with a Share menu */
   .gps{display:flex;gap:14px;align-items:flex-start;position:relative;z-index:4}  /* its Share menu opens over the next card */
   .gps-img{flex:none;width:92px} .gps-img img{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--line)}
@@ -985,7 +1022,12 @@
   .mfull{margin-top:16px;border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:var(--bg2)}
   .mfull summary{cursor:pointer;font:600 1rem var(--serif);color:var(--ink)}
   .mweek>summary{font-size:1.15rem} .mweek[open]>summary{margin-bottom:10px}
-  .mfgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;margin:12px 0 4px} .mfgrid u{text-decoration-thickness:2px;text-underline-offset:3px}
+  .mfgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;margin:12px 0 4px} .mfgrid u,.mfrows u{text-decoration-thickness:2px;text-underline-offset:3px}
+  /* Full panchang: five rows, a label column and the clubbed values */
+  .mfrows{margin:10px 0 4px} .mfrows div{display:grid;grid-template-columns:130px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .mfrows div:last-child{border-bottom:0} .mfrows dt{font-size:.78rem;color:var(--mut);padding-top:2px} .mfrows dd{margin:0;font-size:.92rem;line-height:1.5;color:var(--ink2,var(--ink))}
+  .mfrows b{color:var(--ink);font-weight:600} .mfrows small{color:var(--mut);font-size:.78rem}
+  @media(max-width:560px){.mfrows div{grid-template-columns:1fr;gap:2px}}
   .mpers{margin-top:8px;font-size:.88rem;color:var(--mut)} .mpers b{color:var(--ink)} .sepdot{margin:0 8px}
   .ok{color:var(--ok)} .bad{color:var(--bad)}
   .mh3{font:600 1.1rem var(--serif);margin:22px 0 10px}
@@ -1813,6 +1855,7 @@
       <div class="bnamebox"><h2 id="bname"></h2><div class="meta" id="bmeta"></div><div class="meta calc" id="bcalc"></div></div>
       <div class="stats" id="summary"></div><div class="accsheet" id="accsheet" hidden></div><div class="tslide" id="tslide"></div>
     </div>
+    <section class="card lbcard" id="lbcard" hidden></section>
     <!-- Studies: one card per tradition; each opens a page with only its own sections -->
     <div class="sthub" id="sthub" role="list" aria-label="My Charts">
       <button type="button" role="listitem" data-branch="vedic"><i aria-hidden="true">☉</i><span><b>Vedic</b><small>Rasi chart, planets, yogas, divisional charts, Ashtakavarga, your life areas</small></span></button>
@@ -1941,6 +1984,7 @@
 <script src="/static/lifegraph.js?v=1"></script>
 <script src="/static/calendar.js?v=1"></script>
 <script src="/static/matchlinks.js?v=1"></script>
+<script src="/static/lifebook.js?v=2"></script>
 <script>
 // API errors as one readable line: a string detail, {field, message}, or FastAPI's list of field errors.
 window.apiErr=d=>d==null?'':typeof d==='string'?d:Array.isArray(d)?d.map(x=>x.msg||'').filter(Boolean).join('; '):d.message||'';
@@ -2110,6 +2154,8 @@ function loadVisible(){
   if(SCREEN==='timing'&&TM==='transits'&&$('trwrap').dataset.pid!==String(currentId)){$('trwrap').dataset.pid=String(currentId);window.renderTransit($('trwrap'),currentId,lastReq&&lastReq.tz_name)}
   if(SCREEN==='timing'&&TM==='transits')loadParyaya();
   if(SCREEN==='timing'&&TM==='matter'&&$('kptbody').dataset.pid!==String(currentId)){$('kptbody').dataset.pid=String(currentId);window.renderKpTiming($('kptbody'),currentId)}
+  if(SCREEN==='chart'&&currentId!=null&&window.renderLifeBook&&$('lbcard').dataset.pid!==String(currentId)){$('lbcard').dataset.pid=String(currentId);window.renderLifeBook($('lbcard'),currentId,lastReq&&lastReq.name)}
+  if(SCREEN==='chart'&&currentId==null)$('lbcard').hidden=true;
   if(SCREEN==='chart'&&BRANCH==='lal')loadLal();
   if(SCREEN==='chart'&&BRANCH==='tajika')loadTajika();
   if(SCREEN==='chart'&&BRANCH==='mundane')loadMundane();

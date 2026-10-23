@@ -171,6 +171,11 @@ def _connect() -> sqlite3.Connection:
                  " added_at TEXT NOT NULL, PRIMARY KEY (profile_id, goal))")
     conn.execute("CREATE TABLE IF NOT EXISTS goal_steps (profile_id INTEGER NOT NULL, goal TEXT NOT NULL, step TEXT NOT NULL,"
                  " done_at TEXT NOT NULL, PRIMARY KEY (profile_id, goal, step))")
+    # Life Books (app/lifebook.py): the person's answers, the book, its status (writing → review → ready, or
+    # failed) and the astrologer's notes. The person sees the book only once the astrologer approves it.
+    conn.execute("CREATE TABLE IF NOT EXISTS life_books (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER NOT NULL,"
+                 " owner TEXT, answers TEXT NOT NULL, status TEXT NOT NULL, book TEXT, notes TEXT, error TEXT,"
+                 " created_at TEXT NOT NULL, updated_at TEXT NOT NULL)")
     # Which sections testers open (app/usage.py): a short name per event, no chart data. Kept for 90 days.
     conn.execute("CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL,"
                  " owner TEXT, name TEXT NOT NULL, detail TEXT)")
@@ -260,6 +265,7 @@ def delete(profile_id: int, owner: str | None = None) -> bool:
         conn.execute("DELETE FROM answer_cache WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM mood_logs WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM life_events WHERE profile_id = ?", (profile_id,))
+        conn.execute("DELETE FROM life_books WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM jamakkol_asks WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM prep_done WHERE profile_id = ?", (profile_id,))
         conn.execute("DELETE FROM goal_plans WHERE profile_id = ?", (profile_id,))
@@ -791,6 +797,58 @@ def all_events() -> list[dict]:
     with _lock, _connect() as conn:
         rows = conn.execute("SELECT e.*, p.chart, p.request FROM life_events e JOIN profiles p ON p.id = e.profile_id").fetchall()
     return [{**dict(r), "chart": json.loads(r["chart"]), "request": json.loads(r["request"])} for r in rows]
+
+
+# ----- Life Books (app/lifebook.py); callers check the profile belongs to the person first -----
+def _book(r) -> dict:
+    d = dict(r)
+    d["answers"] = json.loads(d["answers"])
+    d["book"] = json.loads(d["book"]) if d.get("book") else None
+    return d
+
+
+def lifebook_add(profile_id: int, owner: str | None, answers: dict) -> dict:
+    with _lock, _connect() as conn:
+        now = _now()
+        cur = conn.execute("INSERT INTO life_books (profile_id, owner, answers, status, created_at, updated_at)"
+                           " VALUES (?, ?, ?, 'writing', ?, ?)", (profile_id, owner, json.dumps(answers), now, now))
+        return _book(conn.execute("SELECT * FROM life_books WHERE id = ?", (cur.lastrowid,)).fetchone())
+
+
+def lifebook_get(book_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM life_books WHERE id = ?", (book_id,)).fetchone()
+    return _book(r) if r else None
+
+
+def lifebook_latest(profile_id: int) -> dict | None:
+    with _lock, _connect() as conn:
+        r = conn.execute("SELECT * FROM life_books WHERE profile_id = ? ORDER BY id DESC LIMIT 1", (profile_id,)).fetchone()
+    return _book(r) if r else None
+
+
+def lifebook_update(book_id: int, **fields) -> None:
+    """status, book (a dict), notes or error."""
+    if "book" in fields and fields["book"] is not None:
+        fields["book"] = json.dumps(fields["book"])
+    cols = ", ".join(f"{k} = ?" for k in fields)
+    with _lock, _connect() as conn:
+        conn.execute(f"UPDATE life_books SET {cols}, updated_at = ? WHERE id = ?", (*fields.values(), _now(), book_id))
+
+
+def lifebook_list(limit: int = 100) -> list[dict]:
+    """Newest first, with the person's name, for the astrologer's review list (no book bodies)."""
+    with _lock, _connect() as conn:
+        rows = conn.execute("SELECT b.id, b.profile_id, b.owner, b.status, b.created_at, b.updated_at, p.name"
+                            " FROM life_books b LEFT JOIN profiles p ON p.id = b.profile_id"
+                            " ORDER BY b.id DESC LIMIT ?", (limit,)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def lifebooks_today(owner: str | None) -> int:
+    with _lock, _connect() as conn:
+        return conn.execute("SELECT COUNT(*) FROM life_books WHERE owner IS ? AND created_at >= ?",
+                            (owner, _today())).fetchone()[0]
 
 
 # ----- goal plans; callers check the profile belongs to the person first -----

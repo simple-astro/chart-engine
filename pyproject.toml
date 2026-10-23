@@ -22,6 +22,7 @@ dependencies = [
     # The free daily panchang image (app/daily_panchang.py): drawing, and its QR code
     "pillow>=10",
     "segno>=1.6",
+    "fpdf2>=2.8",
 ]
 
 [project.optional-dependencies]

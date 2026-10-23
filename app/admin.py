@@ -1152,3 +1152,58 @@ async def sbc_goods_put(request: Request) -> dict:
     storage.set_setting("sbc.goods", json.dumps(clean))
     _audit(request, "sbc_goods", "sarvatobhadra", f"{len(clean)} nakshatras")
     return {"saved": len(clean)}
+
+
+# ----- Life Books (app/lifebook.py): review, add notes, approve; the person sees a book only once it is approved -----
+@router.get("/admin/api/lifebooks")
+def lifebooks(request: Request) -> dict:
+    _require_role(request, "mentor", "astrologer")
+    from app import lifebook
+    return {"books": [{**b, "status_text": lifebook.STATUS_TEXT.get(b["status"], b["status"])} for b in storage.lifebook_list()]}
+
+
+@router.get("/admin/api/lifebooks/{book_id}")
+def lifebook_one(book_id: int, request: Request) -> dict:
+    _require_role(request, "mentor", "astrologer")
+    from app import lifebook
+    b = storage.lifebook_get(book_id)
+    if not b:
+        raise HTTPException(status_code=404, detail="Not found")
+    p = storage.get(b["profile_id"])
+    return {**lifebook.view(b, reviewer=True), "name": p and p["name"], "about": lifebook.about(b["answers"]),
+            "profile_id": b["profile_id"]}
+
+
+@router.put("/admin/api/lifebooks/{book_id}")
+async def lifebook_review(book_id: int, request: Request) -> dict:
+    """{"notes": text} and/or {"status": "ready" (approve, the person can read it) | "review" (take it back)}."""
+    _require_role(request, "astrologer")
+    from app import lifebook
+    b = storage.lifebook_get(book_id)
+    if not b:
+        raise HTTPException(status_code=404, detail="Not found")
+    body = await request.json()
+    fields = {}
+    if isinstance(body.get("notes"), str):
+        fields["notes"] = body["notes"].strip()[:4000] or None
+    if body.get("status") in ("ready", "review"):
+        if not b.get("book"):
+            raise HTTPException(status_code=409, detail="The book has not been written yet.")
+        fields["status"] = body["status"]
+    if fields:
+        storage.lifebook_update(book_id, **fields)
+        _audit(request, "lifebook", f"book {book_id}", ", ".join(fields))
+    return lifebook.view(storage.lifebook_get(book_id), reviewer=True)
+
+
+@router.post("/admin/api/lifebooks/{book_id}/rewrite")
+def lifebook_rewrite(book_id: int, request: Request) -> dict:
+    """Write the book again from the same answers (after a failure, or once the chart or rules changed)."""
+    _require_role(request, "astrologer")
+    from app import lifebook
+    if not storage.lifebook_get(book_id):
+        raise HTTPException(status_code=404, detail="Not found")
+    storage.lifebook_update(book_id, status="writing", error=None)
+    _audit(request, "lifebook_rewrite", f"book {book_id}")
+    lifebook.start(book_id)
+    return lifebook.view(storage.lifebook_get(book_id), reviewer=True)
