@@ -16,7 +16,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import access, admin, backup, pro
+from app import access, admin, backup, daily_panchang, pro
 from app.astro import router as astro_router
 from app.profiles import router as profiles_router
 from app.profiles import usage_router
@@ -62,6 +62,7 @@ app.middleware("http")(access.gate)
 app.include_router(access.router)
 app.include_router(admin.router)
 app.include_router(pro.router)
+app.include_router(daily_panchang.router)  # the free daily panchang image: public
 app.include_router(events_router)
 app.include_router(router)
 app.include_router(profiles_router)

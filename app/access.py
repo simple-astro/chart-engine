@@ -34,6 +34,11 @@ def space_cookie(role: str, code_id: int) -> str:
     return f"{SPACE}_{role}_{code_id}"
 STUDIO = ("mentor", "astrologer")  # roles that may open the admin page (each sees only its own sections)
 MAX_AGE = 180 * 24 * 3600
+def _public_panchang(method: str, path: str) -> bool:
+    """The free daily panchang page and images (app/daily_panchang.py): GET only, so the POST /panchang API stays private."""
+    return method in ("GET", "HEAD") and (path == "/panchang" or (path.startswith("/panchang/") and path.endswith(".png")))
+
+
 OPEN_PATHS = {"/health", "/version", "/home", "/login", "/logout", "/favicon.ico", "/telegram/webhook"}  # webhook checks its own secret
 NEXT_PAGES = {"/admin", "/pro"}  # where a login form may send the browser afterwards
 FAIL_WINDOW, FAIL_PER_IP, FAIL_TOTAL = 15 * 60, 10, 100
@@ -141,7 +146,7 @@ async def gate(request: Request, call_next):
             JSONResponse({"detail": msg}, status_code=401)
         resp.delete_cookie(COOKIE)
         return resp
-    if path in OPEN_PATHS or path.startswith("/static/"):
+    if path in OPEN_PATHS or path.startswith("/static/") or _public_panchang(request.method, path):
         return await call_next(request)
     if path == "/":  # signed out: the homepage, whose buttons open the access-code form
         return HTMLResponse(home_page())

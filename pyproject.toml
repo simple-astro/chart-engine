@@ -19,6 +19,9 @@ dependencies = [
     # reports). The slim Debian image keeps aliases in the separate tzdata-legacy package, so without this
     # those visitors got "No time zone found with key Asia/Calcutta".
     "tzdata>=2024.1",
+    # The free daily panchang image (app/daily_panchang.py): drawing, and its QR code
+    "pillow>=10",
+    "segno>=1.6",
 ]
 
 [project.optional-dependencies]
@@ -32,7 +35,7 @@ dev = [
 packages = ["app", "app.remedies", "core"]
 
 [tool.setuptools.package-data]
-app = ["home.html", "static/*.html", "static/*.js", "static/*.svg", "static/*.png"]
+app = ["home.html", "static/*.html", "static/*.js", "static/*.svg", "static/*.png", "fonts/*.ttf", "fonts/*.txt"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

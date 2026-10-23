@@ -16,6 +16,7 @@ import swisseph as swe
 
 from app.muhurat_rules import lunar_month
 from app.panchang_extra import LUNAR_MONTHS, SAMVATSARA, tithi_name
+from core import constants as C
 from core.ephemeris import julian_day, set_sidereal_mode
 from core.panchang import _sidereal_sun_moon, compute_panchang
 
@@ -37,9 +38,11 @@ AT_SUNRISE = {
 # Ganesh Chaturthi, 0.7 the afternoon for Dussehra), or "night" (midnight, for Shivaratri).
 AT_MOMENT = {
     (6, 15): ("Sharad Purnima", 1), (6, 19): ("Karva Chauth", 1), (6, 28): ("Dhanteras", 1),
-    (6, 30): ("Diwali · Lakshmi Puja", 1), (11, 15): ("Holika Dahan", 1), (5, 4): ("Ganesh Chaturthi", 0.5),
+    (6, 30): ("Diwali · Lakshmi Puja", 1), (11, 15): ("Holika Dahan", "pradosh"), (5, 4): ("Ganesh Chaturthi", 0.5),
     (6, 10): ("Dussehra", 0.7), (10, 29): ("Maha Shivaratri", "night"),
 }
+PRADOSH_DAY = {"Sunday": "Ravi", "Monday": "Soma", "Tuesday": "Bhauma", "Wednesday": "Budha", "Thursday": "Guru",
+               "Friday": "Shukra", "Saturday": "Shani"}
 # Sikh days kept on lunar dates by both calendars (the 2003 Nanakshahi kept these three lunar too).
 SIKH_LUNAR_BOTH = {(7, 15): "Prakash Purab, Guru Nanak Dev Ji", (11, 16): "Hola Mohalla"}
 SIKH_SUNSET_BOTH = {(6, 30): "Bandi Chhor Divas"}
@@ -84,6 +87,12 @@ def _tithi(jd: float) -> int:
     return int(((m - s) % 360) // 12) + 1
 
 
+def _bhadra(jd: float) -> bool:
+    """Bhadra (Vishti karana) running at this moment."""
+    s, m = _sidereal_sun_moon(jd)
+    return C.karana_name(int(((m - s) % 360) // 6)) == "Vishti"
+
+
 def _hits(t0: int, t1: int, target: int) -> bool:
     """The tithi runs at this sunrise, or begins and ends between this sunrise and the next (kshaya)."""
     return t0 == target or ((target - t0) % 30 == 1 and (t1 - target) % 30 == 1)
@@ -105,14 +114,20 @@ def _ns_original(d: date) -> dict:
     raise AssertionError(d)
 
 
-@lru_cache(maxsize=64)
 def _month(year: int, month: int, lat: float, lon: float, tz_name: str) -> tuple:
+    from core.panchang import _AYANAMSHA
+    return _month_cached(year, month, lat, lon, tz_name, _AYANAMSHA.get())
+
+
+@lru_cache(maxsize=64)
+def _month_cached(year: int, month: int, lat: float, lon: float, tz_name: str, ayanamsha: str) -> tuple:
+    """One month of days; ``ayanamsha`` is only part of the cache key (the panchang reads it from core.panchang)."""
     tz = ZoneInfo(tz_name)
     first = date(year, month, 1)
     n = ((first.replace(day=28) + timedelta(days=4)).replace(day=1) - first).days
     ps = [compute_panchang(first + timedelta(days=i), lat, lon, tz_name) for i in range(-1, n + 1)]
     midnight = lambda d: julian_day(datetime(d.year, d.month, d.day, tzinfo=tz))  # noqa: E731
-    days, seen = [], set()
+    days, seen, carry = [], set(), []
     for k in range(1, n + 1):
         p, nxt = ps[k], ps[k + 1]
         jd_rise, jd_set = julian_day(p.sunrise), julian_day(p.sunset)
@@ -144,11 +159,21 @@ def _month(year: int, month: int, lat: float, lon: float, tz_name: str) -> tuple
         jd_next = julian_day(nxt.sunrise)
         moments = [((m, t), name, at, hindu, "at") for (m, t), (name, at) in AT_MOMENT.items()]
         moments += [((m, t), name, 1, sikh_both, "ssb") for (m, t), name in SIKH_SUNSET_BOTH.items()]
+        # Pradosh Vrat: Trayodashi at sunset, in either half; named for the weekday (Shukra Pradosh on a Friday)
+        tset = _tithi(jd_set)
+        if tset in (13, 28) and ("pradosh", am, tset) not in seen:
+            seen.add(("pradosh", am, tset))
+            hindu.append(f"{PRADOSH_DAY[p.weekday]} Pradosh Vrat")
+        if carry:  # Holika Dahan moved here from yesterday's Bhadra evening
+            hindu.append(carry.pop())
         for (m, t), name, at, out, kind in moments:
-            jd = (jd_set + jd_next) / 2 if at == "night" else jd_rise + (jd_set - jd_rise) * at
+            jd = (jd_set + jd_next) / 2 if at == "night" else jd_set if at == "pradosh" else jd_rise + (jd_set - jd_rise) * at
             if (kind, m, t) not in seen and not adhik and _tithi(jd) == t and lunar_month(jd)[0] == m:
                 seen.add((kind, m, t))
-                out.append(name)
+                if at == "pradosh" and _bhadra(jd):
+                    carry.append(name)  # Holika is never lit in Bhadra: the next evening, as Drik Panchang has it
+                else:
+                    out.append(name)
         ek = next((t for t in (11, 26) if _hits(t0, t1, t) and ("ek", mon, t) not in seen), None)
         if ek and not adhik:
             seen.add(("ek", mon, ek))

@@ -4,6 +4,8 @@ Elements are stated at local sunrise, the traditional start of the Vedic day.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -49,8 +51,23 @@ def _event(jd_start: float, body: int, rsmi: int, lat: float, lon: float) -> flo
     return tret[0]
 
 
+# The ayanamsha the panchang reads tithi, nakshatra and yoga in. KP everywhere in the app; the public daily
+# panchang switches to Lahiri (with lahiri_panchang()) so it matches the printed panchangs people compare it with.
+# Tithi does not depend on it; nakshatra and yoga end times move by about ten minutes.
+_AYANAMSHA: ContextVar[str] = ContextVar("panchang_ayanamsha", default="krishnamurti")
+
+
+@contextmanager
+def lahiri_panchang():
+    token = _AYANAMSHA.set("lahiri")
+    try:
+        yield
+    finally:
+        _AYANAMSHA.reset(token)
+
+
 def _sidereal_sun_moon(jd: float) -> tuple[float, float]:
-    set_sidereal_mode("krishnamurti")
+    set_sidereal_mode(_AYANAMSHA.get())
     flags = swe.FLG_MOSEPH | swe.FLG_SIDEREAL
     sun = swe.calc_ut(jd, swe.SUN, flags)[0][0] % 360.0
     moon = swe.calc_ut(jd, swe.MOON, flags)[0][0] % 360.0
