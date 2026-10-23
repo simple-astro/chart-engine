@@ -149,7 +149,7 @@ async def gate(request: Request, call_next):
     if path in OPEN_PATHS or path.startswith("/static/") or _public_panchang(request.method, path):
         return await call_next(request)
     if path == "/":  # signed out: the homepage, whose buttons open the access-code form
-        return HTMLResponse(home_page())
+        return HTMLResponse(home_page(), headers={"Cache-Control": "no-cache"})  # it carries today's date
     if path == "/admin":
         return HTMLResponse(login_page(admin=True))
     if path == "/pro":
@@ -234,7 +234,11 @@ def today_chip() -> str:
 
 
 def home_page() -> str:
-    return _HOME.read_text().replace("{{TODAY}}", today_chip())
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    day = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+    return (_HOME.read_text().replace("{{TODAY}}", today_chip())
+            .replace("{{PDAY}}", day.isoformat()).replace("{{PDATE}}", day.strftime("%-d %B %Y")))
 
 
 @router.get("/home")
