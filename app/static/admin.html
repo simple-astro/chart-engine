@@ -606,7 +606,7 @@ function renderQueries() {
     const tokens = r.kind === 'llm' ? `${compact(r.input_tokens + r.cache_read_tokens + r.cache_write_tokens)} in · ${compact(r.output_tokens)} out` : '–';
     const noteIcon = r.admin_remarks ? '📝' : '–';
     const fc = r.factcheck, fcTag = !fc ? '' : fc.found.length
-      ? `<span class="tag" style="background:rgba(192,57,43,.12);color:var(--bad)" title="Wrong facts caught before the user saw them">${fc.found.length} fixed</span>`
+      ? `<span class="tag" style="background:rgba(192,57,43,.12);color:var(--bad)" title="Wrong facts caught before the user saw them">${fc.found.length} fixed${fc.rounds > 1 ? ` · ${fc.rounds} rounds` : ''}</span>`
       : '<span class="tag" style="background:rgba(46,125,50,.12);color:var(--ok)" title="All facts matched the chart">✓ checked</span>';
     return `<tr class="row" tabindex="0" data-id="${r.id}" aria-expanded="false">
       <td class="nowrap">${esc(when(r.ts))}</td><td class="nowrap">${esc(r.tester)}</td><td>${esc(r.profile_name || 'Deleted chart')}</td>
@@ -670,7 +670,7 @@ $('filter').addEventListener('input', () => {
   $('q-export').textContent = f ? 'Export matches' : 'Export CSV';
 });
 // The answer as the tester sees it: headings, **bold**, bullets and paragraphs.
-// The style check (stock phrases, no own placements, nothing to do): what it caught and whether the rewrite fixed it.
+// The style check (stock phrases, no own placements): what it caught and whether the rewrite fixed it.
 function styleNote(fc) {
   if (!fc || !fc.style || !fc.style.length) return '';
   const left = fc.style_left || [];

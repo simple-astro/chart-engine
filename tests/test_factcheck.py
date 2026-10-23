@@ -131,7 +131,23 @@ def test_still_wrong_sentences_are_removed(monkeypatch, tmp_path):
 def test_clean_draft_costs_no_extra_call(monkeypatch, tmp_path):
     r, calls, _ = _run(monkeypatch, tmp_path, ["Mercury rules your 10th house."])
     assert len(calls) == 1 and r["reply"] == "Mercury rules your 10th house."
-    assert storage.recent_queries(1)[0]["factcheck"] == {"found": [], "revised": False, "removed": [], "style": []}
+    assert storage.recent_queries(1)[0]["factcheck"] == {"found": [], "revised": False, "removed": [], "style": [], "rounds": 0}
+
+
+def test_each_rewrite_is_checked_again_until_it_agrees_with_the_chart(monkeypatch, tmp_path):
+    r, calls, _ = _run(monkeypatch, tmp_path, ["Mercury is exalted, so career rises.",
+                                                "Venus is retrograde now, so career rises.",         # the fix is wrong too
+                                                "Mercury is friendly in Leo, so career rises steadily."])
+    assert r["reply"] == "Mercury is friendly in Leo, so career rises steadily." and len(calls) == 3
+    assert "retrograde" in calls[2]["messages"][-1]["content"]     # the second rewrite was told what the first got wrong
+    log = storage.recent_queries(1)[0]["factcheck"]
+    assert log["rounds"] == 2 and len(log["found"]) == 2 and not log["removed"]
+
+
+def test_the_loop_stops_after_the_last_round(monkeypatch, tmp_path):
+    r, calls, _ = _run(monkeypatch, tmp_path, ["Venus is retrograde now. Chant on Fridays."])  # every rewrite stays wrong
+    assert len(calls) == 1 + chat.FIX_ROUNDS and "retrograde" not in r["reply"]
+    assert storage.recent_queries(1)[0]["factcheck"]["rounds"] == chat.FIX_ROUNDS
 
 
 def test_cached_answer_failing_the_check_is_not_reused(monkeypatch, tmp_path):
