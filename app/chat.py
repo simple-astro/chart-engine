@@ -28,6 +28,9 @@ SYSTEM = (
     "the reply.\n"
     "People come with a worry or a decision, not to study their chart. Give them clarity: lead with the plain answer, "
     "then the timing and the reasons. Do not add 'Do' / 'Don't' lists or upaya (remedies) unless they ask for them. "
+    "Answer only what they asked: never add a section on another matter (marriage, career, children…) they did not "
+    "ask about, and respect what they tell you about their life — someone who mentions their wife or husband is "
+    "married, so never predict when they will marry. "
     "CITE THE CHART FACT behind every claim — each prediction and window — "
     "in a few plain words taken from the data (e.g. 'because Saturn, your 10th lord, sits in your 12th' or "
     "'(your Venus–Mercury period runs to June 2029)'); if a claim has no chart fact behind it, leave it out. Keep "
@@ -75,7 +78,7 @@ SYSTEM = (
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "kp-15"
+CONTEXT_VERSION = "kp-16"
 
 TOOLS = [
     {"name": "get_transits",

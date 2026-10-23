@@ -340,7 +340,8 @@ KEYWORDS = {
     "career": r"career|job|promotion|work|office|boss|profession|employ|salary|appraisal|interview",
     "business": r"business|startup|shop|trade|partnership firm",
     "job_change": r"change (my |of )?job|switch|resign|new job|leave (my |the )?job|quit",
-    "marriage": r"marriage|marry|married|wedding|spouse|husband|wife|shaadi|rishta|engagement",
+    # Asking about getting married, not just mentioning a wife or husband ("my wife's birthday" is a married person)
+    "marriage": r"marriage|\bmarry|\b(get|getting|be|being) married|wedding|shaadi|rishta|engagement",
     "divorce": r"divorce|separation|separate",
     "love": r"\blove|relationship|girlfriend|boyfriend|romance|crush|dating",
     "money": r"money|wealth|financ|income|gains?\b|invest|savings|profit|rich",

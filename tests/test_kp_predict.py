@@ -77,6 +77,8 @@ def test_topic_routing():
     assert K.topics_for("Should I sell my house this year?")[0] == "property_sale" or "property_sale" in K.topics_for("Should I sell my house this year?")
     assert K.topics_for("Will I settle abroad after marriage?") == ["marriage", "foreign"]
     assert K.topics_for("What does my Moon mean?") == []
+    assert K.topics_for("It was my wife's birthday, slow day. Check for tomorrow.") == []   # married: no marriage reading
+    assert K.topics_for("When will I get married?") == ["marriage"]
 
 
 def test_brief_is_compact_and_complete(chart):
