@@ -156,9 +156,13 @@
   :root:not([data-level="guide"]) .lv-guide{display:none!important}
   :root[data-level="guide"] .lv-pro{display:none!important}
   .sjbar [data-go="year"],.sjbar [data-go="plans"],.sjbar [data-go="more"]{display:none}
+  /* Match making: a tab everywhere ("Match" in the phone's bottom bar); the header heart only before a chart exists */
+  #matchbtn{display:none} .lbl-sm{display:none}
+  @media(max-width:760px){.lbl-lg{display:none} .lbl-sm{display:inline}}
   :root[data-level="guide"] .sjbar [data-go="year"],:root[data-level="guide"] .sjbar [data-go="plans"],:root[data-level="guide"] .sjbar [data-go="more"]{display:flex}
   :root[data-level="guide"] .sjbar [data-go="timing"],:root[data-level="guide"] .sjbar [data-go="prashna"],
-  :root[data-level="guide"] .sjbar [data-go="remedies"],:root[data-level="guide"] .sjbar [data-go="chart"]{display:none}
+  :root[data-level="guide"] .sjbar [data-go="remedies"],:root[data-level="guide"] .sjbar [data-go="chart"],
+  :root[data-level="guide"] .sjbar [data-go="match"]{display:none}
   .lvseg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;border-radius:14px;background:var(--soft);max-width:420px;margin:0 auto 16px}
   .lvseg button{min-height:42px;border:0;border-radius:11px;background:none;color:var(--mut);font:500 .95rem var(--sans);cursor:pointer}
   .lvseg button[aria-current]{background:var(--solid);color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
@@ -273,6 +277,8 @@
   /* With the six tabs in the header there is no room for a name in the profile pill, so it becomes a clean avatar
      button (the name is in its menu and in "Today for …"), and the header widens a little on big screens so the
      labelled search fits; below that, search shrinks to a round icon. */
+  /* Before the first chart is saved (the birth-details screen) the header keeps only the logo and New chart */
+  .top .in:has(#saved[hidden]) #matchbtn,.top .in:has(#saved[hidden]) #setbtn{display:none}
   .top .in:has(.sjbar:not([hidden])) .who{flex:none}
   .top .in:has(.sjbar:not([hidden])) .pill{width:40px;height:40px;padding:3px;justify-content:center;gap:0}
   .top .in:has(.sjbar:not([hidden])) .pill .pt,.top .in:has(.sjbar:not([hidden])) .pill .chev{display:none}
@@ -964,7 +970,8 @@
   .gps-menu[hidden]{display:none}
   .gps-menu button{min-height:44px;padding:0 12px;border:0;border-radius:8px;background:none;color:var(--ink);text-align:left;font:500 .92rem var(--sans);cursor:pointer}
   .gps-menu button:hover,.gps-menu button:focus-visible{background:var(--soft);outline:none}
-  .gps-more{font-size:.86rem;font-weight:600;color:var(--acc)} .gps-note{display:block;min-height:1.1em;margin-top:6px;font-size:.82rem;color:var(--acc)}
+  .gps-more{font-size:.86rem;font-weight:600;color:var(--acc)}
+  .gps-land{margin-top:22px;max-width:520px;background:color-mix(in srgb,var(--bg2) 88%,transparent)} .gps-land h3{font-size:1.05rem} .gps-note{display:block;min-height:1.1em;margin-top:6px;font-size:.82rem;color:var(--acc)}
   /* House lords (My Chart › Full reading): an overview of 12 tiles first, then one house per page */
   .hl-intro{margin:6px 0 10px;color:var(--mut);font-size:.92rem}
   .hl-hi{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scroll-snap-type:x mandatory}
@@ -1561,10 +1568,12 @@
   body.on-ask footer{display:none}
   @media(max-width:760px){
     .sjbar{position:fixed;top:auto;left:0;right:0;bottom:0;width:auto;margin:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom));
-      display:grid;grid-template-columns:repeat(3,2fr) 1.8fr repeat(2,3fr);align-items:end;gap:0;border-radius:0;border:0;border-top:1px solid var(--line);
+      display:grid;grid-template-columns:repeat(3,1fr) 1fr repeat(3,1.12fr);align-items:end;gap:0;border-radius:0;border:0;border-top:1px solid var(--line);
       background:color-mix(in srgb,var(--solid) 80%,transparent);-webkit-backdrop-filter:saturate(1.7) blur(22px);backdrop-filter:saturate(1.7) blur(22px);
       border-top-width:.5px;box-shadow:none}
-    .sjbar button{flex-direction:column;gap:3px;padding:5px 0 3px;font-size:.68rem;border-radius:0}
+    .sjbar button{flex-direction:column;gap:3px;padding:5px 0 3px;font-size:.68rem;border-radius:0;min-width:0}
+    .sjbar button>span{white-space:nowrap;letter-spacing:-.01em}  /* seven tabs: a label never wraps onto a second line */
+    @media(max-width:380px){.sjbar button{font-size:.62rem} :root[data-fs="xl"] #sjbar button{font-size:10.6px} .sjbar svg{width:22px;height:22px}}
     :root[data-fs="xl"] .sjbar button{font-size:12.2px}  /* six labels must still fit across a phone */
     .sjbar button.on{background:none}
     .sjbar svg{width:24px;height:24px}
@@ -1689,6 +1698,16 @@
           <li><span>☍</span><div><b>Lal Kitab &amp; guna milan</b> — chart-specific upaya and 36-point compatibility</div></li>
           <li><span>✦</span><div><b>Ask anything</b> — an assistant grounded in your chart and live transits</div></li>
         </ul>
+        <section class="card gps gps-land" aria-label="Today’s free panchang">
+          <a class="gps-img" href="/panchang" target="_blank" rel="noopener" aria-label="Open today’s panchang card"><img alt="Today’s panchang card" width="1080" height="1920" loading="lazy"></a>
+          <div class="gps-txt"><h3>Today’s panchang, free</h3>
+            <p class="hint">Tithi, nakshatra, Rahu Kalam, good times and a thought for the day, for New Delhi. Share it with family and friends.</p>
+            <div class="gps-share"><button type="button" class="btn ghost sm gps-btn" aria-haspopup="menu" aria-expanded="false">↗ Share</button>
+              <div class="gps-menu" role="menu" hidden>
+                <button type="button" role="menuitem" data-gps="copy">Copy link</button><button type="button" role="menuitem" data-gps="whatsapp">WhatsApp</button><button type="button" role="menuitem" data-gps="instagram">Instagram</button>
+              </div><a class="gps-more" href="/panchang" target="_blank" rel="noopener">See it full size ›</a></div>
+            <span class="gps-note" role="status"></span></div>
+        </section>
       </div>
       <form id="f" class="card">
         <div class="full"><label for="name">Name (optional)</label><input id="name" placeholder="e.g. Deepak"></div>
@@ -1724,6 +1743,7 @@
       <button type="button" data-go="prashna"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.6M12 16.8v.2"/></svg><span>Prashna</span></button>
       <button type="button" data-go="ask" class="askb"><i class="bub"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg></i><span>Ask<span class="askfull"> Astropositivism</span></span></button>
       <button type="button" data-go="remedies"><svg viewBox="0 0 24 24"><path d="M12 3c2 3 3 4.6 3 6.5a3 3 0 0 1-6 0C9 7.6 10 6 12 3z"/><path d="M4 15h16l-2 4H6z"/></svg><span>Remedies</span></button>
+      <button type="button" data-go="match"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span><span class="lbl-lg">Match making</span><span class="lbl-sm">Match</span></span></button>
       <button type="button" data-go="plans"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/></svg><span>Plans</span></button>
       <button type="button" data-go="chart"><svg viewBox="0 0 24 24" class="chakra"><title>Sudarshan Chakra</title><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/><path stroke-width="1.2" d="M15 12h5.5M14.12 14.12l3.89 3.89M12 15v5.5M9.88 14.12l-3.89 3.89M9 12H3.5M9.88 9.88L5.99 5.99M12 9V3.5M14.12 9.88l3.89-3.89"/><path stroke-width="1.3" d="M20.50 12.00L22.92 13.32M19.85 15.25L21.59 17.40M18.01 18.01L18.79 20.65M15.25 19.85L14.96 22.59M12.00 20.50L10.68 22.92M8.75 19.85L6.60 21.59M5.99 18.01L3.35 18.79M4.15 15.25L1.41 14.96M3.50 12.00L1.08 10.68M4.15 8.75L2.41 6.60M5.99 5.99L5.21 3.35M8.75 4.15L9.04 1.41M12.00 3.50L13.32 1.08M15.25 4.15L17.40 2.41M18.01 5.99L20.65 5.21M19.85 8.75L22.59 9.04"/></svg><span>My Charts</span></button>
       <button type="button" data-go="more"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>More</span></button>
@@ -1753,14 +1773,14 @@
       <section class="card gcard cal" id="gcal" hidden></section>
       <section class="card gcard pakshi" id="gpakshi" hidden></section>
       <section class="card gcard gps" id="gpshare">
-        <a class="gps-img" href="/panchang" target="_blank" rel="noopener" aria-label="Open today’s panchang card"><img id="gpsimg" alt="Today’s panchang card" width="1080" height="1920" loading="lazy"></a>
+        <a class="gps-img" href="/panchang" target="_blank" rel="noopener" aria-label="Open today’s panchang card"><img alt="Today’s panchang card" width="1080" height="1920" loading="lazy"></a>
         <div class="gps-txt"><h3>Today’s panchang, ready to share</h3>
           <p class="hint">Tithi, nakshatra, Rahu Kalam, good times and a thought for the day. Free for your family and friends, no sign-in needed.</p>
-          <div class="gps-share"><button type="button" class="btn ghost sm" id="gpsbtn" aria-haspopup="menu" aria-expanded="false" aria-controls="gpsmenu">↗ Share</button>
-            <div class="gps-menu" id="gpsmenu" role="menu" hidden>
+          <div class="gps-share"><button type="button" class="btn ghost sm gps-btn" aria-haspopup="menu" aria-expanded="false">↗ Share</button>
+            <div class="gps-menu" role="menu" hidden>
               <button type="button" role="menuitem" data-gps="copy">Copy link</button><button type="button" role="menuitem" data-gps="whatsapp">WhatsApp</button><button type="button" role="menuitem" data-gps="instagram">Instagram</button>
             </div><a class="gps-more" href="/panchang" target="_blank" rel="noopener">See it full size ›</a></div>
-          <span class="gps-note" id="gpsnote" role="status"></span></div>
+          <span class="gps-note" role="status"></span></div>
       </section>
       <section class="card gcard pltoday lv-guide" id="gplanstep" hidden></section>
       <section class="card gcard" id="gmood"></section>
@@ -2191,7 +2211,7 @@ function placeBar(){const bar=$('sjbar');
   else if(bar.parentNode!==$('out'))$('out').prepend(bar)}
 WIDE.addEventListener('change',placeBar);addEventListener('resize',placeBar);placeBar();
 // Tapping Studies again goes back to its hub; coming from another tab returns to the branch you were in.
-$('sjbar').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(!b)return;go(b.dataset.go,b.dataset.go==='chart'&&SCREEN==='chart'?null:undefined)});
+$('sjbar').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(!b)return;if(b.dataset.go==='match')return nav('match');go(b.dataset.go,b.dataset.go==='chart'&&SCREEN==='chart'?null:undefined)});
 $('tseg').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(b)go('timing',b.dataset.t)});
 $('s-chart').addEventListener('click',e=>{const b=e.target.closest('[data-branch]');if(!b||b.closest('#ctiles'))return;go('chart',b.dataset.branch||null)});
 $('ctiles').addEventListener('click',e=>{const b=e.target.closest('[data-pane]');if(!b)return;go('chart',b.dataset.pane);
@@ -3314,7 +3334,7 @@ async function openMatch(){
   MATCH_BACK=VIEW!=null&&VIEW!=='match'&&!!(history.state&&history.state.sj);  // came here from inside the app
   showOut();VIEW='match';
   document.querySelectorAll('#out .scr').forEach(s=>s.hidden=true);
-  document.querySelectorAll('#sjbar [data-go]').forEach(b=>{b.classList.remove('on');b.removeAttribute('aria-current')});
+  document.querySelectorAll('#sjbar [data-go]').forEach(b=>{const on=b.dataset.go==='match';b.classList.toggle('on',on);on?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current')});
   document.body.classList.remove('on-ask');
   $('viewMatch').hidden=false;window.scrollTo({top:0});
   profiles=await loadList(currentId||undefined);
@@ -3521,13 +3541,14 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-ts]'
 let BX_REQ=null;
 // Today › share today's panchang card (the same public image as /panchang and the homepage): copy the link,
 // WhatsApp (the link shows the card as its preview), or Instagram (the image itself; a computer saves it).
-(()=>{const btn=$('gpsbtn'),menu=$('gpsmenu'),note=$('gpsnote'),img=$('gpsimg');if(!btn)return;
+// The same card sits on Today and on the first screen (before a chart is saved); each works on its own.
+document.querySelectorAll('.gps').forEach(card=>{const btn=card.querySelector('.gps-btn'),menu=card.querySelector('.gps-menu'),note=card.querySelector('.gps-note'),img=card.querySelector('.gps-img img');if(!btn)return;
   const day=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
   img.src='/panchang/'+day()+'.png';
   const open=on=>{menu.hidden=!on;btn.setAttribute('aria-expanded',String(on));if(on)menu.querySelector('button').focus()};
   const say=t=>{note.textContent=t;setTimeout(()=>{if(note.textContent===t)note.textContent=''},5000)};
   btn.addEventListener('click',()=>open(menu.hidden));
-  document.addEventListener('click',e=>{if(!e.target.closest('.gps-share'))open(false)});
+  document.addEventListener('click',e=>{if(!card.contains(e.target))open(false)});
   menu.addEventListener('keydown',e=>{if(e.key==='Escape'){open(false);btn.focus()}});
   menu.addEventListener('click',async e=>{const how=e.target.closest('[data-gps]')?.dataset.gps;if(!how)return;open(false);
     const d=day(),url=location.origin+'/panchang?d='+d,text="Today's panchang from SimpleJyotish:";track('today/panchang-share-'+how);
@@ -3537,7 +3558,7 @@ let BX_REQ=null;
       if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}
       const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(f),download:f.name});a.click();URL.revokeObjectURL(a.href);
       say('Image saved: post it as a Story or post from the Instagram app')}catch(err){if(err.name!=='AbortError')say('Could not share the image, please try again')}});
-})();
+});
 // House lords: where each of the 12 lords sits (D1, whole-sign), from /house-lords (core/lord_placements.py).
 // First an overview (the highlights and 12 tiles), then one house per page with Prev/Next, a dot per house, and
 // Learn more (the principle and three everyday examples) folded away until asked for.
