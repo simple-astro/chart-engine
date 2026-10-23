@@ -918,29 +918,38 @@
   .vt button:hover{border-color:var(--acc);color:var(--acc)}
   .vt button.on{background:linear-gradient(140deg,var(--g1),var(--g2));border-color:transparent;color:var(--onacc);font-weight:600}
   .sec{margin-bottom:12px;border:1px solid var(--line);border-radius:14px;padding:14px 18px;background:var(--bg2);transition:.18s}
-  /* House lords (My Chart › Full reading): highlights, a Simple / Learn more switch and one card per house */
+  /* House lords (My Chart › Full reading): an overview of 12 tiles first, then one house per page */
   .hl-intro{margin:6px 0 10px;color:var(--mut);font-size:.92rem}
-  .hl-hi{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin-bottom:12px}
-  .hl-hi div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg)} .hl-hi b{display:block;font-size:.92rem}
-  .hl-hi span{font-size:.86rem;color:var(--mut);line-height:1.45}
-  .hl-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;font-size:.84rem;color:var(--mut)}
-  .hl-seg{display:inline-flex;padding:3px;border-radius:99px;background:var(--soft)}
-  .hl-seg button{min-height:34px;padding:0 14px;border:0;border-radius:99px;background:none;color:var(--ink);font:600 .84rem var(--sans);cursor:pointer}
-  .hl-seg button[aria-pressed="true"]{background:var(--bg2);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-  .hl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
-  .hl-card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--bg);display:flex;flex-direction:column;gap:8px}
-  .hl-head{display:flex;align-items:flex-start;gap:10px} .hl-head>b{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--acc);font-weight:700}
-  .hl-head h4{margin:0;font-size:.98rem;line-height:1.25} .hl-head small{display:block;color:var(--mut);font-size:.78rem;font-weight:400;margin-top:2px}
-  .hl-tag{margin-left:auto;flex:none;padding:2px 9px;border-radius:99px;font-size:.74rem;font-weight:700}
+  .hl-hi{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scroll-snap-type:x mandatory}
+  .hl-hi div{flex:0 0 min(260px,78%);scroll-snap-align:start;border-radius:12px;padding:10px 12px;background:var(--soft)} .hl-hi b{display:block;font-size:.9rem}
+  .hl-hi span{font-size:.84rem;color:var(--mut);line-height:1.45}
+  .hl-read{display:flex;align-items:center;justify-content:center;width:100%;min-height:46px;margin-bottom:12px;border:0;border-radius:12px;background:var(--ink);color:var(--bg);font:600 .95rem var(--sans);cursor:pointer}
+  .hl-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+  .hl-tile{display:flex;flex-direction:column;justify-content:space-between;gap:4px;min-height:92px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);text-align:left;font:inherit;cursor:pointer}
+  .hl-tile:hover,.hl-tile:focus-visible{border-color:var(--acc);outline:none}
+  .hl-tile .n{font:700 1.6rem/1 var(--serif)} .hl-tile .n small{font:400 .75rem var(--sans);color:var(--mut);margin-left:4px} .hl-tile .l{font-size:.84rem;font-weight:600}
+  .hl-key{margin:10px 0 0;font-size:.76rem;color:var(--mut)}
+  .hl-tag{flex:none;align-self:flex-start;padding:2px 9px;border-radius:99px;font-size:.72rem;font-weight:700}
   .hl-tag.strong{background:color-mix(in srgb,var(--tl-go) 18%,transparent);color:var(--tl-go)}
   .hl-tag.mixed{background:color-mix(in srgb,var(--tl-steady) 30%,transparent);color:var(--ink)}
   .hl-tag.care{background:color-mix(in srgb,var(--tl-care) 22%,transparent);color:var(--ink)}
-  .hl-card p{margin:0;font-size:.92rem;line-height:1.5}
-  .hl-why{display:flex;flex-wrap:wrap;gap:5px} .hl-why span{font-size:.76rem;padding:2px 8px;border-radius:6px;background:var(--soft)}
-  .hl-learn{border-radius:10px;padding:10px 12px;background:var(--soft);font-size:.88rem;line-height:1.5}
-  .hl-learn h5{margin:0 0 3px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--acc)} .hl-learn ul{margin:0 0 8px;padding-left:18px} .hl-learn p{margin:0 0 8px}
-  .hl-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px dashed var(--line);padding-top:8px;font-size:.84rem}
-  .hl-foot button{flex:none;min-height:34px;padding:0 14px;border-radius:99px;border:1px solid var(--acc);background:none;color:var(--acc);font:600 .84rem var(--sans);cursor:pointer}
+  .hl-top{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.86rem}
+  .hl-top button{min-height:36px;padding:0;border:0;background:none;color:var(--acc);font:600 .9rem var(--sans);cursor:pointer}
+  .hl-dots{display:flex;gap:4px;margin:6px 0 14px} .hl-dots button{flex:1;min-width:0;height:6px;padding:0;border:0;border-radius:4px;cursor:pointer;opacity:.75}
+  .hl-dots button.strong{background:var(--tl-go)} .hl-dots button.mixed{background:var(--tl-steady)} .hl-dots button.care{background:var(--tl-care)}
+  .hl-dots button[aria-current="true"]{height:9px;background:var(--ink);opacity:1}
+  .hl-page{display:flex;flex-direction:column;gap:12px;max-width:760px}
+  .hl-meta{display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:700;letter-spacing:.06em;color:var(--acc);text-transform:uppercase}
+  .hl-page h4{margin:0;font:700 1.75rem/1.12 var(--serif)}
+  .hl-page>p{margin:0;font-size:1rem;line-height:1.6}
+  .hl-why{display:flex;flex-wrap:wrap;gap:6px} .hl-why span{font-size:.8rem;padding:3px 9px;border-radius:8px;background:var(--soft)}
+  .hl-when{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:.88rem;line-height:1.45}
+  .hl-more{display:flex;align-items:center;justify-content:space-between;min-height:46px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:600 .92rem var(--sans);cursor:pointer}
+  .hl-learn{border-radius:12px;padding:12px 14px;background:var(--soft);font-size:.9rem;line-height:1.55}
+  .hl-learn h5{margin:0 0 3px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--acc)} .hl-learn ul{margin:0;padding-left:18px} .hl-learn p{margin:0 0 10px}
+  .hl-ask{align-self:flex-start;min-height:40px;padding:0 16px;border-radius:99px;border:1px solid var(--acc);background:none;color:var(--acc);font:600 .88rem var(--sans);cursor:pointer}
+  .hl-nav{display:flex;gap:8px;margin-top:4px} .hl-nav button{flex:1;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 .92rem var(--sans);cursor:pointer}
+  .hl-nav button.next{border:0;background:var(--ink);color:var(--bg)}
   .sec:hover{border-color:var(--acc)}
   .sec summary{cursor:pointer;font-family:var(--serif);font-size:1.08rem;font-weight:600}
   .sec summary b{font-weight:600}
@@ -3444,28 +3453,45 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-ts]'
 // Avakhada chakra and special points (app/birth_extras.py), for the chart on screen (saved or not).
 let BX_REQ=null;
 // House lords: where each of the 12 lords sits (D1, whole-sign), from /house-lords (core/lord_placements.py).
-// Simple shows the reading; Learn more adds the principle behind it and three everyday examples.
-let HL_REQ=null,HL_DATA=null;
-const hlDepth=()=>{try{return localStorage.getItem('hlDepth')||'learn'}catch(e){return 'learn'}};
-function paintHouseLords(){const d=HL_DATA,box=$('hlords');if(!d||!box)return;const learn=hlDepth()==='learn',o=n=>n+muhurat_ord(n);
-  const TAG={Strong:'strong',Mixed:'mixed','Needs care':'care'};
-  box.innerHTML='<details class="sec" open><summary><b>Your house lords: where each one sits</b></summary>'+
-    '<p class="hl-intro">'+esc(d.lagna)+' lagna, whole-sign houses in your D1 chart. Each house is run by its lord; where that lord sits shows where the house’s matters play out.</p>'+
+// First an overview (the highlights and 12 tiles), then one house per page with Prev/Next, a dot per house, and
+// Learn more (the principle and three everyday examples) folded away until asked for.
+let HL_REQ=null,HL_DATA=null,HL_I=null,HL_LEARN=false;
+const HL_TAG={Strong:'strong',Mixed:'mixed','Needs care':'care'};
+function paintHouseLords(){const d=HL_DATA,box=$('hlords');if(!d||!box)return;const o=n=>n+muhurat_ord(n);
+  let body;
+  if(HL_I==null)body='<p class="hl-intro">'+esc(d.lagna)+' lagna, whole-sign houses in your D1 chart. Each house is run by its lord; where that lord sits shows where the house’s matters play out. Tap a house to read it.</p>'+
     '<div class="hl-hi">'+d.highlights.map(h=>'<div><b>'+esc(h.t)+'</b><span>'+esc(h.b)+'</span></div>').join('')+'</div>'+
-    '<div class="hl-bar"><div class="hl-seg" role="group" aria-label="Reading depth"><button type="button" data-hl="simple" aria-pressed="'+!learn+'">Simple</button><button type="button" data-hl="learn" aria-pressed="'+learn+'">Learn more</button></div>'+
-      '<span><b>Strong</b> gives its results fully · <b>Mixed</b> good results with effort or delay · <b>Needs care</b> handle mindfully</span></div>'+
-    '<div class="hl-grid">'+d.cards.map(c=>'<article class="hl-card"><div class="hl-head"><b>'+c.house+'</b><h4>'+o(c.house)+' lord '+esc(c.lord)+' in your '+o(c.sits_in)+' house'+
-        '<small>'+esc(c.sign)+' → '+esc(c.lord_sign)+'</small></h4><span class="hl-tag '+TAG[c.tag]+'">'+esc(c.tag)+'</span></div>'+
-      '<p>'+esc(c.text)+'</p><div class="hl-why">'+c.why.map(w=>'<span>'+esc(w)+'</span>').join('')+'</div>'+
-      (learn?'<div class="hl-learn"><h5>The principle</h5><p>'+esc(c.principle)+'</p><h5>In everyday life</h5><ul>'+c.life.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>':'')+
-      '<div class="hl-foot"><span><b>When:</b> '+esc(c.when)+'</span><button type="button" data-hlask="'+c.house+'">Ask</button></div></article>').join('')+'</div></details>'}
-async function loadHouseLords(req){HL_DATA=null;if($('hlords'))$('hlords').innerHTML='';if(!req)return;HL_REQ=req;
+    '<button type="button" class="hl-read" data-hlgo="0">Read in order, house by house ›</button>'+
+    '<div class="hl-tiles">'+d.cards.map((c,i)=>'<button type="button" class="hl-tile" data-hlgo="'+i+'" aria-label="'+o(c.house)+' lord '+esc(c.lord)+' in your '+o(c.sits_in)+' house, '+esc(c.tag)+'">'+
+      '<span class="n">'+c.house+'<small>→ '+o(c.sits_in)+'</small></span><span class="l">'+esc(c.lord)+'</span><span class="hl-tag '+HL_TAG[c.tag]+'">'+esc(c.tag)+'</span></button>').join('')+'</div>'+
+    '<p class="hl-key">“1 → 5th”: the lord of your 1st house sits in your 5th. <b>Strong</b> gives its results fully · <b>Mixed</b> with effort or delay · <b>Needs care</b> handle mindfully.</p>';
+  else{const c=d.cards[HL_I],p=d.cards[(HL_I+11)%12],n=d.cards[(HL_I+1)%12];
+    body='<div class="hl-top"><button type="button" data-hlgo="-1">‹ All houses</button><b>House '+c.house+' of 12</b></div>'+
+      '<div class="hl-dots" role="group" aria-label="Houses">'+d.cards.map((x,i)=>'<button type="button" class="'+HL_TAG[x.tag]+'" data-hlgo="'+i+'" aria-label="House '+x.house+'"'+(i===HL_I?' aria-current="true"':'')+'></button>').join('')+'</div>'+
+      '<div class="hl-page"><div class="hl-meta">'+esc(c.sign)+' → '+esc(c.lord_sign)+'<span class="hl-tag '+HL_TAG[c.tag]+'">'+esc(c.tag)+'</span></div>'+
+      '<h4>'+o(c.house)+' lord '+esc(c.lord)+' in your '+o(c.sits_in)+' house</h4><p>'+esc(c.text)+'</p>'+
+      '<div class="hl-why">'+c.why.map(w=>'<span>'+esc(w)+'</span>').join('')+'</div>'+
+      '<div class="hl-when"><b>When:</b> '+esc(c.when)+'</div>'+
+      '<button type="button" class="hl-more" data-hllearn aria-expanded="'+HL_LEARN+'"><span>Learn more: why it works this way</span><span aria-hidden="true">'+(HL_LEARN?'▴':'▾')+'</span></button>'+
+      (HL_LEARN?'<div class="hl-learn"><h5>The principle</h5><p>'+esc(c.principle)+'</p><h5>In everyday life</h5><ul>'+c.life.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>':'')+
+      '<button type="button" class="hl-ask" data-hlask="'+c.house+'">Ask about this</button>'+
+      '<div class="hl-nav"><button type="button" data-hlgo="'+((HL_I+11)%12)+'">‹ '+o(p.house)+' lord</button><button type="button" class="next" data-hlgo="'+((HL_I+1)%12)+'">'+o(n.house)+' lord ›</button></div></div>'}
+  box.innerHTML='<details class="sec" open><summary><b>Your house lords: where each one sits</b></summary>'+body+'</details>'}
+async function loadHouseLords(req){HL_DATA=null;HL_I=null;HL_LEARN=false;if($('hlords'))$('hlords').innerHTML='';if(!req)return;HL_REQ=req;
   try{const r=await fetch('/house-lords',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(req)});const d=await r.json();
     if(!r.ok||HL_REQ!==req)return;HL_DATA=d;paintHouseLords()}catch(e){}}
-document.addEventListener('click',e=>{const s=e.target.closest('[data-hl]');
-  if(s){try{localStorage.setItem('hlDepth',s.dataset.hl)}catch(err){}paintHouseLords();return}
-  const a=e.target.closest('[data-hlask]');if(!a||!HL_DATA)return;const c=HL_DATA.cards[+a.dataset.hlask-1],o=n=>n+muhurat_ord(n);
+document.addEventListener('click',e=>{if(!HL_DATA)return;const o=n=>n+muhurat_ord(n);
+  const g=e.target.closest('[data-hlgo]');
+  if(g){const i=+g.dataset.hlgo;HL_I=i<0?null:i;HL_LEARN=false;paintHouseLords();
+    const s=$('hlords');if(s&&s.getBoundingClientRect().top<0)s.scrollIntoView({block:'start'});
+    const f=s&&s.querySelector(HL_I==null?'.hl-read':'.hl-page h4');if(f){f.setAttribute('tabindex','-1');f.focus({preventScroll:true})}if(HL_I!=null)track('chart/house-lords');return}
+  if(e.target.closest('[data-hllearn]')){HL_LEARN=!HL_LEARN;paintHouseLords();return}
+  const a=e.target.closest('[data-hlask]');if(!a)return;const c=HL_DATA.cards[+a.dataset.hlask-1];
   window.askSukh('My '+o(c.house)+' lord '+c.lord+' sits in my '+o(c.sits_in)+' house ('+c.lord_sign+'). What does this mean for my life, and when does it show?')});
+// Swipe left or right on a house page to move between houses (phones)
+(()=>{let x0=null,y0=null;document.addEventListener('touchstart',e=>{if(HL_I!=null&&e.target.closest('#hlords .hl-page')){x0=e.touches[0].clientX;y0=e.touches[0].clientY}else x0=null},{passive:true});
+  document.addEventListener('touchend',e=>{if(x0==null||HL_I==null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;
+    if(Math.abs(dx)>60&&Math.abs(dx)>1.5*Math.abs(dy)){HL_I=(HL_I+(dx<0?1:11))%12;HL_LEARN=false;paintHouseLords()}},{passive:true})})();
 async function loadBirthExtras(req){$('avak').innerHTML='';$('special').innerHTML='';if(!req)return;BX_REQ=req;
   try{const r=await fetch('/birth-extras',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(req)});const d=await r.json();if(!r.ok||BX_REQ!==req)return;
     $('avak').innerHTML='<details class="avk" open><summary><b>Birth summary</b> <small class="hint">Avakhada chakra</small></summary><dl>'+d.avakhada.rows.map(x=>'<div><dt>'+esc(x.label)+'</dt><dd>'+esc(x.value)+'</dd></div>').join('')+'</dl></details>';
