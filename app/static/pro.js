@@ -68,7 +68,8 @@
     [11, 402, -2, 9, 132], [10, 402, 130, 9, 140], [9, 402, 270, 9, 132]];
   const savCol = s => s >= 30 ? 'var(--teal)' : s <= 22 ? 'var(--red)' : 'var(--ink2)';
   const SC = [[1, 0], [2, 0], [3, 0], [3, 1], [3, 2], [3, 3], [2, 3], [1, 3], [0, 3], [0, 2], [0, 1], [0, 0]];
-  const lab = it => it.p ? `<tspan data-p="${it.p}" style="fill:${col(it.p)}">${it.t}</tspan>` : `<tspan style="fill:${it.c || 'var(--gold)'}">${it.t}</tspan>`;
+  const lab = it => it.p ? `<tspan data-p="${it.p}" style="fill:${col(it.p)}">${it.t}</tspan>`
+    : `<tspan style="fill:${it.c || 'var(--gold)'}${it.t.startsWith('Asc') ? ';font-size:.6em;font-weight:600' : ''}">${it.t}</tspan>`;  // Asc stays small
   function chartSVG(lag, byH, o = {}) {
     const ring = !!o.sav && STYLE !== 'south', vb = ring ? '-13 -13 426 426' : '-2 -2 404 404', big = o.big !== false;
     let v = `<svg viewBox="${vb}" role="img" aria-label="${esc(o.label || 'chart')}">`;
@@ -103,12 +104,17 @@
     const o = {};
     P9.forEach(p => { const s = signOf(p); if (s == null) return; const h = (s - lag + 12) % 12; (o[h] = o[h] || []).push({ t: AB[p] + retro(p, S.c.grahas[p]), p, d: deg ? dm(S.c.grahas[p].degrees_in_sign) : null }); });
     extra.forEach(([t, s]) => { const h = (s - lag + 12) % 12; (o[h] = o[h] || []).push({ t }); });
+    if (signOf === NATAL) { const a = S.c.lagna.ascendant % 30, h = (S.c.lagna.sign_index - lag + 12) % 12;  // the Ascendant and its degree, always
+      (o[h] = o[h] || []).unshift(deg ? { t: 'Asc', d: dm(a) } : { t: `Asc ${Math.floor(a)}°` }); }
     if (signOf === NATAL) outerOn().forEach(([p, g]) => { const h = (g.sign_index - lag + 12) % 12;
       (o[h] = o[h] || []).push({ t: AB[p] + (g.retrograde ? 'ᴿ' : ''), p, d: deg ? dm(g.degrees_in_sign) : null }); });
     return o;
   }
   const savHouses = lag => { const sav = S.c.ashtakavarga && S.c.ashtakavarga.sav; return sav ? sav.map((_, i) => sav[(lag + i) % 12]) : null; };
-  const vargaChart = v => { const L = S.c.varga_lagna[v]; return chartSVG(L, byHouse(p => S.c.vargas[v][p] && S.c.vargas[v][p].sign_index, L), { label: v }); };
+  const vargaChart = v => { const L = S.c.varga_lagna[v], o = byHouse(p => S.c.vargas[v][p] && S.c.vargas[v][p].sign_index, L);
+    // the Ascendant and its degree in this varga: (longitude × n) mod 30; D30's unequal parts have no such degree
+    (o[0] = o[0] || []).unshift({ t: v === 'D30' ? 'Asc' : `Asc ${Math.floor(S.c.lagna.ascendant * parseInt(v.slice(1)) % 30)}°` });
+    return chartSVG(L, o, { label: v }); };
 
   // ----- Vimshottari at any moment (5 levels; the chart stores 3, the rest split in the same proportions) -----
   const vimSplit = p => { const out = [], i0 = VIM_ORDER.indexOf(p.lord), L = p.end - p.start; let s = +p.start;
@@ -143,10 +149,11 @@
   add('d9', 'Navamsha · D9', G.prim, 1, () => { const v = S.c.vargas.D9, L = S.c.varga_lagna.D9;
     const vo = P9.filter(p => v[p].sign_index === S.c.grahas[p].sign_index), own = P7.filter(p => LORDS[v[p].sign_index] === p), deb = P7.filter(p => dignity(p, v[p].sign_index) === 'debilitated'), ex = P7.filter(p => dignity(p, v[p].sign_index) === 'exalted');
     return vargaChart('D9') + `<div class="note">D9 Lagna ${SIGNS[L]}${vo.length ? ' · Vargottama ' + vo.map(p => pn(p, 1)).join(' ') : ''}${ex.length ? ' · Exalted ' + ex.map(p => pn(p, 1)).join(' ') : ''}${own.length ? ' · Own ' + own.map(p => pn(p, 1)).join(' ') : ''}${deb.length ? ' · Debilitated ' + deb.map(p => pn(p, 1)).join(' ') : ''}</div>`; }, { kw: 'navamsa marriage' });
-  add('chalit', 'Bhava Chalit', G.prim, 1, () => { const o = {}; P9.forEach(p => { const h = S.c.grahas[p].house - 1; (o[h] = o[h] || []).push({ t: AB[p] + retro(p, S.c.grahas[p]), p }); });
+  const ASC = () => ({ t: `Asc ${Math.floor(S.c.lagna.ascendant % 30)}°` });  // the natal Ascendant and its degree
+  add('chalit', 'Bhava Chalit', G.prim, 1, () => { const o = { 0: [ASC()] }; P9.forEach(p => { const h = S.c.grahas[p].house - 1; (o[h] = o[h] || []).push({ t: AB[p] + retro(p, S.c.grahas[p]), p }); });
     return chartSVG(0, o, { houseSigns: S.c.houses.map(h => h.sign_index), label: 'Chalit' }) + `<div class="note">Houses from the ${esc(S.c.meta.house_system)} cusps</div>`; }, { kw: 'chalit cusps bhava' });
-  add('moonchart', 'Moon chart', G.prim, 1, () => { const L = S.c.grahas.Moon.sign_index; return chartSVG(L, byHouse(NATAL, L, [['As', S.c.lagna.sign_index]]), { label: 'Chandra' }); }, { kw: 'chandra lagna' });
-  add('sunchart', 'Sun chart', G.prim, 1, () => { const L = S.c.grahas.Sun.sign_index; return chartSVG(L, byHouse(NATAL, L, [['As', S.c.lagna.sign_index]]), { label: 'Surya' }); }, { kw: 'surya lagna' });
+  add('moonchart', 'Moon chart', G.prim, 1, () => { const L = S.c.grahas.Moon.sign_index; return chartSVG(L, byHouse(NATAL, L), { label: 'Chandra' }); }, { kw: 'chandra lagna' });
+  add('sunchart', 'Sun chart', G.prim, 1, () => { const L = S.c.grahas.Sun.sign_index; return chartSVG(L, byHouse(NATAL, L), { label: 'Surya' }); }, { kw: 'surya lagna' });
 
   // Divisional charts
   const VN = { D2: 'Hora', D3: 'Drekkana', D4: 'Chaturthamsa', D7: 'Saptamsa', D10: 'Dasamsa', D12: 'Dwadasamsa', D16: 'Shodasamsa', D20: 'Vimsamsa',
@@ -245,7 +252,8 @@
       if (g.combust) f.push('<tspan style="fill:var(--amber)" font-weight="700" font-size="11"> c</tspan>');
       if (d === 'debilitated') f.push('<tspan style="fill:var(--red)" font-size="11"> ▼</tspan>'); else if (d === 'exalted') f.push('<tspan style="fill:var(--teal)" font-size="11"> ▲</tspan>');
       return f.join(''); };
-    const o = {}; P9.forEach(p => { const g = S.c.grahas[p], h = (g.sign_index - L + 12) % 12; (o[h] = o[h] || []).push({ t: AB[p], p, d: Math.floor(g.degrees_in_sign) + '°', f: flags(p, g) }); });
+    const o = { 0: [{ t: 'Asc', d: Math.floor(S.c.lagna.ascendant % 30) + '°' }] };
+    P9.forEach(p => { const g = S.c.grahas[p], h = (g.sign_index - L + 12) % 12; (o[h] = o[h] || []).push({ t: AB[p], p, d: Math.floor(g.degrees_in_sign) + '°', f: flags(p, g) }); });
     const j = S.c.jaimini; [[j.arudha_lagna && j.arudha_lagna.house, 'AL'], [j.upapada && j.upapada.house, 'UL']].forEach(([h, t]) => { if (h) (o[h - 1] = o[h - 1] || []).push({ t, c: 'var(--teal)' }); });
     let svg = chartSVG(L, o, { deg: true, label: 'D1 aspects' });
     // arrows: from the planet's house to each house it aspects, in the planet's colour, bowed so they do not overlap
@@ -296,7 +304,7 @@
       <button class="btn" id="gplay" aria-pressed="${!!S.timer}">${S.timer ? '❚❚ Pause' : '▶ Play'}</button>
       <input type="datetime-local" id="gdate" value="${new Date(S.time - S.time.getTimezoneOffset() * 6e4).toISOString().slice(0, 16)}" class="sel"></div>
       <div class="note">Drives every timing widget: Gochar, current Dasha, ruling planets. ±5 years.</div>`; }, { time: true, kw: 'time travel slider' });
-  add('gchart', 'Gochar chart', G.go, 1, async () => { const g = await gochar(), L = S.c.lagna.sign_index, o = {};
+  add('gchart', 'Gochar chart', G.go, 1, async () => { const g = await gochar(), L = S.c.lagna.sign_index, o = { 0: [ASC()] };
     g.planets.forEach(x => { const h = (x.sign_index - L + 12) % 12; (o[h] = o[h] || []).push({ t: AB[x.planet] + (x.retrograde && x.planet !== 'Rahu' && x.planet !== 'Ketu' ? 'ᴿ' : ''), p: x.planet }); });
     return chartSVG(L, o, { label: 'Transit' }) + `<div class="note">${dt(g.date)} · in houses from the natal Lagna</div>`; }, { time: true, kw: 'transit chart' });
   add('gpos', 'Gochar positions', G.go, 2, async () => { const g = await gochar();
@@ -328,6 +336,7 @@
   add('nadi', 'Nadi amsha · D150', G.ours, 1, () => { const v = S.c.vargas.D150; return v ? vargaChart('D150') : '<p class="note">Not available.</p>'; }, { kw: 'nadi d150' });
   add('lalkitab', 'Lal Kitab houses', G.ours, 1, async () => { const lk = await need('LK'), o = {};
     Object.entries(lk.houses).forEach(([h, ps]) => { o[+h - 1] = ps.map(p => ({ t: AB[p] || p, p })); });
+    const ah = S.c.lagna.sign_index; (o[ah] = o[ah] || []).unshift(ASC());
     return chartSVG(0, o, { houseSigns: [...Array(12).keys()], label: 'Lal Kitab' }) + '<div class="note">Fixed houses: Aries = house 1</div>'; }, { kw: 'lal kitab' });
   add('tajika', 'Varshaphal (Tajika)', G.ours, 1, async () => { const t = await need('TJ');
     return kv([['Year from', dt(t.varsha_pravesh)], ['Age', t.age], ['Varsha Lagna', esc((t.lagna || {}).sign || '–')], ['Muntha', esc((t.muntha || {}).sign || '–') + (t.muntha && t.muntha.house ? ' · house ' + t.muntha.house : '')],
@@ -337,9 +346,9 @@
   G.nadi = 'Nadi · KP';
   const VORDER = [['Ketu', 'Moon', 'Jupiter'], ['Venus', 'Mars', 'Saturn'], ['Sun', 'Rahu', 'Mercury']];
   const fullDT = (d, tz) => d.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: tz }).replace(',', '');
-  add('nlagdeg', 'Lagna chart with degrees', G.nadi, 1, () => { const L = S.c.lagna.sign_index, o = byHouse(NATAL, L, [], true);
-    (o[0] = o[0] || []).unshift({ t: 'Asc', d: dm(S.c.lagna.ascendant % 30) }); return chartSVG(L, o, { deg: true, label: 'D1' }); }, { kw: 'degrees rasi nadi' });
-  add('ncusp', 'Nirayana cusps chart', G.nadi, 1, () => { const o = {};
+  add('nlagdeg', 'Lagna chart with degrees', G.nadi, 1, () => { const L = S.c.lagna.sign_index, o = byHouse(NATAL, L, [], true);  // byHouse adds Asc
+    return chartSVG(L, o, { deg: true, label: 'D1' }); }, { kw: 'degrees rasi nadi' });
+  add('ncusp', 'Nirayana cusps chart', G.nadi, 1, () => { const o = { 0: [{ t: 'Asc', d: dm(S.c.lagna.ascendant % 30) }] };
     P9.forEach(p => { const g = S.c.grahas[p], h = g.house - 1; (o[h] = o[h] || []).push({ t: AB[p] + retro(p, g), p, d: dm(g.degrees_in_sign) }); });
     return chartSVG(0, o, { deg: true, houseSigns: S.c.houses.map(h => h.sign_index), cuspDeg: S.c.houses.map(h => dm(h.degrees_in_sign)), label: 'Cusps' }) +
       `<div class="note">Planets in their bhava · sign number and cusp degree in each house · ${esc(S.c.meta.house_system)}</div>`; }, { kw: 'bhava cusps nirayana' });

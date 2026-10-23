@@ -440,8 +440,9 @@ def chart_view(chart: dict) -> dict | None:
     d1 = {p: {"sign": g["sign_index"], "retro": g.get("retrograde", False)} for p, g in chart["grahas"].items()}
     d9 = {p: {"sign": v["sign_index"], "retro": chart["grahas"][p].get("retrograde", False)}
           for p, v in chart["vargas"]["D9"].items()}
-    return {"d1": {"lagna": chart["lagna"]["sign_index"], "planets": d1},
-            "d9": {"lagna": varga_sign(chart["lagna"]["ascendant"], 9), "planets": d9},
+    asc = chart["lagna"]["ascendant"]
+    return {"d1": {"lagna": chart["lagna"]["sign_index"], "asc_deg": round(asc % 30, 2), "planets": d1},
+            "d9": {"lagna": varga_sign(asc, 9), "asc_deg": round(asc * 9 % 30, 2), "planets": d9},
             "tob_unknown": bool(chart["meta"].get("tob_unknown"))}
 
 

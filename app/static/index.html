@@ -1258,6 +1258,7 @@
   .jpt{border:1px solid var(--line);background:var(--bg2);color:var(--mut);border-radius:99px;padding:4px 12px;font:600 .74rem var(--sans);cursor:pointer;letter-spacing:.5px}
   .jpt[aria-pressed="true"]{background:var(--soft);border-color:var(--acc2);color:var(--acc2)}
   .chart .jp{fill:var(--acc2);font-weight:700;font-size:.82em}
+  .chart .jp.asc{font-size:.58em;font-weight:600} .chart .jp.asc .dg{font-size:1em;fill:var(--acc2)}  /* Asc 21°: small, beside the planets */
   .jaicards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
   .jai{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
   .jai small{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
@@ -2643,7 +2644,7 @@ function drawComposite(el,first,inner,outer,ascLabel){
   let v='<svg viewBox="-2 -2 404 404" xmlns="http://www.w3.org/2000/svg" class="comp"><rect class="bgsq" x="0" y="0" width="400" height="400"/>'+
     '<path class="ln" d="M0 0L100 100M400 0L300 100M0 400L100 300M400 400L300 300M200 0L100 100M200 0L300 100M0 200L100 100M0 200L100 300M200 400L100 300M200 400L300 300M400 200L300 100M400 200L300 300"/>'+
     '<rect class="cin" x="100" y="100" width="200" height="200"/><path class="ln" d="M100 100L300 300M300 100L100 300M200 100L300 200L200 300L100 200Z"/>'+
-    '<text class="asclbl" x="200" y="114" text-anchor="middle">'+(ascLabel||'LAGNA')+'</text>';
+    (ascLabel===false?'':'<text class="asclbl" x="200" y="114" text-anchor="middle">'+(ascLabel||'ASC')+'</text>');
   for(let h=0;h<12;h++){const sg=(first+h)%12+1,[ix,iy]=IN[h],[ox,oy]=OUT[h],[nx,ny]=NUM[h],ins=inner[h]||[],os=outer[h]||[];
     v+='<text class="csn" x="'+ix+'" y="'+(iy-(ins.length?11+(ins.length-1)*4:-3))+'" text-anchor="middle">'+sg+'</text>';
     ins.forEach((p,j)=>{v+='<text class="cpi" x="'+ix+'" y="'+(iy+2+j*9-(ins.length-1)*4)+'" text-anchor="middle">'+lab(p,'pg cnat')+'</text>'});
@@ -2665,10 +2666,10 @@ function drawNorth(el,lagnaIdx,byH,houseSigns,ascLabel){
     '<polygon class="kd" points="400,200 300,100 200,200 300,300"/><polygon class="kd" points="200,400 300,300 200,200 100,300"/><polygon class="kd" points="0,200 100,100 200,200 100,300"/>'+
     '<polygon fill="url(#'+gid+')" points="200,0 300,100 200,200 100,100"/>'+
     '<path class="ln" d="M0 0L400 400M400 0L0 400M200 0L400 200L200 400L0 200Z"/>'+
-    '<text class="asclbl" x="200" y="32" text-anchor="middle">'+(ascLabel||'LAGNA')+'</text>'+
+    (ascLabel===false?'':'<text class="asclbl" x="200" y="32" text-anchor="middle">'+(ascLabel||'ASC')+'</text>')+
     HOUSE_POLY.map((pts,i)=>'<polygon class="hz" data-h="'+(i+1)+'" points="'+pts+'"><title>House '+(i+1)+'</title></polygon>').join('');
   // byH entries are 'Su' strings, or {t:'Su', d:'15°', p:'Sun', b:['ex','R'], cls} for the main chart.
-  const lab=p=>typeof p==='string'?p:p.ghost?'<tspan class="bnng"><title>'+p.title+'</title>'+p.t+'<tspan class="bd rt" dx="1">R</tspan></tspan>':p.jp?'<tspan class="jp">'+p.t+'</tspan>':'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
+  const lab=p=>typeof p==='string'?p:p.ghost?'<tspan class="bnng"><title>'+p.title+'</title>'+p.t+'<tspan class="bd rt" dx="1">R</tspan></tspan>':p.jp?'<tspan class="jp'+(p.t==='Asc'?' asc':'')+'">'+p.t+(p.d?'<tspan class="dg" dx="1.5">'+p.d+'</tspan>':'')+'</tspan>':'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
     (p.d?'<tspan class="dg" dx="1.5">'+p.d+'</tspan>':'')+(p.b||[]).map(k=>'<tspan class="bd '+BD[k][1]+'" dx="1">'+BD[k][0]+'</tspan>').join('')+
     (p.lv?'<tspan class="dlv" dx="1.5" dy="-5">'+p.lv+'</tspan><tspan dy="5"> </tspan>':'')+'</tspan>';
   P.forEach(([x,y],h)=>{
@@ -2685,13 +2686,13 @@ const SOUTH_CELL=[[1,0],[2,0],[3,0],[3,1],[3,2],[3,3],[2,3],[1,3],[0,3],[0,2],[0
 const SIGN_AB=['Ari','Tau','Gem','Can','Leo','Vir','Lib','Sco','Sag','Cap','Aqu','Pis'];
 function drawSouth(el,lagnaIdx,byH,ascLabel){
   const W=100,centres=[];
-  const lab=p=>typeof p==='string'?p:p.ghost?'<tspan class="bnng"><title>'+p.title+'</title>'+p.t+'<tspan class="bd rt" dx="1">R</tspan></tspan>':p.jp?'<tspan class="jp">'+p.t+'</tspan>':'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
+  const lab=p=>typeof p==='string'?p:p.ghost?'<tspan class="bnng"><title>'+p.title+'</title>'+p.t+'<tspan class="bd rt" dx="1">R</tspan></tspan>':p.jp?'<tspan class="jp'+(p.t==='Asc'?' asc':'')+'">'+p.t+(p.d?'<tspan class="dg" dx="1.5">'+p.d+'</tspan>':'')+'</tspan>':'<tspan class="pg" data-p="'+(p.p||'')+'"><tspan class="pn '+(p.cls||'')+'">'+p.t+'</tspan>'+
     (p.d?'<tspan class="dg" dx="1.5">'+p.d+'</tspan>':'')+(p.b||[]).map(k=>'<tspan class="bd '+BD[k][1]+'" dx="1">'+BD[k][0]+'</tspan>').join('')+
     (p.lv?'<tspan class="dlv" dx="1.5" dy="-5">'+p.lv+'</tspan><tspan dy="5"> </tspan>':'')+'</tspan>';
   let v='<svg viewBox="-2 -2 404 404" xmlns="http://www.w3.org/2000/svg" class="south"><rect class="bgsq" x="0" y="0" width="400" height="400"/>'+
     '<path class="ln" d="M0 100H400M0 300H400M100 0V400M300 0V400M0 200H100M300 200H400M200 0V100M200 300V400"/>'+
     '<rect class="southmid" x="100" y="100" width="200" height="200"/>'+
-    '<text class="asclbl" x="200" y="196" text-anchor="middle">'+(ascLabel||'LAGNA')+' · '+esc(SIGNS[lagnaIdx])+'</text>'+
+    '<text class="asclbl" x="200" y="196" text-anchor="middle">'+(ascLabel||'ASC')+' · '+esc(SIGNS[lagnaIdx])+'</text>'+
     '<text class="sn southnote" x="200" y="214" text-anchor="middle">South Indian</text>';
   for(let h=0;h<12;h++){const sg=(lagnaIdx+h)%12,[cx,cy]=SOUTH_CELL[sg],x=cx*W,y=cy*W,pls=byH[h]||[];
     centres.push([x+W/2,y+W/2]);
@@ -2892,6 +2893,7 @@ async function loadLal(){
     const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);
     const byH={};Object.entries(d.houses).forEach(([h,pl])=>{byH[h-1]=pl.map(n=>ABBR[n])});
     const lagnaIdx=SIGNS.indexOf(d.lagna_sign);
+    if(lastChart&&lastChart.lagna.sign_index===lagnaIdx)(byH[0]=byH[0]||[]).unshift({t:'Asc',d:Math.floor(lastChart.lagna.ascendant%30)+'°',jp:true});
     const badge=t=>'<span class="badge '+(/pakka|Exalted/.test(t)?'good':/Debilit/.test(t)?'warn':'')+'">'+esc(t)+'</span>';
     box.innerHTML='<div class="callout">'+esc(d.convention)+'</div>'+
       '<div class="lk"><div class="chart" id="lkchart"></div><div class="scroll"><table id="lktable"></table></div></div>'+
@@ -2899,7 +2901,7 @@ async function loadLal(){
       '<h3 style="margin-top:18px">Remedies by planet</h3><p class="hint" style="margin-top:0">Highlighted planets are debilitated by house or sleeping outside their pakka ghar, and are usually looked at first.</p>'+
       d.remedies.map(r=>'<div class="rem'+(r.priority?' pri':'')+'"><h4>'+r.planet+' <small>· house '+r.house+'</small>'+(r.priority?' <span class="badge warn">Priority</span>':'')+'</h4><ul>'+r.actions.map(a=>'<li>'+esc(a)+'</li>').join('')+'</ul></div>').join('')+
       '<div class="hint">'+esc(d.disclaimer)+'</div>';
-    drawNorth($('lkchart'),lagnaIdx,byH);
+    drawNorth($('lkchart'),lagnaIdx,byH,null,lastChart&&lastChart.lagna.sign_index===lagnaIdx?false:null);
     table($('lktable'),['Planet','House','Pakka ghar','Meaning of house','Status'],d.planets.map(p=>[p.planet,'H'+p.house,p.pakka_ghar.join(', '),p.theme,p.status.map(badge).join('')||'—']));
   }catch(err){lkLoaded=false;box.innerHTML='<p class="err">⚠ '+esc(err.message)+'</p>'}
 }
@@ -3080,14 +3082,14 @@ async function loadMundane(year){
   try{const r=await fetch('/mundane?year='+y+'&lat='+loc.lat+'&lon='+loc.lon);const d=await r.json();if(!r.ok)throw new Error(apiErr(d.detail)||r.statusText);
     const tz=loc.tz_name,dt=iso=>new Date(iso).toLocaleString([],{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',timeZone:tz}),
       dd=iso=>new Date(iso).toLocaleDateString([],{weekday:'long',day:'numeric',month:'long',timeZone:tz});
-    const byH=c=>{const o={};Object.entries(c.planets).forEach(([n,p])=>{(o[p.house-1]=o[p.house-1]||[]).push({t:ABBR[n],d:Math.floor(p.deg)+'°',p:n,b:p.retrograde&&n!=='Rahu'&&n!=='Ketu'?['R']:[]})});return o};
+    const byH=c=>{const o={0:[{t:'Asc',d:Math.floor(c.lagna.deg)+'°',jp:true}]};Object.entries(c.planets).forEach(([n,p])=>{(o[p.house-1]=o[p.house-1]||[]).push({t:ABBR[n],d:Math.floor(p.deg)+'°',p:n,b:p.retrograde&&n!=='Rahu'&&n!=='Ketu'?['R']:[]})});return o};
     box.innerHTML='<div class="tjstep"><button type="button" class="btn ghost" data-md="-1" aria-label="Previous year">‹</button><div><b>'+d.year+' · '+esc(d.samvatsara)+'</b><small>Vikram Samvat '+d.vikram_samvat+' · for '+esc(hereName())+'</small></div><button type="button" class="btn ghost" data-md="1" aria-label="Next year">›</button></div>'+
       '<div class="tjcards"><div class="jai"><small>Raja (king of the year)</small><b>'+esc(d.raja)+'</b><p>Lord of the weekday of the New Year, '+dd(d.new_year.pratipada_day)+'.</p></div>'+
       '<div class="jai"><small>Mantri (minister)</small><b>'+esc(d.mantri)+'</b><p>Lord of the weekday of Mesha Sankranti, '+dt(d.mesha_sankranti.at)+'.</p></div></div>'+
       '<div class="lk"><div><h4 class="jaih" style="font-size:1rem;margin-top:0">Hindu New Year <small>new moon, '+dt(d.new_year.at)+'</small></h4><div class="chart" id="mdny"></div><p class="hint">Lagna '+esc(d.new_year.lagna.sign)+'</p></div>'+
       '<div><h4 class="jaih" style="font-size:1rem;margin-top:0">Mesha Sankranti <small>'+dt(d.mesha_sankranti.at)+'</small></h4><div class="chart" id="mdms"></div><p class="hint">Lagna '+esc(d.mesha_sankranti.lagna.sign)+'</p></div></div>'+
       '<p class="hint">Mundane charts read the year for a country or region, not for one person. Lahiri; cast for the place you are (set it on Today), else your birthplace.</p>';
-    drawNorth($('mdny'),d.new_year.lagna.sign_index,byH(d.new_year));drawNorth($('mdms'),d.mesha_sankranti.lagna.sign_index,byH(d.mesha_sankranti));
+    drawNorth($('mdny'),d.new_year.lagna.sign_index,byH(d.new_year),null,false);drawNorth($('mdms'),d.mesha_sankranti.lagna.sign_index,byH(d.mesha_sankranti),null,false);
   }catch(e){MD.key=null;box.innerHTML='<p class="err">⚠ '+esc(e.message)+'</p>'}
 }
 $('mundbody').addEventListener('click',e=>{const b=e.target.closest('[data-md]');if(b)loadMundane(MD.year+(+b.dataset.md))});
@@ -3123,7 +3125,7 @@ function paintTajika(d){
     dd=iso=>new Date(iso).toLocaleDateString([],{day:'numeric',month:'short',year:'numeric',timeZone:tz}),
     dm=iso=>new Date(iso).toLocaleDateString([],{day:'numeric',month:'short',timeZone:tz}),ord=n=>n+muhurat_ord(n),now=Date.now();
   const yl=d.year_lord,m=d.muntha,P=d.planets,R=d.reading||{},L=TJ.life;
-  const byH={};Object.values(P).forEach(p=>{(byH[p.house-1]=byH[p.house-1]||[]).push({t:ABBR[p.name],d:Math.floor(p.deg)+'°',p:p.name,
+  const byH={0:[{t:'Asc',d:Math.floor(d.lagna.deg)+'°',jp:true}]};Object.values(P).forEach(p=>{(byH[p.house-1]=byH[p.house-1]||[]).push({t:ABBR[p.name],d:Math.floor(p.deg)+'°',p:p.name,
     b:[p.dignity==='exalted'?'ex':p.dignity==='debilitated'?'db':p.dignity==='own'?'own':null,p.retrograde&&p.name!=='Rahu'&&p.name!=='Ketu'?'R':null].filter(Boolean)})});
   (byH[m.house-1]=byH[m.house-1]||[]).push({t:'Mu',jp:true});
   const cur=d.mudda_dasha.find(x=>now>=Date.parse(x.start)&&now<Date.parse(x.end));
@@ -3189,7 +3191,7 @@ function paintTajika(d){
     '<h4 class="jaih" style="font-size:1rem">Tajika aspects <small>3/11 and 5/9 friendly · 4/10 and 1/7 inimical</small></h4><div class="scroll"><table id="tjasp"></table></div>'+
     '<p class="hint">Year lord: the strongest office-bearer aspecting the annual Lagna, strength judged by dignity in the annual chart (the full Pancha-vargeeya bala is not used yet). Sahams: A − B + C, reversed for a night return where the rule says so. Eight of the sixteen Tajika yogas are computed. Mu = Muntha.</p></details>'+
     '<p class="hint">The reading follows set rules: Muntha’s house, the year lord and Lagna lord, each area’s house lord, Tajika yogas and Saham, and your running Dasha. Tendencies, not promises.</p>';
-  drawNorth($('tjchart'),d.lagna.sign_index,byH);
+  drawNorth($('tjchart'),d.lagna.sign_index,byH,null,false);
   table($('tjoff'),['Office','Planet','Dignity','Aspects the Lagna'],d.office_bearers.map(b=>[esc(b.office),(b.planet===yl.planet&&b.office===yl.office?'<b>'+b.planet+' ◀ year lord</b>':b.planet),b.dignity,b.aspects_lagna?b.aspect:'—']));
   table($('tjsah'),['Saham','Shows','Sign','House','Lord'],d.sahams.map(x=>['<b>'+esc(x.name)+'</b>',esc(x.shows),esc(x.sign)+' '+Math.floor(x.deg)+'°',ord(x.house),esc(x.lord)+' <small class="hint">('+esc(x.lord_dignity)+', H'+x.lord_house+')</small>']));
   table($('tjmd'),['Lord','From','To'],d.mudda_dasha.map(x=>[x===cur?'<b>'+x.lord+' ◀ now</b>':x.lord,dd(x.start),dd(x.end)]));
@@ -3293,8 +3295,9 @@ function paintMatchCharts(){
   if(!MCH||!MCH.charts||!$('mch-groom'))return;
   $('mchseg').querySelectorAll('[data-mv]').forEach(b=>{const on=b.dataset.mv===MV;b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on))});
   ['groom','bride'].forEach(k=>{const c=MCH.charts[k][MV],byH={};
+    if(c.asc_deg!=null)byH[0]=[{t:'Asc',d:Math.floor(c.asc_deg)+'°',jp:true}];
     Object.entries(c.planets).forEach(([p,x])=>{const h=(x.sign-c.lagna+12)%12;(byH[h]=byH[h]||[]).push(ABBR[p]+(x.retro?'ᴿ':''))});
-    drawNorth($('mch-'+k),c.lagna,byH);$('mcap-'+k).textContent='· '+SIGNS[c.lagna]+' lagna'+(MV==='d9'?' in D9':'')});
+    drawNorth($('mch-'+k),c.lagna,byH,null,c.asc_deg!=null?false:null);$('mcap-'+k).textContent='· '+SIGNS[c.lagna]+' lagna'+(MV==='d9'?' in D9':'')});
   if(window.paintMatchLinks)window.paintMatchLinks(MCH,MV)}
 document.addEventListener('click',e=>{const b=e.target.closest('#mchseg [data-mv]');if(!b||b.dataset.mv===MV)return;MV=b.dataset.mv;track('match/'+MV);paintMatchCharts()});
 function matchMoonHtml(d){
@@ -3607,15 +3610,18 @@ function kundliCanvas(c,req,bx,pan){
   // charts: D1 and D9 (North or South Indian, as chosen in the app)
   const NP=[[200,95],[100,45],[45,100],[95,200],[45,300],[100,355],[200,305],[300,355],[355,300],[305,200],[355,100],[300,45]],SC=[[1,0],[2,0],[3,0],[3,1],[3,2],[3,3],[2,3],[1,3],[0,3],[0,2],[0,1],[0,0]];
   const SAB=['Ari','Tau','Gem','Can','Leo','Vir','Lib','Sco','Sag','Cap','Aqu','Pis'];
-  function chart(X,Y,S,lag,signOf,title,extra){T(title,X,Y-14,{f:'600 30px '+SER});const k=S/400,byH={};
+  function chart(X,Y,S,lag,signOf,title,extra,asc){T(title,X,Y-14,{f:'600 30px '+SER});const k=S/400,byH={};
+    if(asc)byH[0]=['Asc'];  // the Ascendant and its degree, in house 1
     P9.concat(extra||[]).forEach(p=>{const sg=signOf(p);if(sg==null)return;const h=(sg-lag+12)%12;(byH[h]=byH[h]||[]).push(p)});
     x.save();x.translate(X,Y);x.fillStyle='#fffdf9';x.fillRect(0,0,S,S);x.strokeStyle=ACC;x.lineWidth=2.5;x.strokeRect(0,0,S,S);x.lineWidth=1.6;x.strokeStyle='#c9a868';
-    const ab=p=>ABBR[p]+((c.grahas[p]||c.outer[p]).retrograde&&p!=='Rahu'&&p!=='Ketu'?'ᴿ':'');
+    const ab=p=>p==='Asc'?asc:ABBR[p]+((c.grahas[p]||c.outer[p]).retrograde&&p!=='Rahu'&&p!=='Ketu'?'ᴿ':'');
     const put=(cx,cy,ps,num,numPos)=>{if(num!=null)T(num,cx+(numPos?numPos[0]:0),cy+(numPos?numPos[1]:(ps.length?-28*k*1.15:8*k)),{f:'400 '+Math.round(19*k*1.1)+'px '+SANS,c:'#9c8a6c',a:'center'});
+      const hasAsc=ps[0]==='Asc';if(hasAsc)ps=ps.slice(1);
       const rows=Math.ceil(ps.length/2),lh=34*k,t=cy-(rows-1)*lh/2+12*k;
+      if(hasAsc)T(ab('Asc'),cx,rows?t-lh*0.8:cy+8*k,{f:'600 '+Math.round(19*k)+'px '+SANS,c:ACC,a:'center'});  // Asc 21°, small, above the planets
       for(let r=0;r<rows;r++){const row=ps.slice(r*2,r*2+2),fs=Math.round((ps.length>4?25:30)*k);x.font='700 '+fs+'px '+SANS;
         const wd=row.map(p=>x.measureText(ab(p)).width),tot=wd.reduce((a,b)=>a+b,0)+(row.length-1)*8*k;let sx=cx-tot/2;
-        row.forEach((p,i)=>{x.fillStyle=IMG_COL[p];x.textAlign='left';x.fillText(ab(p),sx,t+r*lh);sx+=wd[i]+8*k})}};
+        row.forEach((p,i)=>{x.fillStyle=IMG_COL[p]||ACC;x.textAlign='left';x.fillText(ab(p),sx,t+r*lh);sx+=wd[i]+8*k})}};
     if(CHART_STYLE==='south'){x.beginPath();[100,200,300].forEach(v=>{x.moveTo(0,v*k);x.lineTo(S,v*k);x.moveTo(v*k,0);x.lineTo(v*k,S)});x.stroke();x.fillStyle=SOFT;x.fillRect(100*k+1,100*k+1,200*k-2,200*k-2);
       for(let h=0;h<12;h++){const sg=(lag+h)%12,[ci,cj]=SC[sg];if(h===0){x.strokeStyle=ACC;x.lineWidth=3;x.beginPath();x.moveTo(ci*100*k,cj*100*k+30*k);x.lineTo(ci*100*k+30*k,cj*100*k);x.stroke()}
         T(SAB[sg],ci*100*k+92*k,cj*100*k+20*k,{f:'400 '+Math.round(16*k*1.1)+'px '+SANS,c:'#9c8a6c',a:'right'});put(ci*100*k+50*k,cj*100*k+56*k,byH[h]||[],null)}}
@@ -3625,7 +3631,7 @@ function kundliCanvas(c,req,bx,pan){
       put(px*k,py*k,byH[h]||[],(lag+h)%12+1,py<60&&n?(n>2?[(px<200?58:-58)*k,-12*k]:[0,44*k]):null)})}
     x.restore()}
   y+=50;const S=(W-2*P-36)/2;
-  const OU=outerOn(c);chart(P,y,S,l.sign_index,p=>(c.grahas[p]||c.outer[p]).sign_index,'Lagna chart · D1',OU.map(([n])=>n));
+  const OU=outerOn(c);chart(P,y,S,l.sign_index,p=>(c.grahas[p]||c.outer[p]).sign_index,'Lagna chart · D1',OU.map(([n])=>n),'Asc '+Math.floor(l.ascendant%30)+'°');
   const L9=c.varga_lagna&&c.varga_lagna.D9;if(L9!=null&&c.vargas.D9)chart(P+S+36,y,S,L9,p=>c.vargas.D9[p]&&c.vargas.D9[p].sign_index,'Navamsa · D9');
   y+=S+66;
   // planets
@@ -3746,7 +3752,7 @@ function render(c,req){
   const byH={}, chalit=CHART_VIEW==='chalit', V=CHART_VIEW;
   // Moon view: whole-sign houses from the Moon (Chandra Lagna).
   const from=V==='moon'?c.grahas.Moon.sign_index:l.sign_index;
-  const houseOf=([n,g])=>chalit?(g.house-1):(g.sign_index-from+12)%12;
+  const houseOf=([n,g])=>chalit?(g.house-1):(g.sign_index-from+12)%12, ascDeg=Math.floor(l.ascendant%30)+'°';
   // Gochar view: today's sky (from /transit, fetched once per chart and day) in whole-sign houses from the lagna.
   const gd=new Date();gd.setDate(gd.getDate()+GDAY);const gds=gd.toLocaleDateString('en-CA');
   const gk=currentId+'|'+gds, GO=V==='gochar'?GOCHAR[gk]:null;
@@ -3772,7 +3778,7 @@ function render(c,req){
       (outer[h]=outer[h]||[]).push({t:ABBR[t.planet],d:Math.floor(t.deg)+'°',r:t.retrograde,lv:LV[t.planet]})});
     Object.entries(c.grahas).forEach(([n,g])=>{const h=(g.sign_index-gfirst+12)%12;
       (byH[h]=byH[h]||[]).push({t:ABBR[n],d:Math.floor(g.degrees_in_sign)+'°',p:n,r:g.retrograde&&n!=='Rahu'&&n!=='Ketu'})});
-    if(GFROM==='moon'){const h=(l.sign_index-gfirst+12)%12;(byH[h]=byH[h]||[]).push({t:'Asc'})}
+    {const h=(l.sign_index-gfirst+12)%12;(byH[h]=byH[h]||[]).unshift({t:'Asc',d:ascDeg,jp:true})}
     // What the sky is touching: a transit planet in the same sign as a birth planet (the Moon moves daily, so it's left out).
     const hits=GO?GO.planets.filter(t=>t.planet!=='Moon').map(t=>{const n=Object.entries(c.grahas).filter(([,g])=>g.sign_index===t.sign_index);
       if(!n.length)return null;const close=n.filter(([,g])=>Math.abs(g.degrees_in_sign-t.deg)<=3).map(([k])=>k);
@@ -3784,7 +3790,8 @@ function render(c,req){
     (byH[h]=byH[h]||[]).push({t:ABBR[n],d:Math.floor(g.degrees_in_sign)+'°',p:n,b,cls:b.find(k=>k==='ex'||k==='db')})});
   if(V!=='gochar')outerOn(c).forEach(([n,g])=>{const h=houseOf([n,g]);
     (byH[h]=byH[h]||[]).push({t:ABBR[n],d:Math.floor(g.degrees_in_sign)+'°',b:g.retrograde?['R']:[],cls:'outer'})});  // no data-p: the planet tips are for the nine grahas
-  if(V==='moon'){const h=(l.sign_index-from+12)%12;(byH[h]=byH[h]||[]).push({t:'Asc',jp:true})}
+  // The Ascendant and its degree, always: in the lagna's own house (house 1 in the Lagna and Chalit views)
+  if(V!=='gochar'){const h=V==='moon'?(l.sign_index-from+12)%12:0;(byH[h]=byH[h]||[]).unshift({t:'Asc',d:ascDeg,jp:true})}
   // BNN: a retrograde planet (not Rahu or Ketu) also gives the results of the sign before its own; shown faded there.
   if(BRANCH==='bnn'&&(V==='lagna'||V==='moon'))Object.entries(c.grahas).forEach(([n,g])=>{if(!g.retrograde||n==='Rahu'||n==='Ketu')return;
     const prev=(g.sign_index+11)%12,h=(prev-from+12)%12;
@@ -3792,8 +3799,9 @@ function render(c,req){
   if(JPTS&&BRANCH==='jaimini'&&V==='lagna'&&c.jaimini){const J=c.jaimini;  // Jaimini points sit in whole-sign houses, so only on the Lagna view
     [['AL',J.arudha_lagna.house],['UL',J.upapada.house]].forEach(([t,h])=>(byH[h-1]=byH[h-1]||[]).push({t,jp:true}))}
   $('jpt').hidden=V!=='lagna'||BRANCH!=='jaimini';  // Arudha Lagna and Upapada belong to Jaimini
-  if(V==='gochar')drawComposite($('chart'),gfirst,byH,outer,GFROM==='moon'?'MOON':null);
-  else drawNorth($('chart'),from,byH,chalit?c.houses.map(x=>x.sign_index):null,V==='moon'?'MOON':null);
+  // 'Asc 28°' already marks house 1, so the small ASC label is left off (false); from the Moon it says MOON
+  if(V==='gochar')drawComposite($('chart'),gfirst,byH,outer,GFROM==='moon'?'MOON':false);
+  else drawNorth($('chart'),from,byH,chalit?c.houses.map(x=>x.sign_index):null,V==='moon'?'MOON':false);
   if(V!=='lagna')SEL_H=null;
   $('chart').classList.toggle('htap',V==='lagna');
   window.drawHouseFocus($('chart').querySelector('svg'),c,SEL_H);window.renderHouseReading($('hread'),c,SEL_H);
@@ -3957,9 +3965,11 @@ function render(c,req){
     const first=fromMoon?mo:vl,vByH={};
     $('vfrom').querySelectorAll('button').forEach(x=>{const on=x.dataset.f===VFROM;x.classList.toggle('on',on);x.setAttribute('aria-checked',String(on))});
     if(first!=null){Object.entries(c.vargas[k]).forEach(([p,v])=>{const h=(v.sign_index-first+12)%12;(vByH[h]=vByH[h]||[]).push(ABBR[p]+(c.grahas[p].retrograde?'ᴿ':''))});
-      if(fromMoon&&vl!=null){const h=(vl-first+12)%12;(vByH[h]=vByH[h]||[]).push({t:'Asc',jp:true})}}
+      // The Ascendant and its degree in this varga: (longitude × n) mod 30; D30's unequal parts have no such degree
+      const n=parseInt(k.slice(1)),ad=k==='D30'?null:Math.floor(c.lagna.ascendant*n%30)+'°';
+      if(vl!=null){const h=(vl-first+12)%12;(vByH[h]=vByH[h]||[]).unshift({t:'Asc',d:ad,jp:true})}}
     $('vtitle').textContent=k+(VNAME[k]?' · '+VNAME[k]:'')+(first==null?'':fromMoon?' · from the Moon ('+SIGNS[first]+')':' · '+SIGNS[vl]+' ascendant');
-    if(first==null)$('vchart').innerHTML='';else drawNorth($('vchart'),first,vByH,null,fromMoon?'MOON':null);
+    if(first==null)$('vchart').innerHTML='';else drawNorth($('vchart'),first,vByH,null,fromMoon?'MOON':false);
     table($('vtable'),['Planet','Sign','House'],Object.entries(c.vargas[k]).map(([p,v])=>[p,v.sign||SIGNS[v.sign_index],first==null?'—':'H'+((v.sign_index-first+12)%12+1)]));
     nadiAmsha(c,k==='D150')};
   $('vfrom').onclick=e=>{const b=e.target.closest('[data-f]');if(!b||b.dataset.f===VFROM)return;VFROM=b.dataset.f;
