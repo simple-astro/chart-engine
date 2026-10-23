@@ -918,6 +918,16 @@
   .vt button:hover{border-color:var(--acc);color:var(--acc)}
   .vt button.on{background:linear-gradient(140deg,var(--g1),var(--g2));border-color:transparent;color:var(--onacc);font-weight:600}
   .sec{margin-bottom:12px;border:1px solid var(--line);border-radius:14px;padding:14px 18px;background:var(--bg2);transition:.18s}
+  /* Today › the daily panchang card (the public /panchang image) with a Share menu */
+  .gps{display:flex;gap:14px;align-items:flex-start;position:relative;z-index:4}  /* its Share menu opens over the next card */
+  .gps-img{flex:none;width:92px} .gps-img img{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--line)}
+  .gps-txt{min-width:0;flex:1} .gps-txt h3{margin:0 0 4px} .gps-txt .hint{margin:0 0 10px}
+  .gps-share{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+  .gps-menu{position:absolute;left:0;top:calc(100% + 6px);z-index:5;min-width:180px;display:flex;flex-direction:column;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--bg2);box-shadow:0 10px 28px rgba(0,0,0,.18)}
+  .gps-menu[hidden]{display:none}
+  .gps-menu button{min-height:44px;padding:0 12px;border:0;border-radius:8px;background:none;color:var(--ink);text-align:left;font:500 .92rem var(--sans);cursor:pointer}
+  .gps-menu button:hover,.gps-menu button:focus-visible{background:var(--soft);outline:none}
+  .gps-more{font-size:.86rem;font-weight:600;color:var(--acc)} .gps-note{display:block;min-height:1.1em;margin-top:6px;font-size:.82rem;color:var(--acc)}
   /* House lords (My Chart › Full reading): an overview of 12 tiles first, then one house per page */
   .hl-intro{margin:6px 0 10px;color:var(--mut);font-size:.92rem}
   .hl-hi{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scroll-snap-type:x mandatory}
@@ -1543,6 +1553,7 @@
   @media(max-width:620px){
     .brand{font-size:1.15rem;gap:8px} .brand .logo{width:34px;height:34px}
     .pt small{display:none} .pill{max-width:140px;padding-right:10px} .icon.round,.srfield{width:36px;height:36px}
+    .top .in{gap:7px} .who{min-width:0} .pill{min-width:0}  /* room for the Match making heart beside Search */
     .menu{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;max-height:78vh;border-radius:20px 20px 0 0;
       padding:6px 8px calc(14px + env(safe-area-inset-bottom));animation:sheet .22s ease-out}
     .menu .grab{display:block;width:38px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 6px}
@@ -1584,6 +1595,7 @@
     </button>
   </div>
   <button type="button" class="srfield" id="srbtn" aria-label="Search your chart, pages and meanings" aria-keyshortcuts="Control+K Meta+K /" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="srlbl">Search</span><kbd class="srkey" id="srkey">Ctrl K</kbd></button>
+  <button type="button" class="icon round" id="matchbtn" title="Match making" aria-label="Match making"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></button>
   <button type="button" class="icon round" id="setbtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8L7 10"/></svg></button>
   <button type="button" class="icon round gold" id="newbtn" title="New chart" aria-label="New chart"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 </div></header>
@@ -1600,7 +1612,6 @@
   <div class="plist" id="plist"></div>
   <div class="sep"></div>
   <button type="button" role="menuitem" class="mi" id="mnew"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New chart</button>
-  <button type="button" role="menuitem" class="mi" id="matchbtn"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>Match making</button>
   <a role="menuitem" class="mi" id="madmin" href="/admin" hidden><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/></svg><span>Admin</span></a>
   <button type="button" role="menuitem" class="mi" id="mdefault"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg><span>Make this my default chart</span></button>
   <button type="button" role="menuitem" class="mi" id="medit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg><span>Edit details</span></button>
@@ -1699,6 +1710,16 @@
       <section class="card gcard" id="gtoday"><h3>Today for you</h3><div class="hint">Checking today’s panchang…</div></section>
       <section class="card gcard cal" id="gcal" hidden></section>
       <section class="card gcard pakshi" id="gpakshi" hidden></section>
+      <section class="card gcard gps" id="gpshare">
+        <a class="gps-img" href="/panchang" target="_blank" rel="noopener" aria-label="Open today’s panchang card"><img id="gpsimg" alt="Today’s panchang card" width="1080" height="1920" loading="lazy"></a>
+        <div class="gps-txt"><h3>Today’s panchang, ready to share</h3>
+          <p class="hint">Tithi, nakshatra, Rahu Kalam, good times and a thought for the day. Free for your family and friends, no sign-in needed.</p>
+          <div class="gps-share"><button type="button" class="btn ghost sm" id="gpsbtn" aria-haspopup="menu" aria-expanded="false" aria-controls="gpsmenu">↗ Share</button>
+            <div class="gps-menu" id="gpsmenu" role="menu" hidden>
+              <button type="button" role="menuitem" data-gps="copy">Copy link</button><button type="button" role="menuitem" data-gps="whatsapp">WhatsApp</button><button type="button" role="menuitem" data-gps="instagram">Instagram</button>
+            </div><a class="gps-more" href="/panchang" target="_blank" rel="noopener">See it full size ›</a></div>
+          <span class="gps-note" id="gpsnote" role="status"></span></div>
+      </section>
       <section class="card gcard pltoday lv-guide" id="gplanstep" hidden></section>
       <section class="card gcard" id="gmood"></section>
       <h3 class="gh lv-pro">Today in detail · plan the week</h3>
@@ -3452,6 +3473,25 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-ts]'
 
 // Avakhada chakra and special points (app/birth_extras.py), for the chart on screen (saved or not).
 let BX_REQ=null;
+// Today › share today's panchang card (the same public image as /panchang and the homepage): copy the link,
+// WhatsApp (the link shows the card as its preview), or Instagram (the image itself; a computer saves it).
+(()=>{const btn=$('gpsbtn'),menu=$('gpsmenu'),note=$('gpsnote'),img=$('gpsimg');if(!btn)return;
+  const day=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+  img.src='/panchang/'+day()+'.png';
+  const open=on=>{menu.hidden=!on;btn.setAttribute('aria-expanded',String(on));if(on)menu.querySelector('button').focus()};
+  const say=t=>{note.textContent=t;setTimeout(()=>{if(note.textContent===t)note.textContent=''},5000)};
+  btn.addEventListener('click',()=>open(menu.hidden));
+  document.addEventListener('click',e=>{if(!e.target.closest('.gps-share'))open(false)});
+  menu.addEventListener('keydown',e=>{if(e.key==='Escape'){open(false);btn.focus()}});
+  menu.addEventListener('click',async e=>{const how=e.target.closest('[data-gps]')?.dataset.gps;if(!how)return;open(false);
+    const d=day(),url=location.origin+'/panchang?d='+d,text="Today's panchang from SimpleJyotish:";track('today/panchang-share-'+how);
+    if(how==='copy'){try{await navigator.clipboard.writeText(url);say('Link copied')}catch{prompt('Copy this link:',url)}}
+    else if(how==='whatsapp')window.open('https://wa.me/?text='+encodeURIComponent(text+' '+url),'_blank','noopener');
+    else try{const b=await(await fetch('/panchang/'+d+'.png')).blob(),f=new File([b],'simplejyotish-panchang-'+d+'.png',{type:'image/png'});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}
+      const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(f),download:f.name});a.click();URL.revokeObjectURL(a.href);
+      say('Image saved: post it as a Story or post from the Instagram app')}catch(err){if(err.name!=='AbortError')say('Could not share the image, please try again')}});
+})();
 // House lords: where each of the 12 lords sits (D1, whole-sign), from /house-lords (core/lord_placements.py).
 // First an overview (the highlights and 12 tiles), then one house per page with Prev/Next, a dot per house, and
 // Learn more (the principle and three everyday examples) folded away until asked for.
