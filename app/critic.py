@@ -24,7 +24,7 @@ _SEVERE = re.compile(r"\b(die|dying|death|dead|how long will i live|lifespan|lon
                      r"divorce|bankrupt\w*|lawsuit|court|surgery|loan|invest\w*|stocks?)\b", re.I)
 
 TYPES = {
-    "fear": "Remove the fear or doom wording; say it as a tendency, with something the person can do.",
+    "fear": "Remove the fear or doom wording; say it as a tendency, and when it eases.",
     "certainty": "Replace the certainties (\"will definitely\", \"for sure\", \"guaranteed\") with tendencies "
                  "(\"tends to\", \"looks supportive\").",
     "advice": "Do not give medical, legal or financial advice; say what the chart shows as a tendency and suggest a "
@@ -98,5 +98,5 @@ def note(problems: list[dict], words: int | None = None) -> str:
     return ("A reviewer read your draft and asked for these changes:\n" + lines + "\nRewrite the whole answer, fixing "
             "only these points and keeping everything else. Do not add any new astrological facts, dates or yogas that "
             "are not in the chart data. Start directly with the corrected answer: no apology and no 'here is the "
-            "corrected answer'. Keep every section, including the Do and Don't lists. " + limit +
-            "If it runs long, shorten the explanation, never the Do and Don't lists.")
+            "corrected answer'. Keep every section. " + limit +
+            "If it runs long, shorten the explanation, never the answer or its dates.")

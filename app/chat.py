@@ -23,11 +23,12 @@ SYSTEM = (
     "plainly and never claim to be the founder or any person; don't name the founder.\n"
     "Voice: a caring family Jyotishi — warm, calm and reassuring, in simple English. Use familiar Hindi words "
     "(dasha, upaya, shubh, muhurat) with a short meaning the first time. Never greet: no 'Namaste' and no 'Hello'. Begin "
-    "by calling the person by their first name from native.name with 'ji', then go straight to the answer in the same "
-    "sentence, e.g. 'Inderjeet ji, right now you are in…'. Use the name this once, at the start of the reply.\n"
-    "People come with a worry or a decision, not to study their chart. Give them clarity and something to do: "
-    "lead with the plain answer, then practical guidance — what to do, what to avoid, and one or two simple upaya "
-    "(remedies) that fit their chart. CITE THE CHART FACT behind every claim — each prediction, Do, Don't and upaya — "
+    "by calling the person by their first name from native.name (no 'ji' or other honorific after it), then go straight "
+    "to the answer in the same sentence, e.g. 'Inderjeet, right now you are in…'. Use the name this once, at the start of "
+    "the reply.\n"
+    "People come with a worry or a decision, not to study their chart. Give them clarity: lead with the plain answer, "
+    "then the timing and the reasons. Do not add 'Do' / 'Don't' lists or upaya (remedies) unless they ask for them. "
+    "CITE THE CHART FACT behind every claim — each prediction and window — "
     "in a few plain words taken from the data (e.g. 'because Saturn, your 10th lord, sits in your 12th' or "
     "'(your Venus–Mercury period runs to June 2029)'); if a claim has no chart fact behind it, leave it out. Keep "
     "each reason short; skip degrees, KP sub-lords and technical terms unless they ask for them.\n"
@@ -53,17 +54,17 @@ SYSTEM = (
     "day, call get_event_days and give only the dates it returns, clearly as possible days, not certainties — the "
     "window is reliable, the exact day is not (it needs a birth time accurate to the minute). A RISK reading (illness, "
     "accident, dispute, separation, career loss) is a period to take care in, never a certainty: say so gently, "
-    "never alarm, and pair it with practical steps and an upaya. For upaya follow remedy_guide: lead with practical "
+    "never alarm, and say when it eases. When they ask for upaya, follow remedy_guide: lead with practical "
     "habits, conduct, seva and daan on the planet's own day (people rarely keep up mantra japa, so suggest a mantra "
     "only if they ask for one, and never a japa count), and gemstones only from suitable_stones. "
     "For questions about the "
     "present or future, call the tools (transits, transit events, panchang, dasha detail, divisional charts, "
     "Lal Kitab kundli) instead of guessing positions. For any day or muhurat question call get_panchang and give "
     "its local clock times for the user's place (never 'the 3rd part of daylight'), the colours to wear and to avoid "
-    "with their reasons, and the user's own do's and don'ts; 'today' in the data is the user's local date. For Lal Kitab questions call get_lal_kitab; for "
+    "with their reasons; 'today' in the data is the user's local date. For Lal Kitab questions call get_lal_kitab; for "
     "compatibility or match-making call list_profiles then match_with_profile.\n"
     "Length: HARD LIMIT of {words} words per reply, counting headings and bullets; aim well under it. "
-    "Lead with the direct answer, then Do's, Don'ts and an upaya; skip exhaustive lists, and offer to go deeper "
+    "Lead with the direct answer, then the timing and why; skip exhaustive lists, and offer to go deeper "
     "on one point instead of covering everything.\n"
     "Style: warm and conversational, never stiff; clear short bullets when helpful. Always ground the answer in this "
     "person's own placements (name the planet, house, nakshatra or dasha behind it), and never use stock phrases "
@@ -74,7 +75,7 @@ SYSTEM = (
 )
 
 # Bump when the chart context or prompt changes meaningfully, so cached answers from the old setup aren't reused.
-CONTEXT_VERSION = "kp-14"
+CONTEXT_VERSION = "kp-15"
 
 TOOLS = [
     {"name": "get_transits",
@@ -441,9 +442,13 @@ def _sum_use(a: dict | None, b: dict | None) -> dict | None:
     return {k: a.get(k, 0) + b.get(k, 0) for k in ("input", "output", "cache_read", "cache_write")}
 
 
+FIX_ROUNDS = 3  # check → rewrite → check again, at most this many rewrites before wrong sentences are dropped
+
+
 def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs: list, model: str | None = None):
-    """Check the answer against the chart; revise once, then drop any sentence that is still wrong.
-    Yields status events and finally {"type": "checked", "text", "report", "usage"}."""
+    """Check the answer against the chart in a loop: each rewrite is checked again, up to FIX_ROUNDS rewrites; any
+    sentence still wrong after that is dropped. Yields status events and finally
+    {"type": "checked", "text", "report", "usage"}."""
     from app import factcheck, synthesis
     from core import kp_predict
     topics = set(kp_predict.topics_for(message)) | {str(t["args"].get("topic")) for t in tool_outs
@@ -452,22 +457,30 @@ def guard(profile: dict, history: list[dict], message: str, text: str, tool_outs
     facts = factcheck.facts_from(synthesis.build(profile), profile["chart"], [t["data"] for t in tool_outs], kp)
     issues, style = factcheck.check(text, facts), factcheck.style_check(text)
     report = {"found": [f"{i['claim']} → {i['truth']}" for i in issues], "revised": False, "removed": [],
-              "style": [s["detail"] for s in style]}
+              "style": [s["detail"] for s in style], "rounds": 0}
     use = None
-    if issues or style:
-        yield {"type": "status", "text": "Double-checking against your chart…"}
+    while (issues or style) and report["rounds"] < FIX_ROUNDS:
+        yield {"type": "status", "text": "Double-checking against your chart…" if not report["rounds"] else
+               "Checking the corrected answer again…"}
         try:
-            fixed, use = revise(profile, history, message, text,
-                                factcheck.correction_note(issues, _word_limit(), style), model)
+            fixed, ruse = revise(profile, history, message, text,
+                                 factcheck.correction_note(issues, _word_limit(), style), model)
         except Exception:  # if the correction call fails, fall back to removing the wrong sentences
-            fixed = ""
-        if fixed:
-            report["revised"] = True
-            report["style_left"] = [s["detail"] for s in factcheck.style_check(fixed)]  # logged, never stripped
-            text, issues = fixed, factcheck.check(fixed, facts)
-        if issues:
-            report["removed"] = [i["sentence"] for i in issues]
-            text = factcheck.strip(text, issues)
+            fixed, ruse = "", None
+        use = _sum_use(use, ruse)
+        report["rounds"] += 1
+        if not fixed:
+            break
+        report["revised"] = True
+        new_issues, style = factcheck.check(fixed, facts), factcheck.style_check(fixed)
+        report["found"] += [f"{i['claim']} → {i['truth']}" for i in new_issues if f"{i['claim']} → {i['truth']}" not in report["found"]]
+        report["style_left"] = [s["detail"] for s in style]  # logged; style alone never strips a sentence
+        text, issues = fixed, new_issues
+        if not issues:
+            style = []  # facts now agree with the chart: one style pass is enough, no extra rounds for wording
+    if issues:
+        report["removed"] = [i["sentence"] for i in issues]
+        text = factcheck.strip(text, issues)
     # The critic: tone and policy on sensitive questions, judged by a second small AI call (app/critic.py).
     from app import critic
     why = critic.wanted(config.get("critic"), message) if text else None
@@ -537,12 +550,14 @@ def _drop_trailing_headings(text: str) -> str:
 
 
 _GREETING = re.compile(r"^\s*(?:namaste|namaskar|sat sri akal|hello|hi|hey)\b[\s,!.:\U0001F64F]*", re.I)
+_NAME_JI = re.compile(r"^([A-Z][\w'-]*(?: [A-Z][\w'-]*)?) [Jj]i(?=[,.!:])")  # 'Satvir ji,' but not 'Visit Hanuman ji on…'
 
 
 def drop_greeting(text: str) -> str:
     """Backstop for the no-greeting rule: remove an opening 'Namaste' / 'Hello' but keep the name that follows it,
-    so 'Namaste, Inderjeet ji. Right now…' starts with 'Inderjeet ji.' and the words go to the answer."""
+    and the 'ji' after that name, so 'Namaste, Inderjeet ji. Right now…' starts with 'Inderjeet.'"""
     rest = _GREETING.sub("", text, count=1).lstrip()
+    rest = _NAME_JI.sub(r"\1", rest, count=1)
     return rest[:1].upper() + rest[1:] if rest else text
 
 

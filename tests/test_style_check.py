@@ -1,5 +1,4 @@
-"""The style checks next to the fact check: stock phrases, answers that never name the person's own placements,
-and answers with nothing to do. In code, so they cost nothing unless one fires (then the same single rewrite)."""
+"""The style checks next to the fact check: stock phrases, and answers that never name the person's own placements. In code, so they cost nothing unless one fires (then the same single rewrite)."""
 import pytest
 from fastapi.testclient import TestClient
 
@@ -23,11 +22,11 @@ def kinds(text):
 def test_style_check():
     assert kinds("The cosmos is asking you to wait. Saturn in your 10th asks for patience; try a Saturday routine.") == ["generic"]
     assert kinds("The universe has a plan for you.") == ["generic"]
-    assert set(kinds(LONG_VAGUE)) == {"specific", "actionable"}
+    assert set(kinds(LONG_VAGUE)) == {"specific"}             # no Do / Don't or upaya needed any more
     assert kinds(GOOD) == []
     assert kinds("Thank you, Asha ji.") == []                  # short replies are left alone
     note = F.correction_note([], 300, F.style_check("The stars say yes. " + LONG_VAGUE))
-    assert "stock phrase" in note and "actual placements" in note and "Do / Don't" in note
+    assert "stock phrase" in note and "actual placements" in note and "Do / Don't" not in note
     assert "contradicts" not in note
 
 
@@ -64,5 +63,4 @@ def test_guard_leaves_a_clean_answer_alone(profile, monkeypatch):
 def test_style_left_after_the_rewrite_is_logged_not_stripped(profile, monkeypatch):
     out, _ = _guard(profile, "The universe has a plan. " + LONG_VAGUE, monkeypatch, LONG_VAGUE)
     assert out["text"] == LONG_VAGUE and set(out["report"]["style_left"]) == {
-        "names none of their actual placements (planet, house, sign, nakshatra or dasha)",
-        "gives nothing concrete to do and no upaya"}
+        "names none of their actual placements (planet, house, sign, nakshatra or dasha)"}
