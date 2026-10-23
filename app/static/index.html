@@ -563,6 +563,8 @@
   .gk>b{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:.74rem;
     background:linear-gradient(140deg,var(--g1),var(--g2));color:var(--onacc)}
   .gk>span{min-width:0;font-size:.78rem;font-weight:600;line-height:1.2}
+  .gk.gkasc>b{font-size:.6rem;letter-spacing:-.02em}  /* three letters in the round badge */
+  .gk>span{overflow:hidden;text-overflow:ellipsis}
   .gk small{display:block;font-weight:400;font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .gk i{font-style:normal;font-size:.68rem;font-weight:700;margin-left:2px}
   .gk.ex{box-shadow:inset 3px 0 0 var(--ok)} .gk.db{box-shadow:inset 3px 0 0 var(--bad)}
@@ -916,6 +918,29 @@
   .vt button:hover{border-color:var(--acc);color:var(--acc)}
   .vt button.on{background:linear-gradient(140deg,var(--g1),var(--g2));border-color:transparent;color:var(--onacc);font-weight:600}
   .sec{margin-bottom:12px;border:1px solid var(--line);border-radius:14px;padding:14px 18px;background:var(--bg2);transition:.18s}
+  /* House lords (My Chart › Full reading): highlights, a Simple / Learn more switch and one card per house */
+  .hl-intro{margin:6px 0 10px;color:var(--mut);font-size:.92rem}
+  .hl-hi{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin-bottom:12px}
+  .hl-hi div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg)} .hl-hi b{display:block;font-size:.92rem}
+  .hl-hi span{font-size:.86rem;color:var(--mut);line-height:1.45}
+  .hl-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;font-size:.84rem;color:var(--mut)}
+  .hl-seg{display:inline-flex;padding:3px;border-radius:99px;background:var(--soft)}
+  .hl-seg button{min-height:34px;padding:0 14px;border:0;border-radius:99px;background:none;color:var(--ink);font:600 .84rem var(--sans);cursor:pointer}
+  .hl-seg button[aria-pressed="true"]{background:var(--bg2);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .hl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+  .hl-card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--bg);display:flex;flex-direction:column;gap:8px}
+  .hl-head{display:flex;align-items:flex-start;gap:10px} .hl-head>b{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--acc);font-weight:700}
+  .hl-head h4{margin:0;font-size:.98rem;line-height:1.25} .hl-head small{display:block;color:var(--mut);font-size:.78rem;font-weight:400;margin-top:2px}
+  .hl-tag{margin-left:auto;flex:none;padding:2px 9px;border-radius:99px;font-size:.74rem;font-weight:700}
+  .hl-tag.strong{background:color-mix(in srgb,var(--tl-go) 18%,transparent);color:var(--tl-go)}
+  .hl-tag.mixed{background:color-mix(in srgb,var(--tl-steady) 30%,transparent);color:var(--ink)}
+  .hl-tag.care{background:color-mix(in srgb,var(--tl-care) 22%,transparent);color:var(--ink)}
+  .hl-card p{margin:0;font-size:.92rem;line-height:1.5}
+  .hl-why{display:flex;flex-wrap:wrap;gap:5px} .hl-why span{font-size:.76rem;padding:2px 8px;border-radius:6px;background:var(--soft)}
+  .hl-learn{border-radius:10px;padding:10px 12px;background:var(--soft);font-size:.88rem;line-height:1.5}
+  .hl-learn h5{margin:0 0 3px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--acc)} .hl-learn ul{margin:0 0 8px;padding-left:18px} .hl-learn p{margin:0 0 8px}
+  .hl-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px dashed var(--line);padding-top:8px;font-size:.84rem}
+  .hl-foot button{flex:none;min-height:34px;padding:0 14px;border-radius:99px;border:1px solid var(--acc);background:none;color:var(--acc);font:600 .84rem var(--sans);cursor:pointer}
   .sec:hover{border-color:var(--acc)}
   .sec summary{cursor:pointer;font-family:var(--serif);font-size:1.08rem;font-weight:600}
   .sec summary b{font-weight:600}
@@ -1827,7 +1852,7 @@
         <div class="pane" id="t-akv" hidden><div id="akvbody"></div></div>
         <div class="pane" id="t-shadbala" hidden><div id="sbalbody"></div></div>
         <div class="pane" id="t-reading" hidden><h3 class="gh">Full reading <small>your chart’s main themes, from traditional rules</small></h3>
-          <div id="interpbody"></div><div class="hint">General guidance, not a prediction or a substitute for a consultation.</div></div>
+          <div id="interpbody"></div><div id="hlords"></div><div class="hint">General guidance, not a prediction or a substitute for a consultation.</div></div>
         <div class="pane" id="t-housebyhouse" hidden><h3 class="gh">House by house <small>all 12 houses from your ascendant</small></h3>
           <div id="bhavabody"></div><div class="hint">Whole-sign houses from your ascendant, matching the chart drawing. Traditional guidance, not a certainty.</div></div>
         <div class="pane" id="t-lifegraph" hidden><div id="lgbody"></div></div>
@@ -2787,9 +2812,9 @@ function focusPlanet(n,anchor,pin){
 }
 $('chart').addEventListener('pointerover',e=>{const t=e.target.closest('.pg');if(t&&!tipPinned)focusPlanet(t.dataset.p,t)});
 $('chart').addEventListener('pointerout',e=>{if(!tipPinned&&e.pointerType!=='touch'&&e.target.closest('.pg')&&!e.relatedTarget?.closest?.('.pg,.ctip'))focusPlanet(null)});
-$('chartkey').addEventListener('pointerover',e=>{const b=e.target.closest('.gk');if(b)focusPlanet(b.dataset.p,$('chart').querySelector('.pg[data-p="'+b.dataset.p+'"]'))});
+$('chartkey').addEventListener('pointerover',e=>{const b=e.target.closest('.gk');if(b&&b.dataset.p in HOUSE_OF)focusPlanet(b.dataset.p,$('chart').querySelector('.pg[data-p="'+b.dataset.p+'"]'))});
 $('chartkey').addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')focusPlanet(null)});
-$('chartkey').addEventListener('focusin',e=>{const b=e.target.closest('.gk');if(b)focusPlanet(b.dataset.p,$('chart').querySelector('.pg[data-p="'+b.dataset.p+'"]'))});
+$('chartkey').addEventListener('focusin',e=>{const b=e.target.closest('.gk');if(b&&b.dataset.p in HOUSE_OF)focusPlanet(b.dataset.p,$('chart').querySelector('.pg[data-p="'+b.dataset.p+'"]'))});
 $('chartkey').addEventListener('focusout',()=>{if(!tipPinned)focusPlanet(null)});
 document.addEventListener('pointerdown',e=>{if(!e.target.closest('.pg,.gk,.ctip'))focusPlanet(null)});
 window.askSukh=text=>{openChat();if(!$('q').disabled&&!$('askbtn').disabled){$('q').value=text;$('askf').requestSubmit()}};
@@ -3418,6 +3443,29 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-ts]'
 
 // Avakhada chakra and special points (app/birth_extras.py), for the chart on screen (saved or not).
 let BX_REQ=null;
+// House lords: where each of the 12 lords sits (D1, whole-sign), from /house-lords (core/lord_placements.py).
+// Simple shows the reading; Learn more adds the principle behind it and three everyday examples.
+let HL_REQ=null,HL_DATA=null;
+const hlDepth=()=>{try{return localStorage.getItem('hlDepth')||'learn'}catch(e){return 'learn'}};
+function paintHouseLords(){const d=HL_DATA,box=$('hlords');if(!d||!box)return;const learn=hlDepth()==='learn',o=n=>n+muhurat_ord(n);
+  const TAG={Strong:'strong',Mixed:'mixed','Needs care':'care'};
+  box.innerHTML='<details class="sec" open><summary><b>Your house lords: where each one sits</b></summary>'+
+    '<p class="hl-intro">'+esc(d.lagna)+' lagna, whole-sign houses in your D1 chart. Each house is run by its lord; where that lord sits shows where the house’s matters play out.</p>'+
+    '<div class="hl-hi">'+d.highlights.map(h=>'<div><b>'+esc(h.t)+'</b><span>'+esc(h.b)+'</span></div>').join('')+'</div>'+
+    '<div class="hl-bar"><div class="hl-seg" role="group" aria-label="Reading depth"><button type="button" data-hl="simple" aria-pressed="'+!learn+'">Simple</button><button type="button" data-hl="learn" aria-pressed="'+learn+'">Learn more</button></div>'+
+      '<span><b>Strong</b> gives its results fully · <b>Mixed</b> good results with effort or delay · <b>Needs care</b> handle mindfully</span></div>'+
+    '<div class="hl-grid">'+d.cards.map(c=>'<article class="hl-card"><div class="hl-head"><b>'+c.house+'</b><h4>'+o(c.house)+' lord '+esc(c.lord)+' in your '+o(c.sits_in)+' house'+
+        '<small>'+esc(c.sign)+' → '+esc(c.lord_sign)+'</small></h4><span class="hl-tag '+TAG[c.tag]+'">'+esc(c.tag)+'</span></div>'+
+      '<p>'+esc(c.text)+'</p><div class="hl-why">'+c.why.map(w=>'<span>'+esc(w)+'</span>').join('')+'</div>'+
+      (learn?'<div class="hl-learn"><h5>The principle</h5><p>'+esc(c.principle)+'</p><h5>In everyday life</h5><ul>'+c.life.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>':'')+
+      '<div class="hl-foot"><span><b>When:</b> '+esc(c.when)+'</span><button type="button" data-hlask="'+c.house+'">Ask</button></div></article>').join('')+'</div></details>'}
+async function loadHouseLords(req){HL_DATA=null;if($('hlords'))$('hlords').innerHTML='';if(!req)return;HL_REQ=req;
+  try{const r=await fetch('/house-lords',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(req)});const d=await r.json();
+    if(!r.ok||HL_REQ!==req)return;HL_DATA=d;paintHouseLords()}catch(e){}}
+document.addEventListener('click',e=>{const s=e.target.closest('[data-hl]');
+  if(s){try{localStorage.setItem('hlDepth',s.dataset.hl)}catch(err){}paintHouseLords();return}
+  const a=e.target.closest('[data-hlask]');if(!a||!HL_DATA)return;const c=HL_DATA.cards[+a.dataset.hlask-1],o=n=>n+muhurat_ord(n);
+  window.askSukh('My '+o(c.house)+' lord '+c.lord+' sits in my '+o(c.sits_in)+' house ('+c.lord_sign+'). What does this mean for my life, and when does it show?')});
 async function loadBirthExtras(req){$('avak').innerHTML='';$('special').innerHTML='';if(!req)return;BX_REQ=req;
   try{const r=await fetch('/birth-extras',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(req)});const d=await r.json();if(!r.ok||BX_REQ!==req)return;
     $('avak').innerHTML='<details class="avk" open><summary><b>Birth summary</b> <small class="hint">Avakhada chakra</small></summary><dl>'+d.avakhada.rows.map(x=>'<div><dt>'+esc(x.label)+'</dt><dd>'+esc(x.value)+'</dd></div>').join('')+'</dl></details>';
@@ -3807,7 +3855,8 @@ function render(c,req){
   window.drawHouseFocus($('chart').querySelector('svg'),c,SEL_H);window.renderHouseReading($('hread'),c,SEL_H);
   renderLinks(c);
   HOUSE_OF=Object.fromEntries(Object.entries(c.grahas).map(e=>[e[0],houseOf(e)]));
-  $('chartkey').querySelectorAll('.gk').forEach(k=>{const x=k.querySelector('.gkx b');if(x)x.textContent='House '+(HOUSE_OF[k.dataset.p]+1)});  // follows the view
+  $('chartkey').querySelectorAll('.gk').forEach(k=>{const x=k.querySelector('.gkx b');  // follows the view
+    if(x)x.textContent='House '+((k.dataset.p==='Ascendant'?(V==='moon'?(l.sign_index-from+12)%12:0):HOUSE_OF[k.dataset.p])+1)});
   $('charttitle').textContent=chalit?'Nirayana Bhava Chalit · North Indian':V==='moon'?'Moon chart (Chandra Lagna)':V==='gochar'?'Transit chart':'Rasi chart (D1) · '+(CHART_STYLE==='south'?'South':'North')+' Indian';
   $('charthint').textContent=V==='gochar'?(GO?'Inner chart: your birth planets (D1). Outer ring: the planets in the sky on this day (at noon), in the same houses, counted from your '+(GFROM==='moon'?'Moon ('+c.grahas.Moon.sign+')':'lagna ('+l.sign+')')+'. Step with − and +, or press Play.':currentId==null?'Save this chart to see the transits on it.':'Loading the sky…')
     :V==='moon'?'Houses counted from the Moon’s sign ('+c.grahas.Moon.sign+'). Used for the mind, Sade Sati and transits. Asc marks your lagna.'
@@ -3822,19 +3871,25 @@ function render(c,req){
       (b.length?'<div class="tags">'+b.map(k=>'<span class="tag bd '+BD[k][1]+'">'+BD[k][0]+' '+BD[k][2]+'</span>').join('')+
         (nbOf(n)?'<span class="tag bd ex">Neecha Bhanga · cancelled</span>':'')+'</div>':'')+
       '<button type="button" class="tipask" data-ask="'+n+'">Ask Astropositivism about '+n+' →</button>'};
-  PLANET_Q=n=>{const g=c.grahas[n],h=(g.sign_index-l.sign_index+12)%12+1,ord=h+(['th','st','nd','rd'][h<4?h:0]),
+  PLANET_Q=n=>{if(n==='Ascendant')return 'Tell me about my Ascendant (Lagna) — it is '+l.sign+' at '+Math.floor(l.ascendant%30)+'°, in '+
+      NAK27[Math.floor(l.ascendant/(360/27))%27]+' nakshatra. What does it say about me and my life?';
+    const g=c.grahas[n],h=(g.sign_index-l.sign_index+12)%12+1,ord=h+(['th','st','nd','rd'][h<4?h:0]),
       st=status(n).map(k=>k==='db'&&nbOf(n)?'debilitated, but cancelled by Neecha Bhanga':BD[k][2].toLowerCase());
     return 'Tell me about my '+n+' — it is in '+g.sign+' in my '+ord+' house'+(st.length?' ('+st.join(', ')+')':'')+
       '. What does it mean for my life, and what should I do about it?'};
   // On wide screens each planet also shows its house and nakshatra (a list beside the chart instead of empty space).
-  $('chartkey').innerHTML=Object.entries(c.grahas).map(([n,g])=>{const b=status(n),hi=b.find(k=>k==='ex'||k==='db'),h=HOUSE_OF[n]+1;
+  // The Ascendant comes first: sign and degree, its nakshatra, and Ask (data-p="Ascendant" is not a planet on the chart)
+  const lNak=NAK27[Math.floor(l.ascendant/(360/27))%27]+' '+(Math.floor((l.ascendant%(360/27))/(360/108))+1);
+  $('chartkey').innerHTML='<button type="button" class="gk gkasc" data-p="Ascendant" aria-label="Ask Astropositivism about your Ascendant"><b>Asc</b><span>Ascendant'+
+      '<small>'+l.sign+' '+Math.floor(l.ascendant%30)+'°</small></span><span class="gkx"><b>House 1</b>'+esc(lNak)+'</span><em class="gka" aria-hidden="true">Ask</em></button>'+
+    Object.entries(c.grahas).map(([n,g])=>{const b=status(n),hi=b.find(k=>k==='ex'||k==='db'),h=HOUSE_OF[n]+1;
     return '<button type="button" class="gk'+(hi?' '+hi:'')+'" data-p="'+n+'" aria-label="Ask Astropositivism about '+n+'"><b>'+ABBR[n]+'</b><span>'+n+b.map(k=>'<i class="bd '+BD[k][1]+'" title="'+BD[k][2]+'">'+BD[k][0]+'</i>').join('')+
       '<small>'+g.sign+' '+Math.floor(g.degrees_in_sign)+'°</small></span><span class="gkx"><b>House '+h+'</b>'+esc(g.nakshatra)+' '+g.pada+'</span><em class="gka" aria-hidden="true">Ask</em></button>'}).join('');
   lastReq=req||null;lkLoaded=false;lastChart=c;MU.loaded=false;MU.data=null;MU.sel=0;
   $('trwrap').dataset.pid='';$('kptbody').dataset.pid='';loadVisible();
 
 
-  KPALT=null;drawKpTables(c);paintCheshta(c);kpSigTable(c);loadBirthExtras(req);paintSlide(c,req);
+  KPALT=null;drawKpTables(c);paintCheshta(c);kpSigTable(c);loadBirthExtras(req);loadHouseLords(req);paintSlide(c,req);
 
   $('interpbody').innerHTML=window.interpret(c).map(sec=>'<details class="sec" open><summary><b>'+sec.title+'</b></summary><ul>'+sec.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></details>').join('');
   const secs=(list,openAll)=>list.map(s=>'<details class="sec'+(s.sub?' subsec':'')+(s.past?' past':'')+'"'+(openAll||s.open?' open':'')+'><summary><b>'+s.title+'</b>'+(s.badge?' '+s.badge:'')+'</summary><ul>'+s.items.map(i=>'<li>'+i+'</li>').join('')+'</ul></details>').join('');

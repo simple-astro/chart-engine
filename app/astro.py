@@ -222,6 +222,14 @@ def birth_extras(req: ChartRequest) -> dict:
     return {"avakhada": B.avakhada(c, r), "special": B.special_points(c, r)}
 
 
+@router.post("/house-lords")
+def house_lords(req: ChartRequest) -> dict:
+    """Where each of the 12 house lords sits (D1, whole-sign), the reading, and what this chart adds
+    (core/lord_placements.py)."""
+    from core import lord_placements
+    return lord_placements.for_chart(compute_chart(req))
+
+
 @router.get("/lagna-times")
 def lagna_times(lat: float, lon: float, tz: str, on: date | None = None, ayanamsha: str = "krishnamurti") -> dict:
     """When each sign rises on a local day (for planning a muhurat by lagna)."""
