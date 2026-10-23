@@ -1383,7 +1383,21 @@
   .cal-d{position:relative;min-height:70px;padding:4px 1px 6px;border-radius:10px;border:1px solid var(--line);background:var(--solid);color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:0;font:inherit;cursor:pointer;overflow:hidden}
   .cal-d b{font-size:.95rem;line-height:1.25} .cal-d small{font-size:.6rem;color:var(--mut);line-height:1.3;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis} .cal-d .cal-t{font-weight:600;color:var(--acc)}
   .cal-d.cal-fest{background:color-mix(in srgb,var(--g1) 18%,var(--solid));border-color:color-mix(in srgb,var(--g1) 70%,transparent)}
-  .cal-d.cal-now{box-shadow:inset 0 0 0 2px var(--ink)} .cal-d.cal-sel{box-shadow:inset 0 0 0 2px var(--acc)}
+  .cal-d.cal-sel{box-shadow:inset 0 0 0 2px var(--acc)}
+  .cal-headr{display:flex;align-items:center;gap:8px}
+  /* today: lifted and ringed in gold, with the days already gone faded back */
+  .cal-d.cal-past{opacity:.5}
+  .cal-d.cal-now{overflow:visible;z-index:3;transform:translateY(-3px) scale(1.06);border:2px solid var(--g1);background:color-mix(in srgb,var(--g1) 16%,var(--solid));
+    box-shadow:0 8px 20px rgba(0,0,0,.28),0 0 0 3px color-mix(in srgb,var(--g1) 22%,transparent)}
+  .cal-d.cal-now b{font-size:1.08rem}
+  .cal-tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);padding:1px 8px;border-radius:999px;background:var(--g1);color:var(--onacc);font-size:.52rem;font-weight:800;letter-spacing:.14em;line-height:1.5}
+  .cal-wd.cal-wdnow{color:var(--acc)} .cal-wd.cal-wdnow::after{content:"";display:block;width:16px;height:3px;border-radius:2px;background:var(--g1);margin:3px auto 0}
+  .cal-strip{display:flex;align-items:center;gap:12px;padding:10px 12px;margin-bottom:12px;border-radius:14px;border:1px solid var(--g1);background:color-mix(in srgb,var(--g1) 12%,var(--solid))}
+  .cal-badge{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:54px;height:54px;border-radius:12px;background:linear-gradient(160deg,var(--g1),var(--g2));color:var(--onacc);line-height:1}
+  .cal-badge small{font-size:.58rem;font-weight:800;letter-spacing:.12em} .cal-badge b{font-size:1.5rem}
+  .cal-strip>div{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35} .cal-strip>div span{font-size:.82rem;color:var(--mut)}
+  .cal-strip .btn{flex:none;min-height:42px;padding:0 14px}
+  .cal-today{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--g1);background:color-mix(in srgb,var(--g1) 14%,var(--solid));color:var(--ink);font:700 .8rem inherit;cursor:pointer}
   .cal-moon{width:9px;height:9px;border-radius:50%;margin-top:2px} .cal-moon.full{background:var(--g1);border:1px solid var(--g2)} .cal-moon.new{background:var(--ink)}
   .cal-tara{display:inline-block;box-sizing:border-box;width:7px;height:7px;border-radius:50%;flex:none} .cal-tara.good{background:var(--g2)} .cal-tara.hard{border:1.5px solid var(--ink)} .cal-tara.janma{background:var(--mut);opacity:.5}
   .cal-d .cal-tara{position:absolute;top:4px;right:4px}

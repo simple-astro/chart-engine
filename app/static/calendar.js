@@ -48,30 +48,49 @@
     const ns = [...new Set(days.map(x => x.nanakshahi.month))].join(' → ');
     const sub = view === 'sikh' ? `${ns} · Nanakshahi ${d.nanakshahi_year}` : view === 'both' ? `${lunar} · ${ns} ${d.nanakshahi_year}`
       : `${lunar} · Vikram Samvat ${d.vikram_samvat} · ${d.samvatsara}`;
+    const inMonth = days.some(x => x.date === today);   // fade past days only in the month that holds today
     const cell = x => {
       const fest = marks(x, view).length, n = +x.date.slice(8);
       const top = view === 'sikh' ? `${x.nanakshahi.day} ${x.nanakshahi.month.slice(0, 3)}` : tithiShort(x);
       const low = view === 'hindu' ? (NAK_SHORT[x.nakshatra] || x.nakshatra) : view === 'both' ? `${x.nanakshahi.day} ${x.nanakshahi.month.slice(0, 3)}` : (x.tithi === 15 ? 'Pooranmashi' : x.tithi === 30 ? 'Masya' : '');
-      const cls = ['cal-d', fest ? 'cal-fest' : '', x.date === today ? 'cal-now' : '', x.date === S.sel ? 'cal-sel' : ''].filter(Boolean).join(' ');
-      return `<button type="button" class="${cls}" data-cald="${x.date}" aria-pressed="${x.date === S.sel}" aria-label="${n} ${MONTHS[S.m - 1]}, ${esc(x.tithi_name)}, ${esc(x.nakshatra)}${fest ? ', ' + esc(marks(x, view).join(', ')) : ''}">
-        <b>${n}</b><small class="cal-t">${esc(top)}</small><small>${esc(low)}</small>
+      const cls = ['cal-d', fest ? 'cal-fest' : '', x.date === today ? 'cal-now' : '', inMonth && x.date < today ? 'cal-past' : '', x.date === S.sel ? 'cal-sel' : ''].filter(Boolean).join(' ');
+      return `<button type="button" class="${cls}" data-cald="${x.date}" aria-pressed="${x.date === S.sel}" aria-label="${n} ${MONTHS[S.m - 1]}${x.date === today ? ', today' : ''}, ${esc(x.tithi_name)}, ${esc(x.nakshatra)}${fest ? ', ' + esc(marks(x, view).join(', ')) : ''}">
+        ${x.date === today ? '<span class="cal-tag">TODAY</span>' : ''}<b>${n}</b><small class="cal-t">${esc(top)}</small><small>${esc(low)}</small>
         ${x.tithi === 15 ? '<i class="cal-moon full" aria-hidden="true"></i>' : x.tithi === 30 ? '<i class="cal-moon new" aria-hidden="true"></i>' : ''}
         ${x.tara ? `<i class="cal-tara ${x.tara.kind}" aria-hidden="true"></i>` : ''}${x.chandrashtama ? '<i class="cal-ch" aria-hidden="true"></i>' : ''}</button>`;
     };
     const list = days.filter(x => marks(x, view).length).map(x => `<li><button type="button" data-cald="${x.date}">
         <span class="cal-ld"><b>${+x.date.slice(8)}</b><small>${WD[new Date(x.date + 'T12:00').getDay()]}</small></span>
         <span>${esc(marks(x, view).join(' · '))}</span></button></li>`).join('');
+    const tx = days.find(x => x.date === today);   // today, when this month is the one on show
+    const wdNow = tx ? new Date(today + 'T12:00').getDay() : -1;
     S.el.innerHTML = `<h3>Calendar <small>${esc(S.o.place)}</small></h3>
       <div class="cal-head"><button type="button" class="cal-nav" data-calmove="-1" aria-label="Previous month">‹</button>
         <div><b>${MONTHS[S.m - 1]} ${S.y}</b><small>${esc(sub)}</small></div>
-        <button type="button" class="cal-nav" data-calmove="1" aria-label="Next month">›</button></div>
-      <div class="cal-grid" role="group" aria-label="${MONTHS[S.m - 1]} ${S.y}">${WD.map(w => `<span class="cal-wd">${w}</span>`).join('')}
+        <span class="cal-headr">${tx ? '' : '<button type="button" class="cal-today" data-caltoday>Today</button>'}<button type="button" class="cal-nav" data-calmove="1" aria-label="Next month">›</button></span></div>
+      ${tx ? todayStrip(tx, days, view) : ''}
+      <div class="cal-grid" role="group" aria-label="${MONTHS[S.m - 1]} ${S.y}">${WD.map((w, i) => `<span class="cal-wd${i === wdNow ? ' cal-wdnow' : ''}">${w}</span>`).join('')}
         ${'<span></span>'.repeat(first)}${days.map(cell).join('')}</div>
       <div class="cal-key"><span><i class="cal-tara good"></i>Good star for you</span><span><i class="cal-tara hard"></i>Go gently</span>
         <span><i class="cal-ch"></i>Chandrashtama</span><span><i class="cal-fk"></i>Festival</span></div>
       ${daySheet(sel, view)}
       ${list ? `<h4 class="cal-h">This month</h4><ul class="cal-list">${list}</ul>` : ''}
       <p class="hint">Tithi and nakshatra at sunrise for ${esc(S.o.place)}. Festival dates follow the common North Indian rules; check the exact day with your temple or Gurdwara. Hindu, Nanakshahi or both: in Settings.</p>`;
+  }
+
+  // The Today bar above the month: the date, what the day is, and one line about it for the person's star.
+  function todayStrip(x, days, view) {
+    const n = +x.date.slice(8), wd = new Date(x.date + 'T12:00').toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
+    const fest = marks(x, view);
+    const star = x.chandrashtama ? 'Chandrashtama today: keep big decisions light.'
+      : !x.tara ? '' : x.tara.kind === 'good' ? `A good star for you (${x.tara.name}).`
+      : x.tara.kind === 'hard' ? `A “go gently” day for your star (${x.tara.name}).` : 'Your birth star returns: keep it simple.';
+    const next = days.find(d => d.date > x.date && d.chandrashtama);
+    const ord = k => k + (k % 100 >= 11 && k % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[k % 10] || 'th'));
+    const warn = !x.chandrashtama && next ? ` Chandrashtama starts on the ${ord(+next.date.slice(8))}.` : '';
+    return `<section class="cal-strip" aria-label="Today"><span class="cal-badge" aria-hidden="true"><small>${wd}</small><b>${n}</b></span>
+      <div><b>Today · ${esc(x.tithi_name)} · ${esc(x.nakshatra)}${fest.length ? ' · ' + esc(fest[0]) : ''}</b><span>${esc((star + warn).trim() || 'An ordinary day on the calendar.')}</span></div>
+      <button type="button" class="btn" data-caltoday>Open today</button></section>`;
   }
 
   function daySheet(x, view) {
@@ -95,6 +114,14 @@
 
   document.addEventListener('click', e => {
     if (!S.el || !S.el.contains(e.target)) return;
+    const jump = e.target.closest('[data-caltoday]');
+    if (jump) {  // back to this month if needed, then today's sheet
+      const t0 = tzToday(S.data.tz_name), y = +t0.slice(0, 4), m = +t0.slice(5, 7);
+      S.sel = t0;
+      if (y !== S.y || m !== S.m) { S.y = y; S.m = m; load().then(() => S.el.querySelector('.cal-sheet')?.scrollIntoView({ block: 'nearest' })); }
+      else { paint(); S.el.querySelector('.cal-sheet')?.scrollIntoView({ block: 'nearest' }); }
+      return;
+    }
     const t = e.target.closest('[data-cald],[data-calmove]'); if (!t) return;
     if (t.dataset.cald) { S.sel = t.dataset.cald; paint(); S.el.querySelector('.cal-sheet').scrollIntoView({ block: 'nearest' }); return; }
     if (t.dataset.calmove) { S.m += +t.dataset.calmove; if (S.m < 1) { S.m = 12; S.y--; } if (S.m > 12) { S.m = 1; S.y++; } S.sel = null; }
