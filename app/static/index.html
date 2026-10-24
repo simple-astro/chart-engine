@@ -366,6 +366,12 @@
   input::placeholder{color:var(--mut);opacity:.7}
   .row{display:flex;gap:9px} .row input{flex:1}
   .chk{display:flex;align-items:center;gap:9px} .chk input{width:auto;accent-color:var(--g2)}
+  .gen{display:inline-flex;gap:2px;padding:2px;border-radius:999px;background:var(--bg2);border:1px solid var(--line)}
+  .gen label{margin:0;text-transform:none;letter-spacing:0;font-size:.82rem;font-weight:600;color:var(--mut);cursor:pointer}
+  .gen input{position:absolute;opacity:0;width:1px;height:1px}
+  .gen span{display:block;text-align:center;padding:5px 14px;min-height:30px;line-height:20px;border-radius:999px}
+  .gen input:checked+span{background:var(--solid);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+  .gen input:focus-visible+span{outline:2px solid var(--acc);outline-offset:1px}
   .chk label{margin:0;font-weight:500;text-transform:none;letter-spacing:0;font-size:.85rem;line-height:1.35;color:var(--mut)}
   .hint{font-size:.81rem;color:var(--mut);margin-top:6px}
   
@@ -1733,6 +1739,9 @@
       </div>
       <form id="f" class="card">
         <div class="full"><label for="name">Name (optional)</label><input id="name" placeholder="e.g. Deepak"></div>
+        <div class="full"><label id="genlbl">Gender</label>
+          <div class="gen" role="radiogroup" aria-labelledby="genlbl">
+            <label><input type="radio" name="gender" value="male"><span>Male</span></label><label><input type="radio" name="gender" value="female"><span>Female</span></label></div></div>
         <div><label for="dob">Date of birth</label><input id="dob" type="date" required></div>
         <div><label for="tob">Time of birth</label><input id="tob" type="time" step="60" required>
           <div class="chk hint"><input id="unk" type="checkbox"><label for="unk">Birth time unknown (uses noon)</label></div></div>
@@ -2533,6 +2542,7 @@ $('cfyes').onclick=async()=>{
 };
 function fillForm(q){
   $('name').value=q.name;$('dob').value=q.dob;$('tob').value=q.tob.slice(0,5);$('lat').value=q.lat;$('lon').value=q.lon;
+  document.querySelectorAll('input[name=gender]').forEach(r=>{r.checked=r.value===q.gender});
   $('place').value=q.place||'';$('tz').value=q.tz_name;$('unk').checked=q.tob_unknown;$('ayan').value=q.ayanamsha;$('node').value=q.node_type;FORM_HS=q.house_system||null;FORM_DY=q.dasha_year||null;FORM_AKV=q.ashtakavarga||null;
 }
 async function loadProfile(id){
@@ -2738,6 +2748,7 @@ $('f').addEventListener('submit',async e=>{
   const body={name:$('name').value,place:$('place').value.trim(),dob:$('dob').value,tob:($('unk').checked?'12:00':$('tob').value)+':00',
     lat:parseFloat($('lat').value),lon:parseFloat($('lon').value),tz_name:$('tz').value.trim(),
     tob_unknown:$('unk').checked,ayanamsha:$('ayan').value,node_type:$('node').value};
+  const gen=document.querySelector('input[name=gender]:checked');if(gen)body.gender=gen.value;
   if(FORM_HS)body.house_system=FORM_HS;
   if(FORM_DY)body.dasha_year=FORM_DY;
   if(FORM_AKV)body.ashtakavarga=FORM_AKV;

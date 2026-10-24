@@ -20,6 +20,7 @@ class ChartRequest(BaseModel):
     lon: float = Field(ge=-180, le=180)
     tz_name: str = Field(description="IANA timezone, e.g. Asia/Kolkata")
     tob_unknown: bool = False
+    gender: Literal["male", "female"] | None = None  # optional; kept with the saved chart
     ayanamsha: Ayanamsha = "lahiri"
     node_type: NodeType = "mean"
     house_system: HouseSystem | None = None  # None: the ayanamsha's default
