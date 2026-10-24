@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" id="tc" content="#fbf7ef">
 <script>(function(){var L="#fbf7ef",D="#0a0907",q=matchMedia("(prefers-color-scheme:dark)");function f(){var r=document.documentElement,t=r.getAttribute("data-theme"),d=t==="dark"||(t!=="light"&&q.matches),m=document.getElementById("tc"),b=r.getAttribute("data-mood")&&getComputedStyle(r).getPropertyValue("--bg").trim();if(m)m.content=b||(d?D:L)}f();addEventListener("DOMContentLoaded",f);new MutationObserver(f).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme","data-mood"]});if(q.addEventListener)q.addEventListener("change",f)})();</script>
-<title>SimpleJyotish — Your personal Jyotishi</title>
+<title>SimpleJyotish — Simple guidance, backed by precise Jyotish</title>
 <link rel="icon" type="image/svg+xml" href="/static/sun.svg">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <script>(function(){try{var t=localStorage.getItem("sj-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);
@@ -283,6 +283,7 @@
   .top .in:has(.sjbar:not([hidden])) .pill{width:40px;height:40px;padding:3px;justify-content:center;gap:0}
   .top .in:has(.sjbar:not([hidden])) .pill .pt,.top .in:has(.sjbar:not([hidden])) .pill .chev{display:none}
   @media(min-width:1440px){.top .in{max-width:1360px}}
+  @media(min-width:1600px){.top .in{max-width:1560px}}
   @media(max-width:1439px){.srfield .srlbl{min-width:0}}
   @media(max-width:1199px){.srfield{width:38px;padding:0;justify-content:center}.srfield .srlbl,.srfield .srkey{display:none}}
   .pill{display:flex;align-items:center;gap:10px;padding:5px 12px 5px 5px;border-radius:999px;border:1px solid var(--line);
@@ -497,6 +498,27 @@
   .imgdlg{position:fixed;inset:0;z-index:120;background:#000000eb;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
   .imgdlg img{max-width:min(520px,100%);max-height:calc(100dvh - 130px);border-radius:10px;box-shadow:0 10px 40px #0008;background:#fff}
   .imgdlg .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .pdfmenu{position:absolute;top:52px;right:16px;z-index:6;display:flex;flex-direction:column;min-width:210px;padding:6px;border-radius:14px;
+    background:var(--card);border:1px solid var(--line);box-shadow:0 12px 30px #0006}
+  .pdfmenu button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:9px 12px;border:0;border-radius:10px;background:none;color:var(--ink);font:600 .9rem var(--sans);cursor:pointer;text-align:left}
+  .pdfmenu button:hover,.pdfmenu button:focus-visible{background:var(--bg2)} .pdfmenu small{font-weight:400;color:var(--mut);font-size:.76rem}
+  /* chart image for Reddit (redditimg.js) */
+  .rdlg{position:fixed;inset:0;z-index:120;background:#000000d9;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:16px}
+  .rbox{width:100%;max-width:560px;display:flex;flex-direction:column;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px 18px}
+  .rtop{display:flex;align-items:center;justify-content:space-between;gap:8px} .rtop b{font:600 1.25rem var(--serif)}
+  .rx{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--ink);font-size:1rem;cursor:pointer}
+  .rimg img{display:block;width:100%;border-radius:10px;background:#fbf7ef;box-shadow:0 8px 26px #0006;min-height:120px}
+  .ropts{display:flex;flex-direction:column;gap:10px;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .rrow{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.92rem} .rrow small{display:block;color:var(--mut);font-size:.78rem}
+  .rrow input[type=checkbox]{width:22px;height:22px;accent-color:var(--acc);flex:none}
+  .rseg{display:inline-flex;padding:3px;border-radius:999px;background:var(--bg);border:1px solid var(--line)}
+  .rseg button{min-height:34px;padding:0 12px;border:0;border-radius:999px;background:none;color:var(--mut);font:600 .82rem var(--sans);cursor:pointer;white-space:nowrap}
+  .rseg button[aria-pressed=true]{background:var(--acc);color:var(--onacc)}
+  .rbtns{display:flex;gap:8px;flex-wrap:wrap} .rbtns .btn{flex:1;min-height:46px;text-align:center;display:inline-flex;align-items:center;justify-content:center}
+  .rcopy{display:flex;flex-direction:column;gap:10px} .rcopy[hidden]{display:none}
+  .rfield{display:flex;flex-direction:column;gap:6px} .rfield small{font-size:.72rem;letter-spacing:.1em;font-weight:700;color:var(--acc)}
+  .rtitle{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:.9rem} .rtitle i{color:var(--mut)}
+  .rfield pre{margin:0;max-height:220px;overflow:auto;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font:.74rem/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap}
   .stats{display:flex;flex-wrap:wrap;gap:10px}
   .stat{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:10px 16px;min-width:108px;transition:.18s}
   .stat:hover{border-color:var(--acc);transform:translateY(-2px)}
@@ -889,6 +911,7 @@
   .akb i.strong,.aksw.strong{background:linear-gradient(180deg,var(--g1),var(--g2))}
   .akb i.avg,.aksw.avg{background:color-mix(in srgb,var(--mut) 45%,transparent)}
   .akb i.weak,.aksw.weak{background:color-mix(in srgb,var(--bad) 55%,transparent)}
+  .akpsel{flex-wrap:wrap;margin:4px 0 10px} .akpr td{text-align:center;color:var(--acc)} .akpr td:first-child{text-align:left;color:var(--ink)} .akpr .akno{color:var(--mut);opacity:.5}
   .aksw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
   .akref{position:absolute;left:0;right:0;border-top:1px dashed var(--acc);opacity:.7;pointer-events:none;z-index:1}
   .akref span{position:absolute;right:0;top:-16px;font-size:.66rem;color:var(--acc);font-weight:600}
@@ -1377,7 +1400,7 @@
   .top .sjbar{flex:none} .top .sjbar button{padding:8px 13px;font-size:.9rem;white-space:nowrap}
   .top .in:has(.sjbar:not([hidden])) .brand{margin-right:0}
   /* Six tabs: between phone and 1440px drop the tab icons, so the row fits and the chart name in the profile pill shows */
-  @media(min-width:761px) and (max-width:1439px){.sjbar svg{display:none} .sjbar button{padding:8px 11px;white-space:nowrap}}
+  @media(min-width:761px) and (max-width:1599px){.sjbar svg{display:none} .sjbar button{padding:8px 11px;white-space:nowrap}}  /* the tab icons need about 1500px of header: only on wider screens */
   #s-today>*+*,#tm-now>*+*,#tm-matter>*+*,#kabout>*+*,#s-remedies>*+*{margin-top:18px} #kabout{margin-top:22px}
   #s-today>.gh{margin:30px 0 -4px}
 
@@ -1648,7 +1671,6 @@
   <button type="button" class="srfield" id="srbtn" aria-label="Search your chart, pages and meanings" aria-keyshortcuts="Control+K Meta+K /" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="srlbl">Search</span><kbd class="srkey" id="srkey">Ctrl K</kbd></button>
   <button type="button" class="icon round" id="matchbtn" title="Match making" aria-label="Match making"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></button>
   <button type="button" class="icon round" id="setbtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8L7 10"/></svg></button>
-  <button type="button" class="icon round gold" id="newbtn" title="New chart" aria-label="New chart"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 </div></header>
 <div class="scrim" id="scrim" hidden></div>
 <div class="scrim" id="setscrim" hidden></div>
@@ -1690,8 +1712,8 @@
       <div class="wheel"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle class="ring1" cx="100" cy="100" r="96"/><circle class="ring1" cx="100" cy="100" r="78"/><circle class="ring1" cx="100" cy="100" r="46"/><circle class="ring1" cx="100" cy="100" r="30"/><line class="spoke" x1="100.0" y1="54.0" x2="100.0" y2="4.0"/><text class="gl" x="122.5" y="20.0" text-anchor="middle">♈</text><line class="spoke" x1="123.0" y1="60.2" x2="148.0" y2="16.9"/><text class="gl" x="161.5" y="42.5" text-anchor="middle">♉</text><line class="spoke" x1="139.8" y1="77.0" x2="183.1" y2="52.0"/><text class="gl" x="184.0" y="81.5" text-anchor="middle">♊</text><line class="spoke" x1="146.0" y1="100.0" x2="196.0" y2="100.0"/><text class="gl" x="184.0" y="126.5" text-anchor="middle">♋</text><line class="spoke" x1="139.8" y1="123.0" x2="183.1" y2="148.0"/><text class="gl" x="161.5" y="165.5" text-anchor="middle">♌</text><line class="spoke" x1="123.0" y1="139.8" x2="148.0" y2="183.1"/><text class="gl" x="122.5" y="188.0" text-anchor="middle">♍</text><line class="spoke" x1="100.0" y1="146.0" x2="100.0" y2="196.0"/><text class="gl" x="77.5" y="188.0" text-anchor="middle">♎</text><line class="spoke" x1="77.0" y1="139.8" x2="52.0" y2="183.1"/><text class="gl" x="38.5" y="165.5" text-anchor="middle">♏</text><line class="spoke" x1="60.2" y1="123.0" x2="16.9" y2="148.0"/><text class="gl" x="16.0" y="126.5" text-anchor="middle">♐</text><line class="spoke" x1="54.0" y1="100.0" x2="4.0" y2="100.0"/><text class="gl" x="16.0" y="81.5" text-anchor="middle">♑</text><line class="spoke" x1="60.2" y1="77.0" x2="16.9" y2="52.0"/><text class="gl" x="38.5" y="42.5" text-anchor="middle">♒</text><line class="spoke" x1="77.0" y1="60.2" x2="52.0" y2="16.9"/><text class="gl" x="77.5" y="20.0" text-anchor="middle">♓</text></svg></div>
       <div>
         <span class="eyebrow"><img src="/static/sun.svg" width="18" height="18" alt=""> simplejyotish.com</span>
-        <h1>Your personal Jyotishi,<br><em>available 24/7.</em></h1>
-        <p>A trusted, modern Jyotishi who knows your full chart by heart, is available at any hour, and never judges. Enter your birth details to build your kundli — then ask it anything.</p>
+        <h1>Simple guidance,<br><em>backed by precise Jyotish.</em></h1>
+        <p>What to do today, when your good windows come, and why, calculated with the Swiss Ephemeris by practising Jyotishis. Enter your birth details to build your kundli — then ask it anything.</p>
         <ul class="feat">
           <li><span>◈</span><div><b>Full kundli</b> — North Indian chart, houses, KP sub-lords and 16 divisional charts</div></li>
           <li><span>⏳</span><div><b>Vimshottari dasha</b> with your current mahadasha and antardasha highlighted</div></li>
@@ -2005,6 +2027,7 @@
 <script src="/static/calendar.js?v=1"></script>
 <script src="/static/matchlinks.js?v=1"></script>
 <script src="/static/lifebook.js?v=2"></script>
+<script src="/static/redditimg.js?v=1"></script>
 <script>
 // API errors as one readable line: a string detail, {field, message}, or FastAPI's list of field errors.
 window.apiErr=d=>d==null?'':typeof d==='string'?d:Array.isArray(d)?d.map(x=>x.msg||'').filter(Boolean).join('; '):d.message||'';
@@ -2068,7 +2091,7 @@ function showResults(){hasChart=true;
 function openNew(){editId=null;$('go').textContent='Generate chart';$('f').reset();try{$('tz').value=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){};
   const D=setDefaults();if(D.ayanamsha)$('ayan').value=D.ayanamsha;if(D.node)$('node').value=D.node;FORM_HS=D.house||null;FORM_DY=D.dy||null;FORM_AKV=D.akv||null;  // Settings › Defaults
   tzError('');$('placeinfo').textContent='Search and pick a city, or enter coordinates below.';showForm()}
-$('newbtn').onclick=()=>{AFTER_NEW=null;nav('new')};
+const newChart=()=>{AFTER_NEW=null;nav('new')};  // from the profile menu: the header has no + button
 $('cancel').onclick=()=>{editId=null;$('go').textContent='Generate chart';nav(LAST_SCREEN||'today')};
 
 // The ayanamsha last used for a new chart is offered again next time (this device only).
@@ -2491,7 +2514,7 @@ $('pmenu').addEventListener('keydown',e=>{
 });
 $('psearch').addEventListener('input',paintList);
 $('plist').addEventListener('click',e=>{const b=e.target.closest('.prow');if(!b)return;closeMenu();loadProfile(b.dataset.id)});
-$('mnew').onclick=()=>{closeMenu();$('newbtn').click()};
+$('mnew').onclick=()=>{closeMenu();newChart()};
 $('mdefault').onclick=()=>{closeMenu();if(currentId==null)return;setDefault(String(currentId)===getDefault()?null:currentId);paintPill();paintList()};
 $('medit').onclick=()=>{closeMenu();const p=saved.find(x=>String(x.id)===String(currentId));if(!p)return;
   fillForm(p.request);editId=p.id;$('save').checked=true;nav('edit');$('go').textContent='Save changes'};
@@ -3856,7 +3879,15 @@ async function shareImage(){const c=lastChart,req=lastReq;if(!c||!req)return;con
       if(e.target.closest('[data-share]')){try{await navigator.share({files:[f],title:'Kundli · '+(req.name||''),text:'My kundli · free at simplejyotish.com'});track('chart/share-image')}catch(err){}}
       if(e.target.closest('a[download]'))track('chart/download-image')});
     document.body.appendChild(d)},'image/png')}
-$('pdfbtn').onclick=shareImage;
+// Share image opens a small menu: the full kundli for WhatsApp, or the dense chart image and text post for Reddit.
+$('pdfbtn').onclick=e=>{e.stopPropagation();const old=document.querySelector('.pdfmenu');if(old){old.remove();return}
+  const m=document.createElement('div');m.className='pdfmenu';m.setAttribute('role','menu');
+  m.innerHTML='<button type="button" role="menuitem" data-m="wa">Kundli image<small>Full details, for WhatsApp</small></button>'+
+    '<button type="button" role="menuitem" data-m="rd">Chart for Reddit<small>Dense chart image and a ready post</small></button>';
+  $('pdfbtn').after(m);m.querySelector('button').focus();
+  const shut=()=>{m.remove();removeEventListener('click',shut)};setTimeout(()=>addEventListener('click',shut));
+  m.onclick=ev=>{const b=ev.target.closest('[data-m]');if(!b)return;shut();
+    if(b.dataset.m==='wa')shareImage();else{track('chart/reddit-open');window.redditImage(lastChart,lastReq,CHART_STYLE)}}};
 $('setdone').onclick=closeSettings;$('setscrim').onclick=closeSettings;
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('setsheet').hidden)closeSettings()});
 $('setsheet').addEventListener('change',async e=>{const t=e.target;
@@ -4041,11 +4072,21 @@ function render(c,req){
       (J.karakamsa?'<div class="jai"><small>Karakamsa · life path</small><b>'+esc(J.karakamsa.sign)+'</b><p>'+esc(J.karakamsa.note)+'</p></div>':'')+
       '<div class="jai"><small>Arudha Lagna · image</small><b>'+esc(J.arudha_lagna.sign)+'</b><p>'+esc(J.arudha_lagna.note)+'</p></div>'+
       '<div class="jai"><small>Upapada · marriage</small><b>'+esc(J.upapada.sign)+'</b><p>'+esc(J.upapada.note)+'</p></div>'+
-    '</div><h3 class="jaih">Your Arudha Lagna</h3><ul class="jaial">'+J.al_reading.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+
+    '</div>'+(J.karakamsa?'<h3 class="jaih">Karakamsa and Swamsa charts <small>both counted from your Karakamsa, '+esc(J.karakamsa.sign)+'</small></h3>'+
+      '<div class="mmcgrid"><figure><figcaption><b>Karakamsa chart</b> <small>Rasi (D1) planets</small></figcaption><div class="chart mmchart" id="jaikk"></div></figure>'+
+      '<figure><figcaption><b>Swamsa chart</b> <small>Navamsa (D9) planets</small></figcaption><div class="chart mmchart" id="jaisw"></div></figure></div>'+
+      '<p class="hint">Jaimini reads your life path from the Karakamsa (the Navamsa sign of your Atmakaraka, '+esc(J.atmakaraka.planet)+'): planets in it and in the 5th, 9th and 12th from it show your talents, beliefs and spiritual leaning. Asc marks your own lagna.</p>':'')+
+    '<h3 class="jaih">Your Arudha Lagna</h3><ul class="jaial">'+J.al_reading.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+
     '<h3 class="jaih">Chara karakas</h3><div class="scroll"><table id="jaitable"></table></div>'+
     '<h3 class="jaih">Arudhas <small>how the world sees each part of your life</small></h3><div class="scroll"><table id="jaiar"></table></div>'+
     '<h3 class="jaih">Argala <small>which planets intervene in each house, and who blocks them</small></h3><div class="scroll"><table id="jaiarg"></table></div>'+
     '<p class="hint">Jaimini’s timing, <button type="button" class="lnkyoga" data-goto="chara">Chara Dasha</button>, is just below.</p>';
+  if(J&&J.karakamsa){const kk=SIGNS.indexOf(J.karakamsa.sign),D9=c.vargas&&c.vargas.D9,L9=(c.varga_lagna||{}).D9;
+    const place=(signOf,lag,lagDeg)=>{const byH={};
+      P9.forEach(p=>{const s=signOf(p);if(s==null)return;const h=(s-kk+12)%12;(byH[h]=byH[h]||[]).push(ABBR[p]+(c.grahas[p].retrograde&&p!=='Rahu'&&p!=='Ketu'?'ᴿ':''))});
+      if(lag!=null){const h=(lag-kk+12)%12;(byH[h]=byH[h]||[]).unshift({t:'Asc',d:lagDeg,jp:true})}return byH};
+    drawNorth($('jaikk'),kk,place(p=>c.grahas[p].sign_index,c.lagna.sign_index,Math.floor(c.lagna.ascendant%30)+'°'),null,false);
+    if(D9)drawNorth($('jaisw'),kk,place(p=>D9[p]&&D9[p].sign_index,L9,Math.floor(c.lagna.ascendant*9%30)+'°'),null,false)}
   if(J){table($('jaitable'),['Karaka','Planet','Degree in sign','Shows'],J.karakas.map(k=>['<b>'+k.short+'</b> '+k.karaka,k.planet,dms(k.degree),esc(k.role)]));
     table($('jaiarg'),['House','Argala (intervention)','Blocked by'],J.argala.map(h=>['H'+h.house+' <small class="hint">'+esc(h.sign)+'</small>',
       h.argala.length?h.argala.map(a=>(a.holds?'<b>':'')+a.planets.join(', ')+' from the '+ORD(a.from)+(a.kind==='secondary'?' (secondary)':'')+(a.holds?'</b>':'')).join('<br>'):'—',

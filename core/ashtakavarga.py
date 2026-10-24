@@ -58,16 +58,19 @@ def ashtakavarga(signs: dict[str, int], lagna_sign: int, method: str = "parashar
     """signs: planet -> sign index (0 = Aries). Returns BAV and SAV indexed by sign."""
     pos = {**{p: signs[p] for p in PLANETS}, "Lagna": lagna_sign}
     rules = table(method)
-    bav = {}
+    bav, prastara = {}, {}
     for planet in PLANETS:
         row = [0] * 12
+        grid = {c: [0] * 12 for c in CONTRIBUTORS}  # Prastharashtakavarga: which source gives each bindu
         for contrib, houses in rules[planet].items():
             for h in houses:
                 row[(pos[contrib] + h - 1) % 12] += 1
-        bav[planet] = row
+                grid[contrib][(pos[contrib] + h - 1) % 12] = 1
+        bav[planet], prastara[planet] = row, grid
     sav = [sum(bav[p][s] for p in PLANETS) for s in range(12)]
     return {
         "bav": bav,
+        "prastara": prastara,
         "sav": sav,
         "bav_totals": {p: sum(bav[p]) for p in PLANETS},
         "sav_total": sum(sav),

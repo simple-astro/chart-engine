@@ -107,7 +107,27 @@
       <p class="hint">5 or more of 8 means the planet gives its results well in its daśā and transits; 3 or fewer means it needs support.</p>
       <h3 class="mh3">Full table (Bhinnashtakavarga)</h3>
       <div class="scroll"><table class="aktable">${head}<tbody>${body}</tbody></table></div>
-      <p class="hint">Each planet’s row scores the houses out of 8. The outlined cell is where that planet sits.</p>`;
+      <p class="hint">Each planet’s row scores the houses out of 8. The outlined cell is where that planet sits.</p>
+      ${a.prastara ? `<h3 class="mh3">Prastharashtakavarga <small class="hint">which of the 8 sources gives each bindu</small></h3>
+      <div class="seg akpsel" role="radiogroup" aria-label="Planet">${PL.map(p => `<button type="button" role="radio" data-akp="${p}">${p}</button>`).join('')}</div>
+      <div class="scroll"><table class="aktable akpr" id="akpr"></table></div>
+      <p class="hint">Read down a column: each ● is one bindu, and they add up to that house’s score in the table above. The outlined cell is where each source sits.</p>` : ''}`;
+    if (a.prastara) {
+      const SRC = PL.concat('Lagna'), srcSign = s => s === 'Lagna' ? L : c.grahas[s].sign_index;
+      const paint = p => {
+        el.querySelectorAll('[data-akp]').forEach(b => { const on = b.dataset.akp === p; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)) });
+        const g = a.prastara[p];
+        el.querySelector('#akpr').innerHTML = head.replace('<th>Planet</th>', '<th>' + p + '’s bindus from</th>') + '<tbody>' +
+          SRC.map(s => '<tr><td><b>' + s + '</b></td>' + Array.from({ length: 12 }, (_, i) => {
+            const sg = sgn(i + 1), v = g[s][sg], here = srcSign(s) === sg;
+            return `<td class="${here ? 'here' : ''}" title="${s} ${v ? 'gives' : 'gives no'} bindu to ${p} in the ${ord(i + 1)} house">${v ? '●' : '<span class="akno">·</span>'}</td>`;
+          }).join('') + `<td><b>${g[s].reduce((x, y) => x + y, 0)}</b></td></tr>`).join('') +
+          '<tr class="sav"><td><b>' + p + ' (BAV)</b></td>' + Array.from({ length: 12 }, (_, i) => `<td><b>${a.bav[p][sgn(i + 1)]}</b></td>`).join('') +
+          `<td><b>${a.bav_totals[p]}</b></td></tr></tbody>`;
+      };
+      el.querySelector('.akpsel').addEventListener('click', e => { const b = e.target.closest('[data-akp]'); if (b) paint(b.dataset.akp) });
+      paint('Sun');
+    }
 
     const box = el.querySelector('.akchart'), tip = document.createElement('div');
     tip.className = 'ctip'; tip.hidden = true; box.appendChild(tip);

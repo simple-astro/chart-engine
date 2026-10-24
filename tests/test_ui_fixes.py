@@ -33,7 +33,7 @@ def test_one_router_for_every_view():
     assert "go('today',undefined,{replace:true})" in route  # unknown routes fall back to Today
     assert "addEventListener('hashchange',onHash)" in INDEX and "addEventListener('popstate',onHash)" in INDEX
     assert "$('matchbtn').onclick=()=>{closeMenu();nav('match')}" in INDEX
-    assert "nav('new')" in _between(INDEX, "$('newbtn').onclick=", "\n")
+    assert "nav('new')" in _between(INDEX, "const newChart=", "\n") and 'id="newbtn"' not in INDEX  # New chart lives in the profile menu
     # nav() always routes, so a tap on the item you are on still works; go() records screens in history
     assert re.search(r"function nav\(hash,o\)\{[^}]*\n[^\n]*\n\s*route\(\);", INDEX)
     assert "pushState'" in _between(INDEX, "function go(name,sub,o){", "\nfunction loadVisible")
@@ -251,7 +251,7 @@ def test_settings_lives_in_the_header_not_the_profile_menu():
 def test_share_image_one_page_kundli():
     banner = _between(INDEX, '<div class="card banner">', '<div class="stats"')
     assert 'id="pdfbtn"' in banner and "Share image" in banner        # at the top of the chart screen
-    assert "$('pdfbtn').onclick=shareImage" in INDEX and "Save PDF" not in INDEX and 'id="psheet"' not in INDEX
+    assert "if(b.dataset.m==='wa')shareImage()" in INDEX and "Save PDF" not in INDEX  # the menu's first choice and 'id="psheet"' not in INDEX
     assert "cv.width=W" in INDEX and "navigator.canShare" in INDEX and "navigator.share({files" in INDEX
     assert "download=" in INDEX                                          # a computer downloads the PNG
     for col in ("'Lagna chart · D1'", "'Navamsa · D9'", "'Vimshottari dasha'", "['Star',", "['Sub',", "'Nakshatra',"):
